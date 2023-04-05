@@ -29,7 +29,6 @@
 
 out vec4 frag_color;
 
-uniform sampler2D diffuseRect;
 uniform sampler2D emissiveRect;
 uniform sampler2D exposureMap;
 
@@ -46,44 +45,11 @@ float lum(vec3 col)
 
 void main() 
 {
-    float step = 1.0/16.0;
+    vec2 tc = vec2(0.5,0.5);
 
-    float start = step;
-    float end = 1.0-step;
-
-    float w = 0.0;
-
-    vec3 col;
-
-    //vec2 nz = noiseVec * step * 0.5;
-
-    for (float x = start; x <= end; x += step)
-    {
-        for (float y = start; y <= end; y += step)
-        {
-            vec2 tc = vec2(x,y); // + nz;
-            vec3 c = texture(diffuseRect, tc).rgb + texture(emissiveRect, tc).rgb;
-            float L = max(lum(c), 0.25);
-
-            float d = length(vec2(0.5)-tc);
-            d = 1.0-d;
-            d *= d;
-            d *= d;
-            d *= d;
-            L *= d;
-
-            w += L;
-
-            col += c * L;
-        }
-    }
-
-    col /= w;
-
-    float L = lum(col);
+    float L = textureLod(emissiveRect, tc, 8).r;
 
     float s = clamp(dynamic_exposure_params.x/L, dynamic_exposure_params.y, dynamic_exposure_params.z);
-
 
     float prev = texture(exposureMap, vec2(0.5,0.5)).r;
 
