@@ -35,7 +35,7 @@ uniform float minimum_alpha;
 
 void main() 
 {
-    float alpha = diffuseLookup(vary_texcoord0.xy).a;
+    float alpha = texture(diffuseMap,vary_texcoord0.xy).a;
 
     if (alpha < minimum_alpha)
     {
