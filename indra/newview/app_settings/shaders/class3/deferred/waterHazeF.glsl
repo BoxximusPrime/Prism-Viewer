@@ -26,7 +26,7 @@
 out vec4 frag_color;
 
 // Inputs
-in vec2 vary_fragcoord;
+in vec4 vary_fragcoord;
 
 uniform sampler2D normalMap;
 
@@ -37,19 +37,10 @@ vec4 getWaterFogView(vec3 pos);
 
 void main()
 {
-    vec2  tc           = vary_fragcoord.xy;
+    vec2  tc           = vary_fragcoord.xy/vary_fragcoord.w*0.5+0.5;
     float depth        = getDepth(tc.xy);
     vec4  pos          = getPositionWithDepth(tc, depth);
     vec4  norm         = texture(normalMap, tc);
-
-    if (GET_GBUFFER_FLAG(GBUFFER_FLAG_HAS_PBR))
-    {
-    }
-    else if (!GET_GBUFFER_FLAG(GBUFFER_FLAG_HAS_ATMOS))
-    {
-        //should only be true of WL sky, just port over base color value
-        discard;
-    }
 
     vec4 fogged = getWaterFogView(pos.xyz);
 
