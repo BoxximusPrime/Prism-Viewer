@@ -12991,7 +12991,7 @@ Returns true if result is non-zero.</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Decodes a base64 string to a string, or buffer if asBuffer is true. Returns an empty string/buffer if input is invalid.</string>
+            <string>Decodes a base64 string to a string, or buffer if asBuffer is true. The output is truncated at the first decoding error.</string>
          </map>
          <key>llbase64.encode</key>
          <map>
