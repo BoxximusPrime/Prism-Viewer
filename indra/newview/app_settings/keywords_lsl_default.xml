@@ -10635,7 +10635,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Follows the same convention as llAttachToAvatar, with the exception that the object will not create new inventory for the user, and will disappear on detach or disconnect.</string>
+            <string>Follows the same convention as llAttachToAvatar, with the exception that the object will not create new inventory for the user, and will disappear on detach or disconnect.\nRequires the PERMISSION_ATTACH runtime permission.</string>
          </map>
          <key>llAvatarOnLinkSitTarget</key>
          <map>
@@ -10805,7 +10805,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>De-links all prims in the link set (requires permission PERMISSION_CHANGE_LINKS be set).</string>
+            <string>De-links all prims in the link set.\nRequires the PERMISSION_CHANGE_LINKS runtime permission.</string>
          </map>
          <key>llBreakLink</key>
          <map>
@@ -10828,7 +10828,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>De-links the prim with the given link number (requires permission PERMISSION_CHANGE_LINKS be set).</string>
+            <string>De-links the prim with the given link number.\nRequires the PERMISSION_CHANGE_LINKS runtime permission.</string>
          </map>
          <key>llCSV2List</key>
          <map>
@@ -10952,7 +10952,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Resets all camera parameters to default values and turns off scripted camera control.</string>
+            <string>Resets all camera parameters to default values and turns off scripted camera control.\nRequires the PERMISSION_CONTROL_CAMERA runtime permission (automatically granted to attached or sat on objects).</string>
          </map>
          <key>llClearLinkMedia</key>
          <map>
@@ -11299,7 +11299,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.1</real>
             <key>tooltip</key>
-            <string>Attempt to link the object the script is in, to target (requires permission PERMISSION_CHANGE_LINKS be set).\nRequires permission PERMISSION_CHANGE_LINKS be set.</string>
+            <string>Attempt to link the object the script is in, to target.\nRequires the PERMISSION_CHANGE_LINKS runtime permission.</string>
          </map>
          <key>llDamage</key>
          <map>
@@ -11525,7 +11525,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Remove the object containing the script from the avatar.</string>
+            <string>Remove the object containing the script from the avatar.\nRequires the PERMISSION_ATTACH runtime permission (automatically granted to attached objects).</string>
          </map>
          <key>llDetectedDamage</key>
          <map>
@@ -12729,7 +12729,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Returns a string that is the name of the animation that is used for the specified animation state\nTo use this function the script must obtain either the PERMISSION_OVERRIDE_ANIMATIONS or PERMISSION_TRIGGER_ANIMATION permission (automatically granted to attached objects).</string>
+            <string>Returns a string that is the name of the animation that is used for the specified animation state.\nRequires the PERMISSION_OVERRIDE_ANIMATIONS or PERMISSION_TRIGGER_ANIMATION runtime permission (automatically granted to attached objects).</string>
          </map>
          <key>llGetAttached</key>
          <map>
@@ -20005,7 +20005,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Resets the animation of the specified animation state to the default value.\nIf animation state equals "ALL", then all animation states are reset.</string>
+            <string>Resets the animation of the specified animation state to the default value.\nIf animation state equals "ALL", then all animation states are reset.\nRequires the PERMISSION_OVERRIDE_ANIMATIONS permission (automatically granted to attached objects).</string>
          </map>
          <key>llResetLandBanList</key>
          <map>
@@ -21281,7 +21281,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Sets multiple camera parameters at once. List format is [ rule-1, data-1, rule-2, data-2 . . . rule-n, data-n ].</string>
+            <string>Sets multiple camera parameters at once. List format is [ rule-1, data-1, rule-2, data-2 . . . rule-n, data-n ].\nRequires the PERMISSION_CONTROL_CAMERA runtime permission (automatically granted to attached or sat on objects).</string>
          </map>
          <key>llSetClickAction</key>
          <map>
@@ -22266,7 +22266,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Sets the parcel the object is on for sale.\nForSale is a boolean, if TRUE the parcel is put up for sale. Options is a list of options to set for the sale, such as price, authorized buyer, and whether to include objects on the parcel.\n Setting ForSale to FALSE will remove the parcel from sale and clear any options that were set.</string>
+            <string>Sets the parcel the object is on for sale.\nForSale is a boolean, if TRUE the parcel is put up for sale. Options is a list of options to set for the sale, such as price, authorized buyer, and whether to include objects on the parcel.\n Setting ForSale to FALSE will remove the parcel from sale and clear any options that were set.\nRequires the PERMISSION_PRIVILEGED_LAND_ACCESS permission.</string>
          </map>
          <key>llSetParcelMusicURL</key>
          <map>
@@ -23452,7 +23452,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>This function plays the specified animation from playing on the avatar who received the script's most recent permissions request.\nAnimation may be an animation in task inventory or a built-in animation.\nRequires PERMISSION_TRIGGER_ANIMATION.</string>
+            <string>This function plays the specified animation from playing on the avatar who received the script's most recent permissions request.\nAnimation may be an animation in task inventory or a built-in animation.\nRequires the PERMISSION_TRIGGER_ANIMATION runtime permission (automatically granted to attached or sat on objects).</string>
          </map>
          <key>llStartObjectAnimation</key>
          <map>
@@ -23498,7 +23498,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>This function stops the specified animation on the avatar who received the script's most recent permissions request.\nAnimation may be an animation in task inventory, a built-in animation, or the uuid of an animation.\nRequires PERMISSION_TRIGGER_ANIMATION.</string>
+            <string>This function stops the specified animation on the avatar who received the script's most recent permissions request.\nAnimation may be an animation in task inventory, a built-in animation, or the uuid of an animation.\nRequires the PERMISSION_TRIGGER_ANIMATION runtime permission (automatically granted to attached or sat on objects).</string>
          </map>
          <key>llStopHover</key>
          <map>
@@ -23753,7 +23753,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Take controls from the agent the script has permissions for.\nIf (Accept == (Controls &amp; input)), send input to the script.  PassOn determines whether Controls also perform their normal functions.\nRequires the PERMISSION_TAKE_CONTROLS permission to run.</string>
+            <string>Take controls from the agent the script has permissions for.\nIf (Accept == (Controls &amp; input)), send input to the script.  PassOn determines whether Controls also perform their normal functions.\nRequires the PERMISSION_TAKE_CONTROLS runtime permission (automatically granted to attached or sat on objects).</string>
          </map>
          <key>llTan</key>
          <map>
@@ -23963,7 +23963,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Requests a teleport of avatar to a landmark stored in the object's inventory. If no landmark is provided (an empty string), the avatar is teleported to the location position in the current region. In either case, the avatar is turned to face the position given by look_at in local coordinates.\nRequires the PERMISSION_TELEPORT permission. This function can only teleport the owner of the object.</string>
+            <string>Requests a teleport of avatar to a landmark stored in the object's inventory. If no landmark is provided (an empty string), the avatar is teleported to the location position in the current region. In either case, the avatar is turned to face the position given by look_at in local coordinates.\nRequires the PERMISSION_TELEPORT runtime permission.\nThis function can only teleport the owner of the object.</string>
          </map>
          <key>llTeleportAgentGlobalCoords</key>
          <map>
@@ -24013,7 +24013,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Teleports an agent to the RegionPosition local coordinates within a region which is specified by the GlobalPosition global coordinates. The agent lands facing the position defined by LookAtPoint local coordinates.\nRequires the PERMISSION_TELEPORT permission. This function can only teleport the owner of the object.</string>
+            <string>Teleports an agent to the RegionPosition local coordinates within a region which is specified by the GlobalPosition global coordinates. The agent lands facing the position defined by LookAtPoint local coordinates.\nRequires the PERMISSION_TELEPORT runtime permission.\nThis function can only teleport the owner of the object.</string>
          </map>
          <key>llTeleportAgentHome</key>
          <map>
@@ -24155,7 +24155,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Transfer Amount of linden dollars (L$) from script owner to AvatarID. Returns a key to a corresponding transaction_result event for the success of the transfer.\nAttempts to send the amount of money to the specified avatar, and trigger a transaction_result event identified by the returned key.</string>
+            <string>Transfer Amount of linden dollars (L$) from script owner to AvatarID. Returns a key to a corresponding transaction_result event for the success of the transfer.\nAttempts to send the amount of money to the specified avatar, and trigger a transaction_result event identified by the returned key. Requires the PERMISSION_DEBIT runtime permission.</string>
          </map>
          <key>llTransferOwnership</key>
          <map>
@@ -24694,7 +24694,7 @@ If another state is defined before the default state, the compiler will report a
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Returns the local position that would put the origin of a HUD object directly over world_pos as viewed by the current camera.</string>
+            <string>Returns the local position that would put the origin of a HUD object directly over world_pos as viewed by the current camera. Requires the PERMISSION_TRACK_CAMERA runtime permission (else will return zero vector).</string>
          </map>
          <key>llXorBase64</key>
          <map>
