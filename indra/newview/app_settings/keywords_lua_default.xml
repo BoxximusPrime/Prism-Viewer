@@ -12986,7 +12986,7 @@ Returns true if result is non-zero.</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Decodes a base64 string to a string, or buffer if asBuffer is true</string>
+            <string>Decodes a base64 string to a string, or buffer if asBuffer is true. Returns an empty string/buffer if input is invalid.</string>
          </map>
          <key>llbase64.encode</key>
          <map>
@@ -13040,7 +13040,7 @@ Returns true if result is non-zero.</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Decodes a JSON string to a Lua value</string>
+            <string>Decodes a JSON string to a Lua value. Raises an error if JSON is invalid.</string>
          </map>
          <key>lljson.encode</key>
          <map>
@@ -13063,7 +13063,7 @@ Returns true if result is non-zero.</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Encodes a Lua value as JSON</string>
+            <string>Encodes a Lua value as JSON. Raises an error if value contains unsupported types.</string>
          </map>
          <key>lljson.sldecode</key>
          <map>
@@ -13086,7 +13086,7 @@ Returns true if result is non-zero.</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Decodes a JSON string to a Lua value preserving SL types</string>
+            <string>Decodes a JSON string to a Lua value, preserving SL types. Raises an error if JSON is invalid.</string>
          </map>
          <key>lljson.slencode</key>
          <map>
@@ -13118,7 +13118,7 @@ Returns true if result is non-zero.</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
-            <string>Encodes a Lua value as JSON preserving SL types. Use tight to encode more compactly.</string>
+            <string>Encodes a Lua value as JSON, preserving SL types. Use tight to encode more compactly. Raises an error if value contains unsupported types.</string>
          </map>
          <!-- math library-->
          <key>math</key>
