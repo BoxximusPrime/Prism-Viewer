@@ -2765,8 +2765,8 @@ void LLViewerObject::doUpdateInventory(
 // When creating a new script, the asset should be null.  The server
 // will create the new script based on the script_language (LSL or Lua)
 // If a template_id is provided, the new script will be a copy of that item.
-// 
-// *IMPORTANT* If template_id is provided, it must be the ITEM ID of a 
+//
+// *IMPORTANT* If template_id is provided, it must be the ITEM ID of a
 // copy/mod-able script in the user's inventory.
 void LLViewerObject::saveScript(const LLViewerInventoryItem* item,
     bool active, bool is_new, U8 script_language, const LLUUID& template_id)
