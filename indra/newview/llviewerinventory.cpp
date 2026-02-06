@@ -1733,7 +1733,7 @@ void create_new_item(const std::string& name,
             if (region && region->simulatorFeaturesReceived())
             {
                 // *TODO* Setting the subtype for the script will cause the server to select
-                // either the LSL or Lau default script.  We should perhaps allow the user to
+                // either the LSL or Lua default script.  We should perhaps allow the user to
                 // select which type of script they want to create.
                 LLSD simulatorFeatures;
                 region->getSimulatorFeatures(simulatorFeatures);
