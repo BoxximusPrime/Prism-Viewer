@@ -1828,7 +1828,7 @@ void LLToolDragAndDrop::dropScript(LLViewerObject* hit_obj,
                 }
             }
         }
-        hit_obj->saveScript(new_script, active, true, 0, LLUUID::null);
+        hit_obj->saveScript(new_script, active, true, LANG_ID_LSL, LLUUID::null);
         if (gFloaterTools)
         {
             gFloaterTools->dirty();
