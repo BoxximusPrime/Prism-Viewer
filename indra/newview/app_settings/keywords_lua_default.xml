@@ -2056,6 +2056,15 @@ export type rotation = quaternion</string>
             <key>value</key>
             <string>4</string>
          </map>
+         <key>DATA_RESERVED_0</key>
+         <map>
+            <key>tooltip</key>
+            <string>Reserved for Linden use.</string>
+            <key>type</key>
+            <string>number</string>
+            <key>value</key>
+            <string>9</string>
+         </map>
          <key>DATA_SIM_POS</key>
          <map>
             <key>tooltip</key>
@@ -2235,7 +2244,7 @@ export type rotation = quaternion</string>
             <key>type</key>
             <string>string</string>
             <key>value</key>
-            <string>"\n\n\n"</string>
+            <string>"␊␊␊"</string>
          </map>
          <key>ERR_GENERIC</key>
          <map>
@@ -3560,7 +3569,7 @@ export type rotation = quaternion</string>
             <key>type</key>
             <string>string</string>
             <key>value</key>
-            <string>"\n\x15\n"</string>
+            <string>"␊␕␊"</string>
          </map>
          <key>NULL_KEY</key>
          <map>
@@ -17382,7 +17391,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -17414,7 +17423,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
             </array>
@@ -18596,7 +18605,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -18639,7 +18648,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -19010,7 +19019,7 @@ Returns true if result is non-zero.</string>
             <key>energy</key>
             <real>10.0</real>
             <key>return</key>
-            <string>list</string>
+            <string>{uuid}</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
@@ -20220,7 +20229,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -20252,7 +20261,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -20284,7 +20293,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
             </array>
@@ -20333,7 +20342,7 @@ Returns true if result is non-zero.</string>
             <key>energy</key>
             <real>10.0</real>
             <key>return</key>
-            <string>list</string>
+            <string>{string}</string>
             <key>sleep</key>
             <real>0.0</real>
             <key>tooltip</key>
@@ -22533,7 +22542,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -24095,7 +24104,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -24127,7 +24136,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -24159,7 +24168,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -24268,7 +24277,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -24347,7 +24356,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -24435,7 +24444,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -24523,7 +24532,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -25309,7 +25318,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -25341,7 +25350,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -25405,7 +25414,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
             </array>
@@ -28235,7 +28244,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -28308,7 +28317,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -28851,7 +28860,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -29103,7 +29112,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -29649,7 +29658,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -29701,7 +29710,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
             </array>
@@ -29795,7 +29804,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
             </array>
@@ -29860,7 +29869,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
             </array>
@@ -30516,7 +30525,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
@@ -30548,7 +30557,7 @@ Returns true if result is non-zero.</string>
                      <key>tooltip</key>
                      <string></string>
                      <key>type</key>
-                     <string>string</string>
+                     <string>string | uuid</string>
                   </map>
                </map>
                <map>
