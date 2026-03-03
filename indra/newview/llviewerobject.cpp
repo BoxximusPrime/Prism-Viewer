@@ -2767,9 +2767,10 @@ void LLViewerObject::doUpdateInventory(
 // If a template_id is provided, the new script will be a copy of that item.
 //
 // *IMPORTANT* If template_id is provided, it must be the ITEM ID of a
-// copy/mod-able script in the user's inventory.
+// copy/mod-able script in the user's inventory. The simulator will verify
+// permissions.
 void LLViewerObject::saveScript(const LLViewerInventoryItem* item,
-    bool active, bool is_new, U8 script_language, const LLUUID& template_id)
+    bool active, bool is_new, const LLUUID& template_id)
 {
     /*
      * XXXPAM Investigate not making this copy.  Seems unecessary, but I'm unsure about the
@@ -2799,11 +2800,11 @@ void LLViewerObject::saveScript(const LLViewerInventoryItem* item,
     msg->nextBlockFast(_PREHASH_InventoryBlock);
     task_item->packMessage(msg);
 
-    // This is a completely new script (no asset id)
-    if (task_item->getAssetUUID().isNull())
+    // This is a completely new script (no asset id) and we've provided a template.
+    // Note that the script subtype on the template will override any subtype on the item.
+    if (task_item->getAssetUUID().isNull() && template_id.notNull())
     {
         msg->nextBlock("NewScriptInfo");
-        msg->addU8("Type", script_language);
         msg->addUUID("TemplateID", template_id);
     }
 

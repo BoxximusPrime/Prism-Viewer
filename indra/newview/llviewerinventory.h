@@ -43,8 +43,6 @@ class LLInventoryCallback;
 class LLAvatarName;
 
 constexpr U8 NO_INV_SUBTYPE{ 0 };
-constexpr U8 LANG_ID_LSL = 0;
-constexpr U8 LANG_ID_LUA = 1;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Class LLViewerInventoryItem

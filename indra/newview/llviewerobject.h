@@ -549,9 +549,9 @@ public:
     // in the new one. This method should be called with the asset id
     // of the new and old script AFTER the bytecode has been saved.
     // The simulator treats the script as new when item->getAssetUUID().isNull() is true; in that case
-    // template_id will be used (if non-null) to copy an existing script asset, otherwise script_language
-    // is used to request an appropriate generic starting script.
-    void saveScript(const LLViewerInventoryItem* item, bool active, bool is_new, U8 script_language, const LLUUID& template_id);
+    // template_id will be used (if non-null) to copy an existing script asset, otherwise the
+    // script subtype in the item will be used to select the correct template.
+    void saveScript(const LLViewerInventoryItem* item, bool active, bool is_new, const LLUUID& template_id);
 
     // move an inventory item out of the task and into agent
     // inventory. This operation is based on messaging. No permissions

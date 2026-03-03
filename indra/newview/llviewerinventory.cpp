@@ -1739,7 +1739,7 @@ void create_new_item(const std::string& name,
                 region->getSimulatorFeatures(simulatorFeatures);
                 if (simulatorFeatures["LuaScriptsEnabled"].asBoolean())
                 {
-                    subtype = LANG_ID_LUA;
+                    subtype = SST_LUA;
                 }
             }
             break;

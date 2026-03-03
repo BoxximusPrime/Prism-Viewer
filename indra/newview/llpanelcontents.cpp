@@ -241,7 +241,7 @@ void LLPanelContents::onClickNewScript(void *userdata)
         std::string desc;
         LLViewerAssetType::generateDescriptionFor(LLAssetType::AT_LSL_TEXT, desc);
 
-        U8 script_language = LANG_ID_LSL;
+        U8 script_language = SST_LSL;
         LLUUID template_id;
 
         LLViewerRegion* region = object->getRegion();
@@ -251,7 +251,7 @@ void LLPanelContents::onClickNewScript(void *userdata)
             region->getSimulatorFeatures(simulatorFeatures);
             if (simulatorFeatures["LuaScriptsEnabled"].asBoolean())
             {
-                script_language = LANG_ID_LUA;
+                script_language = SST_LUA;
             }
         }
         // *TODO* Get a template ID and script_language based on user preferences.  Template ID is the inventory item UUID of a script
@@ -268,9 +268,9 @@ void LLPanelContents::onClickNewScript(void *userdata)
                 "New Script",
                 desc,
                 LLSaleInfo::DEFAULT,
-                LLInventoryItemFlags::II_FLAGS_NONE,
+                LLInventoryItemFlags::II_FLAGS_SUBTYPE_MASK & script_language,
                 time_corrected());
-        object->saveScript(new_item, true, true, script_language, template_id);
+        object->saveScript(new_item, true, true, template_id);
 
         std::string name = new_item->getName();
 
