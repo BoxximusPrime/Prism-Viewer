@@ -1666,8 +1666,6 @@ set(viewer_APPSETTINGS_FILES
     app_settings/grass.xml
     app_settings/ignorable_dialogs.xml
     app_settings/key_bindings.xml
-    app_settings/keywords_lsl_default.xml
-    app_settings/keywords_lua_default.xml
     app_settings/logcontrol.xml
     app_settings/settings.xml
     app_settings/settings_crash_behavior.xml
