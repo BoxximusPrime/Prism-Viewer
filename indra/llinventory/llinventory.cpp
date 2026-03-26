@@ -134,7 +134,7 @@ bool LLInventoryObject::getIsFavorite() const
     return mFavorite;
 }
 
-std::string LLInventoryObject::getRuntime() const
+const std::string& LLInventoryObject::getRuntime() const
 {
     return mRuntime;
 }
