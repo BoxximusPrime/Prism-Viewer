@@ -200,19 +200,21 @@ void LLInventoryObject::setFavorite(bool favorite)
 
 void LLInventoryObject::setRuntime(std::string_view runtime)
 {
-    if (getType() == LLAssetType::AT_LSL_TEXT)
-    {
-        mRuntime = runtime;
-    }
-    else
-    {
-        mRuntime.clear();
-    }
+    // Store the runtime unconditionally; it will be validated/cleared
+    // when the final asset type is known (see setType()).
+    mRuntime = runtime;
 }
 
 void LLInventoryObject::setType(LLAssetType::EType type)
 {
     mType = type;
+
+    // Only LSL text assets are expected to have a runtime; clear any
+    // previously stored runtime for other asset types.
+    if (mType != LLAssetType::AT_LSL_TEXT)
+    {
+        mRuntime.clear();
+    }
 }
 
 
@@ -1104,6 +1106,12 @@ bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
             if (script_map.has(w))
             {
                 mRuntime = script_map[w].asString();
+            }
+            else
+            {
+                // Clear any stale runtime when a script block is present
+                // but no explicit runtime value is provided.
+                mRuntime.clear();
             }
             continue;
         }
