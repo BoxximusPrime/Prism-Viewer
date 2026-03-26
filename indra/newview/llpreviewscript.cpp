@@ -2739,8 +2739,9 @@ void LLLiveLSLEditor::onCompileTargetChanged()
 {
     mScriptEd->mCompileTarget->setEnabled(have_script_upload_cap(mObjectUUID));
     mScriptEd->enableSave(getIsModifiable());
-
-    mScriptEd->processKeywords(mScriptEd->mCompileTarget->getValue().asString() == "luau");
+    bool is_lua = mScriptEd->mCompileTarget->getValue().asString() == "luau";
+    mScriptEd->mEditor->setLuauLanguage(is_lua);
+    mScriptEd->processKeywords(is_lua);
 }
 
 void LLLiveLSLEditor::setAssociatedExperience( LLHandle<LLLiveLSLEditor> editor, const LLSD& experience )

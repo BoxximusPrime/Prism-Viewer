@@ -1535,14 +1535,7 @@ bool LLInventoryCategory::importLegacyStream(std::istream& input_stream)
             {
                 setFavorite(false);
             }
-            if (metadata.has("script") && metadata["script"].has("runtime"))
-            {
-                setRuntime(metadata["script"]["runtime"].asString());
-            }
-            else
-            {
-                setRuntime(std::string());
-            }
+            setRuntime(std::string());
 
         }
         else
