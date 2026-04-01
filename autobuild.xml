@@ -1324,6 +1324,50 @@
         <key>name</key>
         <string>llphysicsextensions_tpv</string>
       </map>
+      <key>lsl_definitions</key>
+      <map>
+        <key>canonical_repo</key>
+        <string>https://github.com/secondlife/lsl-definitions</string>
+        <key>copyright</key>
+        <string>Copyright (c) 2026, Linden Lab</string>
+        <key>description</key>
+        <string>LSL definitions</string>
+        <key>license</key>
+        <string>MIT</string>
+        <key>license_file</key>
+        <string>LICENSES/lsl_definitions.txt</string>
+        <key>name</key>
+        <string>lsl_definitions</string>
+        <key>platforms</key>
+        <map>
+          <key>common</key>
+          <map>
+            <key>archive</key>
+            <map>
+              <key>hash</key>
+              <string>6e4e3b86f5daf6dc2e7d7b2b59deaaad293b7232</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
+              <key>url</key>
+              <string>https://github.com/secondlife/lsl-definitions/releases/download/v0.4.1/lsl_definitions-0.4.1-common-22871771849.tar.zst</string>
+            </map>
+            <key>name</key>
+            <string>common</string>
+          </map>
+        </map>
+        <key>source_type</key>
+        <string>git</string>
+        <key>use_scm_version</key>
+        <boolean>true</boolean>
+        <key>vcs_branch</key>
+        <string>refs/tags/v0.4.1</string>
+        <key>vcs_revision</key>
+        <string>03006fb488cba2bae502e9baed051bfc8d00144d</string>
+        <key>vcs_url</key>
+        <string>git://github.com/secondlife/lsl-definitions.git</string>
+        <key>version</key>
+        <string>0.4.1</string>
+      </map>
       <key>meshoptimizer</key>
       <map>
         <key>platforms</key>
@@ -2429,6 +2473,16 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
       </map>
       <key>webrtc</key>
       <map>
+        <key>canonical_repo</key>
+        <string>https://github.com/secondlife/3p-webrtc-build</string>
+        <key>copyright</key>
+        <string>Copyright (c) 2011, The WebRTC project authors. All rights reserved.</string>
+        <key>license</key>
+        <string>MIT</string>
+        <key>license_file</key>
+        <string>LICENSES/webrtc-license.txt</string>
+        <key>name</key>
+        <string>webrtc</string>
         <key>platforms</key>
         <map>
           <key>darwin64</key>
@@ -2436,11 +2490,11 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>a5e72a9d13b6c4646d1e02b5820f16560d204de7</string>
+              <string>7338377a9c6913bc8768d446fe627b8176bc89d4</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-webrtc-build/releases/download/m137.7151.04.21/webrtc-m137.7151.04.21.18609120431-darwin64-18609120431.tar.zst</string>
+              <string>https://github.com/secondlife/3p-webrtc-build/releases/download/m137.7151.04.23/webrtc-m137.7151.04.23.22004231636-darwin64-22004231636.tar.zst</string>
             </map>
             <key>name</key>
             <string>darwin64</string>
@@ -2450,11 +2504,11 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>1030e5086f401d738463223da3ed99c225340f39</string>
+              <string>a2df83ed8d7fc1374398d7a37633bae17f5d68a1</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-webrtc-build/releases/download/m137.7151.04.21/webrtc-m137.7151.04.21.18609120431-linux64-18609120431.tar.zst</string>
+              <string>https://github.com/secondlife/3p-webrtc-build/releases/download/m137.7151.04.23/webrtc-m137.7151.04.23.22004231636-linux64-22004231636.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux64</string>
@@ -2464,34 +2518,24 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>d1cae9bc8866ca01aa9f5e72b36d12ef608b1998</string>
+              <string>665c2447c794a88542fab30638f0013bea58480c</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-webrtc-build/releases/download/m137.7151.04.21/webrtc-m137.7151.04.21.18609120431-windows64-18609120431.tar.zst</string>
+              <string>https://github.com/secondlife/3p-webrtc-build/releases/download/m137.7151.04.23/webrtc-m137.7151.04.23.22004231636-windows64-22004231636.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows64</string>
           </map>
         </map>
-        <key>license</key>
-        <string>MIT</string>
-        <key>license_file</key>
-        <string>LICENSES/webrtc-license.txt</string>
-        <key>copyright</key>
-        <string>Copyright (c) 2011, The WebRTC project authors. All rights reserved.</string>
-        <key>version</key>
-        <string>m137.7151.04.21.18609120431</string>
-        <key>name</key>
-        <string>webrtc</string>
         <key>vcs_branch</key>
         <string>secondlife</string>
         <key>vcs_revision</key>
         <string>d3f62d32bac8694d3c7423c731ae30c113bf6a11</string>
         <key>vcs_url</key>
         <string>https://github.com/secondlife/3p-webrtc-build</string>
-        <key>canonical_repo</key>
-        <string>https://github.com/secondlife/3p-webrtc-build</string>
+        <key>version</key>
+        <string>m137.7151.04.23.22004231636</string>
       </map>
       <key>xxhash</key>
       <map>
@@ -2716,6 +2760,46 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
         <string>vhacd</string>
         <key>description</key>
         <string>Voxelized Hierarchical Approximate Convex Decomposition</string>
+      </map>
+      <key>websocketpp</key>
+      <map>
+        <key>platforms</key>
+        <map>
+          <key>common</key>
+          <map>
+            <key>archive</key>
+            <map>
+              <key>hash</key>
+              <string>a69aa37bfbcb934974f7af906f6dc6b044692f07</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
+              <key>url</key>
+              <string>https://github.com/secondlife/3p-websocketpp/releases/download/v0.8.2-r2/websocketpp-0.8.2.19586590594-common-19586590594.tar.zst</string>
+            </map>
+            <key>name</key>
+            <string>common</string>
+          </map>
+        </map>
+        <key>license</key>
+        <string>websocketpp</string>
+        <key>license_file</key>
+        <string>LICENSES/websocketpp.txt</string>
+        <key>copyright</key>
+        <string>Copyright (c) 2014, Peter Thorson</string>
+        <key>version</key>
+        <string>0.8.2.19586590594</string>
+        <key>name</key>
+        <string>websocketpp</string>
+        <key>vcs_branch</key>
+        <string>refs/tags/v0.8.2</string>
+        <key>vcs_revision</key>
+        <string>bdcf1453101976fc4dc26a62c87bc98c12e9c6dc</string>
+        <key>vcs_url</key>
+        <string>git://github.com/secondlife/3p-websocketpp.git</string>
+        <key>canonical_repo</key>
+        <string>https://github.com/secondlife/3p-websocketpp</string>
+        <key>description</key>
+        <string>WebSocket++ is a C++ header only library for interacting with WebSocket servers and clients.</string>
       </map>
     </map>
     <key>package_description</key>

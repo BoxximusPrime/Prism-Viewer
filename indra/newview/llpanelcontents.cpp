@@ -60,6 +60,7 @@
 #include "llviewerwindow.h"
 #include "llworld.h"
 #include "llfloaterperms.h"
+#include "llviewerassetupload.h"
 
 //
 // Imported globals
@@ -225,7 +226,7 @@ void LLPanelContents::onClickNewScript(void *userdata)
 {
     const bool children_ok = true;
     LLViewerObject* object = LLSelectMgr::getInstance()->getSelection()->getFirstRootObject(children_ok);
-    if(object)
+    if (object)
     {
         LLPermissions perm;
         perm.init(gAgent.getID(), gAgent.getID(), LLUUID::null, LLUUID::null);
@@ -239,6 +240,23 @@ void LLPanelContents::onClickNewScript(void *userdata)
             PERM_MOVE | LLFloaterPerms::getNextOwnerPerms("Scripts"));
         std::string desc;
         LLViewerAssetType::generateDescriptionFor(LLAssetType::AT_LSL_TEXT, desc);
+
+        U8 script_language = SST_LSL;
+        LLUUID template_id;
+
+        LLViewerRegion* region = object->getRegion();
+        if (region && region->simulatorFeaturesReceived())
+        {
+            LLSD simulatorFeatures;
+            region->getSimulatorFeatures(simulatorFeatures);
+            if (simulatorFeatures["LuaScriptsEnabled"].asBoolean())
+            {
+                script_language = SST_LUA;
+            }
+        }
+        // *TODO* Get a template ID and script_language based on user preferences.  Template ID is the inventory item UUID of a script
+        // in the user's inventory that is used as a template for new scripts.
+
         LLPointer<LLViewerInventoryItem> new_item =
             new LLViewerInventoryItem(
                 LLUUID::null,
@@ -250,9 +268,9 @@ void LLPanelContents::onClickNewScript(void *userdata)
                 "New Script",
                 desc,
                 LLSaleInfo::DEFAULT,
-                LLInventoryItemFlags::II_FLAGS_NONE,
+                LLInventoryItemFlags::II_FLAGS_SUBTYPE_MASK & script_language,
                 time_corrected());
-        object->saveScript(new_item, true, true);
+        object->saveScript(new_item, true, true, template_id);
 
         std::string name = new_item->getName();
 

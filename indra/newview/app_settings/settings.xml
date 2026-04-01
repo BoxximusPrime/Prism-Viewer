@@ -641,7 +641,7 @@
         <key>Type</key>
         <string>String</string>
         <key>Value</key>
-        <string>http://lecs-viewer-web-components.s3.amazonaws.com/v3.0/[GRID_LOWERCASE]/vawp/index.html</string>
+        <string>https://lecs-viewer-web-components.s3.amazonaws.com/v3.0/[GRID_LOWERCASE]/vawp/index.html</string>
     </map>
     <!--AvatarBakedTextureUploadTimeout is in use by QA-->
     <key>AvatarBakedTextureUploadTimeout</key>
@@ -2467,7 +2467,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>http://lecs-viewer-web-components.s3.amazonaws.com/v3.0/[GRID_LOWERCASE]/guide.html</string>
+      <string>https://lecs-viewer-web-components.s3.amazonaws.com/v3.0/[GRID_LOWERCASE]/guide.html</string>
     </map>
   <key>DisableCameraConstraints</key>
     <map>
@@ -2775,7 +2775,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>http://events.[GRID]/viewer/embed/event/[EVENT_ID]</string>
+      <string>https://events.[GRID]/viewer/embed/event/[EVENT_ID]</string>
     </map>
     <key>MainWorkTime</key>
     <map>
@@ -3432,7 +3432,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>http://viewer-help.secondlife.com/[LANGUAGE]/[CHANNEL]/[VERSION]/[TOPIC][DEBUG_MODE]</string>
+      <string>https://viewer-help.secondlife.com/[LANGUAGE]/[CHANNEL]/[VERSION]/[TOPIC][DEBUG_MODE]</string>
     </map>
     <key>HowToHelpURL</key>
     <map>
@@ -3443,7 +3443,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>http://lecs-viewer-web-components.s3.amazonaws.com/v3.0/[GRID_LOWERCASE]/howto/index.html</string>
+      <string>https://lecs-viewer-web-components.s3.amazonaws.com/v3.0/[GRID_LOWERCASE]/howto/index.html</string>
     </map>
     <key>HomeSidePanelURL</key>
     <map>
@@ -4059,7 +4059,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>http://wiki.secondlife.com/wiki/[LSL_STRING]</string>
+      <string>https://wiki.secondlife.com/wiki/[LSL_STRING]</string>
     </map>
     <key>LSLFontSizeName</key>
     <map>
@@ -4501,7 +4501,7 @@
         <key>Type</key>
         <string>F32</string>
         <key>Value</key>
-        <real>30.0</real>
+        <real>60.0</real>
     </map>
     <key>MapScale</key>
     <map>
@@ -13934,7 +13934,7 @@
       <key>Type</key>
       <string>S32</string>
       <key>Value</key>
-      <integer>1</integer>
+      <integer>0</integer>
     </map>
     <key>WaterGLFogDensityScale</key>
     <map>
@@ -14111,6 +14111,50 @@
       <string>String</string>
       <key>Value</key>
       <string />
+    </map>
+    <key>ExternalWebsocketSyncEnable</key>
+    <map>
+        <key>Comment</key>
+        <string>Enables the Websocket JSONRPC server when doing external script editing.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>Boolean</string>
+        <key>Value</key>
+        <integer>1</integer>
+    </map>
+    <key>ExternalWebsocketSyncPort</key>
+    <map>
+        <key>Comment</key>
+        <string>Port that the JSONRPC server listens on when editing</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>S32</string>
+        <key>Value</key>
+        <integer>9020</integer>
+    </map>
+    <key>ExternalWebsocketSyncLocal</key>
+    <map>
+        <key>Comment</key>
+        <string>Should the JSONRPC server listen only for local connections.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>Boolean</string>
+        <key>Value</key>
+        <integer>1</integer>
+    </map>
+    <key>ExternalWebsocketForwardDebug</key>
+    <map>
+        <key>Comment</key>
+        <string>Forward messages and runtime errors for a script to JSONRPC client.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>Boolean</string>
+        <key>Value</key>
+        <integer>1</integer>
     </map>
     <key>YawFromMousePosition</key>
     <map>
@@ -14765,7 +14809,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>http://common-flash-secondlife-com.s3.amazonaws.com/viewer/v2.6/agni/404.html</string>
+      <string>https://common-flash-secondlife-com.s3.amazonaws.com/viewer/v2.6/agni/404.html</string>
     </map>
     <key>OpenIMOnVoice</key>
     <map>
@@ -16611,6 +16655,17 @@
     <map>
       <key>Comment</key>
       <string>Whether or not to LRU purge the disk cache during startup on main thread</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>ScriptEditorDisableSyntaxHighlight</key>
+    <map>
+      <key>Comment</key>
+      <string>Disable syntax highlighting in script editor for performance testing</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>

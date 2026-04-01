@@ -346,6 +346,7 @@ LLFloaterPreference::LLFloaterPreference(const LLSD& key)
     mCommitCallbackRegistrar.add("Pref.RememberedUsernames",    boost::bind(&LLFloaterPreference::onClickRememberedUsernames, this));
     mCommitCallbackRegistrar.add("Pref.SpellChecker",           boost::bind(&LLFloaterPreference::onClickSpellChecker, this));
     mCommitCallbackRegistrar.add("Pref.Advanced",               boost::bind(&LLFloaterPreference::onClickAdvanced, this));
+    mCommitCallbackRegistrar.add("Pref.Scripting",              boost::bind(&LLFloaterPreference::onClickScriptingPerfs, this));
 
     sSkin = gSavedSettings.getString("SkinCurrent");
 
@@ -1742,6 +1743,22 @@ void LLFloaterPreference::onChangeMaturity()
                                                             || sim_access == SIM_ACCESS_ADULT);
 
     getChild<LLIconCtrl>("rating_icon_adult")->setVisible(sim_access == SIM_ACCESS_ADULT);
+
+    // Update Legacy Search maturity settings
+    bool can_access_mature = gAgent.canAccessMature();
+    bool can_access_adult  = gAgent.canAccessAdult();
+    if (!can_access_mature)
+    {
+        gSavedSettings.setBOOL("ShowMatureSims", false);
+        gSavedSettings.setBOOL("ShowMatureLand", false);
+        gSavedSettings.setBOOL("ShowMatureClassifieds", false);
+    }
+    if (!can_access_adult)
+    {
+        gSavedSettings.setBOOL("ShowAdultSims", false);
+        gSavedSettings.setBOOL("ShowAdultLand", false);
+        gSavedSettings.setBOOL("ShowAdultClassifieds", false);
+    }
 }
 
 void LLFloaterPreference::onChangeComplexityMode(const LLSD& newvalue)
@@ -1853,6 +1870,11 @@ void LLFloaterPreference::onClickAdvanced()
             panel->resetDirtyChilds();
         }
     }
+}
+
+void LLFloaterPreference::onClickScriptingPerfs()
+{
+    LLFloaterReg::showInstance("scripting_settings");
 }
 
 void LLFloaterPreference::onClickActionChange()

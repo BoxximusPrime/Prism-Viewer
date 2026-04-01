@@ -6724,11 +6724,8 @@ class LLAvatarEnableResetSkeleton : public view_listener_t
 {
     bool handleEvent(const LLSD& userdata)
     {
-        if (LLVOAvatar* avatar = find_avatar_from_object(LLSelectMgr::getInstance()->getSelection()->getPrimaryObject()))
-        {
-            return true;
-        }
-        return false;
+        LLViewerObject* obj = LLSelectMgr::getInstance()->getSelection()->getPrimaryObject();
+        return obj && obj->getAvatar();
     }
 };
 
@@ -7914,13 +7911,13 @@ class LLToolsSelectedScriptAction : public view_listener_t
     bool handleEvent(const LLSD& userdata)
     {
         std::string action = userdata.asString();
-        bool mono = false;
+        std::string target = "lsl2";
         std::string msg, name;
         std::string title;
         if (action == "compile mono")
         {
             name = "compile_queue";
-            mono = true;
+            target = "mono";
             msg = "Recompile";
             title = LLTrans::getString("CompileQueueTitle");
         }
@@ -7953,7 +7950,7 @@ class LLToolsSelectedScriptAction : public view_listener_t
         LLFloaterScriptQueue* queue =LLFloaterReg::getTypedInstance<LLFloaterScriptQueue>(name, LLSD(id));
         if (queue)
         {
-            queue->setMono(mono);
+            queue->setCompileTarget(target);
             if (queue_actions(queue, msg))
             {
                 queue->setTitle(title);
@@ -8773,6 +8770,12 @@ LLVOAvatar* find_avatar_from_object(LLViewerObject* object)
         }
         else if( !object->isAvatar() )
         {
+            // Check for animesh objects (animated objects with a control avatar)
+            LLVOAvatar* avatar = object->getAvatar();
+            if (avatar)
+            {
+                return avatar;
+            }
             object = NULL;
         }
     }

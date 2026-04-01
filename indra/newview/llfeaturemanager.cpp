@@ -494,7 +494,9 @@ bool LLFeatureManager::loadGPUClass()
         {
             mGPUClass = GPU_CLASS_2;
         }
-        else if (gbps <= class1_gbps*4.f)
+        else if ((gbps <= class1_gbps*4.f)
+                 // Cap silicon's GPUs at med+ as they have high throughput, low capability
+                 || gGLManager.mIsApple)
         {
             mGPUClass = GPU_CLASS_3;
         }
@@ -516,7 +518,7 @@ bool LLFeatureManager::loadGPUClass()
             // reduce quality on systems that don't have enough memory
             mGPUClass = (EGPUClass)(mGPUClass - 1);
         }
-    #endif //LL_WINDOWS
+    #endif //LL_WINDOWS || LL_LINUX
     } //end if benchmark
     else
     {
