@@ -140,7 +140,7 @@
 #include "llwindow.h"
 #include "llpathfindingmanager.h"
 #include "llstartup.h"
-#include "boost/unordered_map.hpp"
+#include <unordered_map>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/json.hpp>
@@ -153,7 +153,7 @@ using namespace LLAvatarAppearanceDefines;
 
 typedef LLPointer<LLViewerObject> LLViewerObjectPtr;
 
-static boost::unordered_map<std::string, LLStringExplicit> sDefaultItemLabels;
+static std::unordered_map<std::string, LLStringExplicit> sDefaultItemLabels;
 
 LLVOAvatar* find_avatar_from_object(LLViewerObject* object);
 LLVOAvatar* find_avatar_from_object(const LLUUID& object_id);
@@ -413,7 +413,23 @@ static LLSLMMenuUpdater* gSLMMenuUpdater = NULL;
 
 LLSLMMenuUpdater::LLSLMMenuUpdater()
 {
-    mMarketplaceListingsItem = gMenuHolder->getChild<LLView>("MarketplaceListings")->getHandle();
+    LLView* me_menu = gMenuHolder->findChild<LLView>("Me");
+    if (!me_menu)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find 'Me' menu in 'menu_viewer'" << LL_ENDL;
+        return;
+    }
+
+    LLView* marketplace_listings = me_menu->findChild<LLView>("MarketplaceListings");
+    if (!marketplace_listings)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find 'MarketplaceListings' in 'Me' menu" << LL_ENDL;
+        return;
+    }
+
+    mMarketplaceListingsItem = marketplace_listings->getHandle();
 }
 void LLSLMMenuUpdater::setMerchantMenu()
 {
@@ -473,6 +489,8 @@ void check_merchant_status(bool force)
 
 void init_menus()
 {
+    LL_PROFILE_ZONE_SCOPED;
+
     // Initialize actions
     initialize_menus();
 
@@ -549,7 +567,29 @@ void init_menus()
         color = LLUIColorTable::instance().getColor( "MenuNonProductionBgColor" );
     }
 
-    LLView* menu_bar_holder = gViewerWindow->getRootView()->getChildView("menu_bar_holder");
+    LLView* menu_stack = gViewerWindow->getMainView()->findChildView("menu_stack");
+    if (!menu_stack)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find menu_stack in main_view" << LL_ENDL;
+        return;
+    }
+
+    LLView* status_bar_container = menu_stack->findChildView("status_bar_container");
+    if (!status_bar_container)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find status_bar_container in main_view" << LL_ENDL;
+        return;
+    }
+
+    LLView* menu_bar_holder = status_bar_container->findChildView("menu_bar_holder");
+    if (!menu_bar_holder)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find status_bar_container in main_view" << LL_ENDL;
+        return;
+    }
 
     gMenuBarView = LLUICtrlFactory::getInstance()->createFromFile<LLMenuBarGL>("menu_viewer.xml", gMenuHolder, LLViewerMenuHolderGL::child_registry_t::instance());
     gMenuBarView->setRect(LLRect(0, menu_bar_holder->getRect().mTop, 0, menu_bar_holder->getRect().mTop - MENU_BAR_HEIGHT));
@@ -563,21 +603,39 @@ void init_menus()
     // *TODO:Also fix cost in llfolderview.cpp for Inventory menus
     const std::string sound_upload_cost_str = std::to_string(LLAgentBenefitsMgr::current().getSoundUploadCost());
     const std::string animation_upload_cost_str = std::to_string(LLAgentBenefitsMgr::current().getAnimationUploadCost());
-    gMenuHolder->childSetLabelArg("Upload Sound", "[COST]", sound_upload_cost_str);
-    gMenuHolder->childSetLabelArg("Upload Animation", "[COST]", animation_upload_cost_str);
+
+    LLView* main_upload_menu = gMenuHolder->findChild<LLView>("Upload");
+    if (!main_upload_menu)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find 'Upload' menu in 'menu_viewer'" << LL_ENDL;
+        return;
+    }
+
+    LLView* upload_sound = main_upload_menu->findChild<LLView>("Upload Sound");
+    if (!upload_sound)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find 'Upload Sound' menu item in 'Upload' menu" << LL_ENDL;
+        return;
+    }
+    upload_sound->setLabelArg("[COST]", sound_upload_cost_str);
+
+    LLView* upload_anim = main_upload_menu->findChild<LLView>("Upload Animation");
+    if (!upload_anim)
+    {
+        LLError::LLUserWarningMsg::showMissingFiles();
+        LL_ERRS() << "Can't find 'Upload Animation' menu item in 'Upload' menu" << LL_ENDL;
+        return;
+    }
+    upload_anim->setLabelArg("[COST]", animation_upload_cost_str);
+
 
     gAttachSubMenu = gMenuBarView->findChildMenuByName("Attach Object", true);
     gDetachSubMenu = gMenuBarView->findChildMenuByName("Detach Object", true);
 
     gDetachAvatarMenu = gMenuHolder->getChild<LLMenuGL>("Avatar Detach", true);
     gDetachHUDAvatarMenu = gMenuHolder->getChild<LLMenuGL>("Avatar Detach HUD", true);
-
-    // Don't display the Memory console menu if the feature is turned off
-    LLMenuItemCheckGL *memoryMenu = gMenuBarView->getChild<LLMenuItemCheckGL>("Memory", true);
-    if (memoryMenu)
-    {
-        memoryMenu->setVisible(false);
-    }
 
     gMenuBarView->createJumpKeys();
 
@@ -2963,7 +3021,7 @@ void handle_object_show_original()
 static void init_default_item_label(LLUICtrl* ctrl)
 {
     const std::string& item_name = ctrl->getName();
-    boost::unordered_map<std::string, LLStringExplicit>::iterator it = sDefaultItemLabels.find(item_name);
+    std::unordered_map<std::string, LLStringExplicit>::iterator it = sDefaultItemLabels.find(item_name);
     if (it == sDefaultItemLabels.end())
     {
         // *NOTE: This will not work for items of type LLMenuItemCheckGL because they return boolean value
@@ -2979,7 +3037,7 @@ static void init_default_item_label(LLUICtrl* ctrl)
 static LLStringExplicit get_default_item_label(const std::string& item_name)
 {
     LLStringExplicit res("");
-    boost::unordered_map<std::string, LLStringExplicit>::iterator it = sDefaultItemLabels.find(item_name);
+    std::unordered_map<std::string, LLStringExplicit>::iterator it = sDefaultItemLabels.find(item_name);
     if (it != sDefaultItemLabels.end())
     {
         res = it->second;
@@ -9692,6 +9750,8 @@ void initialize_spellcheck_menu()
 
 void initialize_menus()
 {
+    LL_PROFILE_ZONE_SCOPED;
+
     // A parameterized event handler used as ctrl-8/9/0 zoom controls below.
     class LLZoomer : public view_listener_t
     {

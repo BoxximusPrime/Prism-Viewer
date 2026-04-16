@@ -1064,10 +1064,9 @@ bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
         if (i->first == INV_THUMBNAIL_LABEL)
         {
             const LLSD &thumbnail_map = i->second;
-            const std::string w = INV_ASSET_ID_LABEL;
-            if (thumbnail_map.has(w))
+            if (thumbnail_map.has(INV_ASSET_ID_LABEL))
             {
-                mThumbnailUUID = thumbnail_map[w];
+                mThumbnailUUID = thumbnail_map[INV_ASSET_ID_LABEL];
             }
             /* Example:
                 <key> asset_id </key>
@@ -1080,7 +1079,7 @@ bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
                 <integer> 1 </key>
             */
           continue;
-      }
+        }
 
         if (i->first == INV_THUMBNAIL_ID_LABEL)
         {
@@ -1091,10 +1090,9 @@ bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
         if (i->first == INV_FAVORITE_LABEL)
         {
             const LLSD& favorite_map = i->second;
-            const std::string w = INV_TOGGLED_LABEL;
-            if (favorite_map.has(w))
+            if (favorite_map.has(INV_TOGGLED_LABEL))
             {
-                mFavorite = favorite_map[w].asBoolean();
+                mFavorite = favorite_map[INV_TOGGLED_LABEL].asBoolean();
             }
             continue;
         }
@@ -1175,7 +1173,7 @@ bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
             LLSD const &label = i->second;
             if (label.isString())
             {
-                mType = LLAssetType::lookup(label.asString().c_str());
+                mType = LLAssetType::lookup(label.asStringRef().c_str());
             }
             else if (label.isInteger())
             {
@@ -1190,7 +1188,7 @@ bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
             LLSD const &label = i->second;
             if (label.isString())
             {
-                mInventoryType = LLInventoryType::lookup(label.asString().c_str());
+                mInventoryType = LLInventoryType::lookup(label.asStringRef().c_str());
             }
             else if (label.isInteger())
             {
@@ -1354,7 +1352,7 @@ void LLInventoryCategory::packMessage(LLMessageSystem* msg) const
 
 bool LLInventoryCategory::fromLLSD(const LLSD& sd)
 {
-    std::string w;
+    std::string_view w;
 
     w = INV_FOLDER_ID_LABEL_WS;
     if (sd.has(w))
