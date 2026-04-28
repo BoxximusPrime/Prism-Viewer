@@ -73,7 +73,7 @@ LLWebsocketMgr::WSConnection::ptr_t LLScriptEditorWSServer::connectionFactory(LL
 
 void LLScriptEditorWSServer::onStarted()
 {
-    LLSyntaxIdLSL& syntax_id_mgr = LLSyntaxIdLSL::instance();
+    LLSyntaxDefCache& syntax_id_mgr = LLSyntaxDefCache::instance();
     wptr_t that(std::static_pointer_cast<LLScriptEditorWSServer>(shared_from_this()));
 
     mLastSyntaxId = syntax_id_mgr.getSyntaxID();
@@ -302,7 +302,7 @@ void LLScriptEditorWSServer::setupConnectionMethods(LLJSONRPCConnection::ptr_t c
 
 void LLScriptEditorWSServer::broadcastLanguageChange()
 {
-    LLUUID syntax_id = LLSyntaxIdLSL::instance().getSyntaxID();
+    LLUUID syntax_id = LLSyntaxDefCache::instance().getSyntaxID();
 
     if (syntax_id != mLastSyntaxId)
     {
@@ -340,12 +340,12 @@ LLSD LLScriptEditorWSServer::handleSyntaxRequest(const LLSD& params) const
     response["id"] = mLastSyntaxId;
     if (category == "defs.lua")
     {
-        response["defs"] = LLSyntaxLua::instance().getTypesXML();
+        response["defs"] = LLSyntaxDefCache::instance().getLuaKeywords();
         response["success"] = response["defs"].isDefined();
     }
     else if (category == "defs.lsl")
     {
-        response["defs"] = LLSyntaxIdLSL::instance().getKeywordsXML();
+        response["defs"] = LLSyntaxDefCache::instance().getLSLKeywords();
         response["success"] = response["defs"].isDefined();
     }
     else
@@ -710,7 +710,7 @@ void LLScriptEditorWSConnection::onOpen()
     languages.append("lsl");
     languages.append("luau");
     handshake["languages"] = languages;
-    handshake["syntax_id"] = LLSyntaxIdLSL::instance().getSyntaxID();
+    handshake["syntax_id"] = LLSyntaxDefCache::instance().getSyntaxID();
 
     // Features object
     LLSD features;

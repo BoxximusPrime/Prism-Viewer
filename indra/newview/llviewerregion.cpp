@@ -3325,6 +3325,7 @@ void LLViewerRegionImpl::buildCapabilityNames(LLSD& capabilityNames)
     capabilityNames.append("ViewerMetrics");
     capabilityNames.append("ViewerStartAuction");
     capabilityNames.append("ViewerStats");
+    capabilityNames.append("ScriptDefinitions");
 
     // Please add new capabilities alphabetically to reduce
     // merge conflicts.
