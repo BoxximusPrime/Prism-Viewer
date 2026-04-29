@@ -3291,6 +3291,7 @@ void LLViewerRegionImpl::buildCapabilityNames(LLSD& capabilityNames)
     capabilityNames.append("RequestTextureDownload");
     capabilityNames.append("ResourceCostSelected");
     capabilityNames.append("RetrieveNavMeshSrc");
+    capabilityNames.append("ScriptDefinitions");
     capabilityNames.append("SearchStatRequest");
     capabilityNames.append("SearchStatTracking");
     capabilityNames.append("SendPostcard");
@@ -3325,7 +3326,6 @@ void LLViewerRegionImpl::buildCapabilityNames(LLSD& capabilityNames)
     capabilityNames.append("ViewerMetrics");
     capabilityNames.append("ViewerStartAuction");
     capabilityNames.append("ViewerStats");
-    capabilityNames.append("ScriptDefinitions");
 
     // Please add new capabilities alphabetically to reduce
     // merge conflicts.
