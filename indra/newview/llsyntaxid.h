@@ -25,8 +25,7 @@
  * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
-#ifndef LL_SYNTAXID_H
-#define LL_SYNTAXID_H
+#pragma once
 
 #include "llviewerprecompiledheaders.h"
 
@@ -122,7 +121,7 @@ private:
     static bool isSupportedVersion(const LLSD& content);
     void        handleRegionChanged();
     void        handleCapsReceived(const LLUUID& region_uuid);
-    void        setKeywords(const LLSD& lsl, const LLSD& lua) { mLSLKeywords = lsl; mLuaKeywords = lua; }; 
+    void        setKeywords(const LLSD& lsl, const LLSD& lua) { mLSLKeywords = lsl; mLuaKeywords = lua; };
 
     void        loadKeywordsIntoLLSD();
 
@@ -148,5 +147,3 @@ private:
     LLSD                        mLuaKeywords;
     bool                        mUseDefsCap{ false };
 };
-
-#endif // LLSYNTAXID_H

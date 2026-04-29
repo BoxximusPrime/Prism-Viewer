@@ -35,6 +35,7 @@
 #include "llviewerregion.h"
 #include "llcorehttputil.h"
 
+
 //-----------------------------------------------------------------------------
 // LLSyntaxIdLSL
 //-----------------------------------------------------------------------------
@@ -226,7 +227,7 @@ void LLSyntaxDefCache::fetchKeywordsFileCoro(std::string url, LLUUID syntax_id)
         // to the default versions, so below, where we get the path to the lua keywords
         // well be loading the default version.
         buildDefaultCache();
-        
+
         // The LSL keywords we just received
         std::string full_path = gDirUtilp->add(path, FILENAME_INTERNAL_LSL);
         if (writeCacheFile(full_path, result))
