@@ -127,7 +127,7 @@ interface SessionHandshake {
 - `features`: Dictionary of feature flags indicating viewer capabilities. Known flags:
   - `live_sync`: Viewer supports live script synchronisation with the external editor
   - `compilation`: Viewer will forward compilation results via `script.compiled`
-  - `syntax__cache`: Viewer supports `language.syntax.cache` and `language.syntax.get` for retrieving syntax definition files
+  - `syntax_cache`: Viewer supports `language.syntax.cache` and `language.syntax.get` for retrieving syntax definition files
 
 ### SessionHandshakeResponse
 

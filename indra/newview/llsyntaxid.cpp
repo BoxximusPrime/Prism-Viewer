@@ -411,14 +411,14 @@ std::string LLSyntaxDefCache::buildCacheDirectoryName(const LLUUID& syntax_id)
     if (syntax_id.isNull())
     {
         LL_DEBUGS("SyntaxLSL") << "No SyntaxID, using app settings directory." << LL_ENDL;
-        return gDirUtilp->getExpandedFilename(LL_PATH_CACHE, "syntax_default");
+        return gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "syntax_default");
     }
     else
     {
         LL_DEBUGS("SyntaxLSL") << "Using cache directory for SyntaxID '" << syntax_id << "'." << LL_ENDL;
         std::string cache_dir_name = "syntax_" + syntax_id.asString();
 
-        return gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, cache_dir_name);
+        return gDirUtilp->getExpandedFilename(LL_PATH_CACHE, cache_dir_name);
     }
 }
 
