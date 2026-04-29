@@ -80,6 +80,9 @@ public:
         void            clear() { mNamePathMap.clear(); }
         bool            empty() const { return mNamePathMap.empty(); }
 
+        iterator        find(const std::string &name) { return mNamePathMap.find(name); }
+        const_iterator  find(const std::string &name) const { return mNamePathMap.find(name); }
+
     private:
         name_path_map_t mNamePathMap;
     };
@@ -93,6 +96,21 @@ public:
     bool                        checkCacheAndLoad(const LLUUID& syntax_id);
 
     static std::string          buildCacheDirectoryName(const LLUUID& syntax_id);
+
+    using const_iterator = cache_names_t::const_iterator;
+
+    const_iterator  begin() const { return mFileCachePaths.begin(); }
+    const_iterator  end() const { return mFileCachePaths.end(); }
+
+    size_t          size() const { return mFileCachePaths.size(); }
+    bool            empty() const { return mFileCachePaths.empty(); }
+
+    const_iterator  find(const std::string& name) const { return mFileCachePaths.find(name); }
+
+    std::vector<std::string> getCacheFileNames() const;
+    bool                     hasCacheFile(const std::string& name) const { return mFileCachePaths.hasName(name); }
+    std::string              loadCacheFile(const std::string& name) const;
+    LLSD                     loadCacheFileAsLLSD(const std::string& name) const;
 
 protected:
     void        initSingleton() override;

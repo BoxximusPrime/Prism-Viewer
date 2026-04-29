@@ -506,6 +506,16 @@ void LLSyntaxDefCache::loadKeywordsIntoLLSD()
     mSyntaxIDChangedSignal();
 }
 
+std::vector<std::string> LLSyntaxDefCache::getCacheFileNames() const
+{
+    std::vector<std::string> names;
+    for (const auto& [name, path] : mFileCachePaths)
+    {
+        names.push_back(name);
+    }
+    return names;
+}
+
 LLSD LLSyntaxDefCache::loadDeserializedCacheFile(const std::string& file_path)
 {
     std::ifstream file(file_path.c_str());
@@ -524,3 +534,32 @@ LLSD LLSyntaxDefCache::loadDeserializedCacheFile(const std::string& file_path)
     return LLSD();
 }
 
+std::string LLSyntaxDefCache::loadCacheFile(const std::string& name) const
+{
+    std::string full_path = mFileCachePaths.getPath(name);
+    if (!full_path.empty())
+    {
+        std::ifstream file(full_path.c_str());
+        if (file.good())
+        {
+            std::ostringstream ss;
+            ss << file.rdbuf();
+            return (file.good()) ? ss.str() : std::string();
+        }
+        else
+        {
+            LL_WARNS("SyntaxLSL") << "Failed to open cached file: " << full_path << LL_ENDL;
+        }
+    }
+    return std::string();
+}
+
+LLSD LLSyntaxDefCache::loadCacheFileAsLLSD(const std::string& name) const
+{
+    std::string full_path = mFileCachePaths.getPath(name);
+    if (!full_path.empty())
+    {
+        return loadDeserializedCacheFile(full_path);
+    }
+    return LLSD();
+}
