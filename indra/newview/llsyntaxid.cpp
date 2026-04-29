@@ -167,19 +167,19 @@ void LLSyntaxDefCache::fetchKeywords()
     }
     if (mUseDefsCap)
     {
-        LLCoros::instance().launch("LLSyntaxIdLSL::fetchKeywordsDefsCoro",
+        LLCoros::instance().launch("LLSyntaxDefCache::fetchKeywordsDefsCoro",
             boost::bind(&LLSyntaxDefCache::fetchKeywordsDefsCoro, this, mCapabilityURL, mSyntaxId));
     }
     else
     {
-        LLCoros::instance().launch("LLSyntaxIdLSL::fetchKeywordsFileCoro",
+        LLCoros::instance().launch("LLSyntaxDefCache::fetchKeywordsFileCoro",
             boost::bind(&LLSyntaxDefCache::fetchKeywordsFileCoro, this, mCapabilityURL, mSyntaxId));
     }
 }
 
 //-----------------------------------------------------------------------------
 // fetchKeywordsFileCoro
-// This uses the legacy languge cap which only sends the LSL keywords file.
+// This uses the legacy language cap which only sends the LSL keywords file.
 void LLSyntaxDefCache::fetchKeywordsFileCoro(std::string url, LLUUID syntax_id)
 {
     LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
@@ -324,7 +324,7 @@ void LLSyntaxDefCache::fetchKeywordsDefsCoro(std::string url, LLUUID syntax_id)
 
     result.erase(LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS);
 
-    setKeywords(memcached_keywords["lsl_keywords.xml"], memcached_keywords["lua_keywords.xml"]);
+    setKeywords(memcached_keywords[FILENAME_INTERNAL_LSL], memcached_keywords[FILENAME_INTERNAL_LUA]);
     LLAppViewer::instance()->postToMainCoro(
         [this]()
         {
@@ -363,8 +363,10 @@ void LLSyntaxDefCache::buildCachePaths(const LLUUID &syntax_id)
 
 bool LLSyntaxDefCache::writeCacheFile(const std::string &fileSpec, const LLSD& content_ref)
 {
-    bool          binary(content_ref.isBinary());
-    std::ofstream file(fileSpec.c_str(), (binary)? std::ios_base::binary : 0);
+    bool                    binary(content_ref.isBinary());
+    std::ios_base::openmode mode(binary ? (std::ios_base::out | std::ios_base::binary)
+                                        : std::ios_base::out);
+    std::ofstream           file(fileSpec.c_str(), mode);
 
     if (!file.is_open())
     {
