@@ -3291,6 +3291,7 @@ void LLViewerRegionImpl::buildCapabilityNames(LLSD& capabilityNames)
     capabilityNames.append("RequestTextureDownload");
     capabilityNames.append("ResourceCostSelected");
     capabilityNames.append("RetrieveNavMeshSrc");
+    capabilityNames.append("ScriptDefinitions");
     capabilityNames.append("SearchStatRequest");
     capabilityNames.append("SearchStatTracking");
     capabilityNames.append("SendPostcard");
