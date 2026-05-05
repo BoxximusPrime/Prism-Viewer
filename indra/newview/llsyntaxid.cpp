@@ -45,7 +45,7 @@ namespace
     const std::string SYNTAX_DEF_CAPABILITY_NAME  = "ScriptDefinitions";
     const std::string SYNTAX_ID_SIMULATOR_FEATURE = "LSLSyntaxId";
     const std::string FILENAME_INTERNAL_LSL        = "lsl_keywords.xml";
-    const std::string FILENAME_INTERNAL_LUA        = "slua_keywords.xml";
+    const std::string FILENAME_INTERNAL_LUA        = "lua_keywords.xml";
 
     constexpr U32     LLSD_SYNTAX_LSL_VERSION_EXPECTED = 2;
     const std::string LLSD_SYNTAX_LSL_VERSION_KEY("llsd-lsl-syntax-version");
