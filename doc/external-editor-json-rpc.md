@@ -284,14 +284,14 @@ interface SyntaxCacheList {
 | -------------------------------- | ---------------------------------------------------- |
 | `builtins.txt`                   | LSL built-in keyword list in plain text format |
 | `lsl_definitions.yaml`           | LSL language definitions in YAML format |
-| `lsl_keywords.xml`               | LSL keyword definitions in LLSD XML format |
+| `lsl_keywords.xml`               | LSL keyword definitions in LLSD XML format. Used by the viewer's script editor |
 | `lsl_keywords_pretty.xml`        | LSL keyword definitions in formatted LLSD XML format |
-| `slua_default.d.luau`            | Luau type definition file for editor tooling |
-| `slua_default.docs.json`         | Luau documentation data in JSON format |
+| `secondlife.d.luau`              | Luau type definition file. Used by luau-lsp |
+| `secondlife.docs.json`           | Luau documentation data in JSON format. Used by luau-lsp |
 | `slua_definitions.yaml`          | Luau language definitions in YAML format |
-| `slua_keywords.xml`              | Luau keyword definitions in LLSD XML format |
-| `slua_keywords_pretty.xml`       | Luau keyword definitions in formatted LLSD XML format |
-| `slua_selene.yml`                | Luau Selene linter configuration in YAML format |
+| `lua_keywords.xml`               | Luau keyword definitions in LLSD XML format. Used by the viewer's script editor |
+| `lua_keywords_pretty.xml`        | Luau keyword definitions in formatted LLSD XML format |
+| `secondlife_selene.yml`          | Luau Selene linter configuration in YAML format |
 
 Not all files may be present in every cache — the actual list returned by `language.syntax.cache` reflects only what is available on the viewer's local filesystem at the time of the request.
 
