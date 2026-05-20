@@ -4208,27 +4208,6 @@ void LLAppViewer::processMarkerFiles()
     }
     else
     {
-        // so only check watchdog marker if there is no error marker.
-        if (LLAPRFile::isExist(watchdog_marker_file, NULL, LL_APR_RB))
-        {
-            if (LAST_EXEC_UNKNOWN == gLastExecEvent
-                || LAST_EXEC_LOGOUT_UNKNOWN == gLastExecEvent)
-            {
-                // watchdog marker gets created if we detect a freeze,
-                // so if viwer did not stop gracefully, and we know it wasn't a crash,
-                // we have no other info, check watchdog.
-                if (markerIsSameVersion(watchdog_marker_file))
-                {
-                    gLastExecEvent = LAST_EXEC_UNKNOWN == gLastExecEvent ? LAST_EXEC_FROZE : LAST_EXEC_LOGOUT_FROZE;
-                    LL_INFOS("MarkerFile") << "Watchdog marker '" << watchdog_marker_file << "' found, setting LastExecEvent to FROZE"
-                        << LL_ENDL;
-                }
-            }
-            removeWatchdogMarker();
-        }
-    }
-    else
-    {
         if (LAST_EXEC_UNKNOWN == gLastExecEvent
             || LAST_EXEC_LOGOUT_UNKNOWN == gLastExecEvent)
         {
