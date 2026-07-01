@@ -3144,7 +3144,11 @@ static void apply_localized_comments(LLControlGroup& group, const LLSD& comments
         LLControlVariablePtr control = group.getControl(it->first);
         if (control.notNull())
         {
-            control->setComment(it->second.asString());
+            const std::string comment = it->second.asString();
+            if (!comment.empty())
+            {
+                control->setComment(comment);
+            }
         }
     }
 }
