@@ -133,6 +133,8 @@ protected:
     void renderText();
     static void updateAll();
     S32 getMaxLines();
+    F32 getLayoutScale() const;
+    F32 getDrawScale() const;
 
 private:
     ~LLHUDText();

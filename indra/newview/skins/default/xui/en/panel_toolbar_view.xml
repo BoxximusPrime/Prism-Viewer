@@ -78,7 +78,7 @@
               width="160"/>
         <panel follows="left|top|right"
                layout="topleft"
-               height="30"
+               height="64"
                left_pad="10"
                mouse_opaque="false"
                name="chiclet_container"
@@ -131,11 +131,39 @@
                 height="30"
                 width="1024"
                 mouse_opaque="false">
+    <chat_bar
+          background_visible="true"
+          bg_alpha_color="DkGray2"
+          bottom="-1"
+          follows="left|bottom"
+          height="31"
+          layout="topleft"
+          left="0"
+          name="compact_nearby_chat"
+          visible="true"
+          width="380">
+      <line_editor
+            border_style="line"
+            border_thickness="1"
+            follows="all"
+            height="25"
+            label="Nearby chat"
+            layout="topleft"
+            left="3"
+            max_length_bytes="1023"
+            name="Chat Editor"
+            spellcheck="true"
+            text_pad_left="6"
+            tool_tip="Enter to say, Ctrl+Enter to shout, Shift+Enter to whisper, Escape to clear"
+            top="3"
+            width="374" />
+      <button name="Say" visible="false" />
+    </chat_bar>
     <toolbar layout="topleft"
              button_panel.bg_opaque_image="Rounded_Rect_Top"
              name="toolbar_bottom"
              height="30"
-             left="40"
+             left="380"
              right="-40"
              top="0"
              side="bottom"

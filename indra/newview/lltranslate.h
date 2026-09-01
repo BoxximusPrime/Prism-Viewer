@@ -57,6 +57,7 @@ public :
         SERVICE_AZURE,
         SERVICE_GOOGLE,
         SERVICE_DEEPL,
+        SERVICE_OPENAI,
     } EService;
 
     typedef std::function<void(EService, bool, S32)> KeyVerificationResult_fn;
@@ -74,6 +75,17 @@ public :
     static void translateMessage(const std::string &from_lang, const std::string &to_lang, const std::string &mesg, TranslationSuccess_fn success, TranslationFailure_fn failure);
 
     /**
+     * Handle an outgoing command of the form "/tr language text".
+     *
+     * @return true when mesg is a translation command, including malformed
+     *         commands reported through failure; false for ordinary chat.
+     */
+    static bool translateChatCommand(const std::string& mesg,
+                                     TranslationSuccess_fn success,
+                                     TranslationFailure_fn failure,
+                                     std::string* original_text = nullptr);
+
+    /**
      * Verify given API key of a translation service.
      *
      * @param receiver  Object to pass verification result to.
@@ -85,6 +97,8 @@ public :
      * @return translation target language
      */
     static std::string getTranslateLanguage();
+
+    static EService getCurrentService();
 
     /**
      * @return true if translation is configured properly.

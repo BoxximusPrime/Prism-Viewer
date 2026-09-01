@@ -169,6 +169,7 @@ void LLMotionController::incMotionCounts(S32& num_motions, S32& num_loading_moti
 void LLMotionController::deleteAllMotions()
 {
     mLoadingMotions.clear();
+    mLoadingMotionStartTimes.clear();
     mLoadedMotions.clear();
     mActiveMotions.clear();
 
@@ -329,6 +330,7 @@ void LLMotionController::removeMotionInstance(LLMotion* motionp)
         if (motionp->isActive())
             motionp->deactivate();
         mLoadingMotions.erase(motionp);
+        mLoadingMotionStartTimes.erase(motionp);
         mLoadedMotions.erase(motionp);
         mActiveMotions.remove(motionp);
         delete motionp;
@@ -389,7 +391,7 @@ LLMotion* LLMotionController::createMotion( const LLUUID &id )
 //-----------------------------------------------------------------------------
 // startMotion()
 //-----------------------------------------------------------------------------
-bool LLMotionController::startMotion(const LLUUID &id, F32 start_offset)
+bool LLMotionController::startMotion(const LLUUID& id, F32 start_offset, bool sync_loading)
 {
     // do we have an instance of this motion for this character?
     LLMotion *motion = findMotion(id);
@@ -423,8 +425,22 @@ bool LLMotionController::startMotion(const LLUUID &id, F32 start_offset)
         return true;
     }
 
+    const F32 activation_time = mAnimTime - start_offset;
+
+    if (isMotionLoading(motion))
+    {
+        if (sync_loading)
+        {
+            mLoadingMotionStartTimes[motion] = activation_time;
+        }
+        else
+        {
+            mLoadingMotionStartTimes.erase(motion);
+        }
+    }
+
 //  LL_INFOS() << "Starting motion " << name << LL_ENDL;
-    return activateMotionInstance(motion, mAnimTime - start_offset);
+    return activateMotionInstance(motion, activation_time);
 }
 
 
@@ -777,12 +793,19 @@ void LLMotionController::updateLoadingMotions()
         if (status == LLMotion::STATUS_SUCCESS)
         {
             mLoadingMotions.erase(curiter);
+            F32 activation_time = mAnimTime;
+            auto start_time_it = mLoadingMotionStartTimes.find(motionp);
+            if (start_time_it != mLoadingMotionStartTimes.end())
+            {
+                activation_time = start_time_it->second;
+                mLoadingMotionStartTimes.erase(start_time_it);
+            }
             // add motion to our loaded motion list
             mLoadedMotions.insert(motionp);
             // this motion should be playing
             if (!motionp->isStopped())
             {
-                activateMotionInstance(motionp, mAnimTime);
+                activateMotionInstance(motionp, activation_time);
             }
         }
         else if (status == LLMotion::STATUS_FAILURE)
@@ -790,6 +813,7 @@ void LLMotionController::updateLoadingMotions()
             LL_INFOS() << "Motion " << motionp->getID() << " init failed." << LL_ENDL;
             sRegistry.markBad(motionp->getID());
             mLoadingMotions.erase(curiter);
+            mLoadingMotionStartTimes.erase(motionp);
             motion_set_t::iterator found_it = mDeprecatedMotions.find(motionp);
             if (found_it != mDeprecatedMotions.end())
             {
@@ -901,17 +925,37 @@ void LLMotionController::updateMotions(bool force_update)
 // updateMotionsMinimal()
 // minimal update (e.g. while hidden)
 //-----------------------------------------------------------------------------
-void LLMotionController::updateMotionsMinimal()
+void LLMotionController::updateMotionsMinimal(bool advance_time)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
     // Always update mPrevTimerElapsed
-    mPrevTimerElapsed = mTimer.getElapsedTimeF32();
+    F32 cur_time = mTimer.getElapsedTimeF32();
+    F32 delta_time = cur_time - mPrevTimerElapsed;
+    mPrevTimerElapsed = cur_time;
+    mLastTime = mAnimTime;
+
+    // BoxxyViewer animation syncing keeps the controller clock running for
+    // hidden and impostored avatars, but deliberately skips pose evaluation.
+    // Explicit animation pauses still freeze the clock.
+    if (advance_time && !mPaused)
+    {
+        mAnimTime += delta_time * mTimeFactor;
+    }
 
     purgeExcessMotions();
     updateLoadingMotions();
     resetJointSignatures();
 
-    deactivateStoppedMotions();
+    if (advance_time)
+    {
+        // Retire finite animations and their ease-out periods using the
+        // advanced clock without doing any joint work.
+        updateIdleActiveMotions();
+    }
+    else
+    {
+        deactivateStoppedMotions();
+    }
 
     mHasRunOnce = true;
 }

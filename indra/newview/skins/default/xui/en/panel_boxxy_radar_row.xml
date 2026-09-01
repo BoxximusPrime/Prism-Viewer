@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<panel
+ follows="left|right|top"
+ height="30"
+ layout="topleft"
+ left="0"
+ mouse_opaque="true"
+ name="boxxy_radar_row"
+ top="0"
+ width="340">
+  <icon
+   name="hovered_icon"
+   follows="all"
+   left="0"
+   right="0"
+   top="0"
+   height="30"
+   image_name="ListItem_Over"
+   mouse_opaque="false"
+   visible="false" />
+  <text
+   name="avatar_name"
+   follows="left|right|top"
+   left="10"
+   right="-112"
+   top="7"
+   height="18"
+   font="SansSerifSmall"
+   mouse_opaque="false"
+   parse_urls="false"
+   use_ellipses="true"
+   value="(loading...)" />
+  <output_monitor
+   name="voice_indicator"
+   follows="right|top"
+   right="-86"
+   top="7"
+   width="18"
+   height="16"
+   auto_update="true"
+   draw_border="false"
+   mouse_opaque="false"
+   tool_tip="Voice level"
+   visible="false" />
+  <icon
+   name="typing_icon"
+   follows="right|top"
+   right="-66"
+   top="7"
+   width="16"
+   height="16"
+   image_name="BoxxyRadar_Typing_Icon"
+   mouse_opaque="false"
+   tool_tip="Typing"
+   visible="false" />
+  <text
+   name="distance"
+   follows="right|top"
+   right="-8"
+   top="7"
+   width="55"
+   height="18"
+   font="SansSerifSmall"
+   font.style="BOLD"
+   halign="right"
+   mouse_opaque="false"
+   text_color="LabelTextColor"
+   value="0.0 yd" />
+  <view_border
+   name="row_divider"
+   follows="left|right|bottom"
+   left="8"
+   right="-8"
+   bottom="0"
+   height="0"
+   bevel_style="in"
+   mouse_opaque="false" />
+</panel>

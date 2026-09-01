@@ -94,7 +94,8 @@ public:
                         const std::string& time,
                         const bool is_history,
                         const bool is_region_msg,
-                        U32 timestamp);
+                        U32 timestamp,
+                        const LLUUID& translation_id = LLUUID::null);
 
         void onVoiceChannelStateChanged(const LLVoiceChannel::EState& old_state, const LLVoiceChannel::EState& new_state, const LLVoiceChannel::EDirection& direction);
 
@@ -241,13 +242,19 @@ public:
                     const std::string& utf8_text,
                     bool log2file,
                     bool is_region_msg,
-                    U32 time_stamp);
+                    U32 time_stamp,
+                    const LLUUID& translation_id = LLUUID::null);
 
     /**
      * Similar to addMessage(...) above but won't send a signal about a new message added
      */
     LLIMModel::LLIMSession* addMessageSilently(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
-        const std::string& utf8_text, bool log2file = true, bool is_region_msg = false, U32 timestamp = 0);
+        const std::string& utf8_text, bool log2file = true, bool is_region_msg = false, U32 timestamp = 0,
+        const LLUUID& translation_id = LLUUID::null);
+
+    void updateTranslatedMessage(const LLUUID& session_id, const LLUUID& translation_id,
+                                 const std::string& text, const std::string& translated_text,
+                                 bool log2file);
 
     /**
      * Add a system message to an IM Model
@@ -302,7 +309,8 @@ public:
                           const uuid_vec_t& ids, EInstantMessage dialog, bool p2p_as_adhoc_call);
     static void sendTypingState(LLUUID session_id, LLUUID other_participant_id, bool typing);
     static void sendMessage(const std::string& utf8_text, const LLUUID& im_session_id,
-                                const LLUUID& other_participant_id, EInstantMessage dialog);
+                            const LLUUID& other_participant_id, EInstantMessage dialog,
+                            const std::string& local_echo_text = std::string());
 
     // Adds people from speakers list (people with whom you are currently speaking) to the Recent People List
     static void addSpeakersToRecent(const LLUUID& im_session_id);
@@ -325,7 +333,9 @@ private:
     /**
      * Add message to a list of message associated with session specified by session_id
      */
-    bool addToHistory(const LLUUID& session_id, const std::string& from, const LLUUID& from_id, const std::string& utf8_text, bool is_region_msg, U32 timestamp);
+    bool addToHistory(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
+                      const std::string& utf8_text, bool is_region_msg, U32 timestamp,
+                      const LLUUID& translation_id = LLUUID::null);
 
 };
 

@@ -882,6 +882,7 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "UseOcclusion", handleUseOcclusionChanged);
     setting_setup_signal_listener(gSavedSettings, "AudioLevelMaster", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "AudioLevelSFX", handleAudioVolumeChanged);
+    setting_setup_signal_listener(gSavedSettings, "AudioLevelGesture", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "AudioLevelUI", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "AudioLevelAmbient", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "AudioLevelMusic", handleAudioVolumeChanged);
@@ -892,6 +893,7 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "MuteMedia", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "MuteVoice", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "MuteAmbient", handleAudioVolumeChanged);
+    setting_setup_signal_listener(gSavedSettings, "MuteGestureSounds", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "MuteUI", handleAudioVolumeChanged);
     setting_setup_signal_listener(gSavedSettings, "JoystickAxis0", handleJoystickChanged);
     setting_setup_signal_listener(gSavedSettings, "JoystickAxis1", handleJoystickChanged);
@@ -1041,4 +1043,3 @@ void test_cached_control()
 //There's no LLSD comparsion for LLCC yet. TEST_LLCC(LLSD, test_llsd);
 }
 #endif // TEST_CACHED_CONTROL
-

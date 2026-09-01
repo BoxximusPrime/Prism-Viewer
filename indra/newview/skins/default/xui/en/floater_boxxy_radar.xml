@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater
+ positioning="cascading"
+ can_close="true"
+ can_minimize="true"
+ can_resize="true"
+ height="548"
+ min_height="420"
+ min_width="320"
+ width="380"
+ layout="topleft"
+ name="boxxy_radar"
+ save_rect="true"
+ single_instance="true"
+ title="RADAR">
+
+  <panel
+   name="search_panel"
+   follows="left|right|top"
+   left="6"
+   right="-6"
+   top="6"
+   height="54"
+   background_visible="true"
+   bg_alpha_color="DkGray2">
+    <filter_editor
+     name="radar_search"
+     follows="left|right|top"
+     left="8"
+     right="-8"
+     top="6"
+     height="25"
+     label="Search display names or usernames"
+     max_length_chars="128"
+     text_color="Black"
+     text_pad_left="10"
+     tool_tip="Live fuzzy search across display names and usernames" />
+    <text
+     name="result_summary"
+     follows="left|right|top"
+     left="10"
+     right="-10"
+     top="34"
+     height="16"
+     font="SansSerifSmall"
+     text_color="LabelDisabledColor"
+     use_ellipses="true">
+      0 avatars nearby
+    </text>
+  </panel>
+
+  <layout_stack
+   name="radar_content_stack"
+   follows="all"
+   orientation="vertical"
+   animate="false"
+   layout="topleft"
+   left="6"
+   top="66"
+   width="368"
+   height="476">
+  <layout_panel
+   name="radar_body"
+   auto_resize="true"
+   user_resize="false"
+   layout="topleft"
+   width="368"
+   height="310"
+   background_visible="true"
+   bg_alpha_color="DkGray">
+    <flat_list_view
+     name="radar_list"
+     allow_select="false"
+     follows="all"
+     left="4"
+     right="-4"
+     top="4"
+     bottom="-4"
+     item_pad="1">
+      <flat_list_view.no_items_text
+       value="No avatars match this search." />
+    </flat_list_view>
+  </layout_panel>
+
+  <layout_panel
+   name="vip_editor"
+   auto_resize="false"
+   user_resize="false"
+   min_dim="32"
+   max_dim="164"
+   layout="topleft"
+   width="368"
+   height="164"
+   background_visible="true"
+   bg_alpha_color="DkGray2">
+    <icon
+     name="vip_editor_accent"
+     left="8"
+     top="7"
+     width="4"
+     height="19"
+     image_name="Rounded_Square"
+     color="BoxxyRadarVIPColor"
+     mouse_opaque="false" />
+    <text
+     name="vip_editor_title"
+     left="19"
+     top="5"
+     right="-88"
+     height="18"
+     font.style="BOLD">
+      VIP watch list
+    </text>
+    <button
+     name="toggle_vip_editor"
+     follows="right|top"
+     right="-8"
+     top="4"
+     width="72"
+     height="22"
+     label="Collapse" />
+    <text
+     name="vip_editor_description"
+     left="19"
+     top="24"
+     right="-8"
+     height="16"
+     font="SansSerifSmall"
+     text_color="LabelDisabledColor"
+     use_ellipses="true">
+      Matching avatars are promoted and shown blue in-world.
+    </text>
+    <line_editor
+     name="vip_input"
+     follows="left|right|top"
+     left="8"
+     right="-62"
+     top="44"
+     height="24"
+     label="Display name or username"
+     max_length_chars="128"
+     tool_tip="Add a name fragment; close misspellings and transposed letters also match" />
+    <button
+     name="add_vip"
+     follows="right|top"
+     right="-8"
+     top="44"
+     width="48"
+     height="24"
+     label="Add" />
+    <scroll_list
+     name="vip_list"
+     follows="all"
+     left="8"
+     right="-8"
+     top="74"
+     bottom="-35"
+     multi_select="false"
+     tool_tip="Names are matched against both display names and usernames">
+      <scroll_list.columns
+       name="name"
+       label="Watched name"
+       dynamic_width="true" />
+    </scroll_list>
+    <button
+     name="remove_vip"
+     follows="right|bottom"
+     right="-8"
+     bottom="-7"
+     width="66"
+     height="24"
+     label="Remove" />
+    <text
+     name="vip_editor_footer"
+     follows="left|right|bottom"
+     left="8"
+     right="-80"
+     bottom="-9"
+     height="18"
+     text_color="LabelDisabledColor"
+     use_ellipses="true">
+      Fuzzy matches display names and usernames
+    </text>
+  </layout_panel>
+  </layout_stack>
+</floater>

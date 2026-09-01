@@ -34,9 +34,11 @@
 #include "llagentwearables.h"
 #include "llappearancemgr.h"
 #include "llinventoryicon.h"
+#include "llinventorymodel.h"
 #include "llgesturemgr.h"
 #include "lltransutil.h"
 #include "llviewerattachmenu.h"
+#include "llviewerinventory.h"
 #include "llviewermenu.h"
 #include "llvoavatarself.h"
 
@@ -922,6 +924,7 @@ LLContextMenu* LLWearableItemsList::ContextMenu::createMenu()
     registrar.add("Wearable.Edit", boost::bind(handle_item_edit, selected_id));
     registrar.add("Wearable.CreateNew", boost::bind(createNewWearable, selected_id));
     registrar.add("Wearable.ShowOriginal", boost::bind(show_item_original, selected_id));
+    registrar.add("Wearable.RemoveFromOutfit", boost::bind(&LLWearableItemsList::removeItemsFromOutfit, ids));
     registrar.add("Wearable.TakeOffDetach",
 
                   boost::bind(&LLAppearanceMgr::removeItemsFromAvatar, LLAppearanceMgr::getInstance(), ids, no_op));
@@ -970,6 +973,8 @@ void LLWearableItemsList::ContextMenu::updateItemsVisibility(LLContextMenu* menu
     bool can_be_worn = true;
     bool can_favorite = false;
     bool can_unfavorite = false;
+    const bool can_remove_from_outfit = mParent && mParent->getOutfitFolderID().notNull()
+                                      && LLWearableItemsList::canRemoveItemsFromOutfit(ids);
 
     for (uuid_vec_t::const_iterator it = ids.begin(); it != ids.end(); ++it)
     {
@@ -1045,6 +1050,8 @@ void LLWearableItemsList::ContextMenu::updateItemsVisibility(LLContextMenu* menu
     setMenuItemEnabled(menu, "create_new",          LLAppearanceMgr::instance().canAddWearables(ids));
     setMenuItemVisible(menu, "show_original",       !standalone);
     setMenuItemEnabled(menu, "show_original",       n_items == 1 && n_links == n_items);
+    setMenuItemVisible(menu, "remove_from_outfit",  can_remove_from_outfit);
+    setMenuItemEnabled(menu, "remove_from_outfit",  can_remove_from_outfit);
     setMenuItemVisible(menu, "favorites_add",       can_favorite);
     setMenuItemVisible(menu, "favorites_remove",    can_unfavorite);
     setMenuItemVisible(menu, "take_off",            mask == MASK_CLOTHING && n_worn == n_items);
@@ -1084,6 +1091,38 @@ void LLWearableItemsList::ContextMenu::updateItemsVisibility(LLContextMenu* menu
     if (num_visible_items == 0)
     {
         setMenuItemVisible(menu, "--no options--", true);
+    }
+}
+
+bool LLWearableItemsList::canRemoveItemsFromOutfit(const uuid_vec_t& ids)
+{
+    if (ids.empty())
+    {
+        return false;
+    }
+
+    const LLUUID my_outfits_id = gInventory.findCategoryUUIDForType(LLFolderType::FT_MY_OUTFITS);
+    for (const LLUUID& id : ids)
+    {
+        LLViewerInventoryItem* item = gInventory.getItem(id);
+        if (!item || !item->getIsLinkType() || !gInventory.isObjectDescendentOf(id, my_outfits_id))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void LLWearableItemsList::removeItemsFromOutfit(const uuid_vec_t& ids)
+{
+    if (!canRemoveItemsFromOutfit(ids))
+    {
+        return;
+    }
+
+    for (const LLUUID& id : ids)
+    {
+        remove_inventory_item(id, nullptr);
     }
 }
 

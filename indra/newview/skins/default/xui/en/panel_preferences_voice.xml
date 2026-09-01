@@ -153,18 +153,6 @@
      tool_tip="When in toggle mode, press and release the trigger key ONCE to switch your microphone on or off. When not in toggle mode, the microphone broadcasts your voice only while the trigger is being held down."
      top_pad="9"/>
     <check_box
-     name="gesture_audio_play_btn"
-     control_name="EnableGestureSounds"
-     disabled_control="MuteAudio"
-     value="true"
-     follows="left|bottom|right"
-     layout="topleft"
-     height="15"
-     tool_tip="Check this to hear sounds from gestures"
-     label="Play sounds from gestures"
-     top_pad="9"
-     left="20"/>
-    <check_box
      control_name="VoiceEchoCancellation"
      enabled_control="EnableVoiceChat"
      height="15"

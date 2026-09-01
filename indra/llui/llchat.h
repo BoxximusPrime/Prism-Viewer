@@ -76,6 +76,7 @@ class LLChat
 public:
     LLChat(const std::string& text = std::string())
     :   mText(text),
+        mTranslatedText(),
         mFromName(),
         mFromID(),
         mNotifId(),
@@ -89,10 +90,12 @@ public:
         mPosAgent(),
         mURL(),
         mChatStyle(CHAT_STYLE_NORMAL),
-        mSessionID()
+        mSessionID(),
+        mTranslationRequestID()
     { }
 
     std::string     mText;      // UTF-8 line of text
+    std::string     mTranslatedText; // Optional translated suffix, styled separately by chat history
     std::string     mFromName;  // agent or object name
     LLUUID          mFromID;    // agent id or object id
     LLUUID          mNotifId;
@@ -107,6 +110,7 @@ public:
     std::string     mURL;
     EChatStyle      mChatStyle;
     LLUUID          mSessionID;
+    LLUUID          mTranslationRequestID;
 };
 
 #endif

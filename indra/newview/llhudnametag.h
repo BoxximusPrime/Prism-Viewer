@@ -112,6 +112,8 @@ public:
     void setFont(const LLFontGL* font);
     void setColor(const LLColor4 &color);
     void setAlpha(F32 alpha);
+    void setBottomBorderColor(const LLColor4& color) { mBottomBorderColor = color; mDrawBottomBorder = true; }
+    void clearBottomBorder() { mDrawBottomBorder = false; }
     void setZCompare(const bool zcompare);
     void setDoFade(const bool do_fade);
     void setVisibleOffScreen(bool visible) { mVisibleOffScreen = visible; }
@@ -161,6 +163,8 @@ private:
     bool            mVisibleOffScreen;
     bool            mOffscreen;
     LLColor4        mColor;
+    LLColor4        mBottomBorderColor;
+    bool            mDrawBottomBorder;
 //  LLVector3       mScale;
     F32             mWidth;
     F32             mHeight;
@@ -184,6 +188,7 @@ private:
     bool            mHidden;
     LLPointer<LLUIImage> mRoundedRectImgp;
     LLPointer<LLUIImage> mRoundedRectTopImgp;
+    LLPointer<LLUIImage> mRoundedRectBottomImgp;
 
     static bool    sDisplayText ;
     static std::set<LLPointer<LLHUDNameTag> > sTextObjects;

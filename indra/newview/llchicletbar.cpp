@@ -40,15 +40,26 @@ namespace
 
 LLChicletBar::LLChicletBar()
 :   mChicletPanel(NULL),
+    mObjectChicletPanel(NULL),
     mToolbarStack(NULL)
 {
     buildFromFile("panel_chiclet_bar.xml");
+    LLIMMgr::getInstance()->addSessionObserver(this);
+}
+
+LLChicletBar::~LLChicletBar()
+{
+    if (LLIMMgr::instanceExists())
+    {
+        LLIMMgr::getInstance()->removeSessionObserver(this);
+    }
 }
 
 bool LLChicletBar::postBuild()
 {
     mToolbarStack = getChild<LLLayoutStack>("toolbar_stack");
     mChicletPanel = getChild<LLChicletPanel>("chiclet_list");
+    mObjectChicletPanel = getChild<LLChicletPanel>("object_chiclet_list");
 
     showWellButton("notification_well", !LLFloaterNotificationsTabbed::getInstance()->isWindowEmpty());
 
@@ -56,6 +67,51 @@ bool LLChicletBar::postBuild()
     LLPanelTopInfoBar::instance().setVisibleCallback(boost::bind(&LLChicletBar::fitWithTopInfoBar, this));
 
     return true;
+}
+
+void LLChicletBar::sessionAdded(const LLUUID& session_id, const std::string& name,
+                                const LLUUID& other_participant_id, bool has_offline_msg)
+{
+    if (!mChicletPanel || mChicletPanel->findChiclet<LLChiclet>(session_id))
+    {
+        return;
+    }
+
+    LLIMModel::LLIMSession* session = LLIMModel::getInstance()->findIMSession(session_id);
+    if (!session || !session->isP2PSessionType())
+    {
+        return;
+    }
+
+    LLIMP2PChiclet* chiclet = mChicletPanel->createChiclet<LLIMP2PChiclet>(session_id);
+    if (chiclet)
+    {
+        chiclet->setIMSessionName(name);
+        chiclet->setOtherParticipantId(other_participant_id);
+        S32 unread_count = LLIMModel::getInstance()->getNumUnread(session_id);
+        chiclet->setUnreadCount(has_offline_msg ? llmax(1, unread_count) : unread_count);
+    }
+}
+
+void LLChicletBar::sessionRemoved(const LLUUID& session_id)
+{
+    if (mChicletPanel)
+    {
+        mChicletPanel->removeChiclet(session_id);
+    }
+}
+
+void LLChicletBar::sessionIDUpdated(const LLUUID& old_session_id, const LLUUID& new_session_id)
+{
+    if (!mChicletPanel)
+    {
+        return;
+    }
+    LLChiclet* chiclet = mChicletPanel->findChiclet<LLChiclet>(old_session_id);
+    if (chiclet)
+    {
+        chiclet->setSessionId(new_session_id);
+    }
 }
 
 void LLChicletBar::showWellButton(const std::string& well_name, bool visible)

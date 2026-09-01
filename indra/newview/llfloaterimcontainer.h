@@ -71,7 +71,7 @@ public:
                                 bool select_added_floater,
                                 LLTabContainer::eInsertionPoint insertion_point = LLTabContainer::END);
     void returnFloaterToHost();
-    void showConversation(const LLUUID& session_id);
+    void showConversation(const LLUUID& session_id, bool pop_out = false);
     void selectConversation(const LLUUID& session_id);
     void selectNextConversationByID(const LLUUID& session_id);
     bool selectConversationPair(const LLUUID& session_id, bool select_widget, bool focus_floater = true, bool force_select_widget = false);

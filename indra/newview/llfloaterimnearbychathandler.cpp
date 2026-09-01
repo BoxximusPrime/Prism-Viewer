@@ -30,6 +30,7 @@
 #include "llfloaterimnearbychathandler.h"
 
 #include "llchatitemscontainerctrl.h"
+#include "llconsole.h"
 #include "llfirstuse.h"
 #include "llfloaterscriptdebug.h"
 #include "llhints.h"
@@ -719,19 +720,25 @@ void LLFloaterIMNearbyChatHandler::processChat(const LLChat& chat_msg,
         //Will show toast when chat preference is set
         if((user_preferences == "toast") || !nearby_chat->isMessagePaneExpanded())
         {
-            // Add a nearby chat toast.
-            LLUUID id;
-            id.generate();
-            chat["id"] = id;
-            std::string r_color_name = "White";
+            LLUIColor text_color;
             F32 r_color_alpha = 1.0f;
-            LLViewerChat::getChatColor( chat_msg, r_color_name, r_color_alpha);
-
-            chat["text_color"] = r_color_name;
-            chat["color_alpha"] = r_color_alpha;
-            chat["font_size"] = (S32)LLViewerChat::getChatFontSize() ;
-            chat["message"] = toast_msg;
-            channel->addChat(chat);
+            S32 white_prefix_chars = 0;
+            LLViewerChat::getChatColor(chat_msg, text_color, r_color_alpha);
+            if (chat_msg.mChatStyle != CHAT_STYLE_IRC && !chat_msg.mFromName.empty())
+            {
+                toast_msg = chat_msg.mFromName + ": " + toast_msg;
+                white_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName + ": ").length();
+            }
+            else if (chat_msg.mChatStyle == CHAT_STYLE_IRC && !chat_msg.mFromName.empty())
+            {
+                white_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName).length();
+            }
+            if (gConsole)
+            {
+                gConsole->addChatLine(toast_msg, text_color % r_color_alpha,
+                    chat_msg.mTranslationRequestID, white_prefix_chars);
+                gConsole->setVisible(true);
+            }
         }
 
     }

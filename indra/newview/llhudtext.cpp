@@ -31,6 +31,7 @@
 #include "llrender.h"
 
 #include "llagent.h"
+#include "llagentcamera.h"
 #include "llviewercontrol.h"
 #include "llcriticaldamp.h"
 #include "lldrawable.h"
@@ -54,6 +55,8 @@ const F32 BUFFER_SIZE = 2.f;
 const F32 HUD_TEXT_MAX_WIDTH = 190.f;
 const F32 HUD_TEXT_MAX_WIDTH_NO_BUBBLE = 1000.f;
 const F32 MAX_DRAW_DISTANCE = 300.f;
+const F32 BOXXY_HUD_TEXT_REFERENCE_HEIGHT = 1080.f;
+const F32 BOXXY_HOVER_TEXT_SCALE_STEP = 0.05f;
 
 std::set<LLPointer<LLHUDText> > LLHUDText::sTextObjects;
 std::vector<LLPointer<LLHUDText> > LLHUDText::sVisibleTextObjects;
@@ -63,6 +66,33 @@ bool LLHUDText::sDisplayText = true ;
 bool lltextobject_further_away::operator()(const LLPointer<LLHUDText>& lhs, const LLPointer<LLHUDText>& rhs) const
 {
     return lhs->getDistance() > rhs->getDistance();
+}
+
+F32 LLHUDText::getLayoutScale() const
+{
+    static LLCachedControl<S32> font_scale_setting(gSavedSettings, "BoxxyHoverTextFontScale", 0);
+    static LLCachedControl<bool> resolution_independent_hud_text(gSavedSettings, "BoxxyResolutionIndependentHUDText", false);
+
+    F32 scale = 1.f + llclamp((S32)font_scale_setting, -10, 10) * BOXXY_HOVER_TEXT_SCALE_STEP;
+    if (mOnHUDAttachment && resolution_independent_hud_text)
+    {
+        scale *= (F32)gViewerWindow->getWorldViewHeightScaled() / BOXXY_HUD_TEXT_REFERENCE_HEIGHT;
+    }
+    return scale;
+}
+
+F32 LLHUDText::getDrawScale() const
+{
+    static LLCachedControl<bool> resolution_independent_hud_text(gSavedSettings, "BoxxyResolutionIndependentHUDText", false);
+
+    F32 scale = getLayoutScale();
+    if (mOnHUDAttachment && resolution_independent_hud_text)
+    {
+        // HUD attachment geometry is transformed by this zoom, but the font
+        // renderer switches to screen space. Apply it explicitly to glyphs.
+        scale *= gAgentCamera.mHUDCurZoom;
+    }
+    return scale;
 }
 
 
@@ -134,6 +164,9 @@ void LLHUDText::renderText()
         return;
     }
     shadow_color.mV[3] = text_color.mV[3];
+
+    const F32 layout_scale = getLayoutScale();
+    const F32 draw_scale = getDrawScale();
 
     mOffsetY = lltrunc(mHeight * ((mVertAlignment == ALIGN_VERT_CENTER) ? 0.5f : 1.f));
 
@@ -209,7 +242,7 @@ void LLHUDText::renderText()
              segment_iter != mTextSegments.end(); ++segment_iter )
         {
             const LLFontGL* fontp = segment_iter->mFont;
-            y_offset -= fontp->getLineHeight() - 1; // correction factor to match legacy font metrics
+            y_offset -= (fontp->getLineHeight() - 1) * layout_scale; // correction factor to match legacy font metrics
 
             U8 style = segment_iter->mStyle;
             LLFontGL::ShadowType shadow = LLFontGL::DROP_SHADOW;
@@ -217,17 +250,17 @@ void LLHUDText::renderText()
             F32 x_offset;
             if (mTextAlignment== ALIGN_TEXT_CENTER)
             {
-                x_offset = -0.5f*segment_iter->getWidth(fontp);
+                x_offset = -0.5f * segment_iter->getWidth(fontp) * layout_scale;
             }
             else // ALIGN_LEFT
             {
-                x_offset = -0.5f * mWidth + (HORIZONTAL_PADDING / 2.f);
+                x_offset = -0.5f * mWidth + (HORIZONTAL_PADDING * layout_scale / 2.f);
             }
 
             text_color = segment_iter->mColor;
             text_color.mV[VALPHA] *= alpha_factor;
 
-            hud_render_text(segment_iter->getText(), render_position, *fontp, style, shadow, x_offset, y_offset, text_color, mOnHUDAttachment);
+            hud_render_text(segment_iter->getText(), render_position, *fontp, style, shadow, x_offset, y_offset, text_color, mOnHUDAttachment, draw_scale);
         }
     }
     /// Reset the default color to white.  The renderer expects this to be the default.
@@ -483,6 +516,7 @@ void LLHUDText::updateSize()
 {
     F32 height = 0.f;
     F32 width = 0.f;
+    const F32 layout_scale = getLayoutScale();
 
     S32 max_lines = getMaxLines();
 
@@ -494,8 +528,8 @@ void LLHUDText::updateSize()
     while (iter != mTextSegments.end())
     {
         const LLFontGL* fontp = iter->mFont;
-        height += fontp->getLineHeight() - 1; // correction factor to match legacy font metrics
-        width = llmax(width, llmin(iter->getWidth(fontp), HUD_TEXT_MAX_WIDTH));
+        height += (fontp->getLineHeight() - 1) * layout_scale; // correction factor to match legacy font metrics
+        width = llmax(width, llmin(iter->getWidth(fontp), HUD_TEXT_MAX_WIDTH) * layout_scale);
         ++iter;
     }
 
@@ -504,8 +538,8 @@ void LLHUDText::updateSize()
         return;
     }
 
-    width += HORIZONTAL_PADDING;
-    height += VERTICAL_PADDING;
+    width += HORIZONTAL_PADDING * layout_scale;
+    height += VERTICAL_PADDING * layout_scale;
 
     // *TODO: Could do some sort of timer-based resize logic here
     F32 u = 1.f;

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<panel
+ border="true"
+ follows="all"
+ height="408"
+ label="BoxxyViewer"
+ layout="topleft"
+ left="102"
+ name="boxxyviewer_panel"
+ top="1"
+ width="517">
+  <text
+   follows="left|top"
+   font="SansSerifLarge"
+   height="20"
+   layout="topleft"
+   left="30"
+   name="animation_heading"
+   top="20"
+   width="450">
+    Animations
+  </text>
+  <check_box
+   control_name="BoxxyAnimationSyncing"
+   follows="left|top"
+   height="20"
+   label="Animation Syncing"
+   layout="topleft"
+   left="45"
+   name="animation_syncing"
+   tool_tip="Keep avatar animation phase advancing through loading, impostors, and offscreen rendering."
+   top_pad="12"
+   width="250" />
+  <text
+   follows="left|top"
+   height="45"
+   layout="topleft"
+   left="65"
+   name="animation_syncing_description"
+   top_pad="4"
+   width="410"
+   wrap="true">
+    Preserve animation phase while assets load and while avatars are offscreen, impostored, or reduced to a simplified appearance.
+  </text>
+  <view_border
+   bevel_style="none"
+   follows="left|top"
+   height="1"
+   layout="topleft"
+   left="30"
+   name="hover_text_separator"
+   top_pad="14"
+   width="450" />
+  <text
+   follows="left|top"
+   font="SansSerifLarge"
+   height="20"
+   layout="topleft"
+   left="30"
+   name="hover_text_heading"
+   top_pad="14"
+   width="450">
+    Hover Text
+  </text>
+  <check_box
+   control_name="BoxxyResolutionIndependentHUDText"
+   follows="left|top"
+   height="20"
+   label="Resolution-independent HUD text"
+   layout="topleft"
+   left="45"
+   name="resolution_independent_hud_text"
+   tool_tip="Keep llSetText text proportional to HUD attachments across viewport sizes and HUD zoom levels."
+   top_pad="12"
+   width="330" />
+  <text
+   follows="left|top"
+   height="32"
+   layout="topleft"
+   left="65"
+   name="resolution_independent_hud_text_description"
+   top_pad="4"
+   width="410"
+   wrap="true">
+    Scale llSetText on HUD attachments from a common 1080-pixel reference so its size stays consistent relative to HUD prims.
+  </text>
+  <text
+   follows="left|top"
+   height="20"
+   layout="topleft"
+   left="45"
+   name="hover_text_font_scale_label"
+   top_pad="14"
+   width="175">
+    Hover text font scale:
+  </text>
+  <slider
+   control_name="BoxxyHoverTextFontScale"
+   decimal_digits="0"
+   follows="left|top"
+   height="20"
+   increment="1"
+   initial_value="0"
+   layout="topleft"
+   left_pad="4"
+   max_val="10"
+   min_val="-10"
+   name="hover_text_font_scale"
+   tool_tip="Adjust all llSetText font sizes in 5% steps. Zero uses the default size."
+   width="245" />
+  <text
+   follows="left|top"
+   height="32"
+   layout="topleft"
+   left="65"
+   name="hover_text_font_scale_description"
+   top_pad="4"
+   width="410"
+   wrap="true">
+    Adjust all llSetText fonts from -10 (50%) to +10 (150%). Zero keeps the standard size.
+  </text>
+  <view_border
+   bevel_style="none"
+   follows="left|top"
+   height="1"
+   layout="topleft"
+   left="30"
+   name="name_tag_separator"
+   top_pad="10"
+   width="450" />
+  <text
+   follows="left|top"
+   font="SansSerifLarge"
+   height="20"
+   layout="topleft"
+   left="30"
+   name="name_tag_heading"
+   top_pad="10"
+   width="450">
+    Name Tag Chat Range
+  </text>
+  <color_swatch
+   can_apply_immediately="true"
+   follows="left|top"
+   height="24"
+   label_height="0"
+   layout="topleft"
+   left="45"
+   name="chat_range_normal_color"
+   tool_tip="Name color for avatars within normal 20-meter chat range."
+   top_pad="8"
+   width="38">
+    <color_swatch.init_callback
+     function="Pref.getUIColor"
+     parameter="BoxxyNameTagChatRangeNormal" />
+    <color_swatch.commit_callback
+     function="Pref.applyBoxxyNameTagColor"
+     parameter="BoxxyNameTagChatRangeNormal" />
+  </color_swatch>
+  <text
+   follows="left|top"
+   height="16"
+   layout="topleft"
+   left_pad="5"
+   name="chat_range_normal_label"
+   top_delta="4"
+   width="92">
+    Normal (20 m)
+  </text>
+  <color_swatch
+   can_apply_immediately="true"
+   follows="left|top"
+   height="24"
+   label_height="0"
+   layout="topleft"
+   left="190"
+   name="chat_range_shout_color"
+   tool_tip="Name color for avatars outside normal chat but within 100-meter shout range."
+   top_delta="-4"
+   width="38">
+    <color_swatch.init_callback
+     function="Pref.getUIColor"
+     parameter="BoxxyNameTagChatRangeShout" />
+    <color_swatch.commit_callback
+     function="Pref.applyBoxxyNameTagColor"
+     parameter="BoxxyNameTagChatRangeShout" />
+  </color_swatch>
+  <text
+   follows="left|top"
+   height="16"
+   layout="topleft"
+   left_pad="5"
+   name="chat_range_shout_label"
+   top_delta="4"
+   width="92">
+    Shout (100 m)
+  </text>
+  <color_swatch
+   can_apply_immediately="true"
+   follows="left|top"
+   height="24"
+   label_height="0"
+   layout="topleft"
+   left="348"
+   name="chat_range_outside_color"
+   tool_tip="Name color for avatars beyond 100-meter shout range."
+   top_delta="-4"
+   width="38">
+    <color_swatch.init_callback
+     function="Pref.getUIColor"
+     parameter="BoxxyNameTagChatRangeOutside" />
+    <color_swatch.commit_callback
+     function="Pref.applyBoxxyNameTagColor"
+     parameter="BoxxyNameTagChatRangeOutside" />
+  </color_swatch>
+  <text
+   follows="left|top"
+   height="16"
+   layout="topleft"
+   left_pad="5"
+   name="chat_range_outside_label"
+   top_delta="4"
+   width="88">
+    Outside
+  </text>
+</panel>

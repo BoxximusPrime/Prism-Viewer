@@ -166,10 +166,42 @@
      left_pad="5"
      name="mute_audio_sounds"
      tab_stop="false"
-     width="16">
-      <button.commit_callback
-      function="Pref.SetSounds"/>
-    </button>
+     width="16" />
+    <slider
+     control_name="AudioLevelGesture"
+     disabled_control="MuteAudio"
+     follows="left|top"
+     height="15"
+     increment="0.025"
+     initial_value="0.5"
+     label="Gesture sounds"
+     label_width="120"
+     slider_label.halign="right"
+     layout="topleft"
+     left="0"
+     name="Gesture Volume"
+     show_text="false"
+     top_pad="4"
+     volume="true"
+     width="300">
+        <slider.commit_callback
+         function="Pref.setControlFalse"
+         parameter="MuteGestureSounds" />
+    </slider>
+    <button
+     control_name="MuteGestureSounds"
+     disabled_control="MuteAudio"
+     follows="top|left"
+     height="16"
+     image_selected="AudioMute_Off"
+     image_unselected="Audio_Off"
+     is_toggle="true"
+     layout="topleft"
+     left_pad="5"
+     name="mute_gesture_sounds"
+     tab_stop="false"
+     tool_tip="Mute gesture sounds"
+     width="16" />
     <slider
      control_name="AudioLevelMusic"
      disabled_control="MuteAudio"

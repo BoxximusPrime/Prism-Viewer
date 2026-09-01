@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater
+ positioning="centered"
+ can_close="true"
+ can_minimize="true"
+ can_resize="true"
+ height="470"
+ min_height="430"
+ min_width="580"
+ width="640"
+ layout="topleft"
+ name="boxxy_ao"
+ save_rect="true"
+ single_instance="true"
+ title="BOXXY ANIMATION OVERRIDER">
+
+  <check_box
+   name="ao_enabled"
+   label="Enable Animation Overrider"
+   left="12"
+   top="30"
+   width="190"
+   height="20" />
+
+  <combo_box
+   name="set_combo"
+   left="12"
+   top="57"
+   width="255"
+   height="24"
+   tool_tip="Choose an animation set to edit" />
+  <button
+   name="activate_set"
+   label="Activate"
+   left_pad="6"
+   width="72"
+   height="24"
+   tool_tip="Use this animation set now" />
+  <button
+   name="new_set"
+   label="New Set"
+   left_pad="6"
+   width="72"
+   height="24" />
+  <button
+   name="remove_set"
+   label="Remove"
+   left_pad="6"
+   width="72"
+   height="24" />
+  <check_box
+   name="override_sits"
+   label="Override scripted sits"
+   left_pad="10"
+   width="155"
+   height="20"
+   tool_tip="When off, furniture-provided sit animations are left alone" />
+
+  <text
+   left="12"
+   top="92"
+   width="205"
+   height="18"
+   font.style="BOLD">
+    Animation state
+  </text>
+  <text
+   left="230"
+   top="92"
+   width="390"
+   height="18"
+   font.style="BOLD">
+    Linked animations
+  </text>
+
+  <scroll_list
+   name="state_list"
+   left="12"
+   top="112"
+   width="205"
+   bottom="-96"
+   follows="left|top|bottom"
+   multi_select="false">
+    <scroll_list.columns name="state" label="State" dynamic_width="true" />
+    <scroll_list.columns name="count" label="#" dynamic_width="false" width="28" />
+  </scroll_list>
+
+  <scroll_list
+   name="animation_list"
+   left="230"
+   top="112"
+   right="-12"
+   bottom="-176"
+   follows="all"
+   multi_select="false">
+    <scroll_list.columns name="playing" label="" dynamic_width="false" width="24" />
+    <scroll_list.columns name="animation" label="Animation" dynamic_width="true" />
+  </scroll_list>
+
+  <button
+   name="play_animation"
+   label="Play"
+   left="230"
+   bottom="-169"
+   width="58"
+   height="24" />
+  <button
+   name="move_up"
+   label="Move Up"
+   left_pad="6"
+   width="70"
+   height="24" />
+  <button
+   name="move_down"
+   label="Move Down"
+   left_pad="6"
+   width="80"
+   height="24" />
+  <button
+   name="remove_animation"
+   label="Remove Link"
+   left_pad="6"
+   width="92"
+   height="24"
+   tool_tip="Remove only the AO link; the original animation remains in Inventory" />
+  <button
+   name="previous_animation"
+   label="Previous"
+   left_pad="14"
+   width="68"
+   height="24" />
+  <button
+   name="next_animation"
+   label="Next"
+   left_pad="6"
+   width="58"
+   height="24" />
+
+  <view_border
+   name="drop_border"
+   left="230"
+   bottom="-134"
+   right="-12"
+   height="38"
+   follows="left|right|bottom" />
+  <text
+   name="drop_hint"
+   left="242"
+   bottom="-126"
+   right="-118"
+   height="24"
+   follows="left|right|bottom"
+   valign="center"
+   text_color="LabelTextColor">
+    Drag animations here from Inventory.
+  </text>
+  <button
+   name="open_inventory"
+   label="Open Inventory"
+   right="-22"
+   bottom="-127"
+   width="94"
+   height="24"
+   follows="right|bottom" />
+
+  <panel
+   name="cycle_panel"
+   left="230"
+   bottom="-88"
+   right="-12"
+   height="36"
+   follows="left|right|bottom"
+   background_visible="true"
+   bg_alpha_color="DkGray2">
+    <check_box
+     name="cycle_enabled"
+     label="Timed cycle"
+     left="10"
+     top="9"
+     width="95"
+     height="20" />
+    <text
+     left_pad="8"
+     top_delta="2"
+     width="48"
+     height="18">
+      Every
+    </text>
+    <spinner
+     name="cycle_seconds"
+     left_pad="0"
+     top_delta="-3"
+     width="72"
+     height="22"
+     min_val="1"
+     max_val="3600"
+     increment="1"
+     decimal_digits="1"
+     initial_value="30" />
+    <text
+     left_pad="5"
+     top_delta="3"
+     width="55"
+     height="18">
+      seconds
+    </text>
+    <check_box
+     name="cycle_randomize"
+     label="Random order"
+     left_pad="10"
+     top_delta="-2"
+     width="110"
+     height="20" />
+  </panel>
+
+  <text
+   left="12"
+   bottom="-67"
+   width="205"
+   height="48"
+   follows="left|bottom"
+   wrap="true"
+   text_color="LabelDisabledColor">
+    Sets and animation links are saved in Inventory under #Boxxy/#AO.
+  </text>
+</floater>

@@ -97,7 +97,7 @@ bool LLScriptFloater::toggle(const LLUUID& notification_id)
         show(notification_id);
     }
 
-    LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+    LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
     if (NULL != chiclet_panelp)
     {
         chiclet_panelp->setChicletToggleState(notification_id, true);
@@ -215,7 +215,7 @@ void LLScriptFloater::setVisible(bool visible)
 
     if(!visible)
     {
-        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
         if (NULL != chiclet_panelp)
         {
             LLIMChiclet * chicletp = chiclet_panelp->findChiclet<LLIMChiclet>(getNotificationId());
@@ -231,7 +231,7 @@ void LLScriptFloater::onMouseDown()
 {
     if(getNotificationId().notNull())
     {
-        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
         if (NULL != chiclet_panelp)
         {
             LLIMChiclet * chicletp = chiclet_panelp->findChiclet<LLIMChiclet>(getNotificationId());
@@ -279,7 +279,7 @@ void LLScriptFloater::onFocusLost()
 {
     if(getNotificationId().notNull())
     {
-        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
         if (NULL != chiclet_panelp)
         {
             chiclet_panelp->setChicletToggleState(getNotificationId(), false);
@@ -292,7 +292,7 @@ void LLScriptFloater::onFocusReceived()
     // first focus will be received before setObjectId() call - don't toggle chiclet
     if(getNotificationId().notNull())
     {
-        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
         if (NULL != chiclet_panelp)
         {
             chiclet_panelp->setChicletToggleState(getNotificationId(), true);
@@ -304,7 +304,7 @@ void LLScriptFloater::dockToChiclet(bool dock)
 {
     if (getDockControl() == NULL)
     {
-        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
         if (NULL != chiclet_panelp)
         {
             LLChiclet * chicletp = chiclet_panelp->findChiclet<LLChiclet>(getNotificationId());
@@ -463,7 +463,7 @@ void LLScriptFloaterManager::onAddNotification(const LLUUID& notification_id)
         if(it != mNotifications.end())
         {
             LLUUID old_id = it->first; // copy LLUUID to prevent use after free when it is erased below
-            LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+            LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
             if (NULL != chiclet_panelp)
             {
                 LLIMChiclet * chicletp = chiclet_panelp->findChiclet<LLIMChiclet>(old_id);
@@ -488,7 +488,7 @@ void LLScriptFloaterManager::onAddNotification(const LLUUID& notification_id)
 
     mNotifications.insert(std::make_pair(notification_id, object_id));
 
-    LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+    LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
     if (NULL != chiclet_panelp)
     {
         // Create inventory offer chiclet for offer type notifications
@@ -535,7 +535,7 @@ void LLScriptFloaterManager::onRemoveNotification(const LLUUID& notification_id)
     // remove related chiclet
     if (LLChicletBar::instanceExists())
     {
-        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getChicletPanel();
+        LLChicletPanel * chiclet_panelp = LLChicletBar::getInstance()->getObjectChicletPanel();
         if (NULL != chiclet_panelp)
         {
             chiclet_panelp->removeChiclet(notification_id);

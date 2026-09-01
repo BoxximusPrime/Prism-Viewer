@@ -29,6 +29,7 @@
 #include "llviewerassetstorage.h"
 
 #include "llfilesystem.h"
+#include "llhttpconstants.h"
 #include "message.h"
 
 #include "llagent.h"
@@ -43,7 +44,6 @@
 #include "lleventcoro.h"
 #include "llsdutil.h"
 #include "llstartup.h"
-#include "llworld.h"
 
 ///----------------------------------------------------------------------------
 /// LLViewerAssetRequest
@@ -411,21 +411,6 @@ void LLViewerAssetStorage::queueRequestHttp(
     }
 }
 
-void LLViewerAssetStorage::capsRecvForRegion(const LLUUID& region_id, std::string pumpname)
-{
-    LLViewerRegion *regionp = LLWorld::instance().getRegionFromID(region_id);
-    if (!regionp)
-    {
-        LL_WARNS("ViewerAsset") << "region not found for region_id " << region_id << LL_ENDL;
-    }
-    else
-    {
-        mViewerAssetUrl = regionp->getViewerAssetUrl();
-    }
-
-    LLEventPumps::instance().obtain(pumpname).post(LLSD());
-}
-
 struct LLScopedIncrement
 {
     LLScopedIncrement(S32& counter):
@@ -504,19 +489,42 @@ void LLViewerAssetStorage::assetRequestCoro(
         }
     }
 
-    if (!gAgent.getRegion()->capabilitiesReceived())
+    // Resolve ViewerAsset from the agent's *current* region for every logical
+    // request.  A single cached URL can outlive its region across a teleport,
+    // and concurrent asset coroutines should not communicate through a shared
+    // mutable capability URL.
+    std::string viewer_asset_url;
+    LLUUID viewer_asset_region_id;
+    while (gAgent.getRegion() && !gAgent.getRegion()->capabilitiesReceived())
     {
         LL_INFOS_ONCE("ViewerAsset") << "Waiting for capabilities" << LL_ENDL;
 
         LLEventStream capsRecv("waitForCaps", true);
+        std::string pump_name = capsRecv.getName();
+        LLViewerRegion* waiting_region = gAgent.getRegion();
+        LLUUID waiting_region_id = waiting_region->getRegionID();
 
-        boost::signals2::connection caps_conn =
-            gAgent.getRegion()->setCapabilitiesReceivedCallback(
-                boost::bind(&LLViewerAssetStorage::capsRecvForRegion, this, _1, capsRecv.getName()));
+        boost::signals2::connection caps_conn = waiting_region->setCapabilitiesReceivedCallback(
+            [pump_name, waiting_region_id](const LLUUID& region_id, LLViewerRegion*)
+            {
+                if (region_id == waiting_region_id)
+                {
+                    LLEventPumps::instance().obtain(pump_name).post(LLSD());
+                }
+            });
+        boost::signals2::connection region_conn = gAgent.addRegionChangedCallback(
+            [pump_name]()
+            {
+                // Wake the coroutine so it can follow the new current region
+                // instead of waiting for the old region's capabilities.
+                LLEventPumps::instance().obtain(pump_name).post(LLSD());
+            });
 
         F32Seconds timeout_seconds(LL_ASSET_STORAGE_TIMEOUT); // from minutes to seconds, by default 5 minutes
         LLSD result = llcoro::suspendUntilEventOnWithTimeout(capsRecv, timeout_seconds, LLSDMap("timeout", LLSD::Boolean(true)));
         caps_conn.disconnect();
+        gAgent.removeRegionChangedCallback(region_conn);
+        region_conn.disconnect();
 
         if (LLApp::isExiting() || !gAssetStorage)
         {
@@ -533,14 +541,16 @@ void LLViewerAssetStorage::assetRequestCoro(
             return;
         }
 
-        LL_INFOS_ONCE("ViewerAsset") << "capsRecv got event" << LL_ENDL;
-        LL_INFOS_ONCE("ViewerAsset") << "region " << gAgent.getRegion() << " mViewerAssetUrl " << mViewerAssetUrl << LL_ENDL;
+        LL_INFOS_ONCE("ViewerAsset") << "Capability/region event received while waiting for ViewerAsset" << LL_ENDL;
     }
-    if (mViewerAssetUrl.empty() && gAgent.getRegion())
+
+    LLViewerRegion* asset_region = gAgent.getRegion();
+    if (asset_region)
     {
-        mViewerAssetUrl = gAgent.getRegion()->getViewerAssetUrl();
+        viewer_asset_region_id = asset_region->getRegionID();
+        viewer_asset_url = asset_region->getViewerAssetUrl();
     }
-    if (mViewerAssetUrl.empty())
+    if (viewer_asset_url.empty())
     {
         LL_WARNS_ONCE("ViewerAsset") << "asset request fails: caps received but no viewer asset cap found" << LL_ENDL;
         result_code = LL_ERR_NO_CAP;
@@ -548,8 +558,9 @@ void LLViewerAssetStorage::assetRequestCoro(
         removeAndCallbackPendingDownloads(uuid, atype, uuid, atype, result_code, ext_status, 0);
         return;
     }
-    std::string url = getAssetURL(mViewerAssetUrl, uuid,atype);
-    LL_DEBUGS("ViewerAsset") << "request url: " << url << LL_ENDL;
+    std::string url = getAssetURL(viewer_asset_url, uuid,atype);
+    LL_DEBUGS("ViewerAsset") << "request url: " << url
+                             << " region: " << viewer_asset_region_id << LL_ENDL;
 
     LLCore::HttpRequest::policy_t httpPolicy(LLAppCoreHttp::AP_TEXTURE);
     LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
@@ -573,7 +584,10 @@ void LLViewerAssetStorage::assetRequestCoro(
     if (!status)
     {
         LL_DEBUGS("ViewerAsset") << "request failed, status " << status.toTerseString() << LL_ENDL;
-        result_code = LL_ERR_ASSET_REQUEST_FAILED;
+        result_code = (status == LLCore::HttpStatus(HTTP_NOT_FOUND)
+                       || status == LLCore::HttpStatus(HTTP_GONE))
+            ? LL_ERR_ASSET_REQUEST_NOT_IN_DATABASE
+            : LL_ERR_ASSET_REQUEST_FAILED;
         ext_status = LLExtStat::NONE;
     }
     else if (!result.has(LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_RAW))

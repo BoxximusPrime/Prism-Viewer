@@ -600,7 +600,15 @@ LLGLTFMaterial* LLTextureEntry::getGLTFRenderMaterial() const
         return mGLTFRenderMaterial;
     }
 
-    llassert(getGLTFMaterialOverride() == nullptr || getGLTFMaterialOverride()->isClearedForBaseMaterial());
+    // A material ID can change while its fetched material is still completing.
+    // During that window an existing override may be retained, but the composed
+    // render material has not been rebuilt yet. Falling back to the base material
+    // is the intended getter behavior (and what non-developer builds already do),
+    // so do not turn this transient state into a fatal developer assertion.
+    if (getGLTFMaterialOverride() != nullptr && !getGLTFMaterialOverride()->isClearedForBaseMaterial())
+    {
+        LL_WARNS_ONCE("GLTF") << "Using base material while a GLTF override render material is pending" << LL_ENDL;
+    }
     return getGLTFMaterial();
 }
 

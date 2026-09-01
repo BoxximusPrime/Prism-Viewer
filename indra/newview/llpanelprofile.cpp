@@ -72,6 +72,7 @@
 #include "llpanelblockedlist.h"
 #include "llpanelprofileclassifieds.h"
 #include "llpanelprofilepicks.h"
+#include "llpreviewtexture.h"
 #include "lltrans.h"
 #include "llviewercontrol.h"
 #include "llviewermenu.h" //is_agent_mappable
@@ -98,6 +99,29 @@ static const std::string PANEL_PROFILE_VIEW = "panel_profile_view";
 
 static const std::string PROFILE_PROPERTIES_CAP = "AgentProfile";
 static const std::string PROFILE_IMAGE_UPLOAD_CAP = "UploadAgentProfileImage";
+
+namespace
+{
+void showTexturePreview(LLView* owner, const LLUUID& image_id)
+{
+    if (image_id.isNull())
+    {
+        return;
+    }
+
+    LLPreviewTexture* preview_texture =
+        LLFloaterReg::showTypedInstance<LLPreviewTexture>("preview_texture", LLSD(image_id), TAKE_FOCUS_YES);
+    if (preview_texture && !preview_texture->isDependent())
+    {
+        LLFloater* parent_floater = gFloaterView->getParentFloater(owner);
+        if (parent_floater)
+        {
+            parent_floater->addDependentFloater(preview_texture);
+            preview_texture->hideCtrlButtons();
+        }
+    }
+}
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1025,13 +1049,6 @@ void LLPanelProfileSecondLife::setProfileImageUploaded(const LLUUID &image_asset
 {
     mSecondLifePic->setValue(image_asset_id);
 
-    LLFloater *floater = mFloaterProfileTextureHandle.get();
-    if (floater)
-    {
-        LLFloaterProfileTexture * texture_view = dynamic_cast<LLFloaterProfileTexture*>(floater);
-        texture_view->loadAsset(mSecondLifePic->getImageAssetId());
-    }
-
     setProfileImageUploading(false);
 }
 
@@ -1730,42 +1747,7 @@ void LLPanelProfileSecondLife::onShowAgentProfileTexture()
         return;
     }
 
-    LLFloater* floater = mFloaterProfileTextureHandle.get();
-    if (!floater)
-    {
-        LLFloater* parent_floater = gFloaterView->getParentFloater(this);
-        if (parent_floater)
-        {
-            LLFloaterProfileTexture * texture_view = new LLFloaterProfileTexture(parent_floater);
-            mFloaterProfileTextureHandle = texture_view->getHandle();
-            if (mSecondLifePic->getImageAssetId().notNull())
-            {
-                texture_view->loadAsset(mSecondLifePic->getImageAssetId());
-            }
-            else
-            {
-                texture_view->resetAsset();
-            }
-            texture_view->openFloater();
-            texture_view->setVisibleAndFrontmost(true);
-
-            parent_floater->addDependentFloater(mFloaterProfileTextureHandle);
-        }
-    }
-    else // already open
-    {
-        LLFloaterProfileTexture * texture_view = dynamic_cast<LLFloaterProfileTexture*>(floater);
-        texture_view->setMinimized(false);
-        texture_view->setVisibleAndFrontmost(true);
-        if (mSecondLifePic->getImageAssetId().notNull())
-        {
-            texture_view->loadAsset(mSecondLifePic->getImageAssetId());
-        }
-        else
-        {
-            texture_view->resetAsset();
-        }
-    }
+    showTexturePreview(this, mSecondLifePic->getImageAssetId());
 }
 
 void LLPanelProfileSecondLife::onShowTexturePicker()
@@ -1840,22 +1822,6 @@ void LLPanelProfileSecondLife::onCommitProfileImage(const LLUUID& id)
 
     mSecondLifePic->setValue(id);
 
-    LLFloater* floater = mFloaterProfileTextureHandle.get();
-    if (floater)
-    {
-        LLFloaterProfileTexture* texture_view = dynamic_cast<LLFloaterProfileTexture*>(floater);
-        if (texture_view)
-        {
-            if (id.isNull())
-            {
-                texture_view->resetAsset();
-            }
-            else
-            {
-                texture_view->loadAsset(id);
-            }
-        }
-    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2030,6 +1996,7 @@ bool LLPanelProfileFirstLife::postBuild()
     mSaveChanges->setCommitCallback([this](LLUICtrl*, void*) { onSaveDescriptionChanges(); }, nullptr);
     mDiscardChanges->setCommitCallback([this](LLUICtrl*, void*) { onDiscardDescriptionChanges(); }, nullptr);
     mDescriptionEdit->setKeystrokeCallback([this](LLTextEditor* caller) { onSetDescriptionDirty(); });
+    mPicture->setMouseUpCallback([this](LLUICtrl*, S32 x, S32 y, MASK mask) { onShowProfileTexture(); });
 
     return true;
 }
@@ -2150,6 +2117,14 @@ void LLPanelProfileFirstLife::onRemovePhoto()
     if (floaterp)
     {
         floaterp->closeFloater();
+    }
+}
+
+void LLPanelProfileFirstLife::onShowProfileTexture()
+{
+    if (getIsLoaded())
+    {
+        showTexturePreview(this, mPicture->getImageAssetId());
     }
 }
 
@@ -2490,4 +2465,3 @@ void LLPanelProfile::createClassified()
     mPanelClassifieds->createClassified();
     mTabContainer->selectTabPanel(mPanelClassifieds);
 }
-

@@ -3120,7 +3120,7 @@ bool LLAppViewer::initConfiguration()
     //
     // Set the name of the window
     //
-    gWindowTitle = LLTrans::getString("APP_NAME");
+    gWindowTitle = "SecondLife - Boxxy Viewer";
 #if LL_DEBUG
     gWindowTitle += std::string(" [DEBUG]");
 #endif

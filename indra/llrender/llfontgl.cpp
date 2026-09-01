@@ -150,7 +150,7 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, const LLRectf& rec
 
 
 S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, const LLColor4 &color, HAlign halign, VAlign valign, U8 style,
-                     ShadowType shadow, S32 max_chars, S32 max_pixels, F32* right_x, bool use_ellipses, bool use_color) const
+                     ShadowType shadow, S32 max_chars, S32 max_pixels, F32* right_x, bool use_ellipses, bool use_color, F32 draw_scale) const
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI;
 
@@ -166,7 +166,8 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
 
     gGL.getTexUnit(0)->enable(LLTexUnit::TT_TEXTURE);
 
-    S32 scaled_max_pixels = max_pixels == S32_MAX ? S32_MAX : llceil((F32)max_pixels * sScaleX);
+    draw_scale = llmax(draw_scale, 0.01f);
+    S32 scaled_max_pixels = max_pixels == S32_MAX ? S32_MAX : llceil((F32)max_pixels * sScaleX * draw_scale);
 
     // determine which style flags need to be added programmatically by stripping off the
     // style bits that are drawn by the underlying Freetype font
@@ -220,13 +221,13 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
     switch (valign)
     {
     case TOP:
-        cur_y -= llceil(mFontFreetype->getAscenderHeight());
+        cur_y -= llceil(mFontFreetype->getAscenderHeight() * draw_scale);
         break;
     case BOTTOM:
-        cur_y += llceil(mFontFreetype->getDescenderHeight());
+        cur_y += llceil(mFontFreetype->getDescenderHeight() * draw_scale);
         break;
     case VCENTER:
-        cur_y -= llceil((llceil(mFontFreetype->getAscenderHeight()) - llceil(mFontFreetype->getDescenderHeight())) / 2.f);
+        cur_y -= llceil((llceil(mFontFreetype->getAscenderHeight() * draw_scale) - llceil(mFontFreetype->getDescenderHeight() * draw_scale)) / 2.f);
         break;
     case BASELINE:
         // Baseline, do nothing.
@@ -240,10 +241,10 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
     case LEFT:
         break;
     case RIGHT:
-        cur_x -= llmin(scaled_max_pixels, ll_round(getWidthF32(wstr.c_str(), begin_offset, length) * sScaleX));
+        cur_x -= llmin(scaled_max_pixels, ll_round(getWidthF32(wstr.c_str(), begin_offset, length) * sScaleX * draw_scale));
         break;
     case HCENTER:
-        cur_x -= llmin(scaled_max_pixels, ll_round(getWidthF32(wstr.c_str(), begin_offset, length) * sScaleX)) / 2;
+        cur_x -= llmin(scaled_max_pixels, ll_round(getWidthF32(wstr.c_str(), begin_offset, length) * sScaleX * draw_scale)) / 2;
         break;
     default:
         break;
@@ -269,12 +270,12 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
     if (use_ellipses)
     {
         // check for too long of a string
-        S32 string_width = ll_round(getWidthF32(wstr.c_str(), begin_offset, max_chars) * sScaleX);
+        S32 string_width = ll_round(getWidthF32(wstr.c_str(), begin_offset, max_chars) * sScaleX * draw_scale);
         if (string_width > scaled_max_pixels)
         {
             // use four dots for ellipsis width to generate padding
             const LLWString dots(utf8str_to_wstring(std::string("....")));
-            scaled_max_pixels = llmax(0, scaled_max_pixels - ll_round(getWidthF32(dots.c_str())));
+            scaled_max_pixels = llmax(0, scaled_max_pixels - ll_round(getWidthF32(dots.c_str()) * sScaleX * draw_scale));
             draw_ellipses = true;
         }
     }
@@ -339,7 +340,7 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
             last_char = wch;
         }
 
-        if ((start_x + scaled_max_pixels) < (cur_x + fgi->mXBearing + fgi->mWidth))
+        if ((start_x + scaled_max_pixels) < (cur_x + (fgi->mXBearing + fgi->mWidth) * draw_scale))
         {
             // Not enough room for this character.
             break;
@@ -350,7 +351,7 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
         if (mFontFreetype->getFontWeight() > 0 && fgi->mChar >= '0' && fgi->mChar <= '9' && mFontFreetype->getMaxDigitWidth() > 0.0f)
         {
             // use mXAdvance directly here, since we don't want to get max width instead.
-            x_offset = (mFontFreetype->getMaxDigitWidth() - fgi->mXAdvance) * 0.5f;
+            x_offset = (mFontFreetype->getMaxDigitWidth() - fgi->mXAdvance) * 0.5f * draw_scale;
         }
 
         // Draw the text at the appropriate location
@@ -360,10 +361,10 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
                 (fgi->mXBitmapOffset + fgi->mWidth) * inv_width,
                 (fgi->mYBitmapOffset - PAD_UVY) * inv_height);
         // snap glyph origin to whole screen pixel
-        LLRectf screen_rect((F32)ll_round(cur_render_x + (F32)fgi->mXBearing + x_offset),
-                    (F32)ll_round(cur_render_y + (F32)fgi->mYBearing),
-                    (F32)ll_round(cur_render_x + (F32)fgi->mXBearing + x_offset) + (F32)fgi->mWidth,
-                    (F32)ll_round(cur_render_y + (F32)fgi->mYBearing) - (F32)fgi->mHeight);
+        LLRectf screen_rect((F32)ll_round(cur_render_x + (F32)fgi->mXBearing * draw_scale + x_offset),
+                    (F32)ll_round(cur_render_y + (F32)fgi->mYBearing * draw_scale),
+                    (F32)ll_round(cur_render_x + (F32)fgi->mXBearing * draw_scale + x_offset) + (F32)fgi->mWidth * draw_scale,
+                    (F32)ll_round(cur_render_y + (F32)fgi->mYBearing * draw_scale) - (F32)fgi->mHeight * draw_scale);
 
         if (glyph_count >= GLYPH_BATCH_SIZE)
         {
@@ -380,18 +381,18 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
             bitmap_entry.first == EFontGlyphType::Grayscale ? text_color
                                                             : emoji_color;
         drawGlyph(glyph_count, vertices, uvs, colors, screen_rect, uv_rect,
-                  col, style_to_add, shadow, drop_shadow_strength);
+                  col, style_to_add, shadow, drop_shadow_strength, draw_scale);
 
         chars_drawn++;
-        cur_x += mFontFreetype->getXAdvance(fgi);
-        cur_y += fgi->mYAdvance;
+        cur_x += mFontFreetype->getXAdvance(fgi) * draw_scale;
+        cur_y += fgi->mYAdvance * draw_scale;
 
         llwchar next_char = wstr[i+1];
         if (next_char && (next_char < LAST_CHARACTER))
         {
             // Kern this puppy.
             next_glyph = mFontFreetype->getGlyphInfo(next_char, (!use_color) ? EFontGlyphType::Grayscale : EFontGlyphType::Color);
-            cur_x += mFontFreetype->getXKerning(fgi, next_glyph);
+            cur_x += mFontFreetype->getXKerning(fgi, next_glyph) * draw_scale;
         }
 
         // Round after kerning.
@@ -420,7 +421,7 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
     //FIXME: add underline as glyph?
     if (style_to_add & UNDERLINE)
     {
-        F32 descender = (F32)llfloor(mFontFreetype->getDescenderHeight());
+        F32 descender = (F32)llfloor(mFontFreetype->getDescenderHeight() * draw_scale);
 
         gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
         gGL.begin(LLRender::LINES);
@@ -444,7 +445,8 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
                 S32_MAX, max_pixels,
                 right_x,
                 false,
-                use_color);
+                use_color,
+                draw_scale);
     }
 
     gGL.popUIMatrix();
@@ -1296,10 +1298,10 @@ void LLFontGL::renderTriangle(LLVector4a* vertex_out, LLVector2* uv_out, LLColor
     colors_out[index] = color;
 }
 
-void LLFontGL::drawGlyph(S32& glyph_count, LLVector4a* vertex_out, LLVector2* uv_out, LLColor4U* colors_out, const LLRectf& screen_rect, const LLRectf& uv_rect, const LLColor4U& color, U8 style, ShadowType shadow, F32 drop_shadow_strength) const
+void LLFontGL::drawGlyph(S32& glyph_count, LLVector4a* vertex_out, LLVector2* uv_out, LLColor4U* colors_out, const LLRectf& screen_rect, const LLRectf& uv_rect, const LLColor4U& color, U8 style, ShadowType shadow, F32 drop_shadow_strength, F32 draw_scale) const
 {
     F32 slant_offset;
-    slant_offset = ((style & ITALIC) ? ( -mFontFreetype->getAscenderHeight() * 0.2f) : 0.f);
+    slant_offset = ((style & ITALIC) ? ( -mFontFreetype->getAscenderHeight() * 0.2f * draw_scale) : 0.f);
 
     //FIXME: bold and drop shadow are mutually exclusive only for convenience
     //Allow both when we need them.
@@ -1309,7 +1311,7 @@ void LLFontGL::drawGlyph(S32& glyph_count, LLVector4a* vertex_out, LLVector2* uv
         {
             LLRectf screen_rect_offset = screen_rect;
 
-            screen_rect_offset.translate((F32)(pass * BOLD_OFFSET), 0.f);
+            screen_rect_offset.translate((F32)(pass * BOLD_OFFSET) * draw_scale, 0.f);
             renderTriangle(&vertex_out[glyph_count * 6], &uv_out[glyph_count * 6], &colors_out[glyph_count * 6], screen_rect_offset, uv_rect, color, slant_offset);
             glyph_count++;
         }
@@ -1325,19 +1327,19 @@ void LLFontGL::drawGlyph(S32& glyph_count, LLVector4a* vertex_out, LLVector2* uv
             switch(pass)
             {
             case 0:
-                screen_rect_offset.translate(-1.f, -1.f);
+                screen_rect_offset.translate(-draw_scale, -draw_scale);
                 break;
             case 1:
-                screen_rect_offset.translate(1.f, -1.f);
+                screen_rect_offset.translate(draw_scale, -draw_scale);
                 break;
             case 2:
-                screen_rect_offset.translate(1.f, 1.f);
+                screen_rect_offset.translate(draw_scale, draw_scale);
                 break;
             case 3:
-                screen_rect_offset.translate(-1.f, 1.f);
+                screen_rect_offset.translate(-draw_scale, draw_scale);
                 break;
             case 4:
-                screen_rect_offset.translate(0, -2.f);
+                screen_rect_offset.translate(0, -2.f * draw_scale);
                 break;
             }
 
@@ -1352,7 +1354,7 @@ void LLFontGL::drawGlyph(S32& glyph_count, LLVector4a* vertex_out, LLVector2* uv
         LLColor4U shadow_color = LLFontGL::sShadowColor;
         shadow_color.mV[VALPHA] = U8(color.mV[VALPHA] * drop_shadow_strength);
         LLRectf screen_rect_shadow = screen_rect;
-        screen_rect_shadow.translate(1.f, -1.f);
+        screen_rect_shadow.translate(draw_scale, -draw_scale);
         renderTriangle(&vertex_out[glyph_count * 6], &uv_out[glyph_count * 6], &colors_out[glyph_count * 6], screen_rect_shadow, uv_rect, shadow_color, slant_offset);
         glyph_count++;
         renderTriangle(&vertex_out[glyph_count * 6], &uv_out[glyph_count * 6], &colors_out[glyph_count * 6], screen_rect, uv_rect, color, slant_offset);

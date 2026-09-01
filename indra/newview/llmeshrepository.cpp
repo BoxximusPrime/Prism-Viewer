@@ -1223,6 +1223,10 @@ void LLMeshRepoThread::run()
                         }
                         else
                         {
+                            // The request has exhausted its bounded retry
+                            // window.  Publish a terminal result so the
+                            // main-thread loading set is released.
+                            decompositionFailed(req.mId, MESH_HTTP_REQUEST_FAILED);
                             LL_DEBUGS(LOG_MESH) << "mDecompositionRequests failed: " << req.mId << LL_ENDL;
                         }
                     }
@@ -1259,6 +1263,10 @@ void LLMeshRepoThread::run()
                         }
                         else
                         {
+                            // The request has exhausted its bounded retry
+                            // window.  Publish a terminal result so the
+                            // main-thread loading set is released.
+                            physicsShapeFailed(req.mId, MESH_HTTP_REQUEST_FAILED);
                             LL_DEBUGS(LOG_MESH) << "mPhysicsShapeRequests failed: " << req.mId << LL_ENDL;
                         }
                     }
@@ -1724,7 +1732,10 @@ bool LLMeshRepoThread::fetchMeshDecomposition(const LLUUID& mesh_id)
                 U8* buffer = getDiskCacheBuffer(size);
                 if (!buffer)
                 {
-                    return true;
+                    // Treat cache allocation failure as a failed request so
+                    // the bounded retry path can eventually publish a
+                    // terminal result.
+                    return false;
                 }
                 LLMeshRepository::sCacheBytesRead += size;
                 ++LLMeshRepository::sCacheReads;
@@ -1770,11 +1781,20 @@ bool LLMeshRepoThread::fetchMeshDecomposition(const LLUUID& mesh_id)
                     mHttpRequestSet.insert(handler);
                 }
             }
+            else
+            {
+                ret = false;
+            }
+        }
+        else
+        {
+            ret = false;
         }
     }
     else
     {
         mHeaderMutex->unlock();
+        ret = false;
     }
 
     //early out was not hit, effectively fetched
@@ -1826,7 +1846,10 @@ bool LLMeshRepoThread::fetchMeshPhysicsShape(const LLUUID& mesh_id)
                 U8* buffer = getDiskCacheBuffer(size);
                 if (!buffer)
                 {
-                    return true;
+                    // Treat cache allocation failure as a failed request so
+                    // the bounded retry path can eventually publish a
+                    // terminal result.
+                    return false;
                 }
                 file.seek(disk_ofset);
                 file.read(buffer, size);
@@ -1869,6 +1892,10 @@ bool LLMeshRepoThread::fetchMeshPhysicsShape(const LLUUID& mesh_id)
                     mHttpRequestSet.insert(handler);
                 }
             }
+            else
+            {
+                ret = false;
+            }
         }
         else
         { //no physics shape whatsoever, report back NULL
@@ -1878,6 +1905,7 @@ bool LLMeshRepoThread::fetchMeshPhysicsShape(const LLUUID& mesh_id)
     else
     {
         mHeaderMutex->unlock();
+        ret = false;
     }
 
     //early out was not hit, effectively fetched
@@ -2561,6 +2589,13 @@ EMeshProcessingResult LLMeshRepoThread::physicsShapeReceived(const LLUUID& mesh_
                 }
             }
         }
+        else
+        {
+            LL_WARNS(LOG_MESH) << "Mesh physics shape parse error.  Not a valid mesh asset!  ID:  "
+                               << mesh_id << LL_ENDL;
+            delete d;
+            return MESH_PARSE_FAILURE;
+        }
     }
 
     {
@@ -2568,6 +2603,24 @@ EMeshProcessingResult LLMeshRepoThread::physicsShapeReceived(const LLUUID& mesh_
         mPhysicsQ.push_back(d);
     }
     return MESH_OK;
+}
+
+void LLMeshRepoThread::decompositionFailed(const LLUUID& mesh_id, EMeshProcessingResult result)
+{
+    if (mLoadedMutex)
+    {
+        LLMutexLock lock(mLoadedMutex);
+        mDecompositionFailureQ.emplace_back(mesh_id, result);
+    }
+}
+
+void LLMeshRepoThread::physicsShapeFailed(const LLUUID& mesh_id, EMeshProcessingResult result)
+{
+    if (mLoadedMutex)
+    {
+        LLMutexLock lock(mLoadedMutex);
+        mPhysicsShapeFailureQ.emplace_back(mesh_id, result);
+    }
 }
 
 LLMeshUploadThread::LLMeshUploadThread(LLMeshUploadThread::instance_list_t& data, const LLMeshUploadThread::lod_sources_map_t& sources_list,
@@ -3416,7 +3469,8 @@ void LLMeshRepoThread::notifyLoadedMeshes()
         }
     }
 
-    if (!mSkinInfoQ.empty() || !mSkinUnavailableQ.empty() || !mDecompositionQ.empty() || !mPhysicsQ.empty())
+    if (!mSkinInfoQ.empty() || !mSkinUnavailableQ.empty() || !mDecompositionQ.empty() || !mPhysicsQ.empty()
+        || !mDecompositionFailureQ.empty() || !mPhysicsShapeFailureQ.empty())
     {
         if (mLoadedMutex->trylock())
         {
@@ -3425,6 +3479,8 @@ void LLMeshRepoThread::notifyLoadedMeshes()
             std::deque<UUIDBasedRequest> skin_info_unavail_q;
             std::list<LLModel::Decomposition*> decomp_q;
             std::list<LLModel::Decomposition*> physics_q;
+            std::deque<MeshRequestFailure> decomp_failure_q;
+            std::deque<MeshRequestFailure> physics_failure_q;
 
             if (! mSkinInfoQ.empty())
             {
@@ -3444,6 +3500,16 @@ void LLMeshRepoThread::notifyLoadedMeshes()
             if (!mPhysicsQ.empty())
             {
                 physics_q.swap(mPhysicsQ);
+            }
+
+            if (!mDecompositionFailureQ.empty())
+            {
+                decomp_failure_q.swap(mDecompositionFailureQ);
+            }
+
+            if (!mPhysicsShapeFailureQ.empty())
+            {
+                physics_failure_q.swap(mPhysicsShapeFailureQ);
             }
 
             mLoadedMutex->unlock();
@@ -3470,6 +3536,20 @@ void LLMeshRepoThread::notifyLoadedMeshes()
             {
                 gMeshRepo.notifyDecompositionReceived(physics_q.front(), true);
                 physics_q.pop_front();
+            }
+
+            while (!decomp_failure_q.empty())
+            {
+                const MeshRequestFailure& failure = decomp_failure_q.front();
+                gMeshRepo.notifyDecompositionFailed(failure.mMeshID, false, failure.mResult);
+                decomp_failure_q.pop_front();
+            }
+
+            while (!physics_failure_q.empty())
+            {
+                const MeshRequestFailure& failure = physics_failure_q.front();
+                gMeshRepo.notifyDecompositionFailed(failure.mMeshID, true, failure.mResult);
+                physics_failure_q.pop_front();
             }
         }
     }
@@ -4063,6 +4143,13 @@ LLMeshDecompositionHandler::~LLMeshDecompositionHandler()
     if (!mProcessed)
     {
         LL_WARNS(LOG_MESH) << "deleting unprocessed request handler (may be ok on exit)" << LL_ENDL;
+        if (mHttpHandle != LLCORE_HTTP_HANDLE_INVALID
+            && gMeshRepo.mThread && gMeshRepo.mThread->mLoadedMutex)
+        {
+            // A canceled handler never reaches processFailure().  Surface a
+            // terminal event so cancellation cannot strand the loading UUID.
+            gMeshRepo.mThread->decompositionFailed(mMeshID, MESH_HTTP_REQUEST_FAILED);
+        }
     }
 }
 
@@ -4072,8 +4159,7 @@ void LLMeshDecompositionHandler::processFailure(LLCore::HttpStatus status)
                        << ", Reason:  " << status.toString()
                        << " (" << status.toTerseString() << ").  Not retrying."
                        << LL_ENDL;
-    // *TODO:  Mark mesh unavailable on error.  For now, simply leave
-    // request unfulfilled rather than retry forever.
+    gMeshRepo.mThread->decompositionFailed(mMeshID, MESH_HTTP_REQUEST_FAILED);
 }
 
 void LLMeshDecompositionHandler::processData(LLCore::BufferArray * /* body */, S32 /* body_offset */,
@@ -4081,7 +4167,7 @@ void LLMeshDecompositionHandler::processData(LLCore::BufferArray * /* body */, S
 {
     LL_PROFILE_ZONE_SCOPED;
     if ((!MESH_DECOMP_PROCESS_FAILED)
-        && ((data != NULL) == (data_size > 0)) // if we have data but no size or have size but no data, something is wrong
+        && data != NULL && data_size > 0
         && gMeshRepo.mThread->decompositionReceived(mMeshID, data, data_size))
     {
         // good fetch from sim, write to cache
@@ -4128,7 +4214,7 @@ void LLMeshDecompositionHandler::processData(LLCore::BufferArray * /* body */, S
         LL_WARNS(LOG_MESH) << "Error during mesh decomposition processing.  ID:  " << mMeshID
                            << ", Unknown reason.  Not retrying."
                            << LL_ENDL;
-        // *TODO:  Mark mesh unavailable on error
+        gMeshRepo.mThread->decompositionFailed(mMeshID, MESH_PARSE_FAILURE);
     }
 }
 
@@ -4137,6 +4223,13 @@ LLMeshPhysicsShapeHandler::~LLMeshPhysicsShapeHandler()
     if (!mProcessed)
     {
         LL_WARNS(LOG_MESH) << "deleting unprocessed request handler (may be ok on exit)" << LL_ENDL;
+        if (mHttpHandle != LLCORE_HTTP_HANDLE_INVALID
+            && gMeshRepo.mThread && gMeshRepo.mThread->mLoadedMutex)
+        {
+            // A canceled handler never reaches processFailure().  Surface a
+            // terminal event so cancellation cannot strand the loading UUID.
+            gMeshRepo.mThread->physicsShapeFailed(mMeshID, MESH_HTTP_REQUEST_FAILED);
+        }
     }
 }
 
@@ -4146,7 +4239,7 @@ void LLMeshPhysicsShapeHandler::processFailure(LLCore::HttpStatus status)
                        << ", Reason:  " << status.toString()
                        << " (" << status.toTerseString() << ").  Not retrying."
                        << LL_ENDL;
-    // *TODO:  Mark mesh unavailable on error
+    gMeshRepo.mThread->physicsShapeFailed(mMeshID, MESH_HTTP_REQUEST_FAILED);
 }
 
 void LLMeshPhysicsShapeHandler::processData(LLCore::BufferArray * /* body */, S32 /* body_offset */,
@@ -4154,7 +4247,7 @@ void LLMeshPhysicsShapeHandler::processData(LLCore::BufferArray * /* body */, S3
 {
     LL_PROFILE_ZONE_SCOPED;
     if ((!MESH_PHYS_SHAPE_PROCESS_FAILED)
-        && ((data != NULL) == (data_size > 0)) // if we have data but no size or have size but no data, something is wrong
+        && data != NULL && data_size > 0
         && gMeshRepo.mThread->physicsShapeReceived(mMeshID, data, data_size) == MESH_OK)
     {
         // good fetch from sim, write to cache for caching
@@ -4201,7 +4294,7 @@ void LLMeshPhysicsShapeHandler::processData(LLCore::BufferArray * /* body */, S3
         LL_WARNS(LOG_MESH) << "Error during mesh physics shape processing.  ID:  " << mMeshID
                            << ", Unknown reason.  Not retrying."
                            << LL_ENDL;
-        // *TODO:  Mark mesh unavailable on error
+        gMeshRepo.mThread->physicsShapeFailed(mMeshID, MESH_PARSE_FAILURE);
     }
 }
 
@@ -4273,6 +4366,12 @@ void LLMeshRepository::shutdown()
     }
 
     mUploads.clear();
+
+    // No main-thread notifications will be delivered after shutdown.  Drop
+    // any outstanding terminal-request markers along with the repository's
+    // loading state so canceled handlers cannot leave stale UUIDs behind.
+    mLoadingDecompositions.clear();
+    mLoadingPhysicsShapes.clear();
 
     delete mMeshMutex;
     mMeshMutex = NULL;
@@ -4782,6 +4881,27 @@ void LLMeshRepository::notifyDecompositionReceived(LLModel::Decomposition* decom
     {
         mLoadingDecompositions.erase(decomp_id);
     }
+}
+
+void LLMeshRepository::notifyDecompositionFailed(const LLUUID& mesh_id,
+                                                 bool physics_mesh,
+                                                 EMeshProcessingResult result)
+{
+    // Failure events are intentionally consumed on the main thread, where
+    // these sets are normally accessed.  A failed request must not suppress
+    // all future requests for this UUID forever.
+    if (physics_mesh)
+    {
+        mLoadingPhysicsShapes.erase(mesh_id);
+    }
+    else
+    {
+        mLoadingDecompositions.erase(mesh_id);
+    }
+
+    LL_DEBUGS(LOG_MESH) << (physics_mesh ? "Physics shape" : "Decomposition")
+                        << " request completed with result " << result
+                        << ", ID: " << mesh_id << LL_ENDL;
 }
 
 void LLMeshRepository::notifyMeshLoaded(const LLVolumeParams& mesh_params, LLVolume* volume, S32 lod)

@@ -337,6 +337,16 @@
          name="all_tags"
          value="2" />
     </combo_box>
+	<check_box
+     control_name="RenderHideGroupTitle"
+     height="16"
+     label="Don't show my group to other people"
+     layout="topleft"
+     left="180"
+     name="hide_group_title"
+     top_delta="3"
+     tool_tip="Hide your active group title from other people"
+     width="300" />
 	<text
 	 type="string"
 	 length="1"
@@ -375,6 +385,17 @@
          value="0"
          width="75" />
     </radio_group>
+    <check_box
+     control_name="BoxxyCompactChatBar"
+     follows="left|top"
+     height="20"
+     label="Use compact local chat bar"
+     layout="topleft"
+     left="245"
+     name="compact_local_chat_bar"
+     tool_tip="Keep Conversations closed when Enter or typing starts local chat."
+     top_delta="0"
+     width="235" />
     
     <text
      type="string"
@@ -384,7 +405,7 @@
      layout="topleft"
      left="30"
      name="title_afk_text"
-     top_pad="5" 
+     top_pad="19"
      width="190">
     	Away timeout:
     </text>

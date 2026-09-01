@@ -152,7 +152,10 @@ void LLFloaterIMSessionTab::setVisible(bool visible)
     if (visible && !mHasVisibleBeenInitialized)
     {
         mHasVisibleBeenInitialized = true;
-        if (!gAgentCamera.cameraMouselook())
+        // A floater can be detached before its first visible frame. In that
+        // case it should open independently without also revealing its former
+        // Conversations host.
+        if (getHost() && !gAgentCamera.cameraMouselook())
         {
             LLFloaterReg::getTypedInstance<LLFloaterIMContainer>("im_container")->setVisible(true);
         }
@@ -1223,7 +1226,10 @@ void LLFloaterIMSessionTab::onTearOffClicked()
 
     if (isTornOff())
     {
-        container->selectAdjacentConversation(false);
+        if (container->getVisible())
+        {
+            container->selectAdjacentConversation(false);
+        }
         forceReshape();
     }
     //Upon re-docking the torn off floater, select the corresponding conversation line item

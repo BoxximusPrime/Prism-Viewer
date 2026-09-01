@@ -69,10 +69,12 @@ if(NON_RELEASE_CRASH_REPORTING)
   add_compile_definitions( LL_SEND_CRASH_REPORTS=1)
 endif()
 
-set(USE_LTO OFF CACHE BOOL "Enable Link Time Optimization")
+set(USE_LTO ON CACHE BOOL "Enable Link Time Optimization")
 if(USE_LTO)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
+
+set(USE_AVX2 ON CACHE BOOL "Target AVX2-capable x64 processors")
 
 # Don't bother with a MinSizeRel or Debug builds.
 set(CMAKE_CONFIGURATION_TYPES "RelWithDebInfo;Release" CACHE STRING "Supported build types." FORCE)
@@ -116,6 +118,10 @@ if (WINDOWS)
           /MP
           /permissive-
       )
+
+  if(ADDRESS_SIZE EQUAL 64 AND USE_AVX2)
+    add_compile_options(/arch:AVX2)
+  endif()
 
   # Nicky: x64 implies SSE2
   if( ADDRESS_SIZE EQUAL 32 )
@@ -245,4 +251,3 @@ if (LINUX OR DARWIN)
 
   add_compile_options(-m${ADDRESS_SIZE})
 endif (LINUX OR DARWIN)
-

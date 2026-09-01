@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<chiclet_im_p2p
+ height="56"
+ name="im_p2p_chiclet"
+ width="56">
+  <chiclet_im_p2p.chiclet_button
+   button_flash_enable="true"
+   button_flash_count="1000000"
+   button_flash_rate="0.85"
+   flash_color="BadgeImageColor"
+   height="56"
+   image_hover_selected="PushButton_Over"
+   image_hover_unselected="PushButton_Over"
+   image_pressed="PushButton_Selected_Press"
+   image_pressed_selected="PushButton_Selected_Press"
+   image_selected="PushButton_On"
+   image_unselected="PushButton_Off"
+   name="chiclet_button"
+   tab_stop="false"
+   width="56" />
+  <chiclet_im_p2p.avatar_icon
+   bottom="5"
+   color="white"
+   follows="all"
+   height="46"
+   left="5"
+   mouse_opaque="false"
+   name="avatar_icon"
+   width="46" />
+  <chiclet_im_p2p.unread_badge
+   bottom="35"
+   height="21"
+   image_name="Badge_Background"
+   left="32"
+   name="unread_badge"
+   scale_image="true"
+   visible="false"
+   width="24" />
+  <chiclet_im_p2p.unread_notifications
+   bottom="35"
+   font="SansSerifSmallBold"
+   halign="center"
+   height="21"
+   left="32"
+   max_displayed_count="99"
+   mouse_opaque="false"
+   name="unread_notifications"
+   text_color="BadgeLabelColor"
+   v_pad="3"
+   visible="false"
+   width="24" />
+</chiclet_im_p2p>

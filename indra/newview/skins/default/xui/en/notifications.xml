@@ -12834,4 +12834,40 @@ are wearing now.
           name="okignore"
           yestext="OK"/>
   </notification>
+  <notification
+   icon="alertmodal.tga"
+   name="BoxxyAONewSet"
+   type="alertmodal">
+    Name the new animation set:
+    <tag>confirm</tag>
+    <form name="form">
+      <input name="set_name" type="text" width="300">Animation Set</input>
+      <button default="true" index="0" name="Create" text="Create" />
+      <button index="1" name="Cancel" text="Cancel" />
+    </form>
+  </notification>
+  <notification
+   icon="alertmodal.tga"
+   name="BoxxyAORemoveSet"
+   type="alertmodal">
+    Move the animation set "[SET_NAME]" to Trash? Only its inventory links are removed; your original animations are untouched.
+    <tag>confirm</tag>
+    <usetemplate name="okcancelbuttons" notext="Cancel" yestext="Remove Set" />
+  </notification>
+  <notification icon="alertmodal.tga" name="BoxxyAOInvalidSetName" type="alertmodal">
+    That set name is empty, already exists, or contains a colon (:). Choose a unique name without a colon.
+    <usetemplate name="okbutton" yestext="OK" />
+  </notification>
+  <notification icon="alertmodal.tga" name="BoxxyAONotReady" type="alertmodal">
+    The #Boxxy/#AO inventory folders are still being prepared. Please try again in a moment.
+    <usetemplate name="okbutton" yestext="OK" />
+  </notification>
+  <notification icon="alertmodal.tga" name="BoxxyAOAnimationUnavailable" type="alertmodal">
+    That animation is not currently available from Inventory. Wait for Inventory to finish loading and try again.
+    <usetemplate name="okbutton" yestext="OK" />
+  </notification>
+  <notification icon="alertmodal.tga" name="BoxxyAOAnimationAlreadyAdded" type="alertmodal">
+    That animation is already linked in the selected state.
+    <usetemplate name="okbutton" yestext="OK" />
+  </notification>
 </notifications>

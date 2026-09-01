@@ -201,7 +201,6 @@ private:
     LLIconCtrl*         mCantEditObjectsIcon;
 
     LLHandle<LLFloater> mFloaterPermissionsHandle;
-    LLHandle<LLFloater> mFloaterProfileTextureHandle;
     LLHandle<LLFloater> mFloaterTexturePickerHandle;
 
     bool                mHasUnsavedDescriptionChanges;
@@ -287,6 +286,7 @@ protected:
     void onUploadPhoto();
     void onChangePhoto();
     void onRemovePhoto();
+    void onShowProfileTexture();
     void onCommitPhoto(const LLUUID& id);
     void setDescriptionText(const std::string &text);
     void onSetDescriptionDirty();

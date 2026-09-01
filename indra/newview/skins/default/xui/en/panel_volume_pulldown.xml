@@ -8,7 +8,7 @@
  border="false"
  chrome="true"
  follows="bottom"
- height="155"
+ height="174"
  layout="topleft"
  name="volumepulldown_floater"
  width="225">
@@ -142,20 +142,41 @@
      left_pad="5"
      name="mute_audio_sounds"
      tab_stop="false"
-     width="16">
-      <button.commit_callback
-      function="Vol.SetSounds"/>
-    </button>
-  <check_box
-    name="gesture_audio_play_btn"
-		control_name="EnableGestureSounds"
-    disabled_control="MuteAudio"
-    height="16"
-    layout="topleft"
-    left_pad="5"
-    tool_tip="Enable sounds from gestures"
-    top_delta="2"
-    width="350"/>
+     width="16" />
+    <slider
+     control_name="AudioLevelGesture"
+     disabled_control="MuteAudio"
+     follows="left|top"
+     height="15"
+     increment="0.025"
+     initial_value="0.5"
+     label="Gestures"
+     label_width="60"
+     left="10"
+     width="160"
+     layout="topleft"
+     name="Gesture Volume"
+     show_text="false"
+     top_pad="4"
+     volume="true">
+        <slider.commit_callback
+         function="Vol.setControlFalse"
+         parameter="MuteGestureSounds" />
+    </slider>
+    <button
+     control_name="MuteGestureSounds"
+     disabled_control="MuteAudio"
+     follows="top|left"
+     height="16"
+     image_selected="AudioMute_Off"
+     image_unselected="Audio_Off"
+     is_toggle="true"
+     layout="topleft"
+     left_pad="5"
+     name="mute_audio_gestures"
+     tab_stop="false"
+     tool_tip="Mute gesture sounds"
+     width="16" />
     <slider
      control_name="AudioLevelMusic"
      disabled_control="MuteAudio"

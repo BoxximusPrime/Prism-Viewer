@@ -2315,28 +2315,38 @@ void process_decline_callingcard(LLMessageSystem* msg, void**)
     LLNotificationsUtil::add("CallingCardDeclined");
 }
 
-void translateSuccess(LLChat chat, LLSD toastArgs, std::string originalMsg, std::string expectLang, std::string translation, const std::string detected_language)
+void translateSuccess(LLChat chat, std::string originalMsg, std::string expectLang, std::string translation, const std::string detected_language)
 {
     // filter out non-interesting responses
     if (!translation.empty()
         && ((detected_language.empty()) || (expectLang != detected_language))
         && (LLStringUtil::compareInsensitive(translation, originalMsg) != 0))
     {
-        chat.mText += " (" + LLTranslate::removeNoTranslateTags(translation) + ")";
+        chat.mTranslatedText = LLTranslate::removeNoTranslateTags(translation);
+        if (LLTranslate::getCurrentService() == LLTranslate::SERVICE_OPENAI
+            && !detected_language.empty())
+        {
+            chat.mTranslatedText = detected_language + ": " + chat.mTranslatedText;
+        }
     }
 
     LLTranslate::instance().logSuccess(1);
-    LLNotificationsUI::LLNotificationManager::instance().onChat(chat, toastArgs);
+    LLFloaterIMNearbyChat* nearby_chat = LLFloaterReg::getTypedInstance<LLFloaterIMNearbyChat>("nearby_chat");
+    if (nearby_chat)
+    {
+        nearby_chat->updateTranslatedMessage(chat.mTranslationRequestID, chat.mText,
+                                             chat.mTranslatedText, true);
+    }
 }
 
-void translateFailure(LLChat chat, LLSD toastArgs, int status, const std::string err_msg)
+void translateFailure(LLChat chat, int status, const std::string err_msg)
 {
-    std::string msg = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", err_msg));
-    LLStringUtil::replaceString(msg, "\n", " "); // we want one-line error messages
-    chat.mText += " (" + msg + ")";
-
     LLTranslate::instance().logFailure(1);
-    LLNotificationsUI::LLNotificationManager::instance().onChat(chat, toastArgs);
+    LLFloaterIMNearbyChat* nearby_chat = LLFloaterReg::getTypedInstance<LLFloaterIMNearbyChat>("nearby_chat");
+    if (nearby_chat)
+    {
+        nearby_chat->updateTranslatedMessage(chat.mTranslationRequestID, chat.mText, {}, true);
+    }
 }
 
 
@@ -2573,7 +2583,9 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
         chat.mOwnerID = owner_id;
 
         LLTranslate::instance().logCharsSeen(mesg.size());
-        if (gSavedSettings.getBOOL("TranslateChat") && chat.mSourceType != CHAT_SOURCE_SYSTEM)
+        if (gSavedSettings.getBOOL("TranslateChat")
+            && chat.mSourceType != CHAT_SOURCE_SYSTEM
+            && chat.mFromID != gAgentID)
         {
             if (chat.mChatStyle == CHAT_STYLE_IRC)
             {
@@ -2583,9 +2595,16 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
             const std::string to_lang = LLTranslate::getTranslateLanguage();
 
             LLTranslate::instance().logCharsSent(mesg.size());
+            chat.mTranslationRequestID.generate();
+            LLChat pending_chat = chat;
+            pending_chat.mText += " [...]";
+            LLSD pending_args = args;
+            pending_args["do_not_log"] = true;
+            LLNotificationsUI::LLNotificationManager::instance().onChat(pending_chat, pending_args);
+
             LLTranslate::translateMessage(from_lang, to_lang, mesg,
-                boost::bind(&translateSuccess, chat, args, mesg, from_lang, _1, _2),
-                boost::bind(&translateFailure, chat, args, _1, _2));
+                boost::bind(&translateSuccess, chat, mesg, to_lang, _1, _2),
+                boost::bind(&translateFailure, chat, _1, _2));
 
         }
         else
@@ -3809,23 +3828,19 @@ void process_sound_trigger(LLMessageSystem *msg, void **)
         return;
     }
 
-    // Don't play sounds from gestures if they are not enabled.
-    // Do play sounds triggered by avatar, since muting your own
-    // gesture sounds and your own sounds played inworld from
-    // Inventory can cause confusion.
-    if (object_id == owner_id
-        && owner_id != gAgentID
-        && !gSavedSettings.getBOOL("EnableGestureSounds"))
-    {
-        return;
-    }
+    // Avatar-originated sound triggers are gesture sounds. Give them a
+    // distinct audio type so they can be mixed independently from SFX.
+    const bool is_gesture_sound = object_id == owner_id;
 
     if (LLMaterialTable::basic.isCollisionSound(sound_id) && !gSavedSettings.getBOOL("EnableCollisionSounds"))
     {
         return;
     }
 
-    gAudiop->triggerSound(sound_id, owner_id, gain, LLAudioEngine::AUDIO_TYPE_SFX, pos_global);
+    const LLAudioEngine::LLAudioType audio_type = is_gesture_sound
+        ? LLAudioEngine::AUDIO_TYPE_GESTURE
+        : LLAudioEngine::AUDIO_TYPE_SFX;
+    gAudiop->triggerSound(sound_id, owner_id, gain, audio_type, pos_global);
 }
 
 void process_preload_sound(LLMessageSystem *msg, void **user_data)
@@ -6989,4 +7004,3 @@ void LLOfferInfo::forceResponse(InventoryOfferResponse response)
     params.functor.function(boost::bind(&LLOfferInfo::inventory_offer_callback, this, _1, _2));
     LLNotifications::instance().forceResponse(params, response);
 }
-

@@ -80,6 +80,8 @@ endif ()
 configure_file(llversioninfovars.h.in llversioninfovars.h @ONLY)
 
 set(viewer_SOURCE_FILES
+    llboxxyao.cpp
+    llboxxyvip.cpp
     gltfscenemanager.cpp
     gltf/asset.cpp
     gltf/accessor.cpp
@@ -215,6 +217,8 @@ set(viewer_SOURCE_FILES
     llfloaterclassified.cpp
     llfloatercolorpicker.cpp
     llfloaterconversationlog.cpp
+    llfloaterboxxyao.cpp
+    llfloaterboxxyradar.cpp
     llfloaterconversationpreview.cpp
     llfloatercreatelandmark.cpp
     llfloaterdeleteprefpreset.cpp
@@ -759,6 +763,8 @@ set(VIEWER_BINARY_NAME "secondlife-bin" CACHE STRING
     "The name of the viewer executable to create.")
 
 set(viewer_HEADER_FILES
+    llboxxyao.h
+    llboxxyvip.h
     CMakeLists.txt
     ViewerInstall.cmake
     gltfscenemanager.h
@@ -899,6 +905,8 @@ set(viewer_HEADER_FILES
     llfloaterclassified.h
     llfloatercolorpicker.h
     llfloaterconversationlog.h
+    llfloaterboxxyao.h
+    llfloaterboxxyradar.h
     llfloaterconversationpreview.h
     llfloatercreatelandmark.h
     llfloaterdeleteprefpreset.h
@@ -1858,6 +1866,7 @@ if (WINDOWS)
       ${CMAKE_CURRENT_SOURCE_DIR}/licenses-win32.txt
       ${CMAKE_CURRENT_SOURCE_DIR}/featuretable.txt
       ${viewer_APPSETTINGS_FILES}
+      ${viewer_XUI_FILES}
       SLPlugin
       media_plugin_cef
       media_plugin_libvlc
@@ -1908,7 +1917,28 @@ if (WINDOWS)
 
     add_custom_target(copy_w_viewer_manifest ALL DEPENDS ${CMAKE_CFG_INTDIR}/copy_touched.bat)
 
-    add_dependencies(${VIEWER_BINARY_NAME} stage_third_party_libs llcommon llwebrtc copy_w_viewer_manifest)
+    # Keep developer builds in sync with newly added or modified runtime
+    # resources. The manifest's non-package copy action only stages a small
+    # subset of these files; a freshly-created configuration directory must
+    # still be directly launchable after building secondlife-bin.
+    add_custom_target(stage_viewer_xui ALL
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/app_settings
+        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/app_settings
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/character
+        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/character
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${AUTOBUILD_INSTALL_DIR}/fonts
+        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/fonts
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/skins/default
+        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/skins/default
+      DEPENDS ${viewer_XUI_FILES} ${viewer_CHARACTER_FILES}
+      COMMENT "Staging viewer resources"
+      )
+
+    add_dependencies(${VIEWER_BINARY_NAME} stage_third_party_libs llcommon llwebrtc copy_w_viewer_manifest stage_viewer_xui)
 
     # Useful for remote debugging or profiling if set to target a shared drive. for example, brad sets it to "dist/secondlife" to deploy under
     # the build tree (and then I share that directory) or "f:/dist/secondlife" to deploy to a network mounted drive (although this can be slow).

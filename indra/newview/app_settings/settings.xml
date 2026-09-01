@@ -280,6 +280,17 @@
       <key>Value</key>
       <real>0.5</real>
     </map>
+    <key>AudioLevelGesture</key>
+    <map>
+      <key>Comment</key>
+      <string>Audio level of sounds played by gestures</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
+    </map>
     <key>AudioLevelMaster</key>
     <map>
       <key>Comment</key>
@@ -1510,6 +1521,17 @@
       <key>Value</key>
       <integer>1</integer>
     </map>
+    <key>BoxxyCompactChatBar</key>
+    <map>
+      <key>Comment</key>
+      <string>Use a compact bottom-left chat entry instead of opening Conversations when local chat is started</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
     <key>LetterKeysFocusChatBar</key>
     <map>
       <key>Comment</key>
@@ -2715,17 +2737,6 @@
     <map>
       <key>Comment</key>
       <string>Use Alt+mouse to look at and zoom in on objects</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>Boolean</string>
-      <key>Value</key>
-      <integer>1</integer>
-    </map>
-    <key>EnableGestureSounds</key>
-    <map>
-      <key>Comment</key>
-      <string>Play sounds from gestures</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -5446,6 +5457,17 @@
     <map>
       <key>Comment</key>
       <string>Ambient sound effects, such as wind noise, play at 0 volume</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>MuteGestureSounds</key>
+    <map>
+      <key>Comment</key>
+      <string>Gesture sounds play at 0 volume</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -9050,7 +9072,7 @@
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
-      <integer>0</integer>
+      <integer>1</integer>
     </map>
     <key>NameTagShowUsernames</key>
     <map>
@@ -12220,7 +12242,7 @@
     <key>TranslationService</key>
     <map>
       <key>Comment</key>
-      <string>Translation API to use. (google|azure)</string>
+      <string>Translation API to use. (google|azure|deepl|openai)</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -12260,6 +12282,24 @@
         <string>LLSD</string>
         <key>Value</key>
         <string></string>
+    </map>
+    <key>OpenAITranslateConfig</key>
+    <map>
+      <key>Comment</key>
+      <string>OpenAI-compatible translation endpoint, model, and optional API key</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>LLSD</string>
+      <key>Value</key>
+      <map>
+        <key>endpoint</key>
+        <string>http://localhost:1234/v1</string>
+        <key>model</key>
+        <string></string>
+        <key>id</key>
+        <string></string>
+      </map>
     </map>
     <key>TutorialURL</key>
     <map>
@@ -16352,6 +16392,50 @@
     <key>Value</key>
     <integer>0</integer>
   </map>
+  <key>BoxxyAnimationSyncing</key>
+  <map>
+    <key>Comment</key>
+    <string>Keep simulator-signaled avatar animations on a persistent phase clock through loading and reduced-detail rendering</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>BoxxyTurnToSelected</key>
+  <map>
+    <key>Comment</key>
+    <string>Turn the avatar toward selected objects</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
+  <key>BoxxyResolutionIndependentHUDText</key>
+  <map>
+    <key>Comment</key>
+    <string>Scale hover text on HUD attachments relative to a 1080-pixel logical viewport</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>BoxxyHoverTextFontScale</key>
+  <map>
+    <key>Comment</key>
+    <string>Global hover text font scale in five-percent steps from -10 to 10</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>S32</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
   <key>MFAHash</key>
   <map>
     <key>Comment</key>
@@ -16608,13 +16692,35 @@
     <key>EnableLookAtTarget</key>
     <map>
       <key>Comment</key>
-      <string>Whether or not to animate the avatar head and send look at targets when moving the cursor or focusing on objects</string>
+      <string>Whether or not to animate the avatar head and send LookAt targets when moving the cursor or focusing on objects</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
       <integer>1</integer>
+    </map>
+    <key>ShowLookAtTargets</key>
+    <map>
+      <key>Comment</key>
+      <string>Whether or not to render the colored LookAt target crosshairs</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>ShowOnlyFocusLookAtTargets</key>
+    <map>
+      <key>Comment</key>
+      <string>Whether or not to restrict rendered LookAt crosshairs to the Focus target type</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
     </map>
     <key>LimitLookAtTarget</key>
     <map>

@@ -444,16 +444,20 @@ void audio_update_volume(bool force_update)
         }
 
         static LLCachedControl<bool> mute_sounds(gSavedSettings, "MuteSounds");
+        static LLCachedControl<bool> mute_gesture_sounds(gSavedSettings, "MuteGestureSounds");
         static LLCachedControl<bool> mute_ui(gSavedSettings, "MuteUI");
         static LLCachedControl<bool> mute_ambient(gSavedSettings, "MuteAmbient");
         static LLCachedControl<bool> mute_music(gSavedSettings, "MuteMusic");
         static LLCachedControl<F32> al_sfx(gSavedSettings, "AudioLevelSFX");
+        static LLCachedControl<F32> al_gesture(gSavedSettings, "AudioLevelGesture");
         static LLCachedControl<F32> al_ui(gSavedSettings, "AudioLevelUI");
         static LLCachedControl<F32> al_ambient(gSavedSettings, "AudioLevelAmbient");
         static LLCachedControl<F32> al_music(gSavedSettings, "AudioLevelMusic");
         // handle secondary gains
         gAudiop->setSecondaryGain(LLAudioEngine::AUDIO_TYPE_SFX,
                                   mute_sounds() ? 0.f : al_sfx());
+        gAudiop->setSecondaryGain(LLAudioEngine::AUDIO_TYPE_GESTURE,
+                                  mute_gesture_sounds() ? 0.f : al_gesture());
         gAudiop->setSecondaryGain(LLAudioEngine::AUDIO_TYPE_UI,
                                   mute_ui() ? 0.f : al_ui());
         gAudiop->setSecondaryGain(LLAudioEngine::AUDIO_TYPE_AMBIENT,

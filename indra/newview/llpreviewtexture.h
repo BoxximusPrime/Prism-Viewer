@@ -52,6 +52,10 @@ public:
 
     virtual void        reshape(S32 width, S32 height, bool called_from_parent = true);
     virtual void        onFocusReceived();
+    virtual bool        handleMouseDown(S32 x, S32 y, MASK mask);
+    virtual bool        handleMouseUp(S32 x, S32 y, MASK mask);
+    virtual bool        handleHover(S32 x, S32 y, MASK mask);
+    virtual bool        handleScrollWheel(S32 x, S32 y, S32 clicks);
 
     static void         onFileLoadedForSave(
                             bool success,
@@ -67,6 +71,7 @@ public:
     void                saveMultipleToFile(const std::string& file_name = "");
 
     static void         onSaveAsBtn(void* data);
+    static void         onResetViewBtn(void* data);
 
     void                hideCtrlButtons();
 
@@ -82,6 +87,9 @@ protected:
 private:
     void                updateImageID(); // set what image is being uploaded.
     void                updateDimensions();
+    LLRect              getImageRect() const;
+    void                resetView();
+    void                clampPan();
     LLUUID              mImageID;
     LLPointer<LLViewerFetchedTexture>       mImage;
     S32                 mImageOldBoostLevel;
@@ -100,9 +108,15 @@ private:
     bool mIsCopyable;
     bool mIsFullPerm;
     bool mUpdateDimensions;
+    bool mFitToImage;
     S32 mLastHeight;
     S32 mLastWidth;
     F32 mAspectRatio;
+    F32 mZoom;
+    S32 mPanX;
+    S32 mPanY;
+    S32 mLastMouseX;
+    S32 mLastMouseY;
 
     LLLoadedCallbackEntry::source_callback_list_t mCallbackTextureList ;
     std::vector<std::string>        mRatiosList;

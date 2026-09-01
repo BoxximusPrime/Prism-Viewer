@@ -81,7 +81,7 @@
            left_delta="-110"
            name="aspect_ratio"
            top_pad="5"
-           width="200">
+           width="150">
               Preview aspect ratio
           </text>
           <combo_box
@@ -93,10 +93,20 @@
            max_chars="20"
            mouse_opaque="true"
            enabled="true"
-           width="108"
+           width="90"
            name="combo_aspect_ratio"
            tool_tip="Preview at a fixed aspect ratio">
 	      </combo_box>
+          <button
+           follows="right|bottom"
+           height="23"
+           label="Reset View"
+           layout="topleft"
+           left_pad="5"
+           name="reset_view_btn"
+           top_delta="0"
+           tool_tip="Return to the fitted image view"
+           width="85" />
       </layout_panel>
       <layout_panel
         name="buttons_panel"

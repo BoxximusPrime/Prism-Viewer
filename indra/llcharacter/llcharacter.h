@@ -155,7 +155,7 @@ public:
 
     // periodic update function, steps the motion controller
     enum e_update_t { NORMAL_UPDATE, HIDDEN_UPDATE, FORCE_UPDATE };
-    void updateMotions(e_update_t update_type);
+    void updateMotions(e_update_t update_type, bool advance_hidden_time = false);
 
     LLAnimPauseRequest requestPause();
     bool areAnimationsPaused() const { return mMotionController.isPaused(); }
@@ -309,4 +309,3 @@ private:
 };
 
 #endif // LL_LLCHARACTER_H
-

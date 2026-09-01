@@ -80,8 +80,6 @@ protected:
                           bool duplicate,
                           bool is_priority);
 
-    void capsRecvForRegion(const LLUUID& region_id, std::string pumpname);
-
     void assetRequestCoro(const LLUUID uuid,
                           LLAssetType::EType atype,
                           LLGetAssetCallback callback,
@@ -116,7 +114,6 @@ protected:
         void *mUserData;
     };
 
-    std::string mViewerAssetUrl;
     S32 mCountRequests;
     S32 mCountStarted;
     S32 mCountCompleted;

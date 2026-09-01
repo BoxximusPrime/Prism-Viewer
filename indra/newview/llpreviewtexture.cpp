@@ -53,6 +53,7 @@
 #include "llviewercontrol.h"
 #include "llviewerwindow.h"
 #include "lllineeditor.h"
+#include "lllocalcliprect.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -62,6 +63,9 @@ const F32 SECONDS_TO_SHOW_FILE_SAVED_MSG = 8.f;
 
 const F32 PREVIEW_TEXTURE_MAX_ASPECT = 200.f;
 const F32 PREVIEW_TEXTURE_MIN_ASPECT = 0.005f;
+const S32 PREVIEW_TEXTURE_MAX_SIZE = 1024;
+const F32 PREVIEW_TEXTURE_MAX_ZOOM = 16.f;
+const F32 PREVIEW_TEXTURE_ZOOM_FACTOR = 1.2f;
 
 
 LLPreviewTexture::LLPreviewTexture(const LLSD& key)
@@ -73,9 +77,15 @@ LLPreviewTexture::LLPreviewTexture(const LLSD& key)
       mIsCopyable(false),
       mIsFullPerm(false),
       mUpdateDimensions(true),
+      mFitToImage(true),
       mLastHeight(0),
       mLastWidth(0),
       mAspectRatio(0.f),
+      mZoom(1.f),
+      mPanX(0),
+      mPanY(0),
+      mLastMouseX(0),
+      mLastMouseY(0),
       mPreviewToSave(false),
       mImage(NULL),
       mImageOldBoostLevel(LLGLTexture::BOOST_NONE)
@@ -151,6 +161,7 @@ bool LLPreviewTexture::postBuild()
     }
 
     childSetAction("save_tex_btn", LLPreviewTexture::onSaveAsBtn, this);
+    childSetAction("reset_view_btn", LLPreviewTexture::onResetViewBtn, this);
     getChildView("save_tex_btn")->setVisible( true);
     getChildView("save_tex_btn")->setEnabled(canSaveAs());
 
@@ -188,6 +199,12 @@ void LLPreviewTexture::onSaveAsBtn(void* data)
     self->saveAs();
 }
 
+// static
+void LLPreviewTexture::onResetViewBtn(void* data)
+{
+    static_cast<LLPreviewTexture*>(data)->resetView();
+}
+
 void LLPreviewTexture::draw()
 {
     updateDimensions();
@@ -209,12 +226,15 @@ void LLPreviewTexture::draw()
 
         if ( mImage.notNull() )
         {
+            LLRect image_rect = getImageRect();
+            LLLocalClipRect clip(interior);
+
             // Draw the texture
             gGL.diffuseColor3f( 1.f, 1.f, 1.f );
-            gl_draw_scaled_image(interior.mLeft,
-                                interior.mBottom,
-                                interior.getWidth(),
-                                interior.getHeight(),
+            gl_draw_scaled_image(image_rect.mLeft,
+                                image_rect.mBottom,
+                                image_rect.getWidth(),
+                                image_rect.getHeight(),
                                 mImage);
 
             // Pump the texture priority
@@ -225,8 +245,8 @@ void LLPreviewTexture::draw()
             // we're loading the full image.
             if (!mLoadingFullImage)
             {
-                S32 int_width = interior.getWidth();
-                S32 int_height = interior.getHeight();
+                S32 int_width = llmin(mImage->getFullWidth(), image_rect.getWidth());
+                S32 int_height = llmin(mImage->getFullHeight(), image_rect.getHeight());
                 mImage->setKnownDrawSize(int_width, int_height);
             }
             else
@@ -282,8 +302,118 @@ void LLPreviewTexture::draw()
                     LLFontGL::DROP_SHADOW);
             }
         }
+
+        getChildView("reset_view_btn")->setEnabled(mZoom > 1.f);
     }
 
+}
+
+LLRect LLPreviewTexture::getImageRect() const
+{
+    LLRect interior = mClientRect;
+    interior.stretch(-PREVIEW_BORDER_WIDTH);
+
+    const S32 width = ll_round((F32)interior.getWidth() * mZoom);
+    const S32 height = ll_round((F32)interior.getHeight() * mZoom);
+    LLRect image_rect;
+    image_rect.setCenterAndSize(interior.getCenterX() + mPanX,
+                                interior.getCenterY() + mPanY,
+                                width,
+                                height);
+    return image_rect;
+}
+
+void LLPreviewTexture::resetView()
+{
+    mZoom = 1.f;
+    mPanX = 0;
+    mPanY = 0;
+}
+
+void LLPreviewTexture::clampPan()
+{
+    LLRect interior = mClientRect;
+    interior.stretch(-PREVIEW_BORDER_WIDTH);
+    const S32 max_x = llmax(0, ll_round((F32)interior.getWidth() * (mZoom - 1.f) * .5f));
+    const S32 max_y = llmax(0, ll_round((F32)interior.getHeight() * (mZoom - 1.f) * .5f));
+    mPanX = llclamp(mPanX, -max_x, max_x);
+    mPanY = llclamp(mPanY, -max_y, max_y);
+}
+
+bool LLPreviewTexture::handleMouseDown(S32 x, S32 y, MASK mask)
+{
+    LLRect interior = mClientRect;
+    interior.stretch(-PREVIEW_BORDER_WIDTH);
+    if (mZoom > 1.f && interior.pointInRect(x, y))
+    {
+        bringToFront(x, y);
+        gFocusMgr.setMouseCapture(this);
+        mLastMouseX = x;
+        mLastMouseY = y;
+        return true;
+    }
+    return LLPreview::handleMouseDown(x, y, mask);
+}
+
+bool LLPreviewTexture::handleMouseUp(S32 x, S32 y, MASK mask)
+{
+    if (hasMouseCapture())
+    {
+        gFocusMgr.setMouseCapture(NULL);
+        return true;
+    }
+    return LLPreview::handleMouseUp(x, y, mask);
+}
+
+bool LLPreviewTexture::handleHover(S32 x, S32 y, MASK mask)
+{
+    if (hasMouseCapture())
+    {
+        mPanX += x - mLastMouseX;
+        mPanY += y - mLastMouseY;
+        mLastMouseX = x;
+        mLastMouseY = y;
+        clampPan();
+        getWindow()->setCursor(UI_CURSOR_TOOLPAN);
+        return true;
+    }
+
+    LLRect interior = mClientRect;
+    interior.stretch(-PREVIEW_BORDER_WIDTH);
+    if (mZoom > 1.f && interior.pointInRect(x, y))
+    {
+        getWindow()->setCursor(UI_CURSOR_TOOLPAN);
+        return true;
+    }
+    return LLPreview::handleHover(x, y, mask);
+}
+
+bool LLPreviewTexture::handleScrollWheel(S32 x, S32 y, S32 clicks)
+{
+    LLRect interior = mClientRect;
+    interior.stretch(-PREVIEW_BORDER_WIDTH);
+    if (!interior.pointInRect(x, y))
+    {
+        return LLPreview::handleScrollWheel(x, y, clicks);
+    }
+
+    const F32 old_zoom = mZoom;
+    mZoom = llclamp(mZoom * powf(PREVIEW_TEXTURE_ZOOM_FACTOR, (F32)-clicks),
+                    1.f, PREVIEW_TEXTURE_MAX_ZOOM);
+    if (mZoom == 1.f)
+    {
+        resetView();
+    }
+    else if (mZoom != old_zoom)
+    {
+        const F32 ratio = mZoom / old_zoom;
+        const S32 mouse_x = x - interior.getCenterX();
+        const S32 mouse_y = y - interior.getCenterY();
+        mPanX = ll_round((F32)mouse_x - ratio * (mouse_x - mPanX));
+        mPanY = ll_round((F32)mouse_y - ratio * (mouse_y - mPanY));
+        clampPan();
+    }
+    return true;
 }
 
 
@@ -396,6 +526,7 @@ void LLPreviewTexture::reshape(S32 width, S32 height, bool called_from_parent)
     }
 
     mClientRect.setLeftTopAndSize(client_rect.getCenterX() - (client_width / 2), client_rect.getCenterY() +  (client_height / 2), client_width, client_height);
+    clampPan();
 
 }
 
@@ -569,9 +700,36 @@ void LLPreviewTexture::updateDimensions()
     {
         mUpdateDimensions = false;
 
-        //reshape floater
-        reshape(getRect().getWidth(), getRect().getHeight());
+        if (mFitToImage)
+        {
+            mFitToImage = false;
+            const F32 scale = llmin(1.f, llmin((F32)PREVIEW_TEXTURE_MAX_SIZE / img_width,
+                                              (F32)PREVIEW_TEXTURE_MAX_SIZE / img_height));
+            const S32 image_width = ll_round(img_width * scale);
+            const S32 image_height = ll_round(img_height * scale);
+            const S32 horiz_pad = 2 * (LLPANEL_BORDER_WIDTH + PREVIEW_PAD) + PREVIEW_RESIZE_HANDLE_SIZE;
+            S32 info_height = CLIENT_RECT_VPAD;
+            if (mDimensionsText)
+            {
+                info_height += mDimensionsText->getRect().mTop;
+            }
+            if (mButtonsPanel && mButtonsPanel->getVisible())
+            {
+                info_height += mButtonsPanel->getRect().getHeight();
+            }
+            const S32 chrome_height = PREVIEW_HEADER_SIZE + CLIENT_RECT_VPAD
+                + PREVIEW_BORDER + CLIENT_RECT_VPAD + info_height;
+            reshape(llmax(getMinWidth(), image_width + 2 * horiz_pad),
+                    llmax(getMinHeight(), image_height + chrome_height));
+        }
+        else
+        {
+            reshape(getRect().getWidth(), getRect().getHeight());
+        }
 
+        // Dependent previews normally stay snapped to their parent, which makes
+        // adjustToFitScreen() ignore them after the image-driven resize.
+        clearSnapTarget();
         gFloaterView->adjustToFitScreen(this, false);
 
         LLRect dim_rect(mDimensionsText->getRect());
@@ -633,6 +791,8 @@ void LLPreviewTexture::loadAsset()
     mImage->forceToSaveRawImage(0) ;
     mAssetStatus = PREVIEW_ASSET_LOADING;
     mUpdateDimensions = true;
+    mFitToImage = true;
+    resetView();
     updateDimensions();
     getChildView("save_tex_btn")->setEnabled(canSaveAs());
     if (mObjectUUID.notNull())

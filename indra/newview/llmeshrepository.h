@@ -489,6 +489,22 @@ public:
         }
     };
 
+    // Terminal request results cross from the repo thread to the main thread
+    // through mLoadedMutex.  Keeping the processing result with the UUID
+    // leaves room for a future retry policy without changing this boundary.
+    class MeshRequestFailure
+    {
+    public:
+        LLUUID mMeshID;
+        EMeshProcessingResult mResult;
+
+        MeshRequestFailure(const LLUUID& mesh_id, EMeshProcessingResult result)
+            : mMeshID(mesh_id),
+              mResult(result)
+        {
+        }
+    };
+
     class LoadedMesh
     {
     public:
@@ -523,6 +539,11 @@ public:
 
     // list of completed Physics Mesh info requests
     std::list<LLModel::Decomposition*> mPhysicsQ;
+
+    // Terminal decomposition and physics-shape results.  These are consumed
+    // by the main thread to clear the corresponding loading set.
+    std::deque<MeshRequestFailure> mDecompositionFailureQ;
+    std::deque<MeshRequestFailure> mPhysicsShapeFailureQ;
 
     //queue of requested headers
     std::queue<HeaderRequest> mHeaderReqQ;
@@ -581,6 +602,8 @@ public:
     bool skinInfoReceived(const LLUUID& mesh_id, U8* data, S32 data_size);
     bool decompositionReceived(const LLUUID& mesh_id, U8* data, S32 data_size);
     EMeshProcessingResult physicsShapeReceived(const LLUUID& mesh_id, U8* data, S32 data_size);
+    void decompositionFailed(const LLUUID& mesh_id, EMeshProcessingResult result);
+    void physicsShapeFailed(const LLUUID& mesh_id, EMeshProcessingResult result);
     bool hasPhysicsShapeInHeader(const LLUUID& mesh_id) const;
     bool hasSkinInfoInHeader(const LLUUID& mesh_id) const;
     bool hasHeader(const LLUUID& mesh_id) const;
@@ -878,6 +901,8 @@ public:
     void notifySkinInfoReceived(LLMeshSkinInfo* info);
     void notifySkinInfoUnavailable(const LLUUID& info);
     void notifyDecompositionReceived(LLModel::Decomposition* info, bool physics_mesh);
+    void notifyDecompositionFailed(const LLUUID& mesh_id, bool physics_mesh,
+                                   EMeshProcessingResult result);
 
     S32 getActualMeshLOD(const LLVolumeParams& mesh_params, S32 lod);
     static S32 getActualMeshLOD(LLMeshHeader& header, S32 lod);

@@ -97,7 +97,7 @@ public:
     void reloadMessages(bool clean_messages = false);
     static void onSendMsg(LLUICtrl*, void*);
     void sendMsgFromInputEditor();
-    void sendMsg(const std::string& msg);
+    void sendMsg(const std::string& msg, const std::string& local_echo = std::string());
 
     // callback for LLIMModel on new messages
     // route to specific floater if it is visible

@@ -208,7 +208,7 @@ static void on_avatar_name_cache_start_im(const LLUUID& agent_id,
     LLUUID session_id = gIMMgr->addSession(name, IM_NOTHING_SPECIAL, agent_id);
     if (session_id != LLUUID::null)
     {
-        LLFloaterIMContainer::getInstance()->showConversation(session_id);
+        LLFloaterIMContainer::getInstance()->showConversation(session_id, true);
     }
     make_ui_sound("UISndStartIM");
 }

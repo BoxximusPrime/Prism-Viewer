@@ -29,6 +29,7 @@
 
 // A ViewerRegion is a class that contains a bunch of objects and surfaces
 // that are in to a particular region.
+#include <set>
 #include <string>
 #include <boost/signals2.hpp>
 
@@ -375,6 +376,7 @@ public:
     LLVOCacheEntry* getCacheEntryForOctree(U32 local_id);
     LLVOCacheEntry* getCacheEntry(U32 local_id, bool valid = true);
     bool probeCache(U32 local_id, U32 crc, U32 flags, U8 &cache_miss_type);
+
     U64 getRegionCacheHitCount() { return mRegionCacheHitCount; }
     U64 getRegionCacheMissCount() { return mRegionCacheMissCount; }
     void requestCacheMisses();

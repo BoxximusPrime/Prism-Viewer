@@ -57,6 +57,7 @@ bool isToolDragged()
 
 LLToolBarView::Toolbar::Toolbar()
 :   button_display_mode("button_display_mode"),
+    button_alignment("button_alignment", LLToolBarEnums::BUTTON_ALIGN_CENTER),
     commands("command")
 {}
 
@@ -310,6 +311,10 @@ bool LLToolBarView::loadToolbars(bool force_default)
             LLToolBarEnums::ButtonType button_type = toolbar_set.bottom_toolbar.button_display_mode;
             mToolbars[LLToolBarEnums::TOOLBAR_BOTTOM]->setButtonType(button_type);
         }
+        if (toolbar_set.bottom_toolbar.button_alignment.isProvided())
+        {
+            mToolbars[LLToolBarEnums::TOOLBAR_BOTTOM]->setButtonAlignment(toolbar_set.bottom_toolbar.button_alignment);
+        }
         for (const LLCommandId::Params& command_params : toolbar_set.bottom_toolbar.commands)
         {
             if (!addCommandInternal(LLCommandId(command_params), mToolbars[LLToolBarEnums::TOOLBAR_BOTTOM]))
@@ -408,6 +413,7 @@ void LLToolBarView::saveToolbars() const
     if (mToolbars[LLToolBarEnums::TOOLBAR_BOTTOM])
     {
         toolbar_set.bottom_toolbar.button_display_mode = mToolbars[LLToolBarEnums::TOOLBAR_BOTTOM]->getButtonType();
+        toolbar_set.bottom_toolbar.button_alignment = mToolbars[LLToolBarEnums::TOOLBAR_BOTTOM]->getButtonAlignment();
         addToToolset(mToolbars[LLToolBarEnums::TOOLBAR_BOTTOM]->getCommandsList(), toolbar_set.bottom_toolbar);
     }
 
@@ -559,7 +565,8 @@ void LLToolBarView::draw()
     for (S32 i = LLToolBarEnums::TOOLBAR_FIRST; i <= LLToolBarEnums::TOOLBAR_LAST; i++)
     {
         mToolbars[i]->getParent()->setVisible(mShowToolbars
-                                            && (mToolbars[i]->hasButtons()
+                                            && (i == LLToolBarEnums::TOOLBAR_BOTTOM
+                                            || mToolbars[i]->hasButtons()
                                             || isToolDragged()));
     }
 
@@ -723,5 +730,3 @@ bool LLToolBarView::isModified() const
 
     return modified;
 }
-
-

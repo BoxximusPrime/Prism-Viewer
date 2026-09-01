@@ -321,7 +321,6 @@ LLFloaterPreference::LLFloaterPreference(const LLSD& key)
     mCommitCallbackRegistrar.add("Pref.ResetCache",             boost::bind(&LLFloaterPreference::onClickResetCache, this));
     mCommitCallbackRegistrar.add("Pref.ClickSkin",              boost::bind(&LLFloaterPreference::onClickSkin, this,_1, _2));
     mCommitCallbackRegistrar.add("Pref.SelectSkin",             boost::bind(&LLFloaterPreference::onSelectSkin, this));
-    mCommitCallbackRegistrar.add("Pref.SetSounds",              boost::bind(&LLFloaterPreference::onClickSetSounds, this));
     mCommitCallbackRegistrar.add("Pref.ClickEnablePopup",       boost::bind(&LLFloaterPreference::onClickEnablePopup, this));
     mCommitCallbackRegistrar.add("Pref.ClickDisablePopup",      boost::bind(&LLFloaterPreference::onClickDisablePopup, this));
     mCommitCallbackRegistrar.add("Pref.LogPath",                boost::bind(&LLFloaterPreference::onClickLogPath, this));
@@ -336,6 +335,7 @@ LLFloaterPreference::LLFloaterPreference(const LLSD& key)
     mCommitCallbackRegistrar.add("Pref.UpdateSliderText",       boost::bind(&LLFloaterPreference::refreshUI,this));
     mCommitCallbackRegistrar.add("Pref.QualityPerformance",     boost::bind(&LLFloaterPreference::onChangeQuality, this, _2));
     mCommitCallbackRegistrar.add("Pref.applyUIColor",           boost::bind(&LLFloaterPreference::applyUIColor, this ,_1, _2));
+    mCommitCallbackRegistrar.add("Pref.applyBoxxyNameTagColor", boost::bind(&LLFloaterPreference::applyBoxxyNameTagColor, this, _1, _2));
     mCommitCallbackRegistrar.add("Pref.getUIColor",             boost::bind(&LLFloaterPreference::getUIColor, this ,_1, _2));
     mCommitCallbackRegistrar.add("Pref.MaturitySettings",       boost::bind(&LLFloaterPreference::onChangeMaturity, this));
     mCommitCallbackRegistrar.add("Pref.BlockList",              boost::bind(&LLFloaterPreference::onClickBlockList, this));
@@ -1389,13 +1389,6 @@ void LLFloaterPreference::onChangeQuality(const LLSD& data)
     refresh();
 }
 
-void LLFloaterPreference::onClickSetSounds()
-{
-    // Disable Enable gesture sounds checkbox if the master sound is disabled
-    // or if sound effects are disabled.
-    getChild<LLCheckBoxCtrl>("gesture_audio_play_btn")->setEnabled(!gSavedSettings.getBOOL("MuteSounds"));
-}
-
 void LLFloaterPreference::onClickEnablePopup()
 {
     std::vector<LLScrollListItem*> items = mDisabledPopups->getAllSelected();
@@ -2019,6 +2012,12 @@ void LLFloaterPreference::updateSearchableItems()
 void LLFloaterPreference::applyUIColor(LLUICtrl* ctrl, const LLSD& param)
 {
     LLUIColorTable::instance().setColor(param.asString(), LLColor4(ctrl->getValue()));
+}
+
+void LLFloaterPreference::applyBoxxyNameTagColor(LLUICtrl* ctrl, const LLSD& param)
+{
+    applyUIColor(ctrl, param);
+    LLVOAvatar::invalidateNameTags();
 }
 
 void LLFloaterPreference::getUIColor(LLUICtrl* ctrl, const LLSD& param)

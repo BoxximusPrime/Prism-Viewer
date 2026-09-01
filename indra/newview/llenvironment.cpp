@@ -228,10 +228,23 @@ namespace
             LLSettingsDay::TrackBound_t bounds = getBoundingEntries(now);
 
             LLSettingsBase::ptr_t pendsetting = (*bounds.first).second->buildDerivedClone();
-            LLSettingsBase::TrackPosition targetpos = convert_time_to_position(now, mCycleLength) - (*bounds.first).first;
+            LLSettingsBase::TrackPosition targetpos = convert_time_to_position(now, mCycleLength);
+            if (targetpos < (*bounds.first).first)
+            {
+                // The active span wraps past the end of the normalized day cycle.
+                // Move the position into the same unwrapped interval as its start.
+                targetpos += 1.0f;
+            }
+            targetpos -= (*bounds.first).first;
             LLSettingsBase::TrackPosition targetspan = get_wrapping_distance((*bounds.first).first, (*bounds.second).first);
 
             LLSettingsBase::BlendFactor blendf = calculateBlend(targetpos, targetspan);
+            if (!llfinite(blendf))
+            {
+                LL_WARNS("ENVIRONMENT") << "Invalid altitude-track blend factor; using the start of the span" << LL_ENDL;
+                blendf = 0.0;
+            }
+            blendf = llclamp(blendf, 0.0, 1.0);
             pendsetting->blend((*bounds.second).second, blendf);
 
             reset(pstartsetting, pendsetting, (LLSettingsBase::TrackPosition)LLEnvironment::TRANSITION_ALTITUDE);
@@ -3615,4 +3628,3 @@ namespace
     }
 
 }
-

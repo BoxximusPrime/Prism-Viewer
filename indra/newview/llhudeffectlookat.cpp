@@ -33,8 +33,11 @@
 #include "message.h"
 #include "llagent.h"
 #include "llagentcamera.h"
+#include "llavatarnamecache.h"
+#include "llviewercamera.h"
 #include "llvoavatar.h"
 #include "lldrawable.h"
+#include "llhudrender.h"
 #include "llviewerobjectlist.h"
 #include "llviewercontrol.h"
 #include "llvoavatarself.h"
@@ -43,8 +46,6 @@
 #include "llglheaders.h"
 #include "llxmltree.h"
 
-
-bool LLHUDEffectLookAt::sDebugLookAt = false;
 
 // packet layout
 const S32 SOURCE_AVATAR = 0;
@@ -58,6 +59,7 @@ const F32 MAX_SENDS_PER_SEC = 4.f;
 
 const F32 MIN_DELTAPOS_FOR_UPDATE_SQUARED = 0.05f * 0.05f;
 const F32 MIN_TARGET_OFFSET_SQUARED = 0.0001f;
+const F32 LOOKAT_TEXT_CULL_DISTANCE = 32.f;
 
 
 // can't use actual F32_MAX, because we add this to the current frametime
@@ -531,20 +533,26 @@ void LLHUDEffectLookAt::setSourceObject(LLViewerObject* objectp)
 //-----------------------------------------------------------------------------
 void LLHUDEffectLookAt::render()
 {
-    if (sDebugLookAt && mSourceObject.notNull())
+    static LLCachedControl<bool> show_lookat_targets(gSavedSettings, "ShowLookAtTargets", false);
+    static LLCachedControl<bool> show_only_focus_targets(gSavedSettings, "ShowOnlyFocusLookAtTargets", false);
+    if (show_lookat_targets
+        && (!show_only_focus_targets || mTargetType == LOOKAT_TARGET_FOCUS)
+        && mSourceObject.notNull())
     {
+        LLVOAvatar* source_avatar = (LLVOAvatar*)(LLViewerObject*)mSourceObject;
+        LLGLDepthTest gls_depth(GL_TRUE, GL_FALSE, GL_LEQUAL);
         gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
 
         //LLGLDisable gls_stencil(GL_STENCIL_TEST);
 
-        LLVector3 target = mTargetPos + ((LLVOAvatar*)(LLViewerObject*)mSourceObject)->mHeadp->getWorldPosition();
+        LLVector3 target = mTargetPos + source_avatar->mHeadp->getWorldPosition();
+        LLColor3 color = (*mAttentions)[mTargetType].mColor;
         gGL.matrixMode(LLRender::MM_MODELVIEW);
         gGL.pushMatrix();
         gGL.translatef(target.mV[VX], target.mV[VY], target.mV[VZ]);
         gGL.scalef(0.3f, 0.3f, 0.3f);
         gGL.begin(LLRender::LINES);
         {
-            LLColor3 color = (*mAttentions)[mTargetType].mColor;
             gGL.color3f(color.mV[VRED], color.mV[VGREEN], color.mV[VBLUE]);
             gGL.vertex3f(-1.f, 0.f, 0.f);
             gGL.vertex3f(1.f, 0.f, 0.f);
@@ -556,6 +564,30 @@ void LLHUDEffectLookAt::render()
             gGL.vertex3f(0.f, 0.f, 1.f);
         } gGL.end();
         gGL.popMatrix();
+
+        std::string source_name = source_avatar->getFullname();
+        LLAvatarName avatar_name;
+        if (LLAvatarNameCache::get(source_avatar->getID(), &avatar_name))
+        {
+            source_name = avatar_name.getDisplayName();
+        }
+
+        if (!source_name.empty()
+            && dist_vec(target, LLViewerCamera::getInstance()->getOrigin()) < LOOKAT_TEXT_CULL_DISTANCE)
+        {
+            // Keep the label readable when the target is inside the avatar.
+            LLGLDepthTest gls_text_depth(GL_FALSE);
+            const LLFontGL* font = LLFontGL::getFontSansSerifSmall();
+            hud_render_utf8text(source_name,
+                                target,
+                                *font,
+                                LLFontGL::NORMAL,
+                                LLFontGL::DROP_SHADOW,
+                                -font->getWidthF32(source_name) * 0.5f,
+                                static_cast<F32>(font->getLineHeight()),
+                                LLColor4(color, 1.f),
+                                false);
+        }
     }
 }
 
@@ -617,10 +649,6 @@ void LLHUDEffectLookAt::update()
         }
     }
 
-    if (sDebugLookAt)
-    {
-        ((LLVOAvatar*)(LLViewerObject*)mSourceObject)->addDebugText((*mAttentions)[mTargetType].mName);
-    }
 }
 
 /**

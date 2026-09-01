@@ -1591,6 +1591,14 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
         }
 
         mEditor->appendText(message, prependNewLineState, body_message_params);
+        if (!chat.mTranslatedText.empty())
+        {
+            LLStyle::Params translation_params(body_message_params);
+            LLUIColor translation_color = LLUIColorTable::instance().getColor("TranslationChatColor");
+            translation_params.color(translation_color);
+            translation_params.readonly_color(translation_color);
+            mEditor->appendText(" (" + chat.mTranslatedText + ")", false, translation_params);
+        }
         prependNewLineState = false;
     }
 

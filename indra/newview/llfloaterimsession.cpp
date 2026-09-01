@@ -44,6 +44,7 @@
 #include "llfloateravatarpicker.h"
 #include "llfloaterimcontainer.h" // to replace separate IM Floaters with multifloater container
 #include "llinventoryfunctions.h"
+#include "lllineeditor.h"
 //#include "lllayoutstack.h"
 #include "llchatentry.h"
 #include "lllogchat.h"
@@ -55,6 +56,7 @@
 #include "llviewerregion.h"
 #include "llviewerwindow.h"
 #include "lltransientfloatermgr.h"
+#include "lltranslate.h"
 #include "llinventorymodel.h"
 #include "llrootview.h"
 #include "llspeakers.h"
@@ -261,7 +263,44 @@ void LLFloaterIMSession::sendMsgFromInputEditor()
                 // Truncate and convert to UTF8 for transport
                 std::string utf8_text = wstring_to_utf8str(text);
 
-                sendMsg(utf8_text);
+                LLHandle<LLFloater> floater_handle = getHandle();
+                auto original_text = std::make_shared<std::string>();
+                auto translation_success = [floater_handle, original_text](std::string translation, std::string)
+                {
+                    LLFloaterIMSession* floater = dynamic_cast<LLFloaterIMSession*>(floater_handle.get());
+                    if (floater && !translation.empty())
+                    {
+                        floater->sendMsg(translation, translation + " (" + *original_text + ")");
+                    }
+                };
+                auto translation_failure = [](int, std::string reason)
+                {
+                    LLSD args;
+                    args["MESSAGE"] = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", reason));
+                    LLNotificationsUtil::add("GenericAlert", args);
+                };
+
+                if (!LLTranslate::translateChatCommand(
+                        utf8_text,
+                        translation_success,
+                        translation_failure,
+                        original_text.get()))
+                {
+                    std::string language = utf8str_trim(
+                        getChild<LLLineEditor>("translate_language")->getText());
+                    if (language.empty())
+                    {
+                        sendMsg(utf8_text);
+                    }
+                    else
+                    {
+                        *original_text = utf8_text;
+                        LLTranslate::translateChatCommand(
+                            "/tr " + language + " " + utf8_text,
+                            translation_success,
+                            translation_failure);
+                    }
+                }
 
                 mInputEditor->setText(LLStringUtil::null);
             }
@@ -273,18 +312,21 @@ void LLFloaterIMSession::sendMsgFromInputEditor()
     }
 }
 
-void LLFloaterIMSession::sendMsg(const std::string& msg)
+void LLFloaterIMSession::sendMsg(const std::string& msg, const std::string& local_echo)
 {
     const std::string utf8_text = utf8str_truncate(msg, MAX_MSG_BUF_SIZE - 1);
 
     if (mSessionInitialized)
     {
-        LLIMModel::sendMessage(utf8_text, mSessionID, mOtherParticipantUUID, mDialog);
+        LLIMModel::sendMessage(utf8_text, mSessionID, mOtherParticipantUUID, mDialog, local_echo);
     }
     else
     {
         //queue up the message to send once the session is initialized
-        mQueuedMsgsForInit.append(utf8_text);
+        LLSD queued_message;
+        queued_message["message"] = utf8_text;
+        queued_message["local_echo"] = local_echo;
+        mQueuedMsgsForInit.append(queued_message);
     }
 
     updateMessages();
@@ -330,6 +372,8 @@ void LLFloaterIMSession::initIMFloater()
     boundVoiceChannel();
 
     mTypingStart = LLTrans::getString("IM_typing_start_string");
+
+    getChild<LLLineEditor>("translate_language")->setVisible(mIsP2PChat);
 
     // Show control panel in torn off floaters only.
     mParticipantListPanel->setVisible(!getHost() && gSavedSettings.getBOOL("IMShowControlPanel"));
@@ -812,8 +856,8 @@ void LLFloaterIMSession::sessionInitReplyReceived(const LLUUID& im_session_id)
         for ( iter = mQueuedMsgsForInit.beginArray();
                     iter != mQueuedMsgsForInit.endArray(); ++iter)
         {
-            LLIMModel::sendMessage(iter->asString(), mSessionID,
-                mOtherParticipantUUID, mDialog);
+            LLIMModel::sendMessage((*iter)["message"].asString(), mSessionID,
+                mOtherParticipantUUID, mDialog, (*iter)["local_echo"].asString());
         }
 
         mQueuedMsgsForInit.clear();
@@ -882,6 +926,7 @@ void LLFloaterIMSession::updateMessages()
             else
             {
                 chat.mText = message;
+                chat.mTranslatedText = msg["translated_message"].asString();
             }
 
             // Add the message to the chat log

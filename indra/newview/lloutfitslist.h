@@ -275,6 +275,9 @@ public:
 
     virtual void draw();
     virtual bool handleToolTip(S32 x, S32 y, MASK mask);
+    bool handleDragAndDrop(S32 x, S32 y, MASK mask, bool drop,
+                           EDragAndDropType cargo_type, void* cargo_data,
+                           EAcceptance* accept, std::string& tooltip_msg) override;
 
     void setFavorite(bool is_favorite);
     bool getFavorite() const { return mIsFavorite; }
@@ -321,6 +324,7 @@ public:
     void initComparator();
 
     /*virtual*/ void onOpen(const LLSD& info);
+    bool handleKeyHere(KEY key, MASK mask) override;
 
 
     //virtual void refreshList(const LLUUID& category_id);

@@ -607,13 +607,16 @@ void LLPanelProfilePick::setAvatarId(const LLUUID& avatar_id)
 
     if (getSelfProfile())
     {
+        mSnapshotCtrl->setEnabled(true);
+        mSnapshotCtrl->setOpenTexPreview(false);
         mPickName->setEnabled(true);
         mPickDescription->setEnabled(true);
         mSetCurrentLocationButton->setVisible(true);
     }
     else
     {
-        mSnapshotCtrl->setEnabled(false);
+        mSnapshotCtrl->setEnabled(true);
+        mSnapshotCtrl->setOpenTexPreview(true);
         mSetCurrentLocationButton->setVisible(false);
     }
 }
@@ -699,10 +702,6 @@ void LLPanelProfilePick::processProperties(const LLPickData* pick_info)
         mPickLocationStr.clear();
     }
     setSnapshotId(pick_info->snapshot_id);
-    if (!getSelfProfile())
-    {
-        mSnapshotCtrl->setEnabled(false);
-    }
     setPickName(pick_info->name);
     setPickDesc(pick_info->desc);
     setPosGlobal(pick_info->pos_global);
@@ -1032,4 +1031,3 @@ void LLPanelProfilePick::updateTabLabel(const std::string& title)
         parent->setCurrentTabName(title);
     }
 }
-

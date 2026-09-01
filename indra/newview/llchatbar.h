@@ -44,8 +44,14 @@ class LLChatBar
 :   public LLPanel
 {
 public:
+    struct Params : public LLInitParam::Block<Params, LLPanel::Params>
+    {
+        Params() {}
+    };
+
     // constructor for inline chat-bars (e.g. hosted in chat history window)
     LLChatBar();
+    LLChatBar(const Params& p);
     ~LLChatBar();
     virtual bool postBuild();
 
