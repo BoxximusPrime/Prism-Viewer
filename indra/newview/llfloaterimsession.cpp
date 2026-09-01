@@ -295,6 +295,10 @@ void LLFloaterIMSession::sendMsgFromInputEditor()
                     else
                     {
                         *original_text = utf8_text;
+                        if (language.find_first_of(" \t") != std::string::npos)
+                        {
+                            language = "\"" + language + "\"";
+                        }
                         LLTranslate::translateChatCommand(
                             "/tr " + language + " " + utf8_text,
                             translation_success,

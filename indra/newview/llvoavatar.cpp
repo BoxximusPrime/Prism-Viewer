@@ -7938,20 +7938,25 @@ void LLVOAvatar::addChild(LLViewerObject *childp)
     {
         if (!attachObject(childp))
         {
-            LL_WARNS() << "ATT addChild() failed for "
-                    << childp->getID()
-                    << " item " << childp->getAttachmentItemID()
-                    << LL_ENDL;
-            if (std::find(mPendingAttachment.begin(), mPendingAttachment.end(), childp) == mPendingAttachment.end())
+            LL_WARNS("Avatar") << avString() << "ATT addChild() failed for object "
+                               << childp->getID()
+                               << ", item " << childp->getAttachmentItemID()
+                               << ", dead " << childp->isDead()
+                               << LL_ENDL;
+            if (!childp->isDead()
+                && std::find(mPendingAttachment.begin(), mPendingAttachment.end(), childp) == mPendingAttachment.end())
             {
                 mPendingAttachment.push_back(childp);
+                mPendingAttachmentRetries.try_emplace(childp->getID());
             }
-            mPendingAttachmentRetries.try_emplace(childp->getID());
         }
     }
     else
     {
-        mPendingAttachment.push_back(childp);
+        if (std::find(mPendingAttachment.begin(), mPendingAttachment.end(), childp) == mPendingAttachment.end())
+        {
+            mPendingAttachment.push_back(childp);
+        }
         mPendingAttachmentRetries.try_emplace(childp->getID());
     }
 }
@@ -8025,8 +8030,12 @@ const LLViewerJointAttachment *LLVOAvatar::attachObject(LLViewerObject *viewer_o
     {
         const LLUUID& item_id = viewer_object->getAttachmentItemID();
         LLViewerInventoryItem *item = gInventory.getItem(item_id);
-        LL_WARNS("Avatar") << "ATT attach failed "
-                           << (item ? item->getName() : "UNKNOWN") << " id " << item_id << LL_ENDL;
+        LL_WARNS("Avatar") << avString() << "ATT attach failed for object "
+                           << viewer_object->getID()
+                           << ", item " << (item ? item->getName() : "UNKNOWN")
+                           << " (" << item_id << ")"
+                           << ", dead " << viewer_object->isDead()
+                           << LL_ENDL;
         return 0;
     }
 
@@ -8167,10 +8176,19 @@ void LLVOAvatar::lazyAttach()
                 }
                 if (!attachObject(cur_attachment))
                 {
-                    LL_WARNS() << "attachObject() failed for "
+                    LL_WARNS("Avatar") << avString() << "attachObject() failed for object "
                         << cur_attachment->getID()
-                        << " item " << cur_attachment->getAttachmentItemID()
+                        << ", item " << cur_attachment->getAttachmentItemID()
+                        << ", dead " << cur_attachment->isDead()
                         << LL_ENDL;
+
+                    // addObject() deliberately kills duplicate attachment objects.
+                    // Never request or retain one after that rejection.
+                    if (cur_attachment->isDead())
+                    {
+                        continue;
+                    }
+
                     retry.mAttempts = llmin(retry.mAttempts + 1,
                         PENDING_ATTACHMENT_RETRY_EXPONENT_CAP + 1);
                     const F32 retry_delay = llmin(60.f,
@@ -8184,6 +8202,12 @@ void LLVOAvatar::lazyAttach()
                         && retry.mObjectUpdateAttempts < PENDING_ATTACHMENT_MAX_OBJECT_UPDATE_ATTEMPTS
                         && (!retry.mObjectUpdateRequested || retry.mObjectUpdateTimer.hasExpired()))
                     {
+                        LL_INFOS("Avatar") << avString() << "requesting attachment refresh after attach failure for object "
+                                           << cur_attachment->getID()
+                                           << ", item " << cur_attachment->getAttachmentItemID()
+                                           << ", attempt " << (retry.mObjectUpdateAttempts + 1)
+                                           << "/" << PENDING_ATTACHMENT_MAX_OBJECT_UPDATE_ATTEMPTS
+                                           << LL_ENDL;
                         cur_attachment->requestObjectUpdate();
                         retry.mObjectUpdateRequested = true;
                         ++retry.mObjectUpdateAttempts;
@@ -8207,6 +8231,12 @@ void LLVOAvatar::lazyAttach()
                     && retry.mObjectUpdateAttempts < PENDING_ATTACHMENT_MAX_OBJECT_UPDATE_ATTEMPTS
                     && (!retry.mObjectUpdateRequested || retry.mObjectUpdateTimer.hasExpired()))
                 {
+                    LL_INFOS("Avatar") << avString() << "requesting attachment refresh while waiting for drawable for object "
+                                       << cur_attachment->getID()
+                                       << ", item " << cur_attachment->getAttachmentItemID()
+                                       << ", attempt " << (retry.mObjectUpdateAttempts + 1)
+                                       << "/" << PENDING_ATTACHMENT_MAX_OBJECT_UPDATE_ATTEMPTS
+                                       << LL_ENDL;
                     cur_attachment->requestObjectUpdate();
                     retry.mObjectUpdateRequested = true;
                     ++retry.mObjectUpdateAttempts;
@@ -8214,6 +8244,13 @@ void LLVOAvatar::lazyAttach()
                 }
                 still_pending.push_back(cur_attachment);
             }
+        }
+        else
+        {
+            LL_WARNS("Avatar") << avString() << "dropping dead pending attachment object "
+                               << cur_attachment->getID()
+                               << ", item " << cur_attachment->getAttachmentItemID()
+                               << LL_ENDL;
         }
     }
 

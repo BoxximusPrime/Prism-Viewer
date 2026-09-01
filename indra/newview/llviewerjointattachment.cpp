@@ -182,9 +182,14 @@ bool LLViewerJointAttachment::addObject(LLViewerObject* object)
 
     // Two instances of the same inventory item attached --
     // Request detach, and kill the object in the meantime.
-    if (getAttachedObject(object->getAttachmentItemID()))
+    LLViewerObject* attached_object = getAttachedObject(object->getAttachmentItemID());
+    if (attached_object)
     {
-        LL_INFOS() << "(same object re-attached)" << LL_ENDL;
+        LL_WARNS("Avatar") << "Rejecting duplicate attachment at " << getName()
+                           << ": incoming object " << object->getID()
+                           << ", existing object " << attached_object->getID()
+                           << ", item " << object->getAttachmentItemID()
+                           << LL_ENDL;
         object->markDead();
 
         // If this happens to be attached to self, then detach.

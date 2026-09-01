@@ -1314,7 +1314,7 @@ LLSD LLOpenAITranslationHandler::sendMessageAndSuspend(
     {
         instruction += "from language code '" + from_lang + "' ";
     }
-    instruction += "into language code '" + to_lang
+    instruction += "into target language or style '" + to_lang
         + "'. Return only a JSON object with string fields \"language\" and \"translation\". "
           "Set \"language\" to the detected source language's English name when it differs from the target, "
           "or an empty string when it is already the target language. Set \"translation\" to the translated "
@@ -1383,18 +1383,37 @@ bool LLTranslate::translateChatCommand(const std::string& mesg,
     }
 
     command = utf8str_trim(command.substr(3));
-    const size_t separator = command.find_first_of(" \t");
-    if (separator == std::string::npos)
+    std::string language;
+    size_t text_start = std::string::npos;
+    if (!command.empty() && command.front() == '"')
+    {
+        const size_t closing_quote = command.find('"', 1);
+        if (closing_quote != std::string::npos)
+        {
+            language = command.substr(1, closing_quote - 1);
+            text_start = closing_quote + 1;
+        }
+    }
+    else
+    {
+        const size_t separator = command.find_first_of(" \t");
+        if (separator != std::string::npos)
+        {
+            language = command.substr(0, separator);
+            text_start = separator + 1;
+        }
+    }
+
+    if (text_start == std::string::npos)
     {
         if (failure)
         {
-            failure(0, "Usage: /tr <language> <text>");
+            failure(0, "Usage: /tr <language> <text> or /tr \"language or style\" <text>");
         }
         return true;
     }
 
-    std::string language = command.substr(0, separator);
-    std::string text = utf8str_trim(command.substr(separator + 1));
+    std::string text = utf8str_trim(command.substr(text_start));
     if (language.empty() || text.empty())
     {
         if (failure)
