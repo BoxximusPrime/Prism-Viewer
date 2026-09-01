@@ -401,22 +401,42 @@ void LLChatBar::sendChat( EChatType type )
             {
                 LLHandle<LLPanel> chat_bar_handle = getHandle();
                 const bool animate = gSavedSettings.getBOOL("PlayChatAnim");
-                if (LLTranslate::translateChatCommand(
+                auto translation_success = [chat_bar_handle, type, animate](std::string translation, std::string)
+                {
+                    LLChatBar* chat_bar = dynamic_cast<LLChatBar*>(chat_bar_handle.get());
+                    if (chat_bar && !translation.empty())
+                    {
+                        chat_bar->sendChatFromViewer(translation, type, animate);
+                    }
+                };
+                auto translation_failure = [](int, std::string reason)
+                {
+                    LLSD args;
+                    args["MESSAGE"] = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", reason));
+                    LLNotificationsUtil::add("GenericAlert", args);
+                };
+                bool translating = LLTranslate::translateChatCommand(
                         utf8text,
-                        [chat_bar_handle, type, animate](std::string translation, std::string)
+                        translation_success,
+                        translation_failure);
+                if (!translating)
+                {
+                    std::string language = utf8str_trim(
+                        getChild<LLLineEditor>("translate_language")->getText());
+                    if (!language.empty())
+                    {
+                        if (language.find_first_of(" \t") != std::string::npos)
                         {
-                            LLChatBar* chat_bar = dynamic_cast<LLChatBar*>(chat_bar_handle.get());
-                            if (chat_bar)
-                            {
-                                chat_bar->sendChatFromViewer(translation, type, animate);
-                            }
-                        },
-                        [](int, std::string reason)
-                        {
-                            LLSD args;
-                            args["MESSAGE"] = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", reason));
-                            LLNotificationsUtil::add("GenericAlert", args);
-                        }))
+                            language = "\"" + language + "\"";
+                        }
+                        translating = LLTranslate::translateChatCommand(
+                            "/tr " + language + " " + utf8text,
+                            translation_success,
+                            translation_failure);
+                    }
+                }
+
+                if (translating)
                 {
                     getChild<LLUICtrl>("Chat Editor")->setValue(LLStringUtil::null);
                     gAgent.stopTyping();
