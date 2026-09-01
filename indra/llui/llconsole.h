@@ -28,6 +28,7 @@
 #define LL_LLCONSOLE_H
 
 #include "llfixedbuffer.h"
+#include "lluuid.h"
 #include "lluictrl.h"
 #include "v4color.h"
 #include <deque>
@@ -111,8 +112,8 @@ public:
     class Paragraph
     {
         public:
-            Paragraph (LLWString str, const LLColor4 &color, F32 add_time, const LLFontGL* font, F32 screen_width);
-            void makeParagraphColorSegments ( const LLColor4 &color);
+            Paragraph (LLWString str, const LLColor4 &color, F32 add_time, const LLFontGL* font, F32 screen_width, const LLUUID& id = LLUUID::null, S32 white_prefix_chars = 0);
+            void makeParagraphColorSegments (const LLColor4 &color, S32 white_prefix_chars);
             void updateLines ( F32 screen_width,  const LLFontGL* font, bool force_resize=false );
         public:
             LLWString mParagraphText;   //The entire text of the paragraph
@@ -120,6 +121,7 @@ public:
             F32 mAddTime;               //Time this paragraph was added to the display.
             F32 mMaxWidth;              //Width of the widest line of text in this paragraph.
             lines_t mLines;
+            LLUUID mID;
 
     };
 
@@ -131,6 +133,8 @@ public:
 
     // each line lasts this long after being added
     void            setLinePersistTime(F32 seconds);
+    void            addChatLine(const std::string& utf8line, const LLColor4& color, const LLUUID& id = LLUUID::null, S32 white_prefix_chars = 0);
+    void            updateChatLine(const LLUUID& id, const std::string& utf8line, const LLColor4& color, S32 white_prefix_chars = 0);
 
     void            reshape(S32 width, S32 height, bool called_from_parent = true);
 

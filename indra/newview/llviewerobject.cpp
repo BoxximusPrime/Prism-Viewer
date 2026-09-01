@@ -303,6 +303,7 @@ LLViewerObject::LLViewerObject(const LLUUID &id, const LLPCode pcode, LLViewerRe
     mAttachmentState(0),
     mMedia(NULL),
     mClickAction(0),
+    mExpectedLinksetPrimCount(0),
     mObjectCost(0),
     mLinksetCost(0),
     mPhysicsCost(0),
@@ -708,21 +709,42 @@ void LLViewerObject::unpackU8(LLDataPackerBinaryBuffer* dp, U8& value, std::stri
 //static
 U32 LLViewerObject::unpackParentID(LLDataPackerBinaryBuffer* dp, U32& parent_id)
 {
-    dp->shift(sObjectDataMap["SpecialCode"]);
-    U32 value;
-    dp->unpackU32(value, "SpecialCode");
-
     parent_id = 0;
+    if (!dp)
+    {
+        return parent_id;
+    }
+
+    const S32 special_code_offset = static_cast<S32>(sObjectDataMap["SpecialCode"]);
+    if (dp->getBufferSize() < special_code_offset + static_cast<S32>(sizeof(U32)))
+    {
+        return parent_id;
+    }
+
+    dp->shift(special_code_offset);
+    U32 value = 0;
+    if (!dp->unpackU32(value, "SpecialCode"))
+    {
+        dp->reset();
+        return parent_id;
+    }
+
     if(value & 0x20)
     {
-        S32 offset = sObjectDataMap["ParentID"];
+        S32 offset = static_cast<S32>(sObjectDataMap["ParentID"]);
         if(!(value & 0x80))
         {
             offset -= sizeof(LLVector3);
         }
 
-        dp->shift(offset);
-        dp->unpackU32(parent_id, "ParentID");
+        if (dp->getBufferSize() >= offset + static_cast<S32>(sizeof(U32)))
+        {
+            dp->shift(offset);
+            if (!dp->unpackU32(parent_id, "ParentID"))
+            {
+                parent_id = 0;
+            }
+        }
     }
     dp->reset();
 
@@ -1482,6 +1504,13 @@ U32 LLViewerObject::processUpdateMessage(LLMessageSystem *mesgsys,
                 // Check for appended generic data
                 const S32 GENERIC_DATA_BUFFER_SIZE = 16;
                 S32 data_size = mesgsys->getSizeFast(_PREHASH_ObjectData, block_num, _PREHASH_Data);
+                if (getPCode() != LL_PCODE_LEGACY_TREE && getPCode() != LL_PCODE_TREE_NEW && !isAvatar() && data_size == 0)
+                {
+                    // The protocol omits generic data for a one-prim
+                    // linkset.  Treat that omission as an explicit count of
+                    // one; zero remains reserved for unknown (trees/avatars).
+                    mExpectedLinksetPrimCount = 1;
+                }
                 if (data_size > 0)
                 {    // has generic data
                     if (getPCode() == LL_PCODE_LEGACY_TREE || getPCode() == LL_PCODE_TREE_NEW)
@@ -1500,7 +1529,8 @@ U32 LLViewerObject::processUpdateMessage(LLMessageSystem *mesgsys,
                         //    Future viewers should use it for their own purposes
                         if (!isAvatar())
                         {
-                            S32 num_prims = (S32) generic_data[0];
+                            S32 num_prims = llmax(1, (S32)generic_data[0]);
+                            mExpectedLinksetPrimCount = static_cast<U8>(num_prims);
                             LL_DEBUGS("NewObjectData") << "Root prim " << getID() << " has "
                                 << num_prims << " prims in linkset" << LL_ENDL;
                         }
@@ -8036,4 +8066,3 @@ public:
 
 LLHTTPRegistration<ObjectPhysicsProperties>
     gHTTPRegistrationObjectPhysicsProperties("/message/ObjectPhysicsProperties");
-

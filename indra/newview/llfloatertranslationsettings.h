@@ -45,6 +45,7 @@ public:
     void setAzureVerified(bool ok, bool alert, S32 status);
     void setGoogleVerified(bool ok, bool alert, S32 status);
     void setDeepLVerified(bool ok, bool alert, S32 status);
+    void setOpenAIVerified(bool ok, bool alert, S32 status);
     void onClose(bool app_quitting) override;
 
 private:
@@ -52,6 +53,7 @@ private:
     LLSD getEnteredAzureKey() const;
     std::string getEnteredGoogleKey() const;
     LLSD getEnteredDeepLKey() const;
+    LLSD getEnteredOpenAIConfig() const;
     void showAlert(const std::string& msg_name, S32 status) const;
     void updateControlsEnabledState();
     void verifyKey(int service, const LLSD& key, bool alert = true);
@@ -60,9 +62,11 @@ private:
     void onAzureKeyEdited();
     void onGoogleKeyEdited();
     void onDeepLKeyEdited();
+    void onOpenAIConfigEdited();
     void onBtnAzureVerify();
     void onBtnGoogleVerify();
     void onBtnDeepLVerify();
+    void onBtnOpenAIVerify();
     void onBtnOK();
 
     static void setVerificationStatus(int service, bool alert, bool ok, S32 status);
@@ -75,15 +79,20 @@ private:
     LLLineEditor* mGoogleAPIKeyEditor;
     LLComboBox* mDeepLAPIDomainCombo;
     LLLineEditor* mDeepLAPIKeyEditor;
+    LLLineEditor* mOpenAIEndpointEditor;
+    LLLineEditor* mOpenAIModelEditor;
+    LLLineEditor* mOpenAIAPIKeyEditor;
     LLRadioGroup* mTranslationServiceRadioGroup;
     LLButton* mAzureVerifyBtn;
     LLButton* mGoogleVerifyBtn;
     LLButton* mDeepLVerifyBtn;
+    LLButton* mOpenAIVerifyBtn;
     LLButton* mOKBtn;
 
     bool mAzureKeyVerified;
     bool mGoogleKeyVerified;
     bool mDeepLKeyVerified;
+    bool mOpenAIVerified;
 };
 
 #endif // LL_LLFLOATERTRANSLATIONSETTINGS_H

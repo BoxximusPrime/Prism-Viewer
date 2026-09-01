@@ -360,6 +360,36 @@ public:
             sFindChicletsSignal;
 };
 
+/** Compact one-to-one IM launcher displayed in the top chiclet bar. */
+class LLIMP2PChiclet : public LLIMChiclet
+{
+public:
+    struct Params : public LLInitParam::Block<Params, LLIMChiclet::Params>
+    {
+        Optional<LLButton::Params> chiclet_button;
+        Optional<LLChicletAvatarIconCtrl::Params> avatar_icon;
+        Optional<LLIconCtrl::Params> unread_badge;
+        Optional<LLChicletNotificationCounterCtrl::Params> unread_notifications;
+
+        Params();
+    };
+
+    void setOtherParticipantId(const LLUUID& other_participant_id) override;
+    void setUnreadCount(S32 unread_count);
+    void setFlashing(bool flashing);
+
+protected:
+    LLIMP2PChiclet(const Params& p);
+    friend class LLUICtrlFactory;
+
+    void createPopupMenu() override;
+
+private:
+    LLChicletAvatarIconCtrl* mChicletIconCtrl;
+    LLIconCtrl* mUnreadBadge;
+    LLChicletNotificationCounterCtrl* mCounterCtrl;
+};
+
 
 /**
  * Chiclet for script floaters.

@@ -2735,7 +2735,9 @@ LLViewerRegion::eCacheUpdateResult LLViewerRegion::cacheFullUpdate(LLDataPackerB
 
     if (entry)
     {
+        const bool was_valid = entry->isValid();
         entry->setValid();
+        entry->setUpdateFlags(flags);
 
         // we've seen this object before
         if (entry->getCRC() == crc)
@@ -2744,6 +2746,36 @@ LLViewerRegion::eCacheUpdateResult LLViewerRegion::cacheFullUpdate(LLDataPackerB
 
             // Record a hit
             entry->recordDupe();
+
+            // Disk-cache entries begin invalid and have not had their packed
+            // parent/spatial data decoded.  A compressed full update with the
+            // same CRC is still authoritative proof that the entry exists in
+            // this session.  Merely setting it valid leaves it permanently
+            // unmaterialized, and a later cache probe then skips it as an
+            // already-valid hit.  Decode that invalid -> valid transition.
+            if (!was_valid)
+            {
+                // Refresh from the authoritative packet even though its CRC
+                // matches.  This avoids trusting stale/corrupt disk bytes and
+                // ensures parenting is decoded from exactly what the simulator
+                // confirmed in this session.
+                entry->updateEntry(crc, dp);
+
+                U32 parent_id = 0;
+                LLViewerObject::unpackParentID(entry->getDP(), parent_id);
+                static U32 sSameCRCCacheReactivations = 0;
+                ++sSameCRCCacheReactivations;
+                if (sSameCRCCacheReactivations <= 10
+                    || (sSameCRCCacheReactivations % 100) == 0)
+                {
+                    LL_INFOS("VOCache") << "Reactivating same-CRC disk cache entry "
+                        << local_id << " parent " << parent_id
+                        << " in region " << getName()
+                        << " (sample " << sSameCRCCacheReactivations << ")"
+                        << LL_ENDL;
+                }
+                decodeBoundingInfo(entry);
+            }
             result = CACHE_UPDATE_DUPE;
         }
         else //CRC changed
@@ -2766,14 +2798,13 @@ LLViewerRegion::eCacheUpdateResult LLViewerRegion::cacheFullUpdate(LLDataPackerB
         // Create new entry and add to map
         result = CACHE_UPDATE_ADDED;
         entry = new LLVOCacheEntry(local_id, crc, dp);
+        entry->setUpdateFlags(flags);
         record(LLStatViewer::OBJECT_CACHE_HIT_RATE, LLUnits::Ratio::fromValue(0));
 
         mImpl->mCacheMap[local_id] = entry;
 
         decodeBoundingInfo(entry);
     }
-    entry->setUpdateFlags(flags);
-
     return result;
     }
 
@@ -3868,4 +3899,3 @@ void LLViewerRegion::applyCacheMiscExtras(LLViewerObject* obj)
         }
     }
 }
-

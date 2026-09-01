@@ -27,6 +27,7 @@
 #ifndef LL_LLCHICLETBAR_H
 #define LL_LLCHICLETBAR_H
 
+#include "llimview.h"
 #include "llpanel.h"
 
 class LLChicletPanel;
@@ -37,17 +38,28 @@ class LLLayoutStack;
 class LLChicletBar
     : public LLSingleton<LLChicletBar>
     , public LLPanel
+    , public LLIMSessionObserver
 {
     LLSINGLETON(LLChicletBar);
     LOG_CLASS(LLChicletBar);
 
 public:
 
+    ~LLChicletBar();
+
     bool postBuild() override;
 
     LLChicletPanel* getChicletPanel() { return mChicletPanel; }
+    LLChicletPanel* getObjectChicletPanel() { return mObjectChicletPanel; }
 
     void reshape(S32 width, S32 height, bool called_from_parent) override;
+
+    void sessionAdded(const LLUUID& session_id, const std::string& name,
+                      const LLUUID& other_participant_id, bool has_offline_msg) override;
+    void sessionActivated(const LLUUID&, const std::string&, const LLUUID&) override {}
+    void sessionVoiceOrIMStarted(const LLUUID&) override {}
+    void sessionRemoved(const LLUUID& session_id) override;
+    void sessionIDUpdated(const LLUUID& old_session_id, const LLUUID& new_session_id) override;
 
 
     /**
@@ -84,6 +96,7 @@ private:
 
 protected:
     LLChicletPanel*     mChicletPanel;
+    LLChicletPanel*     mObjectChicletPanel;
     LLLayoutStack*      mToolbarStack;
 };
 

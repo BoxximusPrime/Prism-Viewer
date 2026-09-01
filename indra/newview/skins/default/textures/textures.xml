@@ -137,8 +137,11 @@ with the same filename but different name
   <texture name="Command_AboutLand_Icon"    file_name="toolbar_icons/land.png"         preload="true" />
   <texture name="Command_Appearance_Icon"   file_name="toolbar_icons/appearance.png"   preload="true" />
   <texture name="Command_Avatar_Icon"       file_name="toolbar_icons/avatars.png"      preload="true" />
+  <texture name="Command_BoxxyAO_Icon"      file_name="toolbar_icons/gestures.png"     preload="true" />
+  <texture name="Command_BoxxyRadar_Icon"   file_name="toolbar_icons/people.png"       preload="true" />
   <texture name="Command_Build_Icon"        file_name="toolbar_icons/build.png"        preload="true" />
   <texture name="Command_Chat_Icon"         file_name="toolbar_icons/chat.png"         preload="true" />
+  <texture name="Command_TranslateChat_Icon" file_name="icons/nearby_chat_icon.png"     preload="true" />
   <texture name="Command_Compass_Icon"      file_name="toolbar_icons/land.png"         preload="true" />
   <texture name="Command_Destinations_Icon" file_name="toolbar_icons/destinations.png" preload="true" />
   <texture name="Command_Gestures_Icon"     file_name="toolbar_icons/gestures.png"     preload="true" />
@@ -426,6 +429,7 @@ with the same filename but different name
   <texture name="NavBar_BG_NoNav_Bevel" file_name="navbar/NavBar_BG_NoNav_Bevel.png" preload="true" scale.left="1" scale.top="1" scale.right="0" scale.bottom="0" />
 
   <texture name="Nearby_chat_icon" file_name="icons/nearby_chat_icon.png" preload="false" />
+  <texture name="BoxxyRadar_Typing_Icon" file_name="icons/nearby_chat_icon.png" preload="false" />
 
   <texture name="Notices_Unread" file_name="bottomtray/Notices_Unread.png" preload="true" />
 

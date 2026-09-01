@@ -40,6 +40,7 @@
 
 static LLDefaultChildRegistry::Register<LLChicletPanel> t1("chiclet_panel");
 static LLDefaultChildRegistry::Register<LLNotificationChiclet> t2("chiclet_notification");
+static LLDefaultChildRegistry::Register<LLIMP2PChiclet> t3("chiclet_im_p2p");
 static LLDefaultChildRegistry::Register<LLScriptChiclet> t6("chiclet_script");
 static LLDefaultChildRegistry::Register<LLInvOfferChiclet> t7("chiclet_offer");
 
@@ -373,6 +374,71 @@ void LLIMChiclet::setShowNewMessagesIcon(bool show)
     setRequiredWidth();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// One-to-one IM chiclet
+
+LLIMP2PChiclet::Params::Params()
+: chiclet_button("chiclet_button")
+, avatar_icon("avatar_icon")
+, unread_badge("unread_badge")
+, unread_notifications("unread_notifications")
+{
+}
+
+LLIMP2PChiclet::LLIMP2PChiclet(const Params& p)
+: LLIMChiclet(p)
+, mChicletIconCtrl(NULL)
+, mUnreadBadge(NULL)
+, mCounterCtrl(NULL)
+{
+    LLButton::Params button_params = p.chiclet_button;
+    mChicletButton = LLUICtrlFactory::create<LLButton>(button_params);
+    addChild(mChicletButton);
+
+    LLChicletAvatarIconCtrl::Params avatar_params = p.avatar_icon;
+    mChicletIconCtrl = LLUICtrlFactory::create<LLChicletAvatarIconCtrl>(avatar_params);
+    addChild(mChicletIconCtrl);
+
+    LLIconCtrl::Params unread_badge_params = p.unread_badge;
+    mUnreadBadge = LLUICtrlFactory::create<LLIconCtrl>(unread_badge_params);
+    mNewMessagesIcon = mUnreadBadge;
+    addChild(mUnreadBadge);
+
+    LLChicletNotificationCounterCtrl::Params counter_params = p.unread_notifications;
+    mCounterCtrl = LLUICtrlFactory::create<LLChicletNotificationCounterCtrl>(counter_params);
+    addChild(mCounterCtrl);
+
+    sendChildToFront(mUnreadBadge);
+    sendChildToFront(mCounterCtrl);
+    setUnreadCount(0);
+}
+
+void LLIMP2PChiclet::setOtherParticipantId(const LLUUID& other_participant_id)
+{
+    LLIMChiclet::setOtherParticipantId(other_participant_id);
+    mChicletIconCtrl->setValue(other_participant_id);
+}
+
+void LLIMP2PChiclet::setUnreadCount(S32 unread_count)
+{
+    unread_count = llmax(0, unread_count);
+    mCounterCtrl->setCounter(unread_count);
+    mCounterCtrl->setVisible(unread_count > 0);
+    mUnreadBadge->setVisible(unread_count > 0);
+    setFlashing(unread_count > 0);
+}
+
+void LLIMP2PChiclet::setFlashing(bool flashing)
+{
+    mChicletButton->setFlashing(flashing, flashing);
+}
+
+void LLIMP2PChiclet::createPopupMenu()
+{
+    // This is intentionally a single-action launcher. Conversation management
+    // remains available in the conversation floater.
+}
+
 bool LLIMChiclet::getShowNewMessagesIcon()
 {
     return mNewMessagesIcon->getVisible();
@@ -476,15 +542,20 @@ LLChicletPanel::~LLChicletPanel()
 
 void LLChicletPanel::onMessageCountChanged(const LLSD& data)
 {
-    // *TODO : we either suppress this method or return a value. Right now, it servers no purpose.
-    /*
+    const LLUUID session_id = data["session_id"].asUUID();
+    LLIMP2PChiclet* chiclet = findChiclet<LLIMP2PChiclet>(session_id);
+    if (!chiclet)
+    {
+        return;
+    }
 
-    //LLFloaterIMSession* im_floater = LLFloaterIMSession::findInstance(session_id);
-    //if (im_floater && im_floater->getVisible() && im_floater->hasFocus())
-    //{
-    //  unread = 0;
-    //}
-    */
+    S32 unread_count = data["participant_unread"].asInteger();
+    LLFloaterIMSession* im_floater = LLFloaterIMSession::findInstance(session_id);
+    if (im_floater && im_floater->getVisible() && im_floater->hasFocus())
+    {
+        unread_count = 0;
+    }
+    chiclet->setUnreadCount(unread_count);
 }
 
 void LLChicletPanel::objectChicletCallback(const LLSD& data)
@@ -830,13 +901,19 @@ void LLChicletPanel::arrange()
 
 void LLChicletPanel::trimChiclets()
 {
-    // trim right
     if(!mChicletList.empty())
     {
         S32 last_chiclet_right = (*mChicletList.rbegin())->getRect().mRight;
         S32 first_chiclet_left = getChiclet(0)->getRect().mLeft;
         S32 scroll_width = mScrollArea->getRect().getWidth();
-        if(last_chiclet_right < scroll_width || first_chiclet_left > 0)
+        S32 chiclets_width = last_chiclet_right - first_chiclet_left;
+
+        if (chiclets_width <= scroll_width)
+        {
+            // Keep the active-DM strip visually centered beneath the top bar.
+            shiftChiclets(((scroll_width - chiclets_width) / 2) - first_chiclet_left);
+        }
+        else if(last_chiclet_right < scroll_width || first_chiclet_left > 0)
         {
             shiftChiclets(scroll_width - last_chiclet_right);
         }
@@ -1038,6 +1115,47 @@ bool LLChicletPanel::isAnyIMFloaterDoked()
 LLChicletNotificationCounterCtrl::Params::Params()
     : max_displayed_count("max_displayed_count", 99)
 {
+}
+
+LLChicletNotificationCounterCtrl::LLChicletNotificationCounterCtrl(const Params& p)
+    : LLTextBox(p)
+    , mCounter(0)
+    , mInitialWidth(getRect().getWidth())
+    , mMaxDisplayedCount(p.max_displayed_count)
+{
+}
+
+void LLChicletNotificationCounterCtrl::setCounter(S32 counter)
+{
+    mCounter = llmax(0, counter);
+    if (mCounter == 0)
+    {
+        setText(LLStringUtil::null);
+        return;
+    }
+
+    const bool has_more = mCounter > mMaxDisplayedCount;
+    setText(llformat("%d%s", llmin(mCounter, mMaxDisplayedCount), has_more ? "+" : ""));
+}
+
+LLRect LLChicletNotificationCounterCtrl::getRequiredRect()
+{
+    LLRect rect;
+    rect.mRight = rect.mLeft + llmax(getTextPixelWidth(), mInitialWidth);
+    return rect;
+}
+
+void LLChicletNotificationCounterCtrl::setValue(const LLSD& value)
+{
+    if (value.isInteger())
+    {
+        setCounter(value.asInteger());
+    }
+}
+
+LLSD LLChicletNotificationCounterCtrl::getValue() const
+{
+    return LLSD(getCounter());
 }
 
 //////////////////////////////////////////////////////////////////////////

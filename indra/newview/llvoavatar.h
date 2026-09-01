@@ -30,6 +30,7 @@
 
 #include <map>
 #include <deque>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -292,6 +293,8 @@ public:
     void            idleUpdateNameTagText(bool new_name);
     void            idleUpdateNameTagAlpha(bool new_name, F32 alpha);
     LLColor4        getNameTagColor(bool is_friend);
+    S32             getNameTagChatRange() const;
+    LLColor4        getNameTagChatRangeColor(S32 chat_range) const;
     void            clearNameTag();
     static void     invalidateNameTag(const LLUUID& agent_id);
     // force all name tags to rebuild, useful when display names turned on/off
@@ -1034,6 +1037,57 @@ public:
     LLViewerObject *    findAttachmentByID( const LLUUID & target_id ) const;
     LLViewerJointAttachment* getTargetAttachmentPoint(LLViewerObject* viewer_object);
 
+    struct AttachmentLoadingStats
+    {
+        S32 expected = 0;
+        S32 attached = 0;
+        S32 pending = 0;
+        S32 missing = 0;
+    };
+    AttachmentLoadingStats getAttachmentLoadingStats() const;
+
+    // Root attachment counts do not say whether the linked child prims or
+    // their render assets actually arrived.  This more expensive snapshot is
+    // intended for low-frequency recovery checks and debug diagnostics, not
+    // the per-frame rez-status path.
+    struct AttachmentContentStats
+    {
+        S32 linksets_known = 0;
+        S32 linksets_unknown = 0;
+        S32 linksets_incomplete = 0;
+        S32 prims_expected = 0;
+        S32 prims_received_known = 0;
+        S32 objects_received = 0;
+        S32 drawables_missing = 0;
+        S32 geometry_missing = 0;
+        S32 meshes_total = 0;
+        S32 meshes_loaded = 0;
+        S32 meshes_loading = 0;
+        S32 meshes_unavailable = 0;
+        S32 meshes_empty = 0;
+        S32 skins_loading = 0;
+        S32 textures_total = 0;
+        S32 textures_no_data = 0;
+        S32 textures_loading = 0;
+        S32 textures_unresolved = 0;
+        S32 textures_missing = 0;
+
+        bool hasStructuralGap() const
+        {
+            return linksets_incomplete > 0
+                || drawables_missing > 0
+                || geometry_missing > 0
+                || meshes_loading > 0
+                || meshes_unavailable > 0
+                || meshes_empty > 0
+                || skins_loading > 0
+                || textures_no_data > 0
+                || textures_missing > 0;
+        }
+    };
+    AttachmentContentStats getAttachmentContentStats(
+        std::vector<LLViewerObject*>* incomplete_linkset_roots = nullptr) const;
+
 protected:
     void                lazyAttach();
     void                rebuildRiggedAttachments( void );
@@ -1047,11 +1101,23 @@ public:
     attachment_map_t                                mAttachmentPoints;
     std::vector<LLPointer<LLViewerObject> >         mPendingAttachment;
 
-    // List of attachments' ids with attach points from simulator.
+    // List of attachment asset IDs with attach points from the simulator.
+    // Attached viewer objects expose different object/item UUID domains, so
+    // these IDs cannot be used for direct received-object identity matching.
     // we need this info to know when all attachments are present.
     std::map<LLUUID, S32>                           mSimAttachments;
     S32                                             mLastCloudAttachmentCount;
     LLFrameTimer                                    mLastCloudAttachmentChangeTime;
+
+    struct PendingAttachmentRetry
+    {
+        U32 mAttempts = 0;
+        U32 mObjectUpdateAttempts = 0;
+        bool mObjectUpdateRequested = false;
+        LLFrameTimer mRetryTimer;
+        LLFrameTimer mObjectUpdateTimer;
+    };
+    std::map<LLUUID, PendingAttachmentRetry>        mPendingAttachmentRetries;
 
     //--------------------------------------------------------------------
     // HUD functions
@@ -1085,10 +1151,20 @@ public:
     void            processAnimationStateChanges();
 protected:
     bool            processSingleAnimationStateChange(const LLUUID &anim_id, bool start);
+    void            updateAnimationPhaseAnchors();
+    F32             getAnimationPhaseOffset(const LLUUID& anim_id) const;
     void            resetAnimations();
 private:
     LLTimer         mAnimTimer;
     F32             mTimeLast;
+    bool            mBoxxyAnimationWasHidden = false;
+
+    struct AnimationPhaseAnchor
+    {
+        S32 mSequenceID;
+        F32 mControllerStartTime;
+    };
+    std::map<LLUUID, AnimationPhaseAnchor> mAnimationPhaseAnchors;
 
     //--------------------------------------------------------------------
     // Animation state data
@@ -1110,6 +1186,7 @@ public:
     void            clearChat();
     void            startTyping() { mTyping = true; mTypingTimer.reset(); }
     void            stopTyping() { mTyping = false; }
+    bool            isTyping() const { return mTyping; }
 private:
     bool            mVisibleChat = false;
 
@@ -1212,7 +1289,10 @@ private:
     bool            mNameMute;
     bool            mNameAppearance;
     bool            mNameFriend;
+    bool            mNameVip;
+    U32             mNameVipRevision;
     bool            mNameCloud;
+    S32             mNameChatRange;
     F32             mNameAlpha;
     S32             mRenderGroupTitles;
 
@@ -1355,4 +1435,3 @@ void dump_sequential_xml(const std::string outprefix, const LLSD& content);
 void dump_visual_param(apr_file_t* file, LLVisualParam* viewer_param, F32 value);
 
 #endif // LL_VOAVATAR_H
-

@@ -48,6 +48,7 @@ LLFloaterTranslationSettings::LLFloaterTranslationSettings(const LLSD& key)
 ,   mAzureKeyVerified(false)
 ,   mGoogleKeyVerified(false)
 ,   mDeepLKeyVerified(false)
+,   mOpenAIVerified(false)
 {
 }
 
@@ -63,9 +64,13 @@ bool LLFloaterTranslationSettings::postBuild()
     mGoogleAPIKeyEditor = getChild<LLLineEditor>("google_api_key");
     mDeepLAPIDomainCombo = getChild<LLComboBox>("deepl_api_domain_combo");
     mDeepLAPIKeyEditor = getChild<LLLineEditor>("deepl_api_key");
+    mOpenAIEndpointEditor = getChild<LLLineEditor>("openai_endpoint");
+    mOpenAIModelEditor = getChild<LLLineEditor>("openai_model");
+    mOpenAIAPIKeyEditor = getChild<LLLineEditor>("openai_api_key");
     mAzureVerifyBtn = getChild<LLButton>("verify_azure_api_key_btn");
     mGoogleVerifyBtn = getChild<LLButton>("verify_google_api_key_btn");
     mDeepLVerifyBtn = getChild<LLButton>("verify_deepl_api_key_btn");
+    mOpenAIVerifyBtn = getChild<LLButton>("verify_openai_endpoint_btn");
     mOKBtn = getChild<LLButton>("ok_btn");
 
     mMachineTranslationCB->setCommitCallback(boost::bind(&LLFloaterTranslationSettings::updateControlsEnabledState, this));
@@ -75,6 +80,7 @@ bool LLFloaterTranslationSettings::postBuild()
     mAzureVerifyBtn->setClickedCallback(boost::bind(&LLFloaterTranslationSettings::onBtnAzureVerify, this));
     mGoogleVerifyBtn->setClickedCallback(boost::bind(&LLFloaterTranslationSettings::onBtnGoogleVerify, this));
     mDeepLVerifyBtn->setClickedCallback(boost::bind(&LLFloaterTranslationSettings::onBtnDeepLVerify, this));
+    mOpenAIVerifyBtn->setClickedCallback(boost::bind(&LLFloaterTranslationSettings::onBtnOpenAIVerify, this));
 
     mAzureAPIKeyEditor->setFocusReceivedCallback(boost::bind(&LLFloaterTranslationSettings::onEditorFocused, this, _1));
     mAzureAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLFloaterTranslationSettings::onAzureKeyEdited, this), NULL);
@@ -104,6 +110,10 @@ bool LLFloaterTranslationSettings::postBuild()
                                                {
                                                 setDeepLVerified(false, false, 0);
                                                });
+
+    mOpenAIEndpointEditor->setKeystrokeCallback(boost::bind(&LLFloaterTranslationSettings::onOpenAIConfigEdited, this), NULL);
+    mOpenAIModelEditor->setKeystrokeCallback(boost::bind(&LLFloaterTranslationSettings::onOpenAIConfigEdited, this), NULL);
+    mOpenAIAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLFloaterTranslationSettings::onOpenAIConfigEdited, this), NULL);
 
     center();
     return true;
@@ -167,6 +177,19 @@ void LLFloaterTranslationSettings::onOpen(const LLSD& key)
         mDeepLKeyVerified = false;
     }
 
+    LLSD openai_config = gSavedSettings.getLLSD("OpenAITranslateConfig");
+    mOpenAIVerified = false;
+    if (openai_config.isMap())
+    {
+        mOpenAIEndpointEditor->setText(openai_config["endpoint"].asString());
+        mOpenAIModelEditor->setText(openai_config["model"].asString());
+        mOpenAIAPIKeyEditor->setText(openai_config["id"].asString());
+        if (!openai_config["endpoint"].asString().empty()
+            && !openai_config["model"].asString().empty())
+        {
+            verifyKey(LLTranslate::SERVICE_OPENAI, openai_config, false);
+        }
+    }
     updateControlsEnabledState();
 }
 
@@ -200,6 +223,17 @@ void LLFloaterTranslationSettings::setDeepLVerified(bool ok, bool alert, S32 sta
     }
 
     mDeepLKeyVerified = ok;
+    updateControlsEnabledState();
+}
+
+void LLFloaterTranslationSettings::setOpenAIVerified(bool ok, bool alert, S32 status)
+{
+    if (alert)
+    {
+        showAlert(ok ? "openai_endpoint_verified" : "openai_endpoint_not_verified", status);
+    }
+
+    mOpenAIVerified = ok;
     updateControlsEnabledState();
 }
 
@@ -239,6 +273,15 @@ LLSD LLFloaterTranslationSettings::getEnteredDeepLKey() const
     return key;
 }
 
+LLSD LLFloaterTranslationSettings::getEnteredOpenAIConfig() const
+{
+    LLSD config;
+    config["endpoint"] = mOpenAIEndpointEditor->getText();
+    config["model"] = mOpenAIModelEditor->getText();
+    config["id"] = mOpenAIAPIKeyEditor->getText();
+    return config;
+}
+
 void LLFloaterTranslationSettings::showAlert(const std::string& msg_name, S32 status) const
 {
     LLStringUtil::format_map_t string_args;
@@ -259,6 +302,7 @@ void LLFloaterTranslationSettings::updateControlsEnabledState()
     bool azure_selected = service == "azure";
     bool google_selected = service == "google";
     bool deepl_selected = service == "deepl";
+    bool openai_selected = service == "openai";
 
     mTranslationServiceRadioGroup->setEnabled(on);
     mLanguageCombo->setEnabled(on);
@@ -290,10 +334,23 @@ void LLFloaterTranslationSettings::updateControlsEnabledState()
     mDeepLVerifyBtn->setEnabled(on && deepl_selected &&
                                  !mDeepLKeyVerified && getEnteredDeepLKey().isMap());
 
+    // OpenAI-compatible
+    getChild<LLTextBox>("openai_endpoint_label")->setEnabled(on);
+    getChild<LLTextBox>("openai_model_label")->setEnabled(on);
+    getChild<LLTextBox>("openai_api_key_label")->setEnabled(on);
+    mOpenAIEndpointEditor->setEnabled(on && openai_selected);
+    mOpenAIModelEditor->setEnabled(on && openai_selected);
+    mOpenAIAPIKeyEditor->setEnabled(on && openai_selected);
+    mOpenAIVerifyBtn->setEnabled(on && openai_selected
+                                 && !mOpenAIVerified
+                                 && !mOpenAIEndpointEditor->getText().empty()
+                                 && !mOpenAIModelEditor->getText().empty());
+
     bool service_verified =
         (azure_selected && mAzureKeyVerified)
         || (google_selected && mGoogleKeyVerified)
-        || (deepl_selected && mDeepLKeyVerified);
+        || (deepl_selected && mDeepLKeyVerified)
+        || (openai_selected && mOpenAIVerified);
     gSavedPerAccountSettings.setBOOL("TranslatingEnabled", service_verified);
 
     mOKBtn->setEnabled(!on || service_verified);
@@ -321,6 +378,9 @@ void LLFloaterTranslationSettings::setVerificationStatus(int service, bool ok, b
         break;
     case LLTranslate::SERVICE_DEEPL:
         floater->setDeepLVerified(ok, alert, status);
+        break;
+    case LLTranslate::SERVICE_OPENAI:
+        floater->setOpenAIVerified(ok, alert, status);
         break;
     }
 }
@@ -371,6 +431,16 @@ void LLFloaterTranslationSettings::onDeepLKeyEdited()
     }
 }
 
+void LLFloaterTranslationSettings::onOpenAIConfigEdited()
+{
+    if (mOpenAIEndpointEditor->isDirty()
+        || mOpenAIModelEditor->isDirty()
+        || mOpenAIAPIKeyEditor->isDirty())
+    {
+        setOpenAIVerified(false, false, 0);
+    }
+}
+
 void LLFloaterTranslationSettings::onBtnAzureVerify()
 {
     LLSD key = getEnteredAzureKey();
@@ -398,17 +468,29 @@ void LLFloaterTranslationSettings::onBtnDeepLVerify()
     }
 }
 
+void LLFloaterTranslationSettings::onBtnOpenAIVerify()
+{
+    LLSD config = getEnteredOpenAIConfig();
+    if (!config["endpoint"].asString().empty()
+        && !config["model"].asString().empty())
+    {
+        verifyKey(LLTranslate::SERVICE_OPENAI, config);
+    }
+}
+
 void LLFloaterTranslationSettings::onClose(bool app_quitting)
 {
     std::string service = gSavedSettings.getString("TranslationService");
     bool azure_selected = service == "azure";
     bool google_selected = service == "google";
     bool deepl_selected = service == "deepl";
+    bool openai_selected = service == "openai";
 
     bool service_verified =
         (azure_selected && mAzureKeyVerified)
         || (google_selected && mGoogleKeyVerified)
-        || (deepl_selected && mDeepLKeyVerified);
+        || (deepl_selected && mDeepLKeyVerified)
+        || (openai_selected && mOpenAIVerified);
     gSavedPerAccountSettings.setBOOL("TranslatingEnabled", service_verified);
 }
 void LLFloaterTranslationSettings::onBtnOK()
@@ -419,6 +501,7 @@ void LLFloaterTranslationSettings::onBtnOK()
     gSavedSettings.setLLSD("AzureTranslateAPIKey", getEnteredAzureKey());
     gSavedSettings.setString("GoogleTranslateAPIKey", getEnteredGoogleKey());
     gSavedSettings.setLLSD("DeepLTranslateAPIKey", getEnteredDeepLKey());
+    gSavedSettings.setLLSD("OpenAITranslateConfig", getEnteredOpenAIConfig());
 
     closeFloater(false);
 }

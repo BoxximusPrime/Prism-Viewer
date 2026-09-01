@@ -47,8 +47,10 @@
 #include "llnotificationsutil.h"
 #include "lloutfitobserver.h"
 #include "lltoggleablemenu.h"
+#include "lltooldraganddrop.h"
 #include "lltransutil.h"
 #include "llviewercontrol.h"
+#include "llviewerinventory.h"
 #include "llviewermenu.h"
 #include "llvoavatar.h"
 #include "llvoavatarself.h"
@@ -178,6 +180,20 @@ void LLOutfitsList::onOpen(const LLSD& info)
     selected_tab->showAndFocusHeader();
 }
 
+bool LLOutfitsList::handleKeyHere(KEY key, MASK mask)
+{
+    bool delete_key = key == KEY_DELETE;
+#if LL_DARWIN
+    delete_key |= key == KEY_BACKSPACE;
+#endif
+    if (delete_key && mask == MASK_NONE && isActionEnabled("delete"))
+    {
+        removeSelected();
+        return true;
+    }
+    return LLOutfitListBase::handleKeyHere(key, mask);
+}
+
 
 void LLOutfitsList::updateAddedCategory(LLUUID cat_id)
 {
@@ -216,6 +232,7 @@ void LLOutfitsList::updateAddedCategory(LLUUID cat_id)
 
     // Start observing the new outfit category.
     LLWearableItemsList* list = tab->getChild<LLWearableItemsList>("wearable_items_list");
+    list->setOutfitFolderID(cat_id);
     if (!mCategoriesObserver->addCategory(cat_id, boost::bind(&LLWearableItemsList::updateList, list, cat_id)))
     {
         // Remove accordion tab if category could not be added to observer.
@@ -400,7 +417,13 @@ bool LLOutfitListBase::isActionEnabled(const LLSD& userdata)
     const std::string command_name = userdata.asString();
     if (command_name == "delete")
     {
-        return !hasItemSelected() && LLAppearanceMgr::instance().getCanRemoveOutfit(mSelectedOutfitUUID);
+        if (hasItemSelected())
+        {
+            uuid_vec_t selected_items;
+            getSelectedItemsUUIDs(selected_items);
+            return LLWearableItemsList::canRemoveItemsFromOutfit(selected_items);
+        }
+        return LLAppearanceMgr::instance().getCanRemoveOutfit(mSelectedOutfitUUID);
     }
     if (command_name == "rename")
     {
@@ -1211,6 +1234,14 @@ void LLOutfitListBase::highlightBaseOutfit()
 
 void LLOutfitListBase::removeSelected()
 {
+    if (hasItemSelected())
+    {
+        uuid_vec_t selected_items;
+        getSelectedItemsUUIDs(selected_items);
+        LLWearableItemsList::removeItemsFromOutfit(selected_items);
+        return;
+    }
+
     LLNotificationsUtil::add("DeleteOutfits", LLSD(), LLSD(), boost::bind(&LLOutfitListBase::onOutfitsRemovalConfirmation, this, _1, _2));
 }
 
@@ -1709,6 +1740,53 @@ bool LLOutfitAccordionCtrlTab::handleToolTip(S32 x, S32 y, MASK mask)
     }
 
     return LLAccordionCtrlTab::handleToolTip(x, y, mask);
+}
+
+bool LLOutfitAccordionCtrlTab::handleDragAndDrop(S32 x, S32 y, MASK mask, bool drop,
+                                                  EDragAndDropType cargo_type, void* cargo_data,
+                                                  EAcceptance* accept, std::string& tooltip_msg)
+{
+    LLInventoryItem* item = static_cast<LLInventoryItem*>(cargo_data);
+    const bool supported_type = cargo_type == DAD_BODYPART
+                             || cargo_type == DAD_CLOTHING
+                             || cargo_type == DAD_OBJECT
+                             || cargo_type == DAD_GESTURE
+                             || cargo_type == DAD_LINK;
+    const LLInventoryType::EType inventory_type = item ? item->getInventoryType() : LLInventoryType::IT_NONE;
+    const bool supported_inventory_type = inventory_type == LLInventoryType::IT_WEARABLE
+                                       || inventory_type == LLInventoryType::IT_GESTURE
+                                       || inventory_type == LLInventoryType::IT_ATTACHMENT
+                                       || inventory_type == LLInventoryType::IT_OBJECT;
+
+    if (!item || !supported_type || !supported_inventory_type ||
+        LLToolDragAndDrop::instance().getSource() != LLToolDragAndDrop::SOURCE_AGENT ||
+        !can_move_to_outfit(item, false))
+    {
+        *accept = ACCEPT_NO;
+        return true;
+    }
+
+    LLInventoryModel::cat_array_t categories;
+    LLInventoryModel::item_array_t items;
+    gInventory.collectDescendents(mFolderID, categories, items, LLInventoryModel::EXCLUDE_TRASH);
+    const LLUUID linked_id = item->getLinkedUUID();
+    const bool already_added = std::find_if(items.begin(), items.end(), [&linked_id](const LLViewerInventoryItem* outfit_item)
+    {
+        return outfit_item && outfit_item->getLinkedUUID() == linked_id;
+    }) != items.end();
+
+    if (already_added)
+    {
+        *accept = ACCEPT_NO;
+        return true;
+    }
+
+    *accept = ACCEPT_YES_MULTI;
+    if (drop)
+    {
+        link_inventory_object(mFolderID, linked_id, nullptr);
+    }
+    return true;
 }
 
 void LLOutfitAccordionCtrlTab::setFavorite(bool is_favorite)

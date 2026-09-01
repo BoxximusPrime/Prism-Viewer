@@ -95,8 +95,8 @@
     <check_box
      control_name="EnableLookAtTarget"
      height="16"
-     label="Enable LookAt"
-     tool_tip="Enable tracking cursor position with avatar head's rotation"
+     label="Send LookAt Updates"
+     tool_tip="Send your avatar's LookAt targets to the simulator. Turning this off sends one neutral target to clear the last update, then stops sending target changes."
      layout="topleft"
      left="30"
      name="enable_lookat_target"
@@ -111,6 +111,27 @@
      layout="topleft"
      left="50"
      name="limit_lookat_distance"
+     top_pad="10"
+     width="350" />
+    <check_box
+     control_name="ShowLookAtTargets"
+     height="16"
+     label="Show LookAt Targets"
+     tool_tip="Show the official viewer's colored LookAt crosshairs for avatars whose targets have been received."
+     layout="topleft"
+     left="30"
+     name="show_lookat_targets"
+     top_pad="10"
+     width="350" />
+    <check_box
+     enabled_control="ShowLookAtTargets"
+     control_name="ShowOnlyFocusLookAtTargets"
+     height="16"
+     label="Only Show Focus Targets"
+     tool_tip="Only show magenta Focus LookAt crosshairs; hide Idle, Select, Hover, and other LookAt target types."
+     layout="topleft"
+     left="50"
+     name="show_only_focus_lookat_targets"
      top_pad="10"
      width="350" />
     <check_box

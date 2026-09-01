@@ -2086,7 +2086,7 @@ class LLAdvancedToggleShowLookAt : public view_listener_t
 {
     bool handleEvent(const LLSD& userdata)
     {
-        LLHUDEffectLookAt::sDebugLookAt = !(LLHUDEffectLookAt::sDebugLookAt);
+        gSavedSettings.setBOOL("ShowLookAtTargets", !gSavedSettings.getBOOL("ShowLookAtTargets"));
         return true;
     }
 };
@@ -2095,8 +2095,7 @@ class LLAdvancedCheckShowLookAt : public view_listener_t
 {
     bool handleEvent(const LLSD& userdata)
     {
-        bool new_value = LLHUDEffectLookAt::sDebugLookAt;
-        return new_value;
+        return gSavedSettings.getBOOL("ShowLookAtTargets");
     }
 };
 

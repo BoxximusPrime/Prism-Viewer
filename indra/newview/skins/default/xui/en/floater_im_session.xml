@@ -141,7 +141,18 @@
                  left_pad="2"
                  name="voice_call_btn"
                  tool_tip="Open voice connection"
-                 width="31"/>                
+                 width="31"/>
+                <line_editor
+                 follows="top|left"
+                 height="20"
+                 label="Translate to..."
+                 layout="topleft"
+                 left_pad="5"
+                 max_length_chars="32"
+                 name="translate_language"
+                 tool_tip="Automatically translate outgoing messages to this language; leave blank to disable"
+                 top="3"
+                 width="105" />
                 <button
                  follows="right|top"
                  height="25"

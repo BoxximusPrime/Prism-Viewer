@@ -157,7 +157,6 @@ public:
     void onClickResetCache();
     void onClickSkin(LLUICtrl* ctrl,const LLSD& userdata);
     void onSelectSkin();
-    void onClickSetSounds();
     void onClickEnablePopup();
     void onClickDisablePopup();
     void resetAllIgnored();
@@ -193,6 +192,7 @@ public:
     void onClickAdvanced();
     void onClickScriptingPerfs();
     void applyUIColor(LLUICtrl* ctrl, const LLSD& param);
+    void applyBoxxyNameTagColor(LLUICtrl* ctrl, const LLSD& param);
     void getUIColor(LLUICtrl* ctrl, const LLSD& param);
     void onLogChatHistorySaved();
     void buildPopupLists();

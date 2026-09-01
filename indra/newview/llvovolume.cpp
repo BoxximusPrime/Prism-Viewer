@@ -1308,7 +1308,10 @@ void LLVOVolume::notifyMeshLoaded()
         }
     }
 
-    LLVOAvatar *av = getAvatar();
+    // Linked attachment children normally have no attachment-state bits of
+    // their own, so getAvatar() can be null even though their mesh belongs to
+    // an avatar.  Walk the parent chain for the presentation owner.
+    LLVOAvatar *av = getAvatarAncestor();
     if (av && !isAnimatedObject())
     {
         av->addAttachmentOverridesForObject(this);

@@ -109,6 +109,13 @@ private:
 
 namespace LLToolBarEnums
 {
+    enum ButtonAlignment
+    {
+        BUTTON_ALIGN_LEFT,
+        BUTTON_ALIGN_CENTER,
+        BUTTON_ALIGN_RIGHT
+    };
+
     enum ButtonType
     {
         BTNTYPE_ICONS_WITH_TEXT = 0,
@@ -155,6 +162,12 @@ namespace LLInitParam
     {
         static void declareValues();
     };
+
+    template<>
+    struct TypeValues<LLToolBarEnums::ButtonAlignment> : public TypeValuesHelper<LLToolBarEnums::ButtonAlignment>
+    {
+        static void declareValues();
+    };
 }
 
 
@@ -190,6 +203,7 @@ public:
     {
         Mandatory<LLToolBarEnums::ButtonType>   button_display_mode;
         Mandatory<LLToolBarEnums::SideType>     side;
+        Optional<LLToolBarEnums::ButtonAlignment> button_alignment;
 
         Optional<LLToolBarButton::Params>       button_icon,
                                                 button_icon_and_text;
@@ -258,6 +272,8 @@ public:
     // Methods used in loading and saving toolbar settings
     void setButtonType(LLToolBarEnums::ButtonType button_type);
     LLToolBarEnums::ButtonType getButtonType() const { return mButtonType; }
+    void setButtonAlignment(LLToolBarEnums::ButtonAlignment alignment);
+    LLToolBarEnums::ButtonAlignment getButtonAlignment() const { return mButtonAlignment; }
     command_id_list_t& getCommandsList() { return mButtonCommands; }
     void clearCommandsList();
 
@@ -304,11 +320,14 @@ private:
     command_id_map                  mButtonMap;
 
     LLToolBarEnums::ButtonType      mButtonType;
+    LLToolBarEnums::ButtonAlignment mButtonAlignment;
     LLToolBarButton::Params         mButtonParams[LLToolBarEnums::BTNTYPE_COUNT];
 
     // related widgets
     LLLayoutStack*                  mCenteringStack;
+    LLLayoutPanel*                  mStartSpacer;
     LLCenterLayoutPanel*            mCenterPanel;
+    LLLayoutPanel*                  mEndSpacer;
     LLPanel*                        mButtonPanel;
     LLHandle<class LLContextMenu>   mPopupMenuHandle;
     LLHandle<class LLView>          mRemoveButtonHandle;

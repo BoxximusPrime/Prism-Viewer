@@ -85,6 +85,8 @@ LLHUDNameTag::LLHUDNameTag(const U8 type)
     mVisibleOffScreen(false),
     mOffscreen(false),
     mColor(1.f, 1.f, 1.f, 1.f),
+    mBottomBorderColor(1.f, 1.f, 1.f, 1.f),
+    mDrawBottomBorder(false),
 //  mScale(),
     mWidth(0.f),
     mHeight(0.f),
@@ -109,6 +111,7 @@ LLHUDNameTag::LLHUDNameTag(const U8 type)
 
     mRoundedRectImgp = LLUI::getUIImage("Rounded_Rect");
     mRoundedRectTopImgp = LLUI::getUIImage("Rounded_Rect_Top");
+    mRoundedRectBottomImgp = LLUI::getUIImage("Rounded_Rect_Bottom");
 }
 
 LLHUDNameTag::~LLHUDNameTag()
@@ -310,6 +313,14 @@ void LLHUDNameTag::renderText()
     LLRect screen_rect;
     screen_rect.setCenterAndSize(0, static_cast<S32>(lltrunc(-mHeight / 2 + mOffsetY)), static_cast<S32>(lltrunc(mWidth)), static_cast<S32>(lltrunc(mHeight)));
     mRoundedRectImgp->draw3D(render_position, x_pixel_vec, y_pixel_vec, screen_rect, bg_color);
+    if (mDrawBottomBorder)
+    {
+        LLColor4 border_color = mBottomBorderColor;
+        border_color.mV[VALPHA] *= alpha_factor;
+        LLRect border_rect = screen_rect;
+        border_rect.mTop = border_rect.mBottom + 3;
+        mRoundedRectBottomImgp->draw3D(render_position, x_pixel_vec, y_pixel_vec, border_rect, border_color);
+    }
     if (mLabelSegments.size())
     {
         LLRect label_top_rect = screen_rect;

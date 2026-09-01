@@ -32,4 +32,17 @@
     <on_check function="Toolbars.CheckSetting"
               parameter="icons_only" />
   </menu_item_check>
+  <menu_item_separator layout="topleft" name="Button alignment separator" />
+  <menu_item_check label="Align buttons left" layout="topleft" name="Align left">
+    <on_click function="Toolbars.EnableSetting" parameter="align_left" />
+    <on_check function="Toolbars.CheckSetting" parameter="align_left" />
+  </menu_item_check>
+  <menu_item_check label="Align buttons center" layout="topleft" name="Align center">
+    <on_click function="Toolbars.EnableSetting" parameter="align_center" />
+    <on_check function="Toolbars.CheckSetting" parameter="align_center" />
+  </menu_item_check>
+  <menu_item_check label="Align buttons right" layout="topleft" name="Align right">
+    <on_click function="Toolbars.EnableSetting" parameter="align_right" />
+    <on_check function="Toolbars.CheckSetting" parameter="align_right" />
+  </menu_item_check>
 </context_menu>

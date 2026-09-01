@@ -445,6 +445,11 @@ public:
     void setLinksetPhysicsCost(F32 cost);
     F32 getLinksetPhysicsCost();
 
+    // Number of primitives the simulator reported for this object's linkset
+    // in full ObjectData.  Zero means that the value is still unknown (for
+    // example, trees and avatars do not use the generic-data convention).
+    U8 getExpectedLinksetPrimCount() const { return mExpectedLinksetPrimCount; }
+
     void sendShapeUpdate();
 
     U8 getAttachmentState()                         { return mAttachmentState; }
@@ -984,6 +989,7 @@ protected:
     U8              mAttachmentState;   // this encodes the attachment id in a somewhat complex way. 0 if not an attachment.
     LLViewerObjectMedia* mMedia;    // NULL if no media associated
     U8 mClickAction;
+    U8 mExpectedLinksetPrimCount = 0;
     F32 mObjectCost; //resource cost of this object or -1 if unknown
     F32 mLinksetCost;
     F32 mPhysicsCost;
@@ -1123,4 +1129,3 @@ public:
 
     virtual void updateDrawable(bool force_damped);
 };
-

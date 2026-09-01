@@ -44,6 +44,7 @@
 #include "llgesturemgr.h"
 #include "llkeyboard.h"
 #include "lllineeditor.h"
+#include "llnotificationsutil.h"
 #include "llstatusbar.h"
 #include "lltextbox.h"
 #include "lluiconstants.h"
@@ -53,6 +54,8 @@
 #include "llviewerwindow.h"
 #include "llframetimer.h"
 #include "llresmgr.h"
+#include "lltrans.h"
+#include "lltranslate.h"
 #include "llworld.h"
 #include "llinventorymodel.h"
 #include "llmultigesture.h"
@@ -66,6 +69,8 @@
 constexpr F32 AGENT_TYPING_TIMEOUT = 5.f;   // seconds
 
 LLChatBar *gChatBar = NULL;
+
+static LLDefaultChildRegistry::Register<LLChatBar> r("chat_bar");
 
 class LLChatBarGestureObserver : public LLGestureManagerObserver
 {
@@ -85,7 +90,12 @@ extern void send_chat_from_viewer(const std::string& utf8_out_text, EChatType ty
 //
 
 LLChatBar::LLChatBar()
-:   LLPanel(),
+:   LLChatBar(Params())
+{
+}
+
+LLChatBar::LLChatBar(const LLChatBar::Params& p)
+:   LLPanel(p),
     mInputEditor(NULL),
     mGestureLabelTimer(),
     mLastSpecialChatChannel(0),
@@ -93,15 +103,22 @@ LLChatBar::LLChatBar()
     mGestureCombo(NULL),
     mObserver(NULL)
 {
-    //setIsChrome(true);
+    gChatBar = this;
 }
 
 
 LLChatBar::~LLChatBar()
 {
-    LLGestureMgr::instance().removeObserver(mObserver);
+    if (mObserver)
+    {
+        LLGestureMgr::instance().removeObserver(mObserver);
+    }
     delete mObserver;
     mObserver = NULL;
+    if (gChatBar == this)
+    {
+        gChatBar = NULL;
+    }
     // LLView destructor cleans up children
 }
 
@@ -143,22 +160,38 @@ bool LLChatBar::handleKeyHere( KEY key, MASK mask )
 
     if( KEY_RETURN == key )
     {
-        if (mask == MASK_CONTROL)
+        const std::string trimmed_text = mInputEditor
+            ? utf8str_trim(wstring_to_utf8str(mInputEditor->getConvertedText()))
+            : LLStringUtil::null;
+        if (gChatBar == this && trimmed_text.empty())
+        {
+            mInputEditor->setText(LLStringUtil::null);
+            stopChat();
+            handled = true;
+        }
+        else if (mask == MASK_CONTROL)
         {
             // shout
             sendChat(CHAT_TYPE_SHOUT);
             handled = true;
         }
+        else if (mask == MASK_SHIFT)
+        {
+            // whisper
+            sendChat(CHAT_TYPE_WHISPER);
+            handled = true;
+        }
         else if (mask == MASK_NONE)
         {
             // say
-            sendChat( CHAT_TYPE_NORMAL );
+            sendChat(CHAT_TYPE_NORMAL);
             handled = true;
         }
     }
     // only do this in main chatbar
     else if ( KEY_ESCAPE == key && gChatBar == this)
     {
+        mInputEditor->setText(LLStringUtil::null);
         stopChat();
 
         handled = true;
@@ -364,6 +397,37 @@ void LLChatBar::sendChat( EChatType type )
             stripChannelNumber(text, &channel);
 
             std::string utf8text = wstring_to_utf8str(text);
+            if (0 == channel)
+            {
+                LLHandle<LLPanel> chat_bar_handle = getHandle();
+                const bool animate = gSavedSettings.getBOOL("PlayChatAnim");
+                if (LLTranslate::translateChatCommand(
+                        utf8text,
+                        [chat_bar_handle, type, animate](std::string translation, std::string)
+                        {
+                            LLChatBar* chat_bar = dynamic_cast<LLChatBar*>(chat_bar_handle.get());
+                            if (chat_bar)
+                            {
+                                chat_bar->sendChatFromViewer(translation, type, animate);
+                            }
+                        },
+                        [](int, std::string reason)
+                        {
+                            LLSD args;
+                            args["MESSAGE"] = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", reason));
+                            LLNotificationsUtil::add("GenericAlert", args);
+                        }))
+                {
+                    getChild<LLUICtrl>("Chat Editor")->setValue(LLStringUtil::null);
+                    gAgent.stopTyping();
+                    if (gChatBar == this)
+                    {
+                        mInputEditor->setFocus(true);
+                    }
+                    return;
+                }
+            }
+
             // Try to trigger a gesture, if not chat to a script.
             std::string utf8_revised_text;
             if (0 == channel)
@@ -390,11 +454,11 @@ void LLChatBar::sendChat( EChatType type )
 
     gAgent.stopTyping();
 
-    // If the user wants to stop chatting on hitting return, lose focus
-    // and go out of chat mode.
-    if (gChatBar == this && gSavedSettings.getBOOL("CloseChatOnReturn"))
+    // Keep the compact bar ready for consecutive messages. Blank Enter and
+    // Escape are handled above as the explicit ways to dismiss it.
+    if (gChatBar == this)
     {
-        stopChat();
+        mInputEditor->setFocus(true);
     }
 }
 
@@ -406,26 +470,22 @@ void LLChatBar::sendChat( EChatType type )
 // static
 void LLChatBar::startChat(const char* line)
 {
-    //TODO* remove DUMMY chat
-    //if(gBottomTray && gBottomTray->getChatBox())
-    //{
-    //  gBottomTray->setVisible(true);
-    //  gBottomTray->getChatBox()->setFocus(true);
-    //}
+    if (!gChatBar || !gChatBar->mInputEditor)
+    {
+        return;
+    }
 
-    // *TODO Vadim: Why was this code commented out?
+    gChatBar->setVisible(true);
+    gChatBar->mInputEditor->setFocus(true);
 
-//  gChatBar->setVisible(true);
-//  gChatBar->setKeyboardFocus(true);
-//  gSavedSettings.setBOOL("ChatVisible", true);
-//
-//  if (line && gChatBar->mInputEditor)
-//  {
-//      std::string line_string(line);
-//      gChatBar->mInputEditor->setText(line_string);
-//  }
-//  // always move cursor to end so users don't obliterate chat when accidentally hitting WASD
-//  gChatBar->mInputEditor->setCursorToEnd();
+    if (line)
+    {
+        gChatBar->mInputEditor->setText(LLStringExplicit(line));
+    }
+
+    // Always append so Enter or a printable-key shortcut cannot select and
+    // accidentally replace a draft left in the compact bar.
+    gChatBar->mInputEditor->setCursorToEnd();
 }
 
 
@@ -433,29 +493,18 @@ void LLChatBar::startChat(const char* line)
 // static
 void LLChatBar::stopChat()
 {
-    //TODO* remove DUMMY chat
-    //if(gBottomTray && gBottomTray->getChatBox())
-    ///{
-    //  gBottomTray->getChatBox()->setFocus(false);
-    //}
+    if (!gChatBar)
+    {
+        return;
+    }
 
-    // *TODO Vadim: Why was this code commented out?
+    gChatBar->setKeyboardFocus(false);
 
-//  // In simple UI mode, we never release focus from the chat bar
-//  gChatBar->setKeyboardFocus(false);
-//
-//  // If we typed a movement key and pressed return during the
-//  // same frame, the keyboard handlers will see the key as having
-//  // gone down this frame and try to move the avatar.
-//  gKeyboard->resetKeys();
-//  gKeyboard->resetMaskKeys();
-//
-//  // stop typing animation
-//  gAgent.stopTyping();
-//
-//  // hide chat bar so it doesn't grab focus back
-//  gChatBar->setVisible(false);
-//  gSavedSettings.setBOOL("ChatVisible", false);
+    // Avoid interpreting the Enter used to finish chat as a movement key.
+    gKeyboard->resetKeys();
+    gKeyboard->resetMaskKeys();
+
+    gAgent.stopTyping();
 }
 
 // static

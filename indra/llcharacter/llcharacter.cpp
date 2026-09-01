@@ -170,12 +170,12 @@ void LLCharacter::requestStopMotion( LLMotion* motion)
 //-----------------------------------------------------------------------------
 // updateMotions()
 //-----------------------------------------------------------------------------
-void LLCharacter::updateMotions(e_update_t update_type)
+void LLCharacter::updateMotions(e_update_t update_type, bool advance_hidden_time)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
     if (update_type == HIDDEN_UPDATE)
     {
-        mMotionController.updateMotionsMinimal();
+        mMotionController.updateMotionsMinimal(advance_hidden_time);
     }
     else
     {
@@ -504,4 +504,3 @@ LLAnimPauseRequest LLCharacter::requestPause()
     mMotionController.pauseAllMotions();
     return mPauseRequest;
 }
-

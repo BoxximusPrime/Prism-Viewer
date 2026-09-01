@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <floater
  legacy_header_height="18"
- height="470"
+ height="620"
  layout="topleft"
  name="floater_translation_settings"
  help_topic="translation_settings"
@@ -12,10 +12,12 @@
  <string name="azure_api_key_not_verified">Azure service identifier not verified. Status: [STATUS]. Please check your settings and try again.</string>
  <string name="google_api_key_not_verified">Google API key not verified. Status: [STATUS]. Please check your key and try again.</string>
  <string name="deepl_api_key_not_verified">DeepL Auth Key key not verified. Status: [STATUS]. Please check your key and try again.</string>
+ <string name="openai_endpoint_not_verified">OpenAI-compatible endpoint not verified. Status: [STATUS]. Please check the endpoint and API key.</string>
 
  <string name="azure_api_key_verified">Azure service identifier verified.</string>
  <string name="google_api_key_verified">Google API key verified.</string>
  <string name="deepl_api_key_verified">DeepL API key verified.</string>
+ <string name="openai_endpoint_verified">OpenAI-compatible endpoint verified.</string>
 
  <check_box
   height="16"     
@@ -130,7 +132,7 @@
 
  <radio_group
   follows="top|left"
-  height="260"
+  height="390"
   layout="topleft"
   left_delta="10"
   name="translation_service_rg"
@@ -153,6 +155,12 @@
    layout="topleft"
    name="deepl"
    top_pad="61" />
+  <radio_item
+   initial_value="openai"
+   label="OpenAI-compatible"
+   layout="topleft"
+   name="openai"
+   top_pad="80" />
  </radio_group>
 
   <text
@@ -162,7 +170,7 @@
    left="185"
    length="1"
    name="azure_links_text"
-   top_pad="-262"
+   top_pad="-392"
    type="string"
    width="100">
     [https://learn.microsoft.com/en-us/azure/cognitive-services/translator/create-translator-resource Setup]
@@ -389,6 +397,78 @@
      width="100">
         [https://www.deepl.com/pro/select-country?cta=header-prices Pricing]
     </text>
+
+    <text
+     follows="top|right"
+     height="20"
+     layout="topleft"
+     left="70"
+     name="openai_endpoint_label"
+     top_pad="80"
+     width="85">
+      Base URL:
+    </text>
+    <line_editor
+     follows="top|left"
+     height="20"
+     layout="topleft"
+     left_pad="10"
+     max_length_chars="512"
+     name="openai_endpoint"
+     top_delta="-4"
+     value="http://localhost:1234/v1"
+     width="280" />
+
+    <text
+     follows="top|right"
+     height="20"
+     layout="topleft"
+     left="70"
+     name="openai_model_label"
+     top_pad="11"
+     width="85">
+      Model:
+    </text>
+    <line_editor
+     follows="top|left"
+     height="20"
+     layout="topleft"
+     left_pad="10"
+     max_length_chars="200"
+     name="openai_model"
+     top_delta="-4"
+     width="280" />
+
+    <text
+     follows="top|right"
+     height="20"
+     layout="topleft"
+     left="70"
+     name="openai_api_key_label"
+     top_pad="11"
+     width="85">
+      API key:
+    </text>
+    <line_editor
+     follows="top|left"
+     height="20"
+     is_password="true"
+     layout="topleft"
+     left_pad="10"
+     max_length_chars="512"
+     name="openai_api_key"
+     top_delta="-4"
+     tool_tip="Optional for local endpoints such as LM Studio"
+     width="180" />
+    <button
+     follows="left|top"
+     height="23"
+     label="Verify"
+     layout="topleft"
+     left_pad="10"
+     name="verify_openai_endpoint_btn"
+     top_delta="-2"
+     width="90" />
 
  <button
   follows="left|top"

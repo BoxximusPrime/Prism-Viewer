@@ -601,7 +601,7 @@
      reference="White" />
     <color
      name="NameTagFriend"
-     reference="EmphasisColor" />
+     value="0.20 0.85 0.30 1" />
     <color
      name="NameTagLegacy"
      reference="White" />
@@ -611,6 +611,27 @@
     <color
      name="NameTagMismatch"
      reference="White" />
+    <color
+     name="BoxxyNameTagVIP"
+     value="0.25 0.65 1.00 1" />
+    <color
+     name="BoxxyRadarVIPColor"
+     value="0.25 0.65 1.00 1" />
+    <color
+     name="BoxxyRadarNearColor"
+     value="0.25 0.82 0.48 1" />
+    <color
+     name="BoxxyRadarFarColor"
+     value="0.62 0.66 0.72 1" />
+    <color
+     name="BoxxyNameTagChatRangeNormal"
+     value="0.20 0.85 0.30 1" />
+    <color
+     name="BoxxyNameTagChatRangeShout"
+     value="1.00 0.55 0.10 1" />
+    <color
+     name="BoxxyNameTagChatRangeOutside"
+     value="0.55 0.55 0.55 1" />
     <color
      name="NetMapBackgroundColor"
      value="0 0 0 1" />
@@ -881,6 +902,9 @@
      name="ChatTimestampColor"
      reference="White" />
     <color
+     name="TranslationChatColor"
+     reference="LtGreen" />
+    <color
       name="MenuBarStreamingBgColor"
       reference="DkGray" />
     <color
@@ -891,7 +915,7 @@
       reference="MdBlue" />
     <color
       name="MenuBarTestBgColor"
-      reference="DkRed" />
+      reference="MenuBarBgColor" />
     <color
       name="MeshImportTableNormalColor"
       value="1 1 1 1"/>

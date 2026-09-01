@@ -114,7 +114,7 @@ public:
     // start motion
     // begins playing the specified motion
     // returns true if successful
-    bool startMotion( const LLUUID &id, F32 start_offset );
+    bool startMotion(const LLUUID& id, F32 start_offset, bool sync_loading = false);
 
     // stop motion
     // stops a playing motion
@@ -131,8 +131,9 @@ public:
     // deactivates terminated motions`
     void updateMotions(bool force_update = false);
 
-    // minimal update (e.g. while hidden)
-    void updateMotionsMinimal();
+    // minimal update (e.g. while hidden). Optionally keep animation time
+    // advancing without evaluating poses.
+    void updateMotionsMinimal(bool advance_time = false);
 
     void clearBlenders() { mPoseBlender.clearBlenders(); }
 
@@ -211,6 +212,7 @@ protected:
     motion_map_t    mAllMotions;
 
     motion_set_t        mLoadingMotions;
+    std::map<LLMotion*, F32> mLoadingMotionStartTimes;
     motion_set_t        mLoadedMotions;
     motion_list_t       mActiveMotions;
     motion_set_t        mDeprecatedMotions;
@@ -237,4 +239,3 @@ private:
 #include "llcharacter.h"
 
 #endif // LL_LLMOTIONCONTROLLER_H
-

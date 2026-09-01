@@ -549,8 +549,6 @@
   <string>Quando ativado, conecta ao Discord para habilitar o Rich Presence.</string>
   <key>EnableDiskCacheDebugInfo</key>
   <string>Quando ativado, exibir informações adicionais de depuração do cache.</string>
-  <key>EnableGestureSounds</key>
-  <string>Reproduzir sons de gestos.</string>
   <key>EnableGrab</key>
   <string>Usar Ctrl+mouse para agarrar e manipular objetos.</string>
   <key>EnableGroupChatPopups</key>

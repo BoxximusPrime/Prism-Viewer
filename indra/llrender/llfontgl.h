@@ -120,7 +120,8 @@ public:
                 S32 max_chars = S32_MAX, S32 max_pixels = S32_MAX,
                 F32* right_x=NULL,
                 bool use_ellipses = false,
-                bool use_color = true) const;
+                bool use_color = true,
+                F32 draw_scale = 1.f) const;
 
     S32 render(const LLWString &text, S32 begin_offset, F32 x, F32 y, const LLColor4 &color) const;
 
@@ -242,7 +243,7 @@ private:
     LLPointer<LLFontFreetype> mFontFreetype;
 
     void renderTriangle(LLVector4a* vertex_out, LLVector2* uv_out, LLColor4U* colors_out, const LLRectf& screen_rect, const LLRectf& uv_rect, const LLColor4U& color, F32 slant_amt) const;
-    void drawGlyph(S32& glyph_count, LLVector4a* vertex_out, LLVector2* uv_out, LLColor4U* colors_out, const LLRectf& screen_rect, const LLRectf& uv_rect, const LLColor4U& color, U8 style, ShadowType shadow, F32 drop_shadow_fade) const;
+    void drawGlyph(S32& glyph_count, LLVector4a* vertex_out, LLVector2* uv_out, LLColor4U* colors_out, const LLRectf& screen_rect, const LLRectf& uv_rect, const LLColor4U& color, U8 style, ShadowType shadow, F32 drop_shadow_fade, F32 draw_scale) const;
 
     // Registry holds all instantiated fonts.
     static LLFontRegistry* sFontRegistry;

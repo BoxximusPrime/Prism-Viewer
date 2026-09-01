@@ -52,6 +52,8 @@
 
 #include "llfirstuse.h"
 #include "llfloaterimnearbychat.h"
+#include "llchatbar.h"
+#include "llconsole.h"
 #include "llfloaterimnearbychatlistener.h"
 #include "llagent.h" // gAgent
 #include "llgesturemgr.h"
@@ -63,6 +65,7 @@
 #include "llcommandhandler.h"
 #include "llviewercontrol.h"
 #include "llnavigationbar.h"
+#include "llnotificationsutil.h"
 #include "llwindow.h"
 #include "llviewerwindow.h"
 #include "llrootview.h"
@@ -691,7 +694,25 @@ void LLFloaterIMNearbyChat::sendChat( EChatType type )
             std::string utf8text = wstring_to_utf8str(text);
             // Try to trigger a gesture, if not chat to a script.
             std::string utf8_revised_text;
-            if (0 == channel)
+            const bool translate_command = 0 == channel
+                && LLTranslate::translateChatCommand(
+                    utf8text,
+                    [type](std::string translation, std::string)
+                    {
+                        LLFloaterIMNearbyChat::sendChatFromViewer(
+                            translation, type, gSavedSettings.getBOOL("PlayChatAnim"));
+                    },
+                    [](int, std::string reason)
+                    {
+                        LLSD args;
+                        args["MESSAGE"] = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", reason));
+                        LLNotificationsUtil::add("GenericAlert", args);
+                    });
+            if (translate_command)
+            {
+                utf8_revised_text.clear();
+            }
+            else if (0 == channel)
             {
                 // discard returned "found" boolean
                 if(!LLGestureMgr::instance().triggerAndReviseString(utf8text, &utf8_revised_text))
@@ -759,6 +780,83 @@ void LLFloaterIMNearbyChat::addMessage(const LLChat& chat,bool archive,const LLS
         }
 
         LLLogChat::saveHistory("chat", from_name, chat.mFromID, chat.mText);
+    }
+}
+
+void LLFloaterIMNearbyChat::updateTranslatedMessage(const LLUUID& request_id,
+                                                    const std::string& text,
+                                                    const std::string& translated_text,
+                                                    bool log_to_file)
+{
+    LLChat updated;
+    bool found = false;
+    for (auto it = mMessageArchive.rbegin(); it != mMessageArchive.rend(); ++it)
+    {
+        if (it->mTranslationRequestID == request_id)
+        {
+            it->mText = text;
+            it->mTranslatedText = translated_text;
+            it->mTranslationRequestID.setNull();
+            updated = *it;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        return;
+    }
+
+    reloadMessages(false);
+
+    if (gConsole)
+    {
+        std::string console_text = updated.mText;
+        S32 white_prefix_chars = 0;
+        if (updated.mChatStyle == CHAT_STYLE_IRC)
+        {
+            console_text = updated.mFromName;
+            white_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName).length();
+            if (updated.mText.length() > 3)
+            {
+                console_text += updated.mText.substr(3);
+            }
+        }
+        else if (!updated.mFromName.empty())
+        {
+            console_text = updated.mFromName + ": " + console_text;
+            white_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName + ": ").length();
+        }
+        if (!updated.mTranslatedText.empty())
+        {
+            console_text += " (" + updated.mTranslatedText + ")";
+        }
+
+        LLUIColor text_color;
+        F32 color_alpha = 1.f;
+        LLViewerChat::getChatColor(updated, text_color, color_alpha);
+        gConsole->updateChatLine(request_id, console_text, text_color % color_alpha, white_prefix_chars);
+    }
+
+    if (log_to_file && gSavedPerAccountSettings.getS32("KeepConversationLogTranscripts") > 1)
+    {
+        std::string from_name = updated.mFromName;
+        if (updated.mSourceType == CHAT_SOURCE_AGENT)
+        {
+            LLAvatarName av_name;
+            LLAvatarNameCache::get(updated.mFromID, &av_name);
+            if (!av_name.isDisplayNameDefault())
+            {
+                from_name = av_name.getCompleteName();
+            }
+        }
+        std::string logged_text = updated.mText;
+        if (!updated.mTranslatedText.empty())
+        {
+            logged_text += " (" + updated.mTranslatedText + ")";
+        }
+        LLLogChat::saveHistory("chat", from_name, updated.mFromID, logged_text);
     }
 }
 
@@ -867,6 +965,12 @@ bool LLFloaterIMNearbyChat::isWordsName(const std::string& name)
 // static
 void LLFloaterIMNearbyChat::startChat(const char* line)
 {
+    if (gSavedSettings.getBOOL("BoxxyCompactChatBar") && gChatBar)
+    {
+        LLChatBar::startChat(line);
+        return;
+    }
+
     LLFloaterIMNearbyChat* nearby_chat = LLFloaterReg::getTypedInstance<LLFloaterIMNearbyChat>("nearby_chat");
     if (nearby_chat)
     {

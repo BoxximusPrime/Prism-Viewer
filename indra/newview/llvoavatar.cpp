@@ -26,6 +26,8 @@
 
 #include "llviewerprecompiledheaders.h"
 
+#include "llboxxyao.h"
+#include "llboxxyvip.h"
 #include "llvoavatar.h"
 
 #include <stdio.h>
@@ -201,12 +203,30 @@ const F32 BUBBLE_CHAT_TIME = CHAT_FADE_TIME * 3.f;
 const F32 NAMETAG_UPDATE_THRESHOLD = 0.3f;
 const F32 NAMETAG_VERTICAL_SCREEN_OFFSET = 25.f;
 const F32 NAMETAG_VERT_OFFSET_WEIGHT = 0.17f;
+const F64 BOXXY_CHAT_SHOUT_RADIUS = 100.0;
+
+static bool is_boxxy_animation_syncing()
+{
+    static LLCachedControl<bool> animation_syncing(gSavedSettings, "BoxxyAnimationSyncing", false);
+    return animation_syncing;
+}
+
+enum EBoxxyNameTagChatRange
+{
+    BOXXY_CHAT_RANGE_SELF = -1,
+    BOXXY_CHAT_RANGE_NORMAL,
+    BOXXY_CHAT_RANGE_SHOUT,
+    BOXXY_CHAT_RANGE_OUTSIDE
+};
 
 const U32 LLVOAvatar::VISUAL_COMPLEXITY_UNKNOWN = 0;
 const F64 HUD_OVERSIZED_TEXTURE_DATA_SIZE = 1024 * 1024;
 
 const F32 MAX_TEXTURE_WAIT_TIME_SEC = 60;
 const F32 MAX_ATTACHMENT_WAIT_TIME_SEC = 60;
+const U32 PENDING_ATTACHMENT_RETRY_EXPONENT_CAP = 5;
+const U32 PENDING_ATTACHMENT_MAX_OBJECT_UPDATE_ATTEMPTS = 3;
+const F32 PENDING_ATTACHMENT_OBJECT_UPDATE_COOLDOWN_SEC = 10.f;
 
 const S32 MIN_NONTUNED_AVS = 5;
 
@@ -674,9 +694,12 @@ LLVOAvatar::LLVOAvatar(const LLUUID& id,
     mNameMute(false),
     mNameAppearance(false),
     mNameFriend(false),
+    mNameVip(false),
+    mNameVipRevision(0),
+    mNameCloud(false),
+    mNameChatRange(BOXXY_CHAT_RANGE_SELF),
     mNameAlpha(0.f),
     mRenderGroupTitles(sRenderGroupTitles),
-    mNameCloud(false),
     mFirstTEMessageReceived( false ),
     mFirstAppearanceMessageReceived( false ),
     mCulled( false ),
@@ -952,11 +975,224 @@ S32 LLVOAvatar::getRezzedStatus() const
     if (getHasMissingParts()) return 0;
     bool textured = isFullyTextured();
     bool all_baked_loaded = allBakedTexturesCompletelyDownloaded();
-    if (textured && all_baked_loaded && getAttachmentCount() == mSimAttachments.size()) return 4;
+    const AttachmentLoadingStats attachment_stats = getAttachmentLoadingStats();
+    // The appearance message contains asset UUIDs, while attached viewer
+    // objects expose object and inventory-item UUIDs.  Those UUID domains
+    // cannot be compared, so completeness is necessarily count based.
+    const bool attachments_complete = attachment_stats.missing == 0;
+    if (textured && all_baked_loaded && attachments_complete) return 4;
     if (textured && all_baked_loaded) return 3;
     if (textured) return 2;
     llassert(hasGray());
     return 1; // gray
+}
+
+LLVOAvatar::AttachmentLoadingStats LLVOAvatar::getAttachmentLoadingStats() const
+{
+    AttachmentLoadingStats stats;
+    stats.expected = static_cast<S32>(mSimAttachments.size());
+    stats.attached = getAttachmentCount();
+    stats.pending = static_cast<S32>(mPendingAttachment.size());
+    // Do not require equality: temporary attachments or a slightly stale
+    // object stream can produce a harmless surplus.  Identity-level set
+    // difference is impossible without the attachment asset UUID on the
+    // object update.
+    stats.missing = llmax(0, stats.expected - stats.attached);
+    return stats;
+}
+
+LLVOAvatar::AttachmentContentStats LLVOAvatar::getAttachmentContentStats(
+    std::vector<LLViewerObject*>* incomplete_linkset_roots) const
+{
+    AttachmentContentStats stats;
+    std::set<LLUUID> texture_ids;
+    std::set<LLUUID> texture_no_data_ids;
+    std::set<LLUUID> texture_loading_ids;
+    std::set<LLUUID> texture_unresolved_ids;
+    std::set<LLUUID> texture_missing_ids;
+
+    for (attachment_map_t::const_iterator point_iter = mAttachmentPoints.begin();
+         point_iter != mAttachmentPoints.end();
+         ++point_iter)
+    {
+        const LLViewerJointAttachment* attachment = point_iter->second;
+        if (!attachment)
+        {
+            continue;
+        }
+
+        for (LLViewerJointAttachment::attachedobjs_vec_t::const_iterator root_iter = attachment->mAttachedObjects.begin();
+             root_iter != attachment->mAttachedObjects.end();
+             ++root_iter)
+        {
+            LLViewerObject* root = root_iter->get();
+            if (!root || root->isDead())
+            {
+                continue;
+            }
+
+            std::vector<LLViewerObject*> objects;
+            std::vector<LLViewerObject*> pending_objects(1, root);
+            std::set<LLViewerObject*> visited_objects;
+            while (!pending_objects.empty())
+            {
+                LLViewerObject* object = pending_objects.back();
+                pending_objects.pop_back();
+                if (!object || object->isDead() || !visited_objects.insert(object).second)
+                {
+                    continue;
+                }
+
+                objects.push_back(object);
+                const LLViewerObject::const_child_list_t& children = object->getChildren();
+                for (LLViewerObject* child : children)
+                {
+                    if (child && !child->isAvatar())
+                    {
+                        pending_objects.push_back(child);
+                    }
+                }
+            }
+            const S32 received = static_cast<S32>(objects.size());
+            const S32 expected = static_cast<S32>(root->getExpectedLinksetPrimCount());
+            stats.objects_received += received;
+
+            if (expected > 0)
+            {
+                ++stats.linksets_known;
+                stats.prims_expected += expected;
+                stats.prims_received_known += received;
+                if (received < expected)
+                {
+                    ++stats.linksets_incomplete;
+                    if (incomplete_linkset_roots)
+                    {
+                        incomplete_linkset_roots->push_back(root);
+                    }
+                }
+            }
+            else
+            {
+                ++stats.linksets_unknown;
+            }
+
+            for (LLViewerObject* object : objects)
+            {
+                if (!object || object->isDead())
+                {
+                    continue;
+                }
+
+                LLDrawable* drawable = object->mDrawable;
+                if (!drawable || drawable->isDead() || drawable->isUnload())
+                {
+                    ++stats.drawables_missing;
+                }
+                else
+                {
+                    bool has_geometry = false;
+                    for (S32 face_index = 0; face_index < drawable->getNumFaces(); ++face_index)
+                    {
+                        LLFace* face = drawable->getFace(face_index);
+                        if (!face)
+                        {
+                            continue;
+                        }
+
+                        has_geometry = has_geometry || face->hasGeometry();
+                        for (U32 channel = 0; channel < LLRender::NUM_TEXTURE_CHANNELS; ++channel)
+                        {
+                            LLViewerTexture* texture = face->getTexture(channel);
+                            if (!texture || texture->getType() != LLViewerTexture::FETCHED_TEXTURE)
+                            {
+                                continue;
+                            }
+
+                            const LLUUID& texture_id = texture->getID();
+                            if (texture_id.isNull()
+                                || texture_id == IMG_DEFAULT
+                                || texture_id == IMG_DEFAULT_AVATAR
+                                || texture_id == IMG_INVISIBLE)
+                            {
+                                continue;
+                            }
+                            texture_ids.insert(texture_id);
+                            if (texture->isMissingAsset())
+                            {
+                                texture_missing_ids.insert(texture_id);
+                                texture_no_data_ids.erase(texture_id);
+                                texture_loading_ids.erase(texture_id);
+                                texture_unresolved_ids.erase(texture_id);
+                            }
+                            else if (texture->getDiscardLevel() < 0
+                                     && texture_missing_ids.find(texture_id) == texture_missing_ids.end())
+                            {
+                                texture_no_data_ids.insert(texture_id);
+                                LLViewerFetchedTexture* fetched_texture = static_cast<LLViewerFetchedTexture*>(texture);
+                                if (fetched_texture->isFetching() || fetched_texture->hasFetcher())
+                                {
+                                    texture_loading_ids.insert(texture_id);
+                                    texture_unresolved_ids.erase(texture_id);
+                                }
+                                else
+                                {
+                                    texture_unresolved_ids.insert(texture_id);
+                                    texture_loading_ids.erase(texture_id);
+                                }
+                            }
+                        }
+                    }
+                    if (!has_geometry)
+                    {
+                        ++stats.geometry_missing;
+                    }
+                }
+
+                LLVOVolume* volume_object = dynamic_cast<LLVOVolume*>(object);
+                if (!volume_object || !volume_object->isMesh())
+                {
+                    continue;
+                }
+
+                ++stats.meshes_total;
+                LLVolume* volume = volume_object->getVolume();
+                if (!volume)
+                {
+                    ++stats.meshes_loading;
+                }
+                else if (volume->isMeshAssetUnavaliable())
+                {
+                    ++stats.meshes_unavailable;
+                }
+                else if (!volume->isMeshAssetLoaded())
+                {
+                    ++stats.meshes_loading;
+                }
+                else
+                {
+                    ++stats.meshes_loaded;
+                    if (volume->getNumVolumeFaces() == 0)
+                    {
+                        ++stats.meshes_empty;
+                    }
+                    // A header with no skin block is a valid static mesh and
+                    // sets isSkinInfoUnavaliable().  Only the undecided state
+                    // is evidence that rigging metadata is still loading.
+                    if (!volume_object->getSkinInfo() && !volume_object->isSkinInfoUnavaliable())
+                    {
+                        ++stats.skins_loading;
+                    }
+                }
+            }
+        }
+    }
+
+    stats.textures_total = static_cast<S32>(texture_ids.size());
+    stats.textures_no_data = static_cast<S32>(texture_no_data_ids.size());
+    stats.textures_loading = static_cast<S32>(texture_loading_ids.size());
+    stats.textures_unresolved = static_cast<S32>(texture_unresolved_ids.size());
+    stats.textures_missing = static_cast<S32>(texture_missing_ids.size());
+    return stats;
 }
 
 void LLVOAvatar::deleteLayerSetCaches(bool clearAll)
@@ -3300,6 +3536,7 @@ void LLVOAvatar::idleUpdateLoadingEffect()
                 {
                     LL_INFOS("Avatar") << avString() << "self isFullyLoaded, mFirstFullyVisible after " << mFirstDecloudTime << LL_ENDL;
                     LLAppearanceMgr::instance().onFirstFullyVisible();
+                    LLBoxxyAO::instance().onLoginComplete();
                 }
                 else
                 {
@@ -3540,6 +3777,23 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
     }
     bool is_friend = isBuddy();
     bool is_cloud = getHasMissingParts();
+    S32 name_chat_range = getNameTagChatRange();
+    const U32 vip_revision = LLBoxxyVIP::getRevision();
+    bool is_vip = mNameVip;
+    if (!mNameIsSet || new_name || vip_revision != mNameVipRevision)
+    {
+        LLAvatarName vip_name;
+        is_vip = LLAvatarNameCache::get(getID(), &vip_name) && LLBoxxyVIP::matches(vip_name);
+    }
+
+    if (isSelf())
+    {
+        mNameText->clearBottomBorder();
+    }
+    else
+    {
+        mNameText->setBottomBorderColor(getNameTagChatRangeColor(name_chat_range));
+    }
 
     if (is_appearance != mNameAppearance)
     {
@@ -3563,9 +3817,17 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
         || is_muted != mNameMute
         || is_appearance != mNameAppearance
         || is_friend != mNameFriend
-        || is_cloud != mNameCloud)
+        || is_vip != mNameVip
+        || vip_revision != mNameVipRevision
+        || is_cloud != mNameCloud
+        || name_chat_range != mNameChatRange)
     {
         LLColor4 name_tag_color = getNameTagColor(is_friend);
+        LLColor4 avatar_name_color = name_tag_color;
+        if (is_vip)
+        {
+            avatar_name_color = LLUIColorTable::instance().getColor("BoxxyNameTagVIP");
+        }
 
         clearNameTag();
 
@@ -3630,14 +3892,14 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
             // Might be blank if name not available yet, that's OK
             if (show_display_names)
             {
-                addNameTagLine(av_name.getDisplayName(), name_tag_color, LLFontGL::NORMAL,
+                addNameTagLine(av_name.getDisplayName(), avatar_name_color, LLFontGL::NORMAL,
                     LLFontGL::getFontSansSerif(), true);
             }
             // Suppress SLID display if display name matches exactly (ugh)
             if (show_usernames && !av_name.isDisplayNameDefault())
             {
                 // *HACK: Desaturate the color
-                LLColor4 username_color = name_tag_color * 0.83f;
+                LLColor4 username_color = avatar_name_color * 0.83f;
                 addNameTagLine(av_name.getUserName(), username_color, LLFontGL::NORMAL,
                     LLFontGL::getFontSansSerifSmall(), true);
             }
@@ -3646,7 +3908,7 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
         {
             const LLFontGL* font = LLFontGL::getFontSansSerif();
             std::string full_name = LLCacheName::buildFullName( firstname->getString(), lastname->getString() );
-            addNameTagLine(full_name, name_tag_color, LLFontGL::NORMAL, font, true);
+            addNameTagLine(full_name, avatar_name_color, LLFontGL::NORMAL, font, true);
         }
 
         if (show_rez_status)
@@ -3660,7 +3922,10 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
         mNameMute = is_muted;
         mNameAppearance = is_appearance;
         mNameFriend = is_friend;
+        mNameVip = is_vip;
+        mNameVipRevision = vip_revision;
         mNameCloud = is_cloud;
+        mNameChatRange = name_chat_range;
         mTitle = title ? title->getString() : "";
         LLStringFn::replace_ascii_controlchars(mTitle,LL_UNKNOWN_CHAR);
         new_name = true;
@@ -3741,7 +4006,16 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
     {
         // ...not using chat bubbles, just names
         mNameText->setTextAlignment(LLHUDNameTag::ALIGN_TEXT_CENTER);
-        mNameText->setFadeDistance(CHAT_NORMAL_RADIUS, 5.f);
+        if (isSelf())
+        {
+            mNameText->setFadeDistance(CHAT_NORMAL_RADIUS, 5.f);
+        }
+        else
+        {
+            // Keep the range indicator useful throughout shout range, then
+            // leave a short grey band before the name tag disappears.
+            mNameText->setFadeDistance((F32)BOXXY_CHAT_SHOUT_RADIUS, 20.f);
+        }
         mNameText->setVisibleOffScreen(false);
     }
 }
@@ -3897,6 +4171,43 @@ LLColor4 LLVOAvatar::getNameTagColor(bool is_friend)
     return LLUIColorTable::getInstance()->getColor( color_name );
 }
 
+S32 LLVOAvatar::getNameTagChatRange() const
+{
+    if (isSelf())
+    {
+        return BOXXY_CHAT_RANGE_SELF;
+    }
+
+    const F64 distance_squared = dist_vec_squared(getPositionGlobal(), gAgent.getPositionGlobal());
+    if (distance_squared <= CHAT_NORMAL_RADIUS * CHAT_NORMAL_RADIUS)
+    {
+        return BOXXY_CHAT_RANGE_NORMAL;
+    }
+    if (distance_squared <= BOXXY_CHAT_SHOUT_RADIUS * BOXXY_CHAT_SHOUT_RADIUS)
+    {
+        return BOXXY_CHAT_RANGE_SHOUT;
+    }
+    return BOXXY_CHAT_RANGE_OUTSIDE;
+}
+
+LLColor4 LLVOAvatar::getNameTagChatRangeColor(S32 chat_range) const
+{
+    const char* color_name;
+    switch (chat_range)
+    {
+    case BOXXY_CHAT_RANGE_NORMAL:
+        color_name = "BoxxyNameTagChatRangeNormal";
+        break;
+    case BOXXY_CHAT_RANGE_SHOUT:
+        color_name = "BoxxyNameTagChatRangeShout";
+        break;
+    default:
+        color_name = "BoxxyNameTagChatRangeOutside";
+        break;
+    }
+    return LLUIColorTable::instance().getColor(color_name);
+}
+
 void LLVOAvatar::idleUpdateBelowWater()
 {
     F32 avatar_height = (F32)(getPositionGlobal().mdV[VZ]);
@@ -3904,7 +4215,12 @@ void LLVOAvatar::idleUpdateBelowWater()
     F32 water_height;
     water_height = getRegion()->getWaterHeight();
 
+    const bool was_below_water = mBelowWater;
     mBelowWater =  avatar_height < water_height;
+    if (isSelf() && was_below_water != mBelowWater)
+    {
+        LLBoxxyAO::instance().onBelowWaterChanged(mBelowWater);
+    }
 }
 
 void LLVOAvatar::slamPosition()
@@ -4816,6 +5132,7 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     }
 
     bool visible = isVisible();
+    const bool animation_syncing = is_boxxy_animation_syncing();
 
     // For fading out the names above heads, only let the timer
     // run if we're visible.
@@ -4839,7 +5156,8 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     //--------------------------------------------------------------------
     if (!needs_update && !isSelf())
     {
-        updateMotions(LLCharacter::HIDDEN_UPDATE);
+        updateMotions(LLCharacter::HIDDEN_UPDATE, animation_syncing);
+        mBoxxyAnimationWasHidden = animation_syncing;
         return false;
     }
 
@@ -4899,16 +5217,29 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     // update animations
     if (!visible && !isSelf()) // NOTE: never do a "hidden update" for self avatar as it interrupts controller processing
     {
-        updateMotions(LLCharacter::HIDDEN_UPDATE);
+        updateMotions(LLCharacter::HIDDEN_UPDATE, animation_syncing);
+        mBoxxyAnimationWasHidden = animation_syncing;
     }
     else if (mSpecialRenderMode == 1) // Animation Preview
     {
+        if (animation_syncing && mBoxxyAnimationWasHidden)
+        {
+            mNeedsImpostorUpdate = true;
+        }
         updateMotions(LLCharacter::FORCE_UPDATE);
+        mBoxxyAnimationWasHidden = false;
     }
     else
     {
         // Might be better to do HIDDEN_UPDATE if cloud
+        if (animation_syncing && mBoxxyAnimationWasHidden)
+        {
+            // The pose below will jump directly to the current phase. Make
+            // sure an existing impostor snapshot is refreshed as well.
+            mNeedsImpostorUpdate = true;
+        }
         updateMotions(LLCharacter::NORMAL_UPDATE);
+        mBoxxyAnimationWasHidden = false;
     }
 
     // Special handling for sitting on ground.
@@ -6027,6 +6358,8 @@ const LLUUID& LLVOAvatar::getStepSound() const
 void LLVOAvatar::processAnimationStateChanges()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
+    updateAnimationPhaseAnchors();
+
     if ( isAnyAnimationSignaled(AGENT_WALK_ANIMS, NUM_AGENT_WALK_ANIMS) )
     {
         startMotion(ANIM_AGENT_WALK_ADJUST);
@@ -6174,7 +6507,10 @@ bool LLVOAvatar::processSingleAnimationStateChange( const LLUUID& anim_id, bool 
         }
 
 
-        if (startMotion(anim_id))
+        const F32 phase_offset = is_boxxy_animation_syncing()
+            ? getAnimationPhaseOffset(anim_id)
+            : 0.f;
+        if (startMotion(anim_id, phase_offset))
         {
             result = true;
         }
@@ -6200,6 +6536,65 @@ bool LLVOAvatar::processSingleAnimationStateChange( const LLUUID& anim_id, bool 
     }
 
     return result;
+}
+
+//-----------------------------------------------------------------------------
+// updateAnimationPhaseAnchors()
+// Preserve the first locally-observed controller time for each simulator
+// animation instance. A new sequence ID is a new play instance.
+//-----------------------------------------------------------------------------
+void LLVOAvatar::updateAnimationPhaseAnchors()
+{
+    const F32 controller_time = mMotionController.getAnimTime();
+    bool phase_changed = false;
+
+    for (const auto& signaled_animation : mSignaledAnimations)
+    {
+        auto anchor_it = mAnimationPhaseAnchors.find(signaled_animation.first);
+        if (anchor_it == mAnimationPhaseAnchors.end()
+            || anchor_it->second.mSequenceID != signaled_animation.second)
+        {
+            mAnimationPhaseAnchors[signaled_animation.first] =
+                { signaled_animation.second, controller_time };
+            phase_changed = true;
+        }
+    }
+
+    for (auto anchor_it = mAnimationPhaseAnchors.begin();
+         anchor_it != mAnimationPhaseAnchors.end();)
+    {
+        if (mSignaledAnimations.find(anchor_it->first) == mSignaledAnimations.end())
+        {
+            anchor_it = mAnimationPhaseAnchors.erase(anchor_it);
+        }
+        else
+        {
+            ++anchor_it;
+        }
+    }
+
+    if (phase_changed && is_boxxy_animation_syncing())
+    {
+        // Ensure a newly signaled animation gets one detailed evaluation and
+        // invalidates a cached impostor image.
+        mNeedsAnimUpdate = true;
+        mNeedsImpostorUpdate = true;
+    }
+}
+
+//-----------------------------------------------------------------------------
+// getAnimationPhaseOffset()
+//-----------------------------------------------------------------------------
+F32 LLVOAvatar::getAnimationPhaseOffset(const LLUUID& anim_id) const
+{
+    auto anchor_it = mAnimationPhaseAnchors.find(anim_id);
+    if (anchor_it == mAnimationPhaseAnchors.end())
+    {
+        return 0.f;
+    }
+
+    return llmax(0.f,
+        mMotionController.getAnimTime() - anchor_it->second.mControllerStartTime);
 }
 
 //-----------------------------------------------------------------------------
@@ -6292,6 +6687,16 @@ bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
 {
     LL_DEBUGS("Motion") << "motion requested " << id.asString() << " " << gAnimLibrary.animationName(id) << LL_ENDL;
 
+    if (isSelf())
+    {
+        const LLUUID override_id = LLBoxxyAO::instance().overrideMotion(id, true);
+        if (override_id.notNull())
+        {
+            gAgent.sendAnimationRequest(override_id, ANIM_REQUEST_START);
+            return true;
+        }
+    }
+
     LLUUID remap_id = remapMotionID(id);
 
     if (remap_id != id)
@@ -6304,7 +6709,7 @@ bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
         gAgent.setAFK();
     }
 
-    return LLCharacter::startMotion(remap_id, time_offset);
+    return mMotionController.startMotion(remap_id, time_offset, is_boxxy_animation_syncing());
 }
 
 //-----------------------------------------------------------------------------
@@ -6314,6 +6719,16 @@ bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
 bool LLVOAvatar::stopMotion(const LLUUID& id, bool stop_immediate)
 {
     LL_DEBUGS("Motion") << "Motion requested " << id.asString() << " " << gAnimLibrary.animationName(id) << LL_ENDL;
+
+    if (isSelf())
+    {
+        const LLUUID override_id = LLBoxxyAO::instance().overrideMotion(id, false);
+        if (override_id.notNull())
+        {
+            gAgent.sendAnimationRequest(override_id, ANIM_REQUEST_STOP);
+            return true;
+        }
+    }
 
     LLUUID remap_id = remapMotionID(id);
 
@@ -6705,6 +7120,13 @@ void LLVOAvatar::notifyAttachmentMeshLoaded()
         // We just received mesh or skin info
         // Reset timer to wait for more potential meshes or changes
         mFullyLoadedTimer.reset();
+    }
+    if (!isSelf())
+    {
+        // A cached impostor can otherwise retain the proxy/empty mesh that
+        // was present when its snapshot was rendered.
+        mNeedsImpostorUpdate = true;
+        mLastImpostorUpdateReason = 12;
     }
 }
 
@@ -7520,13 +7942,17 @@ void LLVOAvatar::addChild(LLViewerObject *childp)
                     << childp->getID()
                     << " item " << childp->getAttachmentItemID()
                     << LL_ENDL;
-            // MAINT-3312 backout
-            // mPendingAttachment.push_back(childp);
+            if (std::find(mPendingAttachment.begin(), mPendingAttachment.end(), childp) == mPendingAttachment.end())
+            {
+                mPendingAttachment.push_back(childp);
+            }
+            mPendingAttachmentRetries.try_emplace(childp->getID());
         }
     }
     else
     {
         mPendingAttachment.push_back(childp);
+        mPendingAttachmentRetries.try_emplace(childp->getID());
     }
 }
 
@@ -7604,6 +8030,7 @@ const LLViewerJointAttachment *LLVOAvatar::attachObject(LLViewerObject *viewer_o
         return 0;
     }
 
+    mPendingAttachmentRetries.erase(viewer_object->getID());
     if (!viewer_object->isAnimatedObject())
     {
         updateAttachmentOverrides();
@@ -7611,6 +8038,12 @@ const LLViewerJointAttachment *LLVOAvatar::attachObject(LLViewerObject *viewer_o
 
     // Inform complexity logic to do partial update.
     markAttachmentComplexityDirty(viewer_object->getID());
+
+    if (!isSelf())
+    {
+        mNeedsImpostorUpdate = true;
+        mLastImpostorUpdateReason = 12;
+    }
 
     if (viewer_object->isSelected())
     {
@@ -7717,8 +8150,14 @@ void LLVOAvatar::lazyAttach()
         // Object might have died while we were waiting for drawable
         if (!cur_attachment->isDead())
         {
+            PendingAttachmentRetry& retry = mPendingAttachmentRetries[cur_attachment->getID()];
             if (cur_attachment->mDrawable)
             {
+                if (!retry.mRetryTimer.hasExpired())
+                {
+                    still_pending.push_back(cur_attachment);
+                    continue;
+                }
                 if (isSelf())
                 {
                     const LLUUID& item_id = cur_attachment->getAttachmentItemID();
@@ -7727,23 +8166,78 @@ void LLVOAvatar::lazyAttach()
                         << (item ? item->getName() : "UNKNOWN") << " id " << item_id << LL_ENDL;
                 }
                 if (!attachObject(cur_attachment))
-                {   // Drop it
+                {
                     LL_WARNS() << "attachObject() failed for "
                         << cur_attachment->getID()
                         << " item " << cur_attachment->getAttachmentItemID()
                         << LL_ENDL;
-                    // MAINT-3312 backout
-                    //still_pending.push_back(cur_attachment);
+                    retry.mAttempts = llmin(retry.mAttempts + 1,
+                        PENDING_ATTACHMENT_RETRY_EXPONENT_CAP + 1);
+                    const F32 retry_delay = llmin(60.f,
+                        2.f * (F32)(1U << llmin(retry.mAttempts - 1,
+                            PENDING_ATTACHMENT_RETRY_EXPONENT_CAP)));
+                    retry.mRetryTimer.resetWithExpiry(retry_delay);
+
+                    // A known pending object can be refreshed by local ID,
+                    // but keep this request on a separate cooldown.
+                    if (cur_attachment->getLocalID() != 0
+                        && retry.mObjectUpdateAttempts < PENDING_ATTACHMENT_MAX_OBJECT_UPDATE_ATTEMPTS
+                        && (!retry.mObjectUpdateRequested || retry.mObjectUpdateTimer.hasExpired()))
+                    {
+                        cur_attachment->requestObjectUpdate();
+                        retry.mObjectUpdateRequested = true;
+                        ++retry.mObjectUpdateAttempts;
+                        retry.mObjectUpdateTimer.resetWithExpiry(PENDING_ATTACHMENT_OBJECT_UPDATE_COOLDOWN_SEC);
+                    }
+                    else if (cur_attachment->getLocalID() == 0)
+                    {
+                        LL_DEBUGS("AVAppearanceAttachments") << avString()
+                            << " pending attachment " << cur_attachment->getID()
+                            << " has no local ID; cannot RequestMultipleObjects-target it" << LL_ENDL;
+                    }
+                    still_pending.push_back(cur_attachment);
                 }
             }
             else
             {
+                // Drawable creation can lag the object update.  Refresh a
+                // known local object while waiting, but never target an
+                // unseen expected attachment (it has no local ID).
+                if (cur_attachment->getLocalID() != 0
+                    && retry.mObjectUpdateAttempts < PENDING_ATTACHMENT_MAX_OBJECT_UPDATE_ATTEMPTS
+                    && (!retry.mObjectUpdateRequested || retry.mObjectUpdateTimer.hasExpired()))
+                {
+                    cur_attachment->requestObjectUpdate();
+                    retry.mObjectUpdateRequested = true;
+                    ++retry.mObjectUpdateAttempts;
+                    retry.mObjectUpdateTimer.resetWithExpiry(PENDING_ATTACHMENT_OBJECT_UPDATE_COOLDOWN_SEC);
+                }
                 still_pending.push_back(cur_attachment);
             }
         }
     }
 
     mPendingAttachment = still_pending;
+    std::set<LLUUID> pending_ids;
+    for (const LLPointer<LLViewerObject>& object : mPendingAttachment)
+    {
+        if (object.notNull())
+        {
+            pending_ids.insert(object->getID());
+        }
+    }
+    for (std::map<LLUUID, PendingAttachmentRetry>::iterator retry_it = mPendingAttachmentRetries.begin();
+         retry_it != mPendingAttachmentRetries.end();)
+    {
+        if (pending_ids.find(retry_it->first) == pending_ids.end())
+        {
+            retry_it = mPendingAttachmentRetries.erase(retry_it);
+        }
+        else
+        {
+            ++retry_it;
+        }
+    }
 }
 
 void LLVOAvatar::resetHUDAttachments()
@@ -7938,6 +8432,12 @@ bool LLVOAvatar::detachObject(LLViewerObject *viewer_object)
 
             updateMeshVisibility();
 
+            if (!isSelf())
+            {
+                mNeedsImpostorUpdate = true;
+                mLastImpostorUpdateReason = 12;
+            }
+
             LL_DEBUGS() << "Detaching object " << viewer_object->mID << " from " << attachment->getName() << LL_ENDL;
             return true;
         }
@@ -7947,6 +8447,7 @@ bool LLVOAvatar::detachObject(LLViewerObject *viewer_object)
     if (iter != mPendingAttachment.end())
     {
         mPendingAttachment.erase(iter);
+        mPendingAttachmentRetries.erase(viewer_object->getID());
         return true;
     }
 
@@ -8480,6 +8981,7 @@ void LLVOAvatar::logMetricsTimerRecord(const std::string& phase_name, F32 elapse
 bool LLVOAvatar::updateIsFullyLoaded()
 {
     S32 rez_status = getRezzedStatus();
+    const AttachmentLoadingStats attachment_stats = getAttachmentLoadingStats();
     bool loading = rez_status == 0;
     if (mFirstFullyVisible && !mIsControlAvatar)
     {
@@ -8501,7 +9003,9 @@ bool LLVOAvatar::updateIsFullyLoaded()
         // compare amount of attachments to one reported by simulator
         if (!isSelf() && mLastCloudAttachmentCount < mSimAttachments.size() && mSimAttachments.size() > 0)
         {
-            S32 attachment_count = getAttachmentCount();
+            // AvatarAppearance reports asset UUIDs, which cannot be matched
+            // against the object/item UUIDs available on attached objects.
+            S32 attachment_count = attachment_stats.attached;
             if (mLastCloudAttachmentCount != attachment_count)
             {
                 mLastCloudAttachmentCount = attachment_count;
@@ -9632,8 +10136,6 @@ void LLVOAvatar::parseAppearanceMessage(LLMessageSystem* mesgsys, LLAppearanceMe
                 << ", discarding" << LL_ENDL;
         }
     }
-
-    // todo? Doesn't detect if attachments were switched
     if (old_size != mSimAttachments.size())
     {
         mLastCloudAttachmentCount = 0;
@@ -12230,4 +12732,3 @@ bool LLVOAvatar::isBuddy() const
     }
     return is_friend;
 }
-

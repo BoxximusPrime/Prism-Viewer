@@ -489,6 +489,12 @@ public:
 
     bool isStandalone() const { return mIsStandalone; }
 
+    void setOutfitFolderID(const LLUUID& folder_id) { mOutfitFolderID = folder_id; }
+    const LLUUID& getOutfitFolderID() const { return mOutfitFolderID; }
+
+    static bool canRemoveItemsFromOutfit(const uuid_vec_t& ids);
+    static void removeItemsFromOutfit(const uuid_vec_t& ids);
+
     ESortOrder getSortOrder() const { return mSortOrder; }
 
     void setSortOrder(ESortOrder sort_order, bool sort_now = true);
@@ -504,6 +510,7 @@ protected:
     bool mIsStandalone;
     bool mWornIndicationEnabled;
     bool mShowItemWidgets;
+    LLUUID mOutfitFolderID;
 
     ESortOrder      mSortOrder;
 

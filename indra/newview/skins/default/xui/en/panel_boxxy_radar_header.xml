@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<panel
+ follows="left|right|top"
+ height="28"
+ layout="topleft"
+ left="0"
+ name="boxxy_radar_header"
+ top="0"
+ width="340"
+ background_visible="true"
+  bg_alpha_color="DkGray2">
+  <icon
+   name="category_accent"
+   left="5"
+   top="5"
+   width="4"
+   height="18"
+   image_name="Rounded_Square"
+   color="White"
+   mouse_opaque="false" />
+  <text
+   name="category_name"
+   follows="left|right|top"
+   left="15"
+   right="-52"
+   top="5"
+   height="18"
+   font.style="BOLD"
+   value="VIP" />
+  <icon
+   name="count_badge"
+   follows="right|top"
+   right="-7"
+   top="4"
+   width="38"
+   height="20"
+   image_name="Rounded_Square"
+   color="DkGray"
+   mouse_opaque="false" />
+  <text
+   name="category_count"
+   follows="right|top"
+   right="-13"
+   top="5"
+   width="26"
+   height="18"
+   halign="center"
+   value="0" />
+</panel>

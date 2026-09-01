@@ -22,6 +22,7 @@
     <profile_image
      name="real_world_pic"
      image_name="Generic_Person_Large"
+     interactable="true"
      follows="top|left"
      layout="topleft"
      top="10"

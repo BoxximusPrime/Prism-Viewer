@@ -754,11 +754,48 @@ public:
                 avatar->calculateUpdateRenderComplexity(); // Make sure the numbers are up-to-date
 
                 trunc_name = utf8str_truncate(avatar->getFullname(), 16);
-                addText(xpos, ypos, llformat("%s : %s, complexity %d, area %.2f",
+                const LLVOAvatar::AttachmentLoadingStats attachment_stats = avatar->getAttachmentLoadingStats();
+                const LLVOAvatar::AttachmentContentStats content_stats = avatar->getAttachmentContentStats();
+                const F64 avatar_distance = dist_vec(avatar->getPositionGlobal(), gAgent.getPositionGlobal());
+                std::string rez_status = LLVOAvatar::rezStatusToString(avatar->getRezzedStatus());
+                if (rez_status == "full" && content_stats.hasStructuralGap())
+                {
+                    rez_status += "/partial";
+                }
+                addText(xpos, ypos, llformat("%s : %s, dist %.0fm, px %.0f, imp %s, complexity %d, area %.2f",
                     trunc_name.c_str(),
-                    LLVOAvatar::rezStatusToString(avatar->getRezzedStatus()).c_str(),
+                    rez_status.c_str(),
+                    avatar_distance,
+                    avatar->getPixelArea(),
+                    avatar->isImpostor() ? "yes" : "no",
                     avatar->getVisualComplexity(),
                     avatar->getAttachmentSurfaceArea()));
+                ypos += y_inc;
+                addText(xpos, ypos, llformat("  roots exp %d attached %d pending %d missing %d | link prims %d/%d incomplete %d unknown %d",
+                    attachment_stats.expected,
+                    attachment_stats.attached,
+                    attachment_stats.pending,
+                    attachment_stats.missing,
+                    content_stats.prims_received_known,
+                    content_stats.prims_expected,
+                    content_stats.linksets_incomplete,
+                    content_stats.linksets_unknown));
+                ypos += y_inc;
+                const S32 textures_ready = llmax(0,
+                    content_stats.textures_total - content_stats.textures_no_data - content_stats.textures_missing);
+                addText(xpos, ypos, llformat("  objects %d no-draw %d no-geom %d | mesh ready %d wait %d unavailable %d empty %d skin-wait %d | tex ready %d fetch %d wait %d missing %d",
+                    content_stats.objects_received,
+                    content_stats.drawables_missing,
+                    content_stats.geometry_missing,
+                    content_stats.meshes_loaded,
+                    content_stats.meshes_loading,
+                    content_stats.meshes_unavailable,
+                    content_stats.meshes_empty,
+                    content_stats.skins_loading,
+                    textures_ready,
+                    content_stats.textures_loading,
+                    content_stats.textures_unresolved,
+                    content_stats.textures_missing));
                 ypos += y_inc;
                 av_iter++;
             }
@@ -6136,26 +6173,15 @@ LLRect LLViewerWindow::getChatConsoleRect()
     LLRect console_rect = full_window;
 
     const S32 CONSOLE_PADDING_TOP = 24;
-    const S32 CONSOLE_PADDING_LEFT = 24;
+    const S32 CONSOLE_PADDING_LEFT = 39;
     const S32 CONSOLE_PADDING_RIGHT = 10;
 
     console_rect.mTop    -= CONSOLE_PADDING_TOP;
-    console_rect.mBottom += getChatConsoleBottomPad();
+    console_rect.mBottom += getChatConsoleBottomPad() + 60;
 
     console_rect.mLeft   += CONSOLE_PADDING_LEFT;
 
-    static const bool CHAT_FULL_WIDTH = gSavedSettings.getBOOL("ChatFullWidth");
-
-    if (CHAT_FULL_WIDTH)
-    {
-        console_rect.mRight -= CONSOLE_PADDING_RIGHT;
-    }
-    else
-    {
-        // Make console rect somewhat narrow so having inventory open is
-        // less of a problem.
-        console_rect.mRight  = console_rect.mLeft + 2 * getWindowWidthScaled() / 3;
-    }
+    console_rect.mRight = llmin(console_rect.mLeft + 700, full_window.mRight - CONSOLE_PADDING_RIGHT);
 
     return console_rect;
 }

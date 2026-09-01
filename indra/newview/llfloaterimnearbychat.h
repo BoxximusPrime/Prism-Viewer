@@ -66,6 +66,8 @@ public:
 
     /** @param archive true - to save a message to the chat history log */
     void    addMessage          (const LLChat& message,bool archive = true, const LLSD &args = LLSD());
+    void    updateTranslatedMessage(const LLUUID& request_id, const std::string& text,
+                                    const std::string& translated_text, bool log_to_file);
 
     LLChatEntry* getChatBox() { return mInputEditor; }
 

@@ -846,26 +846,6 @@ void LLFloaterIMContainer::setVisible(bool visible)
         LLFloaterIMSessionTab::addToHost(LLUUID());
     }
 
-    if (!LLFloater::isQuitRequested())
-    {
-        // We need to show/hide all the associated conversations that have been torn off
-        // (and therefore, are not longer managed by the multifloater),
-        // so that they show/hide with the conversations manager.
-        conversations_widgets_map::iterator widget_it = mConversationsWidgets.begin();
-        for (; widget_it != mConversationsWidgets.end(); ++widget_it)
-        {
-            LLConversationViewSession* widget = dynamic_cast<LLConversationViewSession*>(widget_it->second);
-            if (widget)
-            {
-                LLFloater* session_floater = widget->getSessionFloater();
-                if (session_floater != nearby_chat)
-                {
-                    widget->setVisibleIfDetached(visible);
-                }
-            }
-        }
-    }
-
     // Now, do the normal multifloater show/hide
     LLMultiFloater::setVisible(visible);
 }
@@ -1741,19 +1721,36 @@ bool LLFloaterIMContainer::visibleContextMenuItem(const LLSD& userdata)
     return true;
 }
 
-void LLFloaterIMContainer::showConversation(const LLUUID& session_id)
+void LLFloaterIMContainer::showConversation(const LLUUID& session_id, bool pop_out)
 {
-    setVisibleAndFrontmost(false);
-    selectConversationPair(session_id, true, true, true);
+    if (!pop_out)
+    {
+        setVisibleAndFrontmost(false);
+        selectConversationPair(session_id, true, true, true);
+    }
 
     LLFloaterIMSessionTab* session_floater = LLFloaterIMSessionTab::findConversation(session_id);
     if (session_floater)
     {
         session_floater->restoreFloater();
-        if (session_floater->isTornOff() && session_floater->isMinimized())
+        if (pop_out && !session_floater->isTornOff())
         {
-            session_floater->setMinimized(false);
-            session_floater->setFocus(true);
+            session_floater->onTearOffClicked();
+        }
+        if (session_floater->isTornOff())
+        {
+            if (session_floater->isMinimized())
+            {
+                session_floater->setMinimized(false);
+            }
+            if (pop_out)
+            {
+                session_floater->setVisibleAndFrontmost(true);
+            }
+            else
+            {
+                session_floater->setFocus(true);
+            }
         }
     }
 }

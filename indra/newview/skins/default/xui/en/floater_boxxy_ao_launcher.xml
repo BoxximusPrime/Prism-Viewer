@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater
+ positioning="specified"
+ right="-14"
+ bottom="-330"
+ can_close="false"
+ can_dock="false"
+ can_minimize="false"
+ chrome="true"
+ height="58"
+ width="104"
+ layout="topleft"
+ name="boxxy_ao_launcher"
+ save_rect="true"
+ save_visibility="true"
+ single_instance="true">
+  <button
+   name="open_manager"
+   label="AO Manager"
+   left="4"
+   top="4"
+   width="96"
+   height="25"
+   tool_tip="Open the Boxxy Animation Overrider" />
+  <check_box
+   name="ao_enabled"
+   label="Enabled"
+   left="13"
+   top="34"
+   width="82"
+   height="20"
+   tool_tip="Enable or disable the viewer-side animation overrider" />
+</floater>

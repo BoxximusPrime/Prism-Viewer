@@ -173,7 +173,7 @@ static void on_avatar_name_cache_toast(const LLUUID& agent_id,
     args["FROM_ID"] = msg["from_id"];
     args["SESSION_ID"] = msg["session_id"];
     args["SESSION_TYPE"] = msg["session_type"];
-    LLNotificationsUtil::add("IMToast", args, args, boost::bind(&LLFloaterIMContainer::showConversation, LLFloaterIMContainer::getInstance(), msg["session_id"].asUUID()));
+    LLNotificationsUtil::add("IMToast", args, args, boost::bind(&LLFloaterIMContainer::showConversation, LLFloaterIMContainer::getInstance(), msg["session_id"].asUUID(), false));
 }
 
 void notify_of_message(const LLSD& msg, bool is_dnd_msg)
@@ -595,40 +595,32 @@ void chatterBoxInvitationCoro(std::string url, LLUUID sessionId, LLIMMgr::EInvit
 
 }
 
-void translateSuccess(const LLUUID& session_id, const std::string& from, const LLUUID& from_id, const std::string& utf8_text,
-                        U64 time_n_flags, std::string originalMsg, std::string expectLang, std::string translation, const std::string detected_language)
+void translateSuccess(const LLUUID& session_id, const LLUUID& request_id, bool log2file,
+                      std::string originalMsg, std::string expectLang,
+                      std::string translation, const std::string detected_language)
 {
-    std::string message_txt(utf8_text);
+    std::string translated_text;
     // filter out non-interesting responses
     if (!translation.empty()
         && ((detected_language.empty()) || (expectLang != detected_language))
         && (LLStringUtil::compareInsensitive(translation, originalMsg) != 0))
     {   // Note - if this format changes, also fix code in addMessagesFromServerHistory()
-        message_txt += XL8_START_TAG + LLTranslate::removeNoTranslateTags(translation) + XL8_END_TAG;
+        translated_text = LLTranslate::removeNoTranslateTags(translation);
+        if (LLTranslate::getCurrentService() == LLTranslate::SERVICE_OPENAI
+            && !detected_language.empty())
+        {
+            translated_text = detected_language + ": " + translated_text;
+        }
     }
 
-    // Extract info packed in time_n_flags
-    bool log2file =      (bool)(time_n_flags & (1LL << 32));
-    bool is_region_msg = (bool)(time_n_flags & (1LL << 33));
-    U32 time_stamp = (U32)(time_n_flags & 0x00000000ffffffff);
-
-    LLIMModel::getInstance()->processAddingMessage(session_id, from, from_id, message_txt, log2file, is_region_msg, time_stamp);
+    LLIMModel::getInstance()->updateTranslatedMessage(session_id, request_id, originalMsg,
+                                                      translated_text, log2file);
 }
 
-void translateFailure(const LLUUID& session_id, const std::string& from, const LLUUID& from_id, const std::string& utf8_text,
-                        U64 time_n_flags, int status, const std::string err_msg)
+void translateFailure(const LLUUID& session_id, const LLUUID& request_id, bool log2file,
+                      std::string originalMsg, int status, const std::string err_msg)
 {
-    std::string message_txt(utf8_text);
-    std::string msg = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", err_msg));
-    LLStringUtil::replaceString(msg, "\n", " "); // we want one-line error messages
-    message_txt += XL8_START_TAG + msg + XL8_END_TAG;
-
-    // Extract info packed in time_n_flags
-    bool log2file = (bool)(time_n_flags & (1LL << 32));
-    bool is_region_msg = (bool)(time_n_flags & (1LL << 33));
-    U32 time_stamp = (U32)(time_n_flags & 0x00000000ffffffff);
-
-    LLIMModel::getInstance()->processAddingMessage(session_id, from, from_id, message_txt, log2file, is_region_msg, time_stamp);
+    LLIMModel::getInstance()->updateTranslatedMessage(session_id, request_id, originalMsg, {}, log2file);
 }
 
 void chatterBoxHistoryCoro(std::string url, LLUUID sessionId, std::string from, std::string message, U32 timestamp)
@@ -1022,7 +1014,8 @@ void LLIMModel::LLIMSession::addMessage(const std::string& from,
                                         const std::string& time,
                                         const bool is_history,  // comes from a history file or chat server
                                         const bool is_region_msg,
-                                        const U32 timestamp)   // may be zero
+                                        const U32 timestamp,
+                                        const LLUUID& translation_id)   // timestamp may be zero
 {
     LLSD message;
     message["from"] = from;
@@ -1033,6 +1026,10 @@ void LLIMModel::LLIMSession::addMessage(const std::string& from,
     message["index"] = (LLSD::Integer)mMsgs.size();
     message["is_history"] = is_history;
     message["is_region_msg"] = is_region_msg;
+    if (translation_id.notNull())
+    {
+        message["translation_id"] = translation_id;
+    }
 
     LL_DEBUGS("UIUsage") << "addMessage " << " from " << from << " from_id " << from_id << " utf8_text " << utf8_text << " time " << time << " is_history " << is_history << " session mType " << mType << LL_ENDL;
     if (from_id == gAgent.getID())
@@ -1667,7 +1664,8 @@ bool LLIMModel::addToHistory(const LLUUID& session_id,
                              const LLUUID& from_id,
                              const std::string& utf8_text,
                              bool is_region_msg,
-                             U32 timestamp)
+                             U32 timestamp,
+                             const LLUUID& translation_id)
 {
     LLIMSession* session = findIMSession(session_id);
 
@@ -1678,7 +1676,8 @@ bool LLIMModel::addToHistory(const LLUUID& session_id,
     }
 
     // This is where a normal arriving message is added to the session.   Note that the time string created here is without the full date
-    session->addMessage(from, from_id, utf8_text, LLLogChat::timestamp2LogString(timestamp, false), false, is_region_msg, timestamp);
+    session->addMessage(from, from_id, utf8_text, LLLogChat::timestamp2LogString(timestamp, false),
+                        false, is_region_msg, timestamp, translation_id);
 
     return true;
 }
@@ -1720,14 +1719,19 @@ void LLIMModel::proccessOnlineOfflineNotification(
 void LLIMModel::addMessage(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
                            const std::string& utf8_text, bool log2file /* = true */, bool is_region_msg, /* = false */ U32 time_stamp /* = 0 */)
 {
-    if (gSavedSettings.getBOOL("TranslateChat") && (from != SYSTEM_FROM))
+    if (gSavedSettings.getBOOL("TranslateChat")
+        && from != SYSTEM_FROM
+        && from_id != gAgentID)
     {
         const std::string from_lang = ""; // leave empty to trigger autodetect
         const std::string to_lang = LLTranslate::getTranslateLanguage();
-        U64 time_n_flags = ((U64) time_stamp) | (log2file ? (1LL << 32) : 0) | (is_region_msg ? (1LL << 33) : 0);   // boost::bind has limited parameters
+        LLUUID request_id;
+        request_id.generate();
+        processAddingMessage(session_id, from, from_id, utf8_text + " [...]",
+                             false, is_region_msg, time_stamp, request_id);
         LLTranslate::translateMessage(from_lang, to_lang, utf8_text,
-            boost::bind(&translateSuccess, session_id, from, from_id, utf8_text, time_n_flags, utf8_text, from_lang, _1, _2),
-            boost::bind(&translateFailure, session_id, from, from_id, utf8_text, time_n_flags, _1, _2));
+            boost::bind(&translateSuccess, session_id, request_id, log2file, utf8_text, to_lang, _1, _2),
+            boost::bind(&translateFailure, session_id, request_id, log2file, utf8_text, _1, _2));
     }
     else
     {
@@ -1736,9 +1740,11 @@ void LLIMModel::addMessage(const LLUUID& session_id, const std::string& from, co
 }
 
 void LLIMModel::processAddingMessage(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
-    const std::string& utf8_text, bool log2file, bool is_region_msg, U32 time_stamp)
+    const std::string& utf8_text, bool log2file, bool is_region_msg, U32 time_stamp,
+    const LLUUID& translation_id)
 {
-    LLIMSession* session = addMessageSilently(session_id, from, from_id, utf8_text, log2file, is_region_msg, time_stamp);
+    LLIMSession* session = addMessageSilently(session_id, from, from_id, utf8_text,
+                                              log2file, is_region_msg, time_stamp, translation_id);
     if (!session)
         return;
 
@@ -1765,7 +1771,7 @@ void LLIMModel::processAddingMessage(const LLUUID& session_id, const std::string
 
 LLIMModel::LLIMSession* LLIMModel::addMessageSilently(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
                                                       const std::string& utf8_text, bool log2file /* = true */, bool is_region_msg, /* false */
-                                                      U32 timestamp /* = 0 */)
+                                                      U32 timestamp /* = 0 */, const LLUUID& translation_id)
 {
     LLIMSession* session = findIMSession(session_id);
 
@@ -1781,7 +1787,7 @@ LLIMModel::LLIMSession* LLIMModel::addMessageSilently(const LLUUID& session_id, 
         from_name = SYSTEM_FROM;
     }
 
-    addToHistory(session_id, from_name, from_id, utf8_text, is_region_msg, timestamp);
+    addToHistory(session_id, from_name, from_id, utf8_text, is_region_msg, timestamp, translation_id);
     if (log2file)
     {
         logToFile(getHistoryFileName(session_id), from_name, from_id, utf8_text);
@@ -1798,6 +1804,64 @@ LLIMModel::LLIMSession* LLIMModel::addMessageSilently(const LLUUID& session_id, 
     }
 
     return session;
+}
+
+void LLIMModel::updateTranslatedMessage(const LLUUID& session_id,
+                                        const LLUUID& translation_id,
+                                        const std::string& text,
+                                        const std::string& translated_text,
+                                        bool log2file)
+{
+    LLIMSession* session = findIMSession(session_id);
+    if (!session)
+    {
+        return;
+    }
+
+    std::string from;
+    LLUUID from_id;
+    bool found = false;
+    for (LLSD& message : session->mMsgs)
+    {
+        if (message["translation_id"].asUUID() == translation_id)
+        {
+            message["message"] = text;
+            if (translated_text.empty())
+            {
+                message.erase("translated_message");
+            }
+            else
+            {
+                message["translated_message"] = translated_text;
+            }
+            message.erase("translation_id");
+            from = message["from"].asString();
+            from_id = message["from_id"].asUUID();
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        return;
+    }
+
+    if (log2file)
+    {
+        std::string logged_text = text;
+        if (!translated_text.empty())
+        {
+            logged_text += XL8_START_TAG + translated_text + XL8_END_TAG;
+        }
+        logToFile(getHistoryFileName(session_id), from, from_id, logged_text);
+    }
+
+    LLFloaterIMSession* floater = LLFloaterReg::findTypedInstance<LLFloaterIMSession>("impanel", session_id);
+    if (floater)
+    {
+        floater->reloadMessages(false);
+    }
 }
 
 
@@ -1932,7 +1996,8 @@ void LLIMModel::sendLeaveSession(const LLUUID& session_id, const LLUUID& other_p
 void LLIMModel::sendMessage(const std::string& utf8_text,
                      const LLUUID& im_session_id,
                      const LLUUID& other_participant_id,
-                     EInstantMessage dialog)
+                     EInstantMessage dialog,
+                     const std::string& local_echo_text)
 {
     std::string name;
     bool sent = false;
@@ -2005,13 +2070,14 @@ void LLIMModel::sendMessage(const std::string& utf8_text,
         // Do we have to replace the /me's here?
         std::string from;
         LLAgentUI::buildFullname(from);
-        LLIMModel::getInstance()->addMessage(im_session_id, from, gAgentID, utf8_text);
+        const std::string& echo_text = local_echo_text.empty() ? utf8_text : local_echo_text;
+        LLIMModel::getInstance()->addMessage(im_session_id, from, gAgentID, echo_text);
 
         //local echo for the legacy communicate panel
         std::string history_echo;
         LLAgentUI::buildFullname(history_echo);
 
-        history_echo += ": " + utf8_text;
+        history_echo += ": " + echo_text;
 
         LLIMSpeakerMgr* speaker_mgr = LLIMModel::getInstance()->getSpeakerManager(im_session_id);
         if (speaker_mgr)
@@ -4355,4 +4421,3 @@ LLHTTPRegistration<LLViewerChatterBoxSessionUpdate>
 LLHTTPRegistration<LLViewerChatterBoxInvitation>
     gHTTPRegistrationMessageChatterBoxInvitation(
         "/message/ChatterBoxInvitation");
-

@@ -95,6 +95,9 @@ const S32 MAX_CACHED_RAW_SCULPT_IMAGE_AREA = LLViewerTexture::sMaxSculptRez * LL
 constexpr S32 MAX_CACHED_RAW_TERRAIN_IMAGE_AREA = 128 * 128;
 constexpr S32 DEFAULT_ICON_DIMENSIONS = 32;
 constexpr S32 DEFAULT_THUMBNAIL_DIMENSIONS = 256;
+constexpr U32 TEXTURE_TRANSIENT_RETRY_MAX_ATTEMPTS = 8;
+constexpr F32 TEXTURE_TRANSIENT_RETRY_INITIAL_DELAY = 2.f;
+constexpr F32 TEXTURE_TRANSIENT_RETRY_MAX_DELAY = 300.f;
 U32 LLViewerTexture::sMinLargeImageSize = 65536; //256 * 256.
 U32 LLViewerTexture::sMaxSmallImageSize = MAX_CACHED_RAW_IMAGE_AREA;
 bool LLViewerTexture::sFreezeImageUpdates = false;
@@ -1172,6 +1175,10 @@ void LLViewerFetchedTexture::init(bool firstinit)
     mHasFetcher = false;
     mIsFetching = false;
     mFetchState = 0;
+    mTransientRetryAttempts = 0;
+    mTransientRetryExhausted = false;
+    mTransientRetryTimer.reset();
+    mTransientRetryTimer.setTimerExpirySec(0.f);
     mFetchPriority = 0;
     mDownloadProgress = 0.f;
     mFetchDeltaTime = 999999.f;
@@ -1834,6 +1841,96 @@ S32 LLViewerFetchedTexture::getCurrentDiscardLevelForFetching()
     return current_discard;
 }
 
+bool LLViewerFetchedTexture::isAuthoritativeMissingFetchFailure() const
+{
+    if (!mLastHttpGetStatus.isHttpStatus())
+    {
+        return false;
+    }
+
+    // A negative response from the asset endpoint is authoritative.  401/403
+    // are also terminal for this texture: the endpoint has explicitly denied
+    // access rather than reporting a transport failure.
+    const U32 status = mLastHttpGetStatus.getType();
+    return status == HTTP_NOT_FOUND || status == HTTP_GONE ||
+           status == HTTP_UNAUTHORIZED || status == HTTP_FORBIDDEN;
+}
+
+bool LLViewerFetchedTexture::isTransientFetchFailure() const
+{
+    if (mLastHttpGetStatus.isHttpStatus())
+    {
+        const U32 status = mLastHttpGetStatus.getType();
+        // Keep 408/429 local to texture fetching.  They are not universally
+        // safe to retry for every llcorehttp consumer.
+        return status == 408 || status == 429 || (status >= 500 && status <= 599);
+    }
+
+    // A non-HTTP error is a transport/core failure.  The default HttpStatus
+    // has a zero status and means that no HTTP response was received, which
+    // is also not evidence that the asset is missing.
+    return mLastHttpGetStatus.isRetryable() || mLastHttpGetStatus.getStatus() == 0;
+}
+
+bool LLViewerFetchedTexture::isCorruptFetchResult() const
+{
+    if (mLastHttpGetStatus.isHttpStatus())
+    {
+        // Bytes arrived successfully but produced no raw image.  The fetcher
+        // has already performed its cache-corruption retry, so this is a
+        // corrupt/unsupported response rather than a missing asset.
+        const U32 status = mLastHttpGetStatus.getType();
+        return status >= 200 && status <= 299;
+    }
+
+    // A cache decode failure has no HTTP status.  Keep the existing fetcher's
+    // cache removal/re-fetch behavior, then retain the terminal missing state
+    // if it still cannot produce a raw image.
+    LLTextureFetch* fetcher = LLAppViewer::getTextureFetch();
+    return fetcher && fetcher->isFromLocalCache(getID());
+}
+
+bool LLViewerFetchedTexture::scheduleTransientRetry()
+{
+    if (mTransientRetryAttempts >= TEXTURE_TRANSIENT_RETRY_MAX_ATTEMPTS)
+    {
+        mTransientRetryExhausted = true;
+        return false;
+    }
+
+    ++mTransientRetryAttempts;
+    if (mTransientRetryAttempts >= TEXTURE_TRANSIENT_RETRY_MAX_ATTEMPTS)
+    {
+        // The failed request that reaches the cap is terminal for this
+        // generation.  An explicit refetch clears the exhausted state.
+        mTransientRetryExhausted = true;
+        return false;
+    }
+
+    const U32 exponent = llmin(mTransientRetryAttempts - 1, 7U);
+    F32 delay = TEXTURE_TRANSIENT_RETRY_INITIAL_DELAY * static_cast<F32>(1U << exponent);
+    // Spread retries for a group of textures that failed in the same outage.
+    // Keep the jitter at or below 1.0 so the advertised cap remains exact.
+    const F32 jitter = 0.8f + static_cast<F32>(mID.getCRC32() % 2001U) / 10000.f;
+    delay = llmin(delay, TEXTURE_TRANSIENT_RETRY_MAX_DELAY) * jitter;
+
+    mTransientRetryTimer.reset();
+    mTransientRetryTimer.setTimerExpirySec(delay);
+    LL_DEBUGS("Texture") << mID << ": delaying texture retry for " << delay
+                          << " seconds (attempt " << mTransientRetryAttempts
+                          << ", transient failure"
+                          << ")" << LL_ENDL;
+    return true;
+}
+
+void LLViewerFetchedTexture::clearTransientRetry()
+{
+    mTransientRetryAttempts = 0;
+    mTransientRetryExhausted = false;
+    mTransientRetryTimer.reset();
+    mTransientRetryTimer.setTimerExpirySec(0.f);
+}
+
 bool LLViewerFetchedTexture::isActiveFetching()
 {
     static LLCachedControl<bool> monitor_enabled(gSavedSettings,"DebugShowTextureInfo");
@@ -1887,6 +1984,7 @@ bool LLViewerFetchedTexture::processFetchResults(S32& desired_discard, S32 curre
                 return false;
             }
 
+            clearTransientRetry();
             mIsRawImageValid = true;
 
             if (mBoostLevel == LLGLTexture::BOOST_ICON)
@@ -1936,6 +2034,7 @@ bool LLViewerFetchedTexture::processFetchResults(S32& desired_discard, S32 curre
             LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - data not needed");
             // Data is ready but we don't need it
             // (received it already while fetcher was writing to disk)
+            clearTransientRetry();
             destroyRawImage();
             return false; // done
         }
@@ -1948,19 +2047,57 @@ bool LLViewerFetchedTexture::processFetchResults(S32& desired_discard, S32 curre
             && mFetchState > 1) // 1 - initial, make sure fetcher did at least something
         {
             // We finished but received no data
+            bool retry_scheduled = false;
             if (getDiscardLevel() < 0)
             {
                 if (getFTType() != FTT_MAP_TILE)
                 {
                     LL_WARNS() << mID
-                        << " Fetch failure, setting as missing, decode_priority " << decode_priority
+                        << " Fetch failure, decode_priority " << decode_priority
                         << " mRawDiscardLevel " << mRawDiscardLevel
                         << " current_discard " << current_discard
                         << " stats " << mLastHttpGetStatus.toHex()
                         << " worker state " << mFetchState
                         << LL_ENDL;
                 }
-                setIsMissingAsset();
+
+                if (isAuthoritativeMissingFetchFailure() || isCorruptFetchResult())
+                {
+                    setIsMissingAsset();
+                }
+                else if (isTransientFetchFailure())
+                {
+                    // An exhausted timeout/transport failure is not proof
+                    // that the asset is absent.  Keep callbacks and interest
+                    // alive, but release the completed worker and let the
+                    // normal priority scheduler retry after a bounded
+                    // cooldown.  The fetcher itself already coalesces active
+                    // requests, so this also prevents duplicate requests.
+                    retry_scheduled = scheduleTransientRetry();
+                    if (!retry_scheduled)
+                    {
+                        LL_DEBUGS("Texture") << mID
+                                              << ": transient texture retry limit reached (status "
+                                              << mLastHttpGetStatus.toTerseString()
+                                              << "), waiting for explicit refetch" << LL_ENDL;
+                    }
+                    if (mHasFetcher)
+                    {
+                        LLAppViewer::getTextureFetch()->deleteRequest(getID(), true);
+                        mHasFetcher = false;
+                        mIsFetching = false;
+                        mLastPacketTimer.reset();
+                        mFetchState = 0;
+                        mFetchPriority = 0;
+                    }
+                }
+                else
+                {
+                    // Successful HTTP bytes that cannot decode, cache decode
+                    // failures, and other non-transient HTTP errors retain
+                    // the existing terminal missing/unsafe behavior.
+                    setIsMissingAsset();
+                }
                 desired_discard = -1;
             }
             else
@@ -1979,6 +2116,10 @@ bool LLViewerFetchedTexture::processFetchResults(S32& desired_discard, S32 curre
                 }
             }
             destroyRawImage();
+            if (retry_scheduled)
+            {
+                return false;
+            }
         }
         else if (mRawImage.notNull())
         {
@@ -2028,6 +2169,16 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - missing asset");
         llassert(!mHasFetcher);
         return false; // skip
+    }
+    if (mTransientRetryExhausted)
+    {
+        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - retry limit");
+        return false;
+    }
+    if (!mIsFetching && !mTransientRetryTimer.hasExpired())
+    {
+        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - retry cooldown");
+        return false;
     }
     if (!mLoadedCallbackList.empty() && mRawImage.notNull())
     {
@@ -2244,6 +2395,8 @@ void LLViewerFetchedTexture::clearFetchedResults()
 
 void LLViewerFetchedTexture::forceToDeleteRequest()
 {
+    // Clearing the worker starts a fresh request generation for this texture.
+    clearTransientRetry();
     if (mHasFetcher)
     {
         mHasFetcher = false;
@@ -2259,10 +2412,12 @@ void LLViewerFetchedTexture::setIsMissingAsset(bool is_missing)
 {
     if (is_missing == mIsMissingAsset)
     {
+        clearTransientRetry();
         return;
     }
     if (is_missing)
     {
+        clearTransientRetry();
         if (mUrl.empty())
         {
             LL_WARNS() << mID << ": Marking image as missing" << LL_ENDL;
@@ -2290,6 +2445,7 @@ void LLViewerFetchedTexture::setIsMissingAsset(bool is_missing)
     else
     {
         LL_INFOS() << mID << ": un-flagging missing asset" << LL_ENDL;
+        clearTransientRetry();
     }
     mIsMissingAsset = is_missing;
 }
@@ -2873,6 +3029,14 @@ void LLViewerFetchedTexture::saveRawImage()
 //force to refetch the texture to the discard level
 void LLViewerFetchedTexture::forceToRefetchTexture(S32 desired_discard, F32 kept_time)
 {
+    // An explicit refetch is an opt-in refresh and should bypass a previous
+    // texture-level failure cooldown.
+    clearTransientRetry();
+    if (mIsMissingAsset)
+    {
+        setIsMissingAsset(false);
+    }
+
     if(mForceToSaveRawImage)
     {
         desired_discard = llmin(desired_discard, mDesiredSavedRawDiscardLevel);
@@ -4094,4 +4258,3 @@ void LLTexturePipelineTester::LLTextureTestSession::reset()
 //----------------------------------------------------------------------------------------------
 //end of LLTexturePipelineTester
 //----------------------------------------------------------------------------------------------
-
