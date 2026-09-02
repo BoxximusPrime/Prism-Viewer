@@ -94,6 +94,7 @@ private:
     LLCheckBoxCtrl  *mCtrlEnrollmentFee;
     LLSpinCtrl      *mSpinEnrollmentFee;
     LLCheckBoxCtrl  *mCtrlReceiveNotices;
+    LLCheckBoxCtrl  *mCtrlIgnoreGroupChat;
     LLCheckBoxCtrl  *mCtrlListGroup;
     LLTextBox       *mActiveTitleLabel;
     LLComboBox      *mComboActiveTitle;

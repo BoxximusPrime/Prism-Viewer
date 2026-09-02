@@ -869,6 +869,8 @@ public:
     // Update internal datastructures and update the server.
     bool            setGroupContribution(const LLUUID& group_id, S32 contribution);
     bool            setUserGroupFlags(const LLUUID& group_id, bool accept_notices, bool list_in_profile);
+    bool            isGroupChatIgnored(const LLUUID& group_id) const;
+    void            setGroupChatIgnored(const LLUUID& group_id, bool ignored);
     const std::string &getGroupName() const     { return mGroupName; }
     bool            canJoinGroups() const;
 private:

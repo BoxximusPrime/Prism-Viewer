@@ -2604,7 +2604,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 
             LLTranslate::translateMessage(from_lang, to_lang, mesg,
                 boost::bind(&translateSuccess, chat, mesg, to_lang, _1, _2),
-                boost::bind(&translateFailure, chat, _1, _2));
+                boost::bind(&translateFailure, chat, _1, _2), false, chat.mFromID);
 
         }
         else

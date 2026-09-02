@@ -155,6 +155,16 @@ Hover your mouse over the options for more help.
          width="300" />
         <check_box
          height="16"
+         font="SansSerifSmall"
+         label="Ignore group instant messages"
+         layout="topleft"
+         left="10"
+         name="ignore_group_chat"
+         tool_tip="Prevents instant messages from this group from appearing or playing a sound. Group notices are still received."
+         top_pad="5"
+         width="300" />
+        <check_box
+         height="16"
          label="Show in my profile"
          layout="topleft"
          left="10"
