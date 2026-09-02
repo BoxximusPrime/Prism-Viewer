@@ -1716,4 +1716,3 @@ void LLIMProcessing::requestOfflineMessagesLegacy()
     msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
     gAgent.sendReliableMessage();
 }
-

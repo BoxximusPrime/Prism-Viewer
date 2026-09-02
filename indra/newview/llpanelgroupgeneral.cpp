@@ -76,6 +76,7 @@ LLPanelGroupGeneral::LLPanelGroupGeneral()
     mCtrlEnrollmentFee(NULL),
     mSpinEnrollmentFee(NULL),
     mCtrlReceiveNotices(NULL),
+    mCtrlIgnoreGroupChat(NULL),
     mCtrlListGroup(NULL),
     mActiveTitleLabel(NULL),
     mComboActiveTitle(NULL)
@@ -153,6 +154,14 @@ bool LLPanelGroupGeneral::postBuild()
         mCtrlReceiveNotices->setCommitCallback(onCommitUserOnly, this);
         mCtrlReceiveNotices->set(accept_notices);
         mCtrlReceiveNotices->setEnabled(data.mID.notNull());
+    }
+
+    mCtrlIgnoreGroupChat = getChild<LLCheckBoxCtrl>("ignore_group_chat", recurse);
+    if (mCtrlIgnoreGroupChat)
+    {
+        mCtrlIgnoreGroupChat->setCommitCallback(onCommitUserOnly, this);
+        mCtrlIgnoreGroupChat->set(gAgent.isGroupChatIgnored(mGroupID));
+        mCtrlIgnoreGroupChat->setEnabled(data.mID.notNull());
     }
 
     mCtrlListGroup = getChild<LLCheckBoxCtrl>("list_groups_in_profile", recurse);
@@ -390,6 +399,10 @@ bool LLPanelGroupGeneral::apply(std::string& mesg)
         list_in_profile = mCtrlListGroup->get();
 
     gAgent.setUserGroupFlags(mGroupID, receive_notices, list_in_profile);
+    if (mCtrlIgnoreGroupChat)
+    {
+        gAgent.setGroupChatIgnored(mGroupID, mCtrlIgnoreGroupChat->get());
+    }
 
     resetDirty();
 
@@ -556,6 +569,11 @@ void LLPanelGroupGeneral::update(LLGroupChange gc)
             mCtrlReceiveNotices->setEnabled(mAllowEdit);
         }
     }
+    if (mCtrlIgnoreGroupChat)
+    {
+        mCtrlIgnoreGroupChat->setVisible(is_member);
+        mCtrlIgnoreGroupChat->setEnabled(is_member && mAllowEdit);
+    }
 
 
     if (mInsignia) mInsignia->setEnabled(mAllowEdit && can_change_ident);
@@ -599,6 +617,7 @@ void LLPanelGroupGeneral::updateChanged()
         mCtrlEnrollmentFee,
         mSpinEnrollmentFee,
         mCtrlReceiveNotices,
+        mCtrlIgnoreGroupChat,
         mCtrlListGroup,
         mActiveTitleLabel,
         mComboActiveTitle
@@ -622,12 +641,15 @@ void LLPanelGroupGeneral::reset()
 
 
     mCtrlReceiveNotices->set(false);
+    mCtrlIgnoreGroupChat->set(false);
 
 
     mCtrlListGroup->set(true);
 
     mCtrlReceiveNotices->setEnabled(false);
     mCtrlReceiveNotices->setVisible(true);
+    mCtrlIgnoreGroupChat->setEnabled(false);
+    mCtrlIgnoreGroupChat->setVisible(true);
 
     mCtrlListGroup->setEnabled(false);
 
@@ -685,6 +707,7 @@ void    LLPanelGroupGeneral::resetDirty()
         mCtrlEnrollmentFee,
         mSpinEnrollmentFee,
         mCtrlReceiveNotices,
+        mCtrlIgnoreGroupChat,
         mCtrlListGroup,
         mActiveTitleLabel,
         mComboActiveTitle
@@ -722,6 +745,14 @@ void LLPanelGroupGeneral::setGroupID(const LLUUID& id)
     {
         mCtrlReceiveNotices->set(accept_notices);
         mCtrlReceiveNotices->setEnabled(data.mID.notNull());
+    }
+
+
+    mCtrlIgnoreGroupChat = getChild<LLCheckBoxCtrl>("ignore_group_chat");
+    if (mCtrlIgnoreGroupChat)
+    {
+        mCtrlIgnoreGroupChat->set(gAgent.isGroupChatIgnored(mGroupID));
+        mCtrlIgnoreGroupChat->setEnabled(data.mID.notNull());
     }
 
     mCtrlListGroup = getChild<LLCheckBoxCtrl>("list_groups_in_profile");

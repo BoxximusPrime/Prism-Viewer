@@ -30,8 +30,13 @@
 
 #include <curl/curl.h>
 
+#include <algorithm>
+#include <deque>
+#include <map>
+
 #include "llbufferstream.h"
 #include "lltrans.h"
+#include "lltimer.h"
 #include "llui.h"
 #include "llversioninfo.h"
 #include "llviewercontrol.h"
@@ -118,7 +123,10 @@ public:
     virtual LLTranslate::EService getCurrentService() = 0;
 
     virtual void verifyKey(const LLSD &key, LLTranslate::KeyVerificationResult_fn fnc) = 0;
-    virtual void translateMessage(LanguagePair_t fromTo, std::string msg, LLTranslate::TranslationSuccess_fn success, LLTranslate::TranslationFailure_fn failure);
+    virtual void translateMessage(LanguagePair_t fromTo, std::string msg,
+                                  LLTranslate::TranslationSuccess_fn success,
+                                  LLTranslate::TranslationFailure_fn failure,
+                                  bool prioritize, const LLUUID& source_id);
 
 
     virtual ~LLTranslationAPIHandler() {}
@@ -141,12 +149,87 @@ public:
         LLCore::HttpOptions::ptr_t options,
         LLCore::HttpHeaders::ptr_t headers,
         const std::string & url) const = 0;
+
+private:
+    enum class QueueTier
+    {
+        PRIORITY,
+        NORMAL,
+        DEFERRED
+    };
+
+    struct TranslationRequest
+    {
+        LanguagePair_t fromTo;
+        std::string msg;
+        LLTranslate::TranslationSuccess_fn success;
+        LLTranslate::TranslationFailure_fn failure;
+        QueueTier tier;
+    };
+
+    struct SenderBurst
+    {
+        F64 last_message_time = 0.0;
+        U32 line_count = 0;
+    };
+
+    void startNextTranslation();
+    void finishTranslation();
+
+    std::deque<TranslationRequest> mTranslationQueue;
+    std::map<LLUUID, SenderBurst> mSenderBursts;
+    U32 mActiveTranslations = 0;
 };
 
-void LLTranslationAPIHandler::translateMessage(LanguagePair_t fromTo, std::string msg, LLTranslate::TranslationSuccess_fn success, LLTranslate::TranslationFailure_fn failure)
+void LLTranslationAPIHandler::translateMessage(LanguagePair_t fromTo, std::string msg,
+    LLTranslate::TranslationSuccess_fn success, LLTranslate::TranslationFailure_fn failure,
+    bool prioritize, const LLUUID& source_id)
 {
-    LLCoros::instance().launch("Translation", boost::bind(&LLTranslationAPIHandler::translateMessageCoro,
-        this, fromTo, msg, success, failure));
+    QueueTier tier = prioritize ? QueueTier::PRIORITY : QueueTier::NORMAL;
+    if (!source_id.isNull())
+    {
+        static const F64 BURST_WINDOW_SECONDS = 2.0;
+        SenderBurst& burst = mSenderBursts[source_id];
+        const F64 now = LLTimer::getTotalSeconds();
+        if (now - burst.last_message_time > BURST_WINDOW_SECONDS)
+        {
+            burst.line_count = 0;
+        }
+        if (burst.line_count >= 2)
+        {
+            tier = QueueTier::DEFERRED;
+        }
+        burst.line_count += 1 + static_cast<U32>(std::count(msg.begin(), msg.end(), '\n'));
+        burst.last_message_time = now;
+    }
+
+    TranslationRequest request{fromTo, msg, success, failure, tier};
+    const auto position = std::find_if(mTranslationQueue.begin(), mTranslationQueue.end(),
+        [tier](const TranslationRequest& queued) { return queued.tier > tier; });
+    mTranslationQueue.insert(position, request);
+    startNextTranslation();
+}
+
+void LLTranslationAPIHandler::startNextTranslation()
+{
+    static const U32 MAX_ACTIVE_TRANSLATIONS = 3;
+    while (mActiveTranslations < MAX_ACTIVE_TRANSLATIONS && !mTranslationQueue.empty())
+    {
+        TranslationRequest request = mTranslationQueue.front();
+        mTranslationQueue.pop_front();
+        ++mActiveTranslations;
+        LLCoros::instance().launch("Translation", boost::bind(&LLTranslationAPIHandler::translateMessageCoro,
+            this, request.fromTo, request.msg, request.success, request.failure));
+    }
+}
+
+void LLTranslationAPIHandler::finishTranslation()
+{
+    if (mActiveTranslations > 0)
+    {
+        --mActiveTranslations;
+    }
+    startNextTranslation();
 
 }
 
@@ -229,6 +312,7 @@ void LLTranslationAPIHandler::translateMessageCoro(LanguagePair_t fromTo, std::s
     if (url.empty())
     {
         LL_INFOS("Translate") << "No translation URL" << LL_ENDL;
+        finishTranslation();
         return;
     }
 
@@ -236,6 +320,8 @@ void LLTranslationAPIHandler::translateMessageCoro(LanguagePair_t fromTo, std::s
 
     if (LLApp::isQuitting())
     {
+        mTranslationQueue.clear();
+        mActiveTranslations = 0;
         return;
     }
 
@@ -293,6 +379,8 @@ void LLTranslationAPIHandler::translateMessageCoro(LanguagePair_t fromTo, std::s
         if (failure != nullptr)
             failure(status, err_msg);
     }
+
+    finishTranslation();
 }
 
 //=========================================================================
@@ -1361,11 +1449,13 @@ LLTranslate::~LLTranslate()
 
 /*static*/
 void LLTranslate::translateMessage(const std::string &from_lang, const std::string &to_lang,
-    const std::string &mesg, TranslationSuccess_fn success, TranslationFailure_fn failure)
+    const std::string &mesg, TranslationSuccess_fn success, TranslationFailure_fn failure,
+    bool prioritize, const LLUUID& source_id)
 {
     LLTranslationAPIHandler& handler = getPreferredHandler();
 
-    handler.translateMessage(LLTranslationAPIHandler::LanguagePair_t(from_lang, to_lang), addNoTranslateTags(mesg), success, failure);
+    handler.translateMessage(LLTranslationAPIHandler::LanguagePair_t(from_lang, to_lang),
+                             addNoTranslateTags(mesg), success, failure, prioritize, source_id);
 }
 
 /*static*/

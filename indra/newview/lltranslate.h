@@ -29,6 +29,7 @@
 
 #include "llbufferstream.h"
 #include "llsingleton.h"
+#include "lluuid.h"
 
 #include <functional>
 
@@ -72,7 +73,10 @@ public :
      * @param to_lang    Target language.
      * @param mesg       Text to translate.
      */
-    static void translateMessage(const std::string &from_lang, const std::string &to_lang, const std::string &mesg, TranslationSuccess_fn success, TranslationFailure_fn failure);
+    static void translateMessage(const std::string &from_lang, const std::string &to_lang,
+                                 const std::string &mesg, TranslationSuccess_fn success,
+                                 TranslationFailure_fn failure, bool prioritize = false,
+                                 const LLUUID& source_id = LLUUID::null);
 
     /**
      * Handle an outgoing command of the form "/tr language text".

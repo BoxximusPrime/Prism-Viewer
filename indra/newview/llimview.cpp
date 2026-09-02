@@ -1729,9 +1729,12 @@ void LLIMModel::addMessage(const LLUUID& session_id, const std::string& from, co
         request_id.generate();
         processAddingMessage(session_id, from, from_id, utf8_text + " [...]",
                              false, is_region_msg, time_stamp, request_id);
+        LLIMSession* session = findIMSession(session_id);
+        const bool prioritize = session && session->isP2PSessionType();
         LLTranslate::translateMessage(from_lang, to_lang, utf8_text,
             boost::bind(&translateSuccess, session_id, request_id, log2file, utf8_text, to_lang, _1, _2),
-            boost::bind(&translateFailure, session_id, request_id, log2file, utf8_text, _1, _2));
+            boost::bind(&translateFailure, session_id, request_id, log2file, utf8_text, _1, _2),
+            prioritize, from_id);
     }
     else
     {
@@ -3233,6 +3236,11 @@ void LLIMMgr::addMessage(
     {
         //no session ID...compute new one
         new_session_id = computeSessionID(dialog, other_participant_id);
+    }
+
+    if (gAgent.isInGroup(new_session_id, true) && gAgent.isGroupChatIgnored(new_session_id))
+    {
+        return;
     }
 
     //*NOTE session_name is empty in case of incoming P2P sessions

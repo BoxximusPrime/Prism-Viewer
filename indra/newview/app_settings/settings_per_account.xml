@@ -491,6 +491,17 @@
         <key>Value</key>
         <string></string>
       </map>
+      <key>BoxxyIgnoredGroupChatIDs</key>
+      <map>
+        <key>Comment</key>
+        <string>Newline-separated group UUIDs whose instant messages are ignored.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>String</string>
+        <key>Value</key>
+        <string></string>
+      </map>
       <key>BoxxyRadarToolbarInstalled</key>
       <map>
         <key>Comment</key>

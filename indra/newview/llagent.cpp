@@ -3233,6 +3233,38 @@ bool LLAgent::setUserGroupFlags(const LLUUID& group_id, bool accept_notices, boo
     return false;
 }
 
+bool LLAgent::isGroupChatIgnored(const LLUUID& group_id) const
+{
+    const std::vector<std::string> groups = LLStringUtil::getTokens(
+        gSavedPerAccountSettings.getString("BoxxyIgnoredGroupChatIDs"), "\n");
+    return std::find(groups.begin(), groups.end(), group_id.asString()) != groups.end();
+}
+
+void LLAgent::setGroupChatIgnored(const LLUUID& group_id, bool ignored)
+{
+    std::vector<std::string> groups = LLStringUtil::getTokens(
+        gSavedPerAccountSettings.getString("BoxxyIgnoredGroupChatIDs"), "\n");
+    const std::string id = group_id.asString();
+    const auto found = std::find(groups.begin(), groups.end(), id);
+
+    if (ignored && found == groups.end())
+    {
+        groups.push_back(id);
+    }
+    else if (!ignored && found != groups.end())
+    {
+        groups.erase(found);
+    }
+
+    std::string value;
+    for (const std::string& group : groups)
+    {
+        if (!value.empty()) value += '\n';
+        value += group;
+    }
+    gSavedPerAccountSettings.setString("BoxxyIgnoredGroupChatIDs", value);
+}
+
 bool LLAgent::canJoinGroups() const
 {
     return (S32)mGroups.size() < LLAgentBenefitsMgr::current().getGroupMembershipLimit();
