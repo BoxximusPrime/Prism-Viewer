@@ -377,7 +377,8 @@ void LLFloaterIMSession::initIMFloater()
 
     mTypingStart = LLTrans::getString("IM_typing_start_string");
 
-    getChild<LLLineEditor>("translate_language")->setVisible(mIsP2PChat);
+    getChild<LLLineEditor>("translate_language")->setVisible(
+        mIsP2PChat && gSavedSettings.getBOOL("TranslateChat"));
 
     // Show control panel in torn off floaters only.
     mParticipantListPanel->setVisible(!getHost() && gSavedSettings.getBOOL("IMShowControlPanel"));
@@ -1166,6 +1167,41 @@ void LLFloaterIMSession::processSessionUpdate(const LLSD& session_update)
 // virtual
 void LLFloaterIMSession::draw()
 {
+    LLButton* profile_button = getChild<LLButton>("view_profile_btn");
+    LLButton* friend_button = getChild<LLButton>("add_friend_btn");
+    LLButton* offer_button = getChild<LLButton>("offer_teleport_btn");
+    LLButton* request_button = getChild<LLButton>("request_teleport_btn");
+    LLView* translate_editor = getChildView("translate_language");
+
+    profile_button->setVisible(mIsP2PChat);
+    friend_button->setVisible(mIsP2PChat && !LLAvatarActions::isFriend(mOtherParticipantUUID));
+    offer_button->setVisible(mIsP2PChat);
+    request_button->setVisible(mIsP2PChat);
+    translate_editor->setVisible(mIsP2PChat && gSavedSettings.getBOOL("TranslateChat"));
+
+    if (mIsP2PChat)
+    {
+        profile_button->setEnabled(enableGearMenuItem("can_view_profile"));
+        friend_button->setEnabled(enableGearMenuItem("can_add"));
+        offer_button->setEnabled(enableGearMenuItem("can_offer_teleport"));
+        request_button->setEnabled(enableGearMenuItem("can_offer_teleport"));
+
+        S32 left = mVoiceButton->getRect().mRight + 2;
+        LLView* controls[] = {
+            profile_button, friend_button, offer_button, request_button, translate_editor
+        };
+        for (LLView* control : controls)
+        {
+            if (control->getVisible())
+            {
+                LLRect rect = control->getRect();
+                rect.translate(left - rect.mLeft, 0);
+                control->setRect(rect);
+                left = rect.mRight + (control == request_button ? 4 : 1);
+            }
+        }
+    }
+
     // add people who were added via dropPerson()
     if (!mPendingParticipants.empty())
     {

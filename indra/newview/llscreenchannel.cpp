@@ -37,6 +37,7 @@
 #include "llfloaterreg.h"
 #include "lltrans.h"
 #include "llagent.h"
+#include "llchiclet.h"
 #include "lldockablefloater.h"
 #include "llsyswellwindow.h"
 #include "llfloaterimsession.h"
@@ -44,6 +45,7 @@
 #include "llrootview.h"
 
 #include <algorithm>
+#include <map>
 
 using namespace LLNotificationsUI;
 
@@ -755,6 +757,7 @@ void LLScreenChannel::showToastsTop()
 
     LLRect  toast_rect;
     S32     top = channel_rect.mTop;
+    std::map<LLUUID, S32> chiclet_toast_tops;
     std::vector<ToastElem>::reverse_iterator it;
 
     updateRect();
@@ -767,19 +770,6 @@ void LLScreenChannel::showToastsTop()
 
     for(it = vToastList.rbegin(); it != vToastList.rend(); ++it)
     {
-        if(it != vToastList.rbegin())
-        {
-            LLToast* toast = (it-1)->getToast();
-            if (!toast)
-            {
-                LL_WARNS() << "Attempt to display a deleted toast." << LL_ENDL;
-                return;
-            }
-
-            top = toast->getRect().mBottom - toast->getTopPad();
-            gSavedSettings.getS32("ToastGap");
-        }
-
         LLToast* toast = it->getToast();
         if (!toast)
         {
@@ -788,10 +778,50 @@ void LLScreenChannel::showToastsTop()
         }
 
         toast_rect = toast->getRect();
+
+        LLChiclet* anchor = NULL;
+        for (LLChiclet* chiclet : LLIMChiclet::sFindChicletsSignal(toast->getSessionID()))
+        {
+            if (chiclet && chiclet->isInVisibleChain())
+            {
+                anchor = chiclet;
+                break;
+            }
+        }
+
+        if (anchor)
+        {
+            const LLRect anchor_rect = anchor->calcScreenRect();
+            const S32 anchor_center = anchor_rect.getCenterX();
+            const S32 toast_left = llclamp(anchor_center - toast_rect.getWidth() / 2,
+                channel_rect.mLeft, channel_rect.mRight - toast_rect.getWidth());
+            auto stacked_top = chiclet_toast_tops.find(toast->getSessionID());
+            const S32 toast_top = stacked_top == chiclet_toast_tops.end()
+                ? anchor_rect.mBottom - 6
+                : stacked_top->second;
+
+            toast_rect.setLeftTopAndSize(toast_left, toast_top,
+                toast_rect.getWidth(), toast_rect.getHeight());
+            toast->setRect(toast_rect);
+            toast->setChicletAnchor(anchor_center - toast_left);
+            chiclet_toast_tops[toast->getSessionID()] = toast_rect.mBottom - gSavedSettings.getS32("ToastGap");
+
+            if (!toast->getVisible())
+            {
+                toast->setVisible(true);
+            }
+            if (!toast->hasFocus())
+            {
+                gFloaterView->sendChildToBack(toast);
+            }
+            continue;
+        }
+
         toast_rect.setLeftTopAndSize(channel_rect.mRight - toast_rect.getWidth(),
             top, toast_rect.getWidth(),
             toast_rect.getHeight());
         toast->setRect(toast_rect);
+        top = toast_rect.mBottom - toast->getTopPad();
 
         if(floater && floater->overlapsScreenChannel())
         {

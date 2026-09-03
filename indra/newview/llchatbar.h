@@ -54,6 +54,7 @@ public:
     LLChatBar(const Params& p);
     ~LLChatBar();
     virtual bool postBuild();
+    virtual void draw();
 
     virtual bool handleKeyHere(KEY key, MASK mask);
 
@@ -96,6 +97,7 @@ public:
     static void stopChat();
 
 protected:
+    void updateTranslationControls();
     void sendChat(EChatType type);
     void updateChat();
 

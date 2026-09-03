@@ -81,6 +81,7 @@ public:
     void selectClassified(const LLUUID& classified_id, bool edit);
 
     void createClassified();
+    void refreshTextDisplay();
 
     void processProperties(void* data, EAvatarProcessorType type) override;
 
@@ -148,6 +149,7 @@ public:
     std::string getDescription();
 
     void setClassifiedLocation(const std::string& location);
+    void refreshTextDisplay();
 
     std::string getClassifiedLocation();
 
@@ -310,6 +312,9 @@ private:
     LLVector3d mPosGlobal;
     LLUUID mParcelId;
     std::string mSimName;
+    std::string mClassifiedNameStr;
+    std::string mClassifiedDescriptionStr;
+    std::string mClassifiedLocationStr;
     bool mFromSearch;
     bool mInfoLoaded;
     bool mEditMode;

@@ -2,6 +2,39 @@
 <llsd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="llsd.xsd">
 <map>
+  <key>BoxxySimpleRadarEnabled</key>
+  <map>
+    <key>Comment</key>
+    <string>Show the compact two-column radar continuously.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>IgnoreGroupInvites</key>
+  <map>
+    <key>Comment</key>
+    <string>Discard incoming group invitations without showing them in the viewer.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>SimplifyProfileText</key>
+  <map>
+    <key>Comment</key>
+    <string>Display decorative Unicode profile text using readable compatibility characters.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
   <key>ImporterDebugVerboseLogging</key>
   <map>
     <key>Comment</key>

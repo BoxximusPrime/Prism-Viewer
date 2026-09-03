@@ -36,6 +36,43 @@
 #include "llwin32headers.h"
 #endif
 
+namespace
+{
+llwchar simplify_small_cap(llwchar character)
+{
+    // These phonetic characters are commonly used as decorative small caps.
+    switch (character)
+    {
+    case 0x1D00: return 'A'; // ᴀ
+    case 0x0299: return 'B'; // ʙ
+    case 0x1D04: return 'C'; // ᴄ
+    case 0x1D05: return 'D'; // ᴅ
+    case 0x1D07: return 'E'; // ᴇ
+    case 0xA730: return 'F'; // ꜰ
+    case 0x0262: return 'G'; // ɢ
+    case 0x029C: return 'H'; // ʜ
+    case 0x026A: return 'I'; // ɪ
+    case 0x1D0A: return 'J'; // ᴊ
+    case 0x1D0B: return 'K'; // ᴋ
+    case 0x029F: return 'L'; // ʟ
+    case 0x1D0D: return 'M'; // ᴍ
+    case 0x0274: return 'N'; // ɴ
+    case 0x1D0F: return 'O'; // ᴏ
+    case 0x1D18: return 'P'; // ᴘ
+    case 0xA7AF: return 'Q'; // ꞯ
+    case 0x0280: return 'R'; // ʀ
+    case 0xA731: return 'S'; // ꜱ
+    case 0x1D1B: return 'T'; // ᴛ
+    case 0x1D1C: return 'U'; // ᴜ
+    case 0x1D20: return 'V'; // ᴠ
+    case 0x1D21: return 'W'; // ᴡ
+    case 0x028F: return 'Y'; // ʏ
+    case 0x1D22: return 'Z'; // ᴢ
+    default: return character;
+    }
+}
+}
+
 std::string ll_safe_string(const char* in)
 {
     if(in) return std::string(in);
@@ -47,6 +84,42 @@ std::string ll_safe_string(const char* in, S32 maxlen)
     if(in && maxlen > 0 ) return std::string(in, maxlen);
 
     return std::string();
+}
+
+std::string utf8str_simplify_decorative(const std::string& utf8str)
+{
+    if (utf8str.empty())
+    {
+        return utf8str;
+    }
+
+    std::string normalized = utf8str;
+#if LL_WINDOWS
+    const llutf16string source = utf8str_to_utf16str(utf8str);
+    const auto* source_data = reinterpret_cast<const wchar_t*>(source.data());
+    const int required = NormalizeString(NormalizationKC, source_data,
+                                         static_cast<int>(source.size()), nullptr, 0);
+    if (required > 0)
+    {
+        llutf16string destination(static_cast<size_t>(required), 0);
+        auto* destination_data = reinterpret_cast<wchar_t*>(destination.data());
+        const int written = NormalizeString(NormalizationKC, source_data,
+                                            static_cast<int>(source.size()),
+                                            destination_data, required);
+        if (written > 0)
+        {
+            destination.resize(static_cast<size_t>(written));
+            normalized = utf16str_to_utf8str(destination);
+        }
+    }
+#endif
+
+    LLWString characters = utf8str_to_wstring(normalized);
+    for (llwchar& character : characters)
+    {
+        character = simplify_small_cap(character);
+    }
+    return wstring_to_utf8str(characters);
 }
 
 bool is_char_hex(char hex)

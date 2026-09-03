@@ -740,6 +740,13 @@ LL_COMMON_API std::string utf8str_substChar(
 
 LL_COMMON_API std::string utf8str_makeASCII(const std::string& utf8str);
 
+/**
+ * Convert decorative Unicode letter variants to their readable equivalents.
+ * This is intended for display only: it applies Unicode compatibility
+ * normalization and maps common small-cap characters to ASCII letters.
+ */
+LL_COMMON_API std::string utf8str_simplify_decorative(const std::string& utf8str);
+
 // Hack - used for evil notecards.
 LL_COMMON_API std::string mbcsstring_makeASCII(const std::string& str);
 

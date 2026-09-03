@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<toggleable_menu
+ left="0"
+ bottom="0"
+ mouse_opaque="false"
+ name="boxxy_radar_menu"
+ visible="false">
+  <menu_item_check
+   label="Show simple radar"
+   name="show_simple_radar">
+    <on_click
+     function="ToggleControl"
+     parameter="BoxxySimpleRadarEnabled" />
+    <on_check
+     function="CheckControl"
+     parameter="BoxxySimpleRadarEnabled" />
+  </menu_item_check>
+</toggleable_menu>

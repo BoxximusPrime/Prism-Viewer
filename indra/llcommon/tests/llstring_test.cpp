@@ -856,4 +856,17 @@ namespace tut
                       LLStringUtil::getTokens("want x^^2", " ", "", "", "^"), StringVec{ "want", "x^2" });
         ensure_equals("escape at end", LLStringUtil::getTokens("it's^ up there^", " ", "", "'", "^"), StringVec{ "it's up", "there^" });
     }
+
+    template<> template<>
+    void string_index_object_t::test<43>()
+    {
+        set_test_name("decorative Unicode simplification");
+
+        ensure_equals("mathematical script and fullwidth text",
+                      utf8str_simplify_decorative(u8"𝓕𝓻𝓲𝓮𝓷𝓭𝓵𝔂 Ｇａｍｅｒ"),
+                      "Friendly Gamer");
+        ensure_equals("small caps and ordinary Unicode",
+                      utf8str_simplify_decorative(u8"ᴀʙᴄ café 日本"),
+                      u8"ABC café 日本");
+    }
 }

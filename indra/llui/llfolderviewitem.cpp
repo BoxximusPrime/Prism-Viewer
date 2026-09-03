@@ -115,8 +115,8 @@ void LLFolderViewItem::initClass()
     sFavoriteContentImg = default_params.favorite_content_image;
     sSuffixFont = getLabelFontForStyle(LLFontGL::NORMAL);
 
-    sFgColor = LLUIColorTable::instance().getColor("MenuItemEnabledColor", DEFAULT_WHITE);
-    sHighlightBgColor = LLUIColorTable::instance().getColor("MenuItemHighlightBgColor", DEFAULT_WHITE);
+    sFgColor = LLUIColorTable::instance().getColor("InventoryItemTextColor", DEFAULT_WHITE);
+    sHighlightBgColor = LLUIColorTable::instance().getColor("InventoryHighlightBgColor", DEFAULT_WHITE);
     sFlashBgColor = LLUIColorTable::instance().getColor("MenuItemFlashBgColor", DEFAULT_WHITE);
     sFocusOutlineColor = LLUIColorTable::instance().getColor("InventoryFocusOutlineColor", DEFAULT_WHITE);
     sMouseOverColor = LLUIColorTable::instance().getColor("InventoryMouseOverColor", DEFAULT_WHITE);
@@ -212,8 +212,8 @@ LLFolderViewItem::LLFolderViewItem(const LLFolderViewItem::Params& p)
 {
     if (!sColorSetInitialized)
     {
-        sFgColor = LLUIColorTable::instance().getColor("MenuItemEnabledColor", DEFAULT_WHITE);
-        sHighlightBgColor = LLUIColorTable::instance().getColor("MenuItemHighlightBgColor", DEFAULT_WHITE);
+        sFgColor = LLUIColorTable::instance().getColor("InventoryItemTextColor", DEFAULT_WHITE);
+        sHighlightBgColor = LLUIColorTable::instance().getColor("InventoryHighlightBgColor", DEFAULT_WHITE);
         sFlashBgColor = LLUIColorTable::instance().getColor("MenuItemFlashBgColor", DEFAULT_WHITE);
         sFocusOutlineColor = LLUIColorTable::instance().getColor("InventoryFocusOutlineColor", DEFAULT_WHITE);
         sMouseOverColor = LLUIColorTable::instance().getColor("InventoryMouseOverColor", DEFAULT_WHITE);
@@ -2649,4 +2649,3 @@ LLFolderViewItem* LLFolderViewFolder::getPreviousFromChild( LLFolderViewItem* it
 
     return result;
 }
-

@@ -128,18 +128,18 @@
   </layout_panel>
   <layout_panel name="bottom_toolbar_panel"
                 auto_resize="false"
-                height="30"
+                height="34"
                 width="1024"
                 mouse_opaque="false">
     <chat_bar
           background_visible="true"
           bg_alpha_color="DkGray2"
-          bottom="-1"
           follows="left|bottom"
-          height="31"
+          height="34"
           layout="topleft"
           left="0"
           name="compact_nearby_chat"
+          top="0"
           visible="true"
           width="380">
       <line_editor
@@ -155,7 +155,7 @@
             spellcheck="true"
             text_pad_left="6"
             tool_tip="Enter to say, Ctrl+Enter to shout, Shift+Enter to whisper, Escape to clear"
-            top="3"
+            top="6"
             width="263" />
       <line_editor
             follows="right|top|bottom"
@@ -166,14 +166,14 @@
             max_length_chars="32"
             name="translate_language"
             tool_tip="Automatically translate outgoing nearby chat to this language or style; leave blank to disable"
-            top="3"
+            top="6"
             width="106" />
       <button name="Say" visible="false" />
     </chat_bar>
     <toolbar layout="topleft"
              button_panel.bg_opaque_image="Rounded_Rect_Top"
              name="toolbar_bottom"
-             height="30"
+             height="34"
              left="380"
              right="-40"
              top="0"

@@ -100,6 +100,7 @@ public:
     void resetData() override;
 
     void refreshName();
+    void refreshTextDisplay();
 
     void onAvatarNameCache(const LLUUID& agent_id, const LLAvatarName& av_name);
 
@@ -276,6 +277,7 @@ public:
 
     void setProfileImageUploading(bool loading);
     void setProfileImageUploaded(const LLUUID &image_asset_id);
+    void refreshTextDisplay();
 
     bool hasUnsavedChanges() override { return mHasUnsavedChanges; }
     void commitUnsavedChanges() override;
@@ -374,6 +376,7 @@ public:
 
 private:
     void onTabChange();
+    void onSimplifyTextChanged();
 
     LLPanelProfileSecondLife*   mPanelSecondlife;
     LLPanelProfileWeb*          mPanelWeb;
@@ -382,6 +385,7 @@ private:
     LLPanelProfileFirstLife*    mPanelFirstlife;
     LLPanelProfileNotes*        mPanelNotes;
     LLTabContainer*             mTabContainer;
+    boost::signals2::connection mSimplifyTextConnection;
 };
 
 #endif //LL_LLPANELPROFILE_H

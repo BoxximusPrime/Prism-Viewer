@@ -355,6 +355,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("boxxy_ao", "floater_boxxy_ao.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyAO>);
     LLFloaterReg::add("boxxy_ao_launcher", "floater_boxxy_ao_launcher.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyAOLauncher>);
     LLFloaterReg::add("boxxy_radar", "floater_boxxy_radar.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyRadar>);
+    LLFloaterReg::add("boxxy_radar_simple", "floater_boxxy_radar_simple.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyRadarSimple>);
 
     LLFloaterReg::add("camera", "floater_camera.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterCamera>);
     LLFloaterReg::add("camera_presets", "floater_camera_presets.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterCameraPresets>);

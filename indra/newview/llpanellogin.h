@@ -29,7 +29,6 @@
 
 #include "llpanel.h"
 #include "llpointer.h"          // LLPointer<>
-#include "llmediactrl.h"    // LLMediaCtrlObserver
 
 class LLLineEditor;
 class LLUIImage;
@@ -38,8 +37,7 @@ class LLSLURL;
 class LLCredential;
 
 class LLPanelLogin:
-    public LLPanel,
-    public LLViewerMediaObserver
+    public LLPanel
 {
     LOG_CLASS(LLPanelLogin);
 public:
@@ -48,9 +46,8 @@ public:
                 void *callback_data);
     ~LLPanelLogin();
 
-    void draw();
-
     virtual void setFocus( bool b );
+    void draw() override;
 
     static void show(const LLRect &rect,
         void (*callback)(S32 option, void* user_data),
@@ -76,8 +73,6 @@ public:
     static void giveFocus();
     static void setAlwaysRefresh(bool refresh);
 
-    // inherited from LLViewerMediaObserver
-    /*virtual*/ void handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event);
     static void updateServer();  // update the combo box, change the login page to the new server, clear the combo
 
     /// to be called from LLStartUp::setStartSLURL
@@ -133,15 +128,11 @@ private:
     unsigned int mPasswordLength;
     unsigned int mLocationLength;
 
-    LLTimer mForceRefreshTimer;
-    bool mForceRefresh {false};
-
     bool mAlertNotif;
     LLButton* mLoginBtn;
     LLLayoutPanel* mGridPanel;
     LLLayoutStack* mLoginStack;
 
-    LLMediaCtrl* mWebBrowser;
 };
 
 #endif

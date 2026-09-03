@@ -37,6 +37,7 @@ private:
 public:
     bool postBuild() override;
     void onOpen(const LLSD& key) override;
+    void onClose(bool app_quitting) override;
     void draw() override;
 
 private:
@@ -88,6 +89,28 @@ private:
     LLFrameTimer                       mRefreshTimer;
     std::string                        mSearchQuery;
     bool                               mForceRebuild = true;
+};
+
+class LLFloaterBoxxyRadarSimple final : public LLFloater
+{
+    friend class LLFloaterReg;
+
+private:
+    explicit LLFloaterBoxxyRadarSimple(const LLSD& key);
+
+public:
+    bool postBuild() override;
+    void onOpen(const LLSD& key) override;
+    void draw() override;
+
+private:
+    void refreshRadar();
+
+    LLTextBox*   mNearNames = nullptr;
+    LLTextBox*   mFarNames  = nullptr;
+    LLTextBox*   mNearTotal = nullptr;
+    LLTextBox*   mFarTotal  = nullptr;
+    LLFrameTimer mRefreshTimer;
 };
 
 #endif // LL_LLFLOATERBOXXYRADAR_H

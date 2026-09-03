@@ -33,6 +33,7 @@
 #include "llfloaterreg.h"
 #include "llfontgl.h"
 #include "llmd5.h"
+#include "llrender.h"
 #include "v4color.h"
 
 #include "llappviewer.h"
@@ -51,10 +52,8 @@
 #include "llstartup.h"
 #include "lltextbox.h"
 #include "llui.h"
-#include "llframetimer.h"
 #include "lluiconstants.h"
 #include "llslurl.h"
-#include "llversioninfo.h"
 #include "llviewerhelp.h"
 #include "llviewertexturelist.h"
 #include "llviewermenu.h"           // for handle_preferences()
@@ -67,9 +66,7 @@
 
 #include "llfloatertos.h"
 #include "lltrans.h"
-#include "llglheaders.h"
 #include "llpanelloginlistener.h"
-#include "stringize.h"
 
 #if LL_WINDOWS
 #pragma warning(disable: 4355)      // 'this' used in initializer list
@@ -311,18 +308,8 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
         onUpdateStartSLURL(start_slurl); // updates grid if needed
     }
 
-    std::string channel = LLVersionInfo::instance().getChannel();
-    std::string version = stringize(LLVersionInfo::instance().getShortVersion(), " (",
-                                    LLVersionInfo::instance().getBuild(), ')');
-
     LLTextBox* forgot_password_text = getChild<LLTextBox>("forgot_password_text");
     forgot_password_text->setClickedCallback(onClickForgotPassword, NULL);
-
-    // get the web browser control
-    mWebBrowser = getChild<LLMediaCtrl>("login_html");
-    mWebBrowser->addObserver(this);
-
-    loadLoginPage();
 
     LLComboBox* username_combo(getChild<LLComboBox>("username_combo"));
     username_combo->setTextChangedCallback(boost::bind(&LLPanelLogin::onUserNameTextEnty, this));
@@ -337,6 +324,26 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
     getChild<LLCheckBoxCtrl>("remember_password")->setCommitCallback(boost::bind(&LLPanelLogin::onRememberPasswordCheck, this));
 
     mAlertListener = LLNotifications::instance().getChannel("Alerts")->connectChanged([this](const LLSD& notify){ return onUpdateNotification(notify); });
+}
+
+void LLPanelLogin::draw()
+{
+    const S32 width = getRect().getWidth();
+    const S32 height = getRect().getHeight();
+
+    gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    gGL.begin(LLRender::TRIANGLE_STRIP);
+    gGL.color4f(0.025f, 0.035f, 0.090f, 1.f);
+    gGL.vertex2i(0, 0);
+    gGL.color4f(0.090f, 0.025f, 0.100f, 1.f);
+    gGL.vertex2i(width, 0);
+    gGL.color4f(0.040f, 0.150f, 0.220f, 1.f);
+    gGL.vertex2i(0, height);
+    gGL.color4f(0.180f, 0.080f, 0.210f, 1.f);
+    gGL.vertex2i(width, height);
+    gGL.end();
+
+    LLPanel::draw();
 }
 
 void LLPanelLogin::addFavoritesToStartLocation()
@@ -855,96 +862,15 @@ void LLPanelLogin::closePanel()
 // static
 void LLPanelLogin::setAlwaysRefresh(bool refresh)
 {
-    if (sInstance && LLStartUp::getStartupState() < STATE_LOGIN_CLEANUP)
-    {
-        if (sInstance->mWebBrowser)
-        {
-            sInstance->mWebBrowser->setAlwaysRefresh(refresh);
-        }
-    }
+    // Login is native-only; retain this API for callers that support old skins.
+    (void)refresh;
 }
 
 
 
 void LLPanelLogin::loadLoginPage()
 {
-    if (!sInstance) return;
-
-    LLURI login_page = LLURI(LLGridManager::getInstance()->getLoginPage());
-    LLSD params(login_page.queryMap());
-
-    LL_DEBUGS("AppInit") << "login_page: " << login_page << LL_ENDL;
-
-    // allow users (testers really) to specify a different login content URL
-    std::string force_login_url = gSavedSettings.getString("ForceLoginURL");
-    if ( force_login_url.length() > 0 )
-    {
-        login_page = LLURI(force_login_url);
-    }
-
-    // Language
-    params["lang"] = LLUI::getLanguage();
-
-    // First Login?
-    if (gSavedSettings.getBOOL("FirstLoginThisInstall"))
-    {
-        params["firstlogin"] = "true"; // not bool: server expects string true
-    }
-
-    // Channel and Version
-    params["version"] = stringize(LLVersionInfo::instance().getShortVersion(), " (",
-                                  LLVersionInfo::instance().getBuild(), ')');
-    params["channel"] = LLVersionInfo::instance().getChannel();
-
-    // Grid
-    params["grid"] = LLGridManager::getInstance()->getGridId();
-
-    // add OS info
-    params["os"] = LLOSInfo::instance().getOSStringSimple();
-
-    // sourceid
-    params["sourceid"] = gSavedSettings.getString("sourceid");
-
-    // login page (web) content version
-    params["login_content_version"] = gSavedSettings.getString("LoginContentVersion");
-
-    // Make an LLURI with this augmented info
-    std::string url = login_page.scheme().empty()? login_page.authority() : login_page.scheme() + "://" + login_page.authority();
-    LLURI login_uri(LLURI::buildHTTP(url,
-                                     login_page.path(),
-                                     params));
-
-    gViewerWindow->setMenuBackgroundColor(false, !LLGridManager::getInstance()->isInProductionGrid());
-
-    if (sInstance->mWebBrowser)
-    {
-        if (sInstance->mWebBrowser->getCurrentNavUrl() != login_uri.asString())
-        {
-            LL_DEBUGS("AppInit") << "loading:    " << login_uri << LL_ENDL;
-            sInstance->mWebBrowser->navigateTo(login_uri.asString(), "text/html");
-        }
-    }
-    else
-    {
-        LL_WARNS("AppInit") << "No web browser control for login panel" << LL_ENDL;
-    }
-}
-
-void LLPanelLogin::handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event)
-{
-    constexpr F32 REFRESH_DELAY = 2.f;
-    switch (event)
-    {
-        case MEDIA_EVENT_SIZE_CHANGED:
-        {
-            mForceRefreshTimer.reset();
-            mForceRefreshTimer.setTimerExpirySec(REFRESH_DELAY);
-            mForceRefresh = true;
-            break;
-        }
-        default:
-            break;
-    }
+    // Login content is intentionally native-only.
 }
 
 //---------------------------------------------------------------------------
@@ -1206,8 +1132,6 @@ void LLPanelLogin::updateServer()
             sInstance->getChild<LLLayoutPanel>("links")->setVisible(system_grid);
             sInstance->getChildView("forgot_password_text")->setVisible(system_grid);
 
-            // grid changed so show new splash screen (possibly)
-            loadLoginPage();
         }
         catch (LLInvalidGridName ex)
         {
@@ -1423,20 +1347,4 @@ void LLPanelLogin::collapseGridPanel(bool collapse)
     }
     mLoginStack->collapsePanel(mGridPanel, collapse);
     mLoginStack->updateLayout();
-}
-
-void LLPanelLogin::draw()
-{
-    LLPanel::draw();
-
-    // Workaround for the black screen issue (see #5607)
-    // Should be removed after the proper fix for resizing is implemented
-    if (mForceRefresh && mForceRefreshTimer.hasExpired())
-    {
-        if (mWebBrowser->getMediaPlugin())
-        {
-            mWebBrowser->getMediaPlugin()->forceRenderRefresh();
-        }
-        mForceRefresh = false;
-    }
 }

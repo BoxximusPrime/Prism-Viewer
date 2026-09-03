@@ -19,6 +19,7 @@
 #include "llagent.h"
 #include "llanimationstates.h"
 #include "llfoldertype.h"
+#include "llfloaterreg.h"
 #include "llinventoryfunctions.h"
 #include "llinventorymodel.h"
 #include "llinventorymodelbackgroundfetch.h"
@@ -154,6 +155,11 @@ void LLBoxxyAO::onLoginComplete()
             gToolBarView->addCommand(command_id, LLToolBarEnums::TOOLBAR_RIGHT);
         }
         gSavedPerAccountSettings.setBOOL("BoxxyRadarToolbarInstalled", true);
+    }
+
+    if (gSavedSettings.getBOOL("BoxxySimpleRadarEnabled") && !LLFloaterReg::instanceVisible("boxxy_radar"))
+    {
+        LLFloaterReg::showInstance("boxxy_radar_simple", LLSD(), false);
     }
 }
 

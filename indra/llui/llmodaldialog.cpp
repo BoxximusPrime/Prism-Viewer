@@ -293,11 +293,6 @@ bool LLModalDialog::handleKeyHere(KEY key, MASK mask )
 // virtual
 void LLModalDialog::draw()
 {
-    static LLUIColor shadow_color = LLUIColorTable::instance().getColor("ColorDropShadow");
-
-    gl_drop_shadow( 0, getRect().getHeight(), getRect().getWidth(), 0,
-        shadow_color, DROP_SHADOW_FLOATER);
-
     LLFloater::draw();
 
     // Focus retrieval moved to LLFloaterView::refresh()

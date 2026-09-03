@@ -30,6 +30,7 @@
 
 #include "llbutton.h"
 #include "llfocusmgr.h"
+#include "lliconctrl.h"
 #include "llnotifications.h"
 #include "llviewercontrol.h"
 
@@ -108,6 +109,7 @@ LLToast::LLToast(const LLToast::Params& p)
     mCanBeStored(p.can_be_stored),
     mHideBtnEnabled(p.enable_hide_btn),
     mHideBtn(NULL),
+    mAnchorArrow(NULL),
     mPanel(NULL),
     mNotification(p.notification),
     mIsHidden(false),
@@ -115,7 +117,8 @@ LLToast::LLToast(const LLToast::Params& p)
     mIsTip(p.is_tip),
     mWrapperPanel(NULL),
     mIsFading(false),
-    mIsHovered(false)
+    mIsHovered(false),
+    mHasChicletAnchor(false)
 {
     mTimer = std::make_unique<LLToastLifeTimer>(this, p.lifetime_secs);
 
@@ -124,6 +127,7 @@ LLToast::LLToast(const LLToast::Params& p)
     setCanDrag(false);
 
     mWrapperPanel = getChild<LLPanel>("wrapper_panel");
+    mAnchorArrow = getChild<LLIconCtrl>("chiclet_anchor_arrow");
 
     setBackgroundOpaque(true); // *TODO: obsolete
     updateTransparency();
@@ -374,6 +378,16 @@ void LLToast::insertPanel(LLPanel* panel)
 //--------------------------------------------------------------------------
 void LLToast::draw()
 {
+    F32 entrance = 1.f;
+    if (mHasChicletAnchor)
+    {
+        entrance = llclamp(mEntranceTimer.getElapsedTimeF32() / 0.2f, 0.f, 1.f);
+        entrance = entrance * entrance * (3.f - 2.f * entrance);
+    }
+
+    LLViewDrawContext context(entrance);
+    LLUI::pushMatrix();
+    LLUI::translate(0.f, (1.f - entrance) * 8.f);
     LLFloater::draw();
 
     if(!isBackgroundVisible())
@@ -387,6 +401,26 @@ void LLToast::draw()
         {
             drawChild(mHideBtn);
         }
+    }
+    LLUI::popMatrix();
+}
+
+void LLToast::setChicletAnchor(S32 local_x)
+{
+    if (!mHasChicletAnchor)
+    {
+        mEntranceTimer.reset();
+        mHasChicletAnchor = true;
+    }
+
+    if (mAnchorArrow)
+    {
+        const S32 arrow_width = 11;
+        const S32 arrow_height = 8;
+        const S32 left = llclamp(local_x - arrow_width / 2, 0, getRect().getWidth() - arrow_width);
+        mAnchorArrow->setRect(LLRect(left, getRect().getHeight(), left + arrow_width,
+            getRect().getHeight() - arrow_height));
+        mAnchorArrow->setVisible(true);
     }
 }
 
@@ -638,4 +672,3 @@ void LLToast::cleanupToasts()
 {
     LLInstanceTracker<LLToast>::instance_snapshot().deleteAll();
 }
-

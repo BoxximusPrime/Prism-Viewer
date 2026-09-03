@@ -290,6 +290,10 @@ target_link_libraries(
         ll::sse2neon
     )
 
+if (WINDOWS)
+  target_link_libraries(llcommon Normaliz)
+endif ()
+
 target_include_directories(llcommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(llcommon PRIVATE ${CMAKE_SOURCE_DIR}/llmath)
 

@@ -74,6 +74,9 @@ LLScrollbar::LLScrollbar(const Params & p)
         mPageSize( p.page_size ),
         mStepSize( p.step_size ),
         mDocChanged(false),
+        mWheelScrollTarget(p.doc_pos),
+        mWheelScrollActive(false),
+        mAnimatingWheelScroll(false),
         mDragStartX( 0 ),
         mDragStartY( 0 ),
         mHoverGlowStrength(0.15f),
@@ -147,6 +150,11 @@ void LLScrollbar::setDocParams( S32 size, S32 pos )
 bool LLScrollbar::setDocPos(S32 pos, bool update_thumb)
 {
     pos = llclamp(pos, 0, getDocPosMax());
+    if (!mAnimatingWheelScroll)
+    {
+        mWheelScrollTarget = pos;
+        mWheelScrollActive = false;
+    }
     if (pos != mDocPos)
     {
         mDocPos = pos;
@@ -406,8 +414,10 @@ bool LLScrollbar::handleHover(S32 x, S32 y, MASK mask)
 
 bool LLScrollbar::handleScrollWheel(S32 x, S32 y, S32 clicks)
 {
-    bool handled = changeLine( clicks * mStepSize, true );
-    return handled;
+    const S32 old_target = mWheelScrollActive ? mWheelScrollTarget : mDocPos;
+    mWheelScrollTarget = llclamp(old_target + ll_round(clicks * mStepSize * 2.8f), 0, getDocPosMax());
+    mWheelScrollActive = mWheelScrollTarget != mDocPos;
+    return mWheelScrollTarget != old_target;
 }
 
 bool LLScrollbar::handleScrollHWheel(S32 x, S32 y, S32 clicks)
@@ -415,7 +425,7 @@ bool LLScrollbar::handleScrollHWheel(S32 x, S32 y, S32 clicks)
     bool handled = false;
     if (LLScrollbar::HORIZONTAL == mOrientation)
     {
-        handled = changeLine(clicks * mStepSize, true);
+        handled = handleScrollWheel(x, y, clicks);
     }
     return handled;
 }
@@ -492,6 +502,21 @@ void LLScrollbar::reshape(S32 width, S32 height, bool called_from_parent)
 void LLScrollbar::draw()
 {
     if (!getRect().isValid()) return;
+
+    if (mWheelScrollActive)
+    {
+        const F32 interpolant = LLSmoothInterpolation::getInterpolant(0.053f);
+        S32 next_pos = ll_round(lerp((F32)mDocPos, (F32)mWheelScrollTarget, interpolant));
+        if (next_pos == mDocPos)
+        {
+            next_pos += mWheelScrollTarget > mDocPos ? 1 : -1;
+        }
+
+        mAnimatingWheelScroll = true;
+        setDocPos(next_pos);
+        mAnimatingWheelScroll = false;
+        mWheelScrollActive = mDocPos != mWheelScrollTarget;
+    }
 
     if(mBGVisible)
     {

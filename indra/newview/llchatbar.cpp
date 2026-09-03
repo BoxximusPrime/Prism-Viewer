@@ -145,6 +145,7 @@ bool LLChatBar::postBuild()
     mInputEditor->setEnableLineHistory(true);
 
     mIsBuilt = true;
+    refresh();
 
     return true;
 }
@@ -202,6 +203,8 @@ bool LLChatBar::handleKeyHere( KEY key, MASK mask )
 
 void LLChatBar::refresh()
 {
+    updateTranslationControls();
+
     // HACK: Leave the name of the gesture in place for a few seconds.
     const F32 SHOW_GESTURE_NAME_TIME = 2.f;
     if (mGestureLabelTimer.getStarted() && mGestureLabelTimer.getElapsedTimeF32() > SHOW_GESTURE_NAME_TIME)
@@ -217,7 +220,31 @@ void LLChatBar::refresh()
     }
 
     getChildView("Say")->setEnabled(mInputEditor->getText().size() > 0);
+}
 
+void LLChatBar::draw()
+{
+    updateTranslationControls();
+    LLPanel::draw();
+}
+
+void LLChatBar::updateTranslationControls()
+{
+    mInputEditor->setVisible(true);
+    if (LLView* translate_editor = findChild<LLView>("translate_language"))
+    {
+        const bool translate_enabled = gSavedSettings.getBOOL("TranslateChat");
+        translate_editor->setVisible(translate_enabled);
+
+        LLRect input_rect = mInputEditor->getRect();
+        input_rect.mRight = translate_enabled
+            ? translate_editor->getRect().mLeft - 5
+            : getLocalRect().getWidth() - 4;
+        if (input_rect != mInputEditor->getRect())
+        {
+            mInputEditor->setShape(input_rect);
+        }
+    }
 }
 
 void LLChatBar::refreshGestures()
@@ -496,6 +523,7 @@ void LLChatBar::startChat(const char* line)
     }
 
     gChatBar->setVisible(true);
+    gChatBar->refresh();
     gChatBar->mInputEditor->setFocus(true);
 
     if (line)
