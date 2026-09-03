@@ -13,11 +13,21 @@
  save_rect="true"
  title="Profile"
 >
+    <check_box
+     name="simplify_profile_text"
+     label="Simplify profile text"
+     control_name="SimplifyProfileText"
+     top="2"
+     right="-10"
+     height="20"
+     width="155"
+     follows="top|right"
+     layout="topleft" />
     <panel
      name="panel_profile_view"
-     top="0"
+     top="22"
      left="0"
-     height="500"
+     height="478"
      width="505"
      follows="all"
      class="panel_profile"
@@ -26,7 +36,7 @@
          name="panel_profile_tabs"
          top_pad="5"
          left="0"
-         height="500"
+         height="478"
          width="505"
          follows="all"
          layout="topleft"

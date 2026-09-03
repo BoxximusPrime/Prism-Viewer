@@ -827,6 +827,11 @@ void LLIMProcessing::processNewMessage(LLUUID from_id,
         break;
         case IM_GROUP_INVITATION:
         {
+            if (gSavedSettings.getBOOL("IgnoreGroupInvites"))
+            {
+                return;
+            }
+
             if (!is_muted)
             {
                 // group is not blocked, but we still need to check agent that sent the invitation
@@ -1519,7 +1524,7 @@ void LLIMProcessing::processNewMessage(LLUUID from_id,
     }
 
     LLWindow* viewer_window = gViewerWindow->getWindow();
-    if (viewer_window && viewer_window->getMinimized())
+    if (viewer_window)
     {
         viewer_window->flashIcon(5.f);
     }

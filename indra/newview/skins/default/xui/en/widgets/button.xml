@@ -6,6 +6,10 @@
    -->
 <button image_unselected="PushButton_Off"
         image_selected="PushButton_Selected"
+        image_hover_unselected="PushButton_Over"
+        image_hover_selected="PushButton_On_Selected"
+        image_pressed="PushButton_Selected"
+        image_pressed_selected="PushButton_Selected_Press"
         image_disabled_selected="PushButton_Selected_Disabled"
         image_disabled="PushButton_Disabled"
         image_top_pad="0"

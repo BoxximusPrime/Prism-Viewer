@@ -38,6 +38,7 @@
 #include "llrecentpeople.h"
 
 #include "llviewercontrol.h"
+#include "llviewerchat.h"
 
 #include "llfloaterreg.h"//for LLFloaterReg::getTypedInstance
 #include "llviewerwindow.h"//for screen channel position
@@ -722,21 +723,22 @@ void LLFloaterIMNearbyChatHandler::processChat(const LLChat& chat_msg,
         {
             LLUIColor text_color;
             F32 r_color_alpha = 1.0f;
-            S32 white_prefix_chars = 0;
+            S32 name_prefix_chars = 0;
             LLViewerChat::getChatColor(chat_msg, text_color, r_color_alpha);
             if (chat_msg.mChatStyle != CHAT_STYLE_IRC && !chat_msg.mFromName.empty())
             {
                 toast_msg = chat_msg.mFromName + ": " + toast_msg;
-                white_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName + ": ").length();
+                name_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName + ": ").length();
             }
             else if (chat_msg.mChatStyle == CHAT_STYLE_IRC && !chat_msg.mFromName.empty())
             {
-                white_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName).length();
+                name_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName).length();
             }
             if (gConsole)
             {
                 gConsole->addChatLine(toast_msg, text_color % r_color_alpha,
-                    chat_msg.mTranslationRequestID, white_prefix_chars);
+                    chat_msg.mTranslationRequestID, name_prefix_chars,
+                    LLViewerChat::getSenderNameColor(chat_msg));
                 gConsole->setVisible(true);
             }
         }

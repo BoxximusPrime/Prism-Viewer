@@ -2000,8 +2000,6 @@ void LLFloater::draw()
     // draw background
     if( isBackgroundVisible() )
     {
-        drawShadow(this);
-
         S32 left = LLPANEL_BORDER_WIDTH;
         S32 top = getRect().getHeight() - LLPANEL_BORDER_WIDTH;
         S32 right = getRect().getWidth() - LLPANEL_BORDER_WIDTH;
@@ -2355,6 +2353,15 @@ void LLFloater::buildButtons(const Params& floater_params)
         p.name(sButtonNames[i]);
         p.rect(btn_rect);
         p.image_unselected = getButtonImage(floater_params, (EFloaterButton)i);
+        // Floater chrome uses icon-only hover feedback, never push-button chrome.
+        if (i == BUTTON_CLOSE)
+        {
+            p.image_hover_unselected = LLUI::getUIImage("Icon_Close_Hover");
+        }
+        else
+        {
+            p.image_hover_unselected = static_cast<LLUIImage*>(nullptr);
+        }
         // Selected, no matter if hovered or not, is "pressed"
         LLUIImage* pressed_image = getButtonPressedImage(floater_params, (EFloaterButton)i);
         p.image_selected = pressed_image;

@@ -56,6 +56,7 @@ public:
 
     void createPick(const LLPickData &data);
     void selectPick(const LLUUID& pick_id);
+    void refreshTextDisplay();
 
     void processProperties(void* data, EAvatarProcessorType type) override;
     void processProperties(const LLAvatarData* avatar_picks);
@@ -136,6 +137,7 @@ public:
     virtual void apply();
 
     void updateTabLabel(const std::string& title);
+    void refreshTextDisplay();
 
     //This stuff we got from LLRemoteParcelObserver, in the last one we intentionally do nothing
     void processParcelInfo(const LLParcelData& parcel_data) override;
@@ -244,6 +246,7 @@ protected:
     LLUUID mPickId;
     LLUUID mRequestedId;
     std::string mPickNameStr;
+    std::string mPickDescriptionStr;
     std::string mPickLocationStr;
     LLTimer mLastRequestTimer;
 

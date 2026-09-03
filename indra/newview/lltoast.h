@@ -32,6 +32,7 @@
 #include "llmodaldialog.h"
 #include "lleventtimer.h"
 #include "llnotificationptr.h"
+#include "llframetimer.h"
 
 #include "llviewercontrol.h"
 #include "lltexteditor.h"
@@ -39,6 +40,8 @@
 
 #define MOUSE_LEAVE false
 #define MOUSE_ENTER true
+
+class LLIconCtrl;
 
 namespace LLNotificationsUI
 {
@@ -204,6 +207,8 @@ public:
 
     LLHandle<LLToast> getHandle() const { return getDerivedHandle<LLToast>(); }
 
+    void setChicletAnchor(S32 local_x);
+
 protected:
     void updateTransparency();
 
@@ -230,6 +235,7 @@ private:
 
     LLPanel*    mPanel;
     LLButton*   mHideBtn;
+    LLIconCtrl* mAnchorArrow;
 
     LLColor4    mBgColor;
     bool        mCanFade;
@@ -240,6 +246,8 @@ private:
     bool        mIsTip;
     bool        mIsFading;
     bool        mIsHovered;
+    bool        mHasChicletAnchor;
+    LLFrameTimer mEntranceTimer;
 
     toast_signal_t mOnFadeSignal;
     toast_signal_t mOnDeleteToastSignal;

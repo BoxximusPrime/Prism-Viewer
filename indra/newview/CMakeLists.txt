@@ -1932,6 +1932,9 @@ if (WINDOWS)
         ${AUTOBUILD_INSTALL_DIR}/fonts
         ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/fonts
       COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/boxxy_fonts
+        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/fonts
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/skins/default
         ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/skins/default
       DEPENDS ${viewer_XUI_FILES} ${viewer_CHARACTER_FILES}

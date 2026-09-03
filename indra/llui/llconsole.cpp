@@ -81,7 +81,7 @@ void LLConsole::setLinePersistTime(F32 seconds)
     mFadeTime = mLinePersistTime - FADE_DURATION;
 }
 
-void LLConsole::addChatLine(const std::string& utf8line, const LLColor4& color, const LLUUID& id, S32 white_prefix_chars)
+void LLConsole::addChatLine(const std::string& utf8line, const LLColor4& color, const LLUUID& id, S32 prefix_chars, const LLColor4& prefix_color)
 {
     if (utf8line.empty())
     {
@@ -89,21 +89,21 @@ void LLConsole::addChatLine(const std::string& utf8line, const LLColor4& color, 
     }
 
     mParagraphs.emplace_back(utf8str_to_wstring(utf8line), color,
-        mTimer.getElapsedTimeF32(), mFont, (F32)getRect().getWidth(), id, white_prefix_chars);
+        mTimer.getElapsedTimeF32(), mFont, (F32)getRect().getWidth(), id, prefix_chars, prefix_color);
     while (mParagraphs.size() > mMaxLines)
     {
         mParagraphs.pop_front();
     }
 }
 
-void LLConsole::updateChatLine(const LLUUID& id, const std::string& utf8line, const LLColor4& color, S32 white_prefix_chars)
+void LLConsole::updateChatLine(const LLUUID& id, const std::string& utf8line, const LLColor4& color, S32 prefix_chars, const LLColor4& prefix_color)
 {
     for (auto it = mParagraphs.rbegin(); it != mParagraphs.rend(); ++it)
     {
         if (it->mID == id)
         {
             *it = Paragraph(utf8str_to_wstring(utf8line), color, it->mAddTime,
-                mFont, (F32)getRect().getWidth(), id, white_prefix_chars);
+                mFont, (F32)getRect().getWidth(), id, prefix_chars, prefix_color);
             return;
         }
     }
@@ -146,15 +146,15 @@ void LLConsole::setFontSize(S32 size_index)
     }
     else if (0 == size_index)
     {
-        mFont = LLFontGL::getFontSansSerif();
+        mFont = LLFontGL::getFont(LLFontDescriptor("SansSerif", "ChatSmall", 0));
     }
     else if (1 == size_index)
     {
-        mFont = LLFontGL::getFontSansSerifBig();
+        mFont = LLFontGL::getFont(LLFontDescriptor("SansSerif", "ChatMedium", 0));
     }
     else
     {
-        mFont = LLFontGL::getFontSansSerifHuge();
+        mFont = LLFontGL::getFont(LLFontDescriptor("SansSerif", "ChatLarge", 0));
     }
     // Make sure the font exists
     if (mFont == NULL)
@@ -287,16 +287,16 @@ void LLConsole::draw()
 }
 
 //Generate highlight color segments for this paragraph.  Pass in default color of paragraph.
-void LLConsole::Paragraph::makeParagraphColorSegments (const LLColor4 &color, S32 white_prefix_chars)
+void LLConsole::Paragraph::makeParagraphColorSegments (const LLColor4 &color, S32 prefix_chars, const LLColor4& prefix_color)
 {
-    white_prefix_chars = llclamp(white_prefix_chars, 0, (S32)mParagraphText.length());
-    if (white_prefix_chars > 0)
+    prefix_chars = llclamp(prefix_chars, 0, (S32)mParagraphText.length());
+    if (prefix_chars > 0)
     {
-        mParagraphColorSegments.push_back({ white_prefix_chars, LLColor4::white });
+        mParagraphColorSegments.push_back({ prefix_chars, prefix_color });
     }
-    if (white_prefix_chars < (S32)mParagraphText.length())
+    if (prefix_chars < (S32)mParagraphText.length())
     {
-        mParagraphColorSegments.push_back({ (S32)mParagraphText.length() - white_prefix_chars, color });
+        mParagraphColorSegments.push_back({ (S32)mParagraphText.length() - prefix_chars, color });
     }
 }
 
@@ -397,10 +397,10 @@ void LLConsole::Paragraph::updateLines(F32 screen_width, const LLFontGL* font, b
 }
 
 //Pass in the string and the default color for this block of text.
-LLConsole::Paragraph::Paragraph (LLWString str, const LLColor4 &color, F32 add_time, const LLFontGL* font, F32 screen_width, const LLUUID& id, S32 white_prefix_chars)
+LLConsole::Paragraph::Paragraph (LLWString str, const LLColor4 &color, F32 add_time, const LLFontGL* font, F32 screen_width, const LLUUID& id, S32 prefix_chars, const LLColor4& prefix_color)
 :   mParagraphText(str), mAddTime(add_time), mMaxWidth(-1), mID(id)
 {
-    makeParagraphColorSegments(color, white_prefix_chars);
+    makeParagraphColorSegments(color, prefix_chars, prefix_color);
     updateLines( screen_width, font );
 }
 

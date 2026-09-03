@@ -51,6 +51,7 @@
 #include "llviewergenericmessage.h" // send_generic_message
 #include "llviewerparcelmgr.h"
 #include "llviewerregion.h"
+#include "llviewercontrol.h"
 
 static LLPanelInjector<LLPanelProfilePicks> t_panel_profile_picks("panel_profile_picks");
 static LLPanelInjector<LLPanelProfilePick> t_panel_profile_pick("panel_profile_pick");
@@ -509,6 +510,17 @@ bool LLPanelProfilePicks::canDeletePick()
     return (mTabContainer->getTabCount() > 0);
 }
 
+void LLPanelProfilePicks::refreshTextDisplay()
+{
+    for (S32 tab_idx = 0; tab_idx < mTabContainer->getTabCount(); ++tab_idx)
+    {
+        if (LLPanelProfilePick* pick_panel = dynamic_cast<LLPanelProfilePick*>(mTabContainer->getPanelByIndex(tab_idx)))
+        {
+            pick_panel->refreshTextDisplay();
+        }
+    }
+}
+
 
 //-----------------------------------------------------------------------------
 // LLPanelProfilePick
@@ -736,8 +748,8 @@ void LLPanelProfilePick::setSnapshotId(const LLUUID& id)
 
 void LLPanelProfilePick::setPickName(const std::string& name)
 {
-    mPickName->setValue(name);
     mPickNameStr = name;
+    refreshTextDisplay();
 }
 
 const std::string LLPanelProfilePick::getPickName()
@@ -747,7 +759,8 @@ const std::string LLPanelProfilePick::getPickName()
 
 void LLPanelProfilePick::setPickDesc(const std::string& desc)
 {
-    mPickDescription->setValue(desc);
+    mPickDescriptionStr = desc;
+    refreshTextDisplay();
 }
 
 void LLPanelProfilePick::setPickLocation(const LLUUID &parcel_id, const std::string& location)
@@ -758,7 +771,8 @@ void LLPanelProfilePick::setPickLocation(const LLUUID &parcel_id, const std::str
 
 void LLPanelProfilePick::setPickLocation(const std::string& location)
 {
-    mPickLocation->setValue(location);
+    mPickLocationStr = location;
+    refreshTextDisplay();
     // Pick location can be set with a long 'substitute' value or
     // just a long value.
     // If user sets cursor at the end, application of the substitute
@@ -766,8 +780,16 @@ void LLPanelProfilePick::setPickLocation(const std::string& location)
     // gets restored or set, text position isn't, so just drop cursor
     // position.
     mPickLocation->setCursor(0);
-    mPickLocationStr = location;
     mLastRequestTimer.reset();
+}
+
+void LLPanelProfilePick::refreshTextDisplay()
+{
+    const bool simplify = gSavedSettings.getBOOL("SimplifyProfileText") && !getSelfProfile();
+    mPickName->setValue(simplify ? utf8str_simplify_decorative(mPickNameStr) : mPickNameStr);
+    mPickDescription->setValue(simplify ? utf8str_simplify_decorative(mPickDescriptionStr) : mPickDescriptionStr);
+    mPickLocation->setValue(simplify ? utf8str_simplify_decorative(mPickLocationStr) : mPickLocationStr);
+    mPickLocation->setCursor(0);
 }
 
 void LLPanelProfilePick::onClickMap()

@@ -29,6 +29,9 @@
 
 // newview includes
 #include "llagent.h"    // gAgent
+#include "llavatarnamecache.h"
+#include "llboxxyvip.h"
+#include "llcallingcard.h"
 #include "llslurl.h"
 #include "lluicolor.h"
 #include "lluicolortable.h"
@@ -40,6 +43,23 @@
 
 // LLViewerChat
 LLViewerChat::font_change_signal_t LLViewerChat::sChatFontChangedSignal;
+
+LLColor4 LLViewerChat::getSenderNameColor(const LLChat& chat)
+{
+    if (chat.mSourceType == CHAT_SOURCE_AGENT && chat.mFromID.notNull() && chat.mFromID != gAgentID)
+    {
+        LLAvatarName avatar_name;
+        if (LLAvatarNameCache::get(chat.mFromID, &avatar_name) && LLBoxxyVIP::matches(avatar_name))
+        {
+            return LLUIColorTable::instance().getColor("BoxxyRadarVIPColor").get();
+        }
+        if (LLAvatarTracker::instance().isBuddy(chat.mFromID))
+        {
+            return LLUIColorTable::instance().getColor("BoxxyRadarNearColor").get();
+        }
+    }
+    return LLColor4::white;
+}
 
 //static
 void LLViewerChat::getChatColor(const LLChat& chat, LLUIColor& r_color, F32& r_color_alpha)

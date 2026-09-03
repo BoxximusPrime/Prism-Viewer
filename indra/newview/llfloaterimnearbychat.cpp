@@ -813,11 +813,11 @@ void LLFloaterIMNearbyChat::updateTranslatedMessage(const LLUUID& request_id,
     if (gConsole)
     {
         std::string console_text = updated.mText;
-        S32 white_prefix_chars = 0;
+        S32 name_prefix_chars = 0;
         if (updated.mChatStyle == CHAT_STYLE_IRC)
         {
             console_text = updated.mFromName;
-            white_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName).length();
+            name_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName).length();
             if (updated.mText.length() > 3)
             {
                 console_text += updated.mText.substr(3);
@@ -826,7 +826,7 @@ void LLFloaterIMNearbyChat::updateTranslatedMessage(const LLUUID& request_id,
         else if (!updated.mFromName.empty())
         {
             console_text = updated.mFromName + ": " + console_text;
-            white_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName + ": ").length();
+            name_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName + ": ").length();
         }
         if (!updated.mTranslatedText.empty())
         {
@@ -836,7 +836,8 @@ void LLFloaterIMNearbyChat::updateTranslatedMessage(const LLUUID& request_id,
         LLUIColor text_color;
         F32 color_alpha = 1.f;
         LLViewerChat::getChatColor(updated, text_color, color_alpha);
-        gConsole->updateChatLine(request_id, console_text, text_color % color_alpha, white_prefix_chars);
+        gConsole->updateChatLine(request_id, console_text, text_color % color_alpha, name_prefix_chars,
+                                 LLViewerChat::getSenderNameColor(updated));
     }
 
     if (log_to_file && gSavedPerAccountSettings.getS32("KeepConversationLogTranscripts") > 1)

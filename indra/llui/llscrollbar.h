@@ -139,6 +139,9 @@ private:
     S32                 mPageSize;      // Maximum number of lines that can be seen at one time.
     S32                 mStepSize;
     bool                mDocChanged;
+    S32                 mWheelScrollTarget;
+    bool                mWheelScrollActive;
+    bool                mAnimatingWheelScroll;
 
     LLRect              mThumbRect;
     S32                 mDragStartX;

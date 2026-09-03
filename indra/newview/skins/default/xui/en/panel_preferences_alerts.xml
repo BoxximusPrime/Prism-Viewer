@@ -46,6 +46,16 @@
      top_pad="4"	
      name="notify_money_received_checkbox"     
      width="300" />   
+    <check_box
+     control_name="IgnoreGroupInvites"
+     height="16"
+     label="Ignore group invites"
+     layout="topleft"
+     left="10"
+     name="ignore_group_invites_checkbox"
+     top_pad="4"
+     tool_tip="Discard incoming group invitations without showing them in the viewer."
+     width="300" />
     <text
      type="string"
      length="1"

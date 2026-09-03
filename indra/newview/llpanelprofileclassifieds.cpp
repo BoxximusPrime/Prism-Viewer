@@ -57,6 +57,7 @@
 #include "llviewergenericmessage.h" // send_generic_message
 #include "llviewerparcelmgr.h"
 #include "llviewerregion.h"
+#include "llviewercontrol.h"
 #include "llviewertexture.h"
 #include "llviewertexture.h"
 
@@ -530,6 +531,17 @@ void LLPanelProfileClassifieds::commitUnsavedChanges()
         }
     }
 }
+
+void LLPanelProfileClassifieds::refreshTextDisplay()
+{
+    for (S32 tab_idx = 0; tab_idx < mTabContainer->getTabCount(); ++tab_idx)
+    {
+        if (LLPanelProfileClassified* panel = dynamic_cast<LLPanelProfileClassified*>(mTabContainer->getPanelByIndex(tab_idx)))
+        {
+            panel->refreshTextDisplay();
+        }
+    }
+}
 //-----------------------------------------------------------------------------
 // LLDispatchClassifiedClickThrough
 //-----------------------------------------------------------------------------
@@ -927,9 +939,9 @@ void LLPanelProfileClassified::onCancelClick()
 {
     if (isNew())
     {
-        mClassifiedNameEdit->setValue(mClassifiedNameText->getValue());
-        mClassifiedDescEdit->setValue(mClassifiedDescText->getValue());
-        mLocationEdit->setValue(mLocationText->getValue());
+        mClassifiedNameEdit->setValue(mClassifiedNameStr);
+        mClassifiedDescEdit->setValue(mClassifiedDescriptionStr);
+        mLocationEdit->setValue(mClassifiedLocationStr);
         mCategoryCombo->setCurrentByIndex(0);
         mContentTypeCombo->setCurrentByIndex(0);
         mAutoRenewEdit->setValue(false);
@@ -937,7 +949,7 @@ void LLPanelProfileClassified::onCancelClick()
     }
     else
     {
-        updateTabLabel(mClassifiedNameText->getValue());
+        updateTabLabel(mClassifiedNameStr);
 
         // Reload data to undo changes to forms
         LLAvatarPropertiesProcessor::getInstance()->sendClassifiedInfoRequest(getClassifiedId());
@@ -1038,8 +1050,11 @@ void LLPanelProfileClassified::resetData()
 
 void LLPanelProfileClassified::setClassifiedName(const std::string& name)
 {
-    mClassifiedNameText->setValue(name);
+    mClassifiedNameStr = name;
     mClassifiedNameEdit->setValue(name);
+    mClassifiedNameText->setValue(gSavedSettings.getBOOL("SimplifyProfileText")
+        ? utf8str_simplify_decorative(name)
+        : name);
 }
 
 std::string LLPanelProfileClassified::getClassifiedName()
@@ -1049,9 +1064,11 @@ std::string LLPanelProfileClassified::getClassifiedName()
 
 void LLPanelProfileClassified::setDescription(const std::string& desc)
 {
-    mClassifiedDescText->setValue(desc);
+    mClassifiedDescriptionStr = desc;
     mClassifiedDescEdit->setValue(desc);
-
+    mClassifiedDescText->setValue(gSavedSettings.getBOOL("SimplifyProfileText")
+        ? utf8str_simplify_decorative(desc)
+        : desc);
     updateInfoRect();
 }
 
@@ -1062,13 +1079,31 @@ std::string LLPanelProfileClassified::getDescription()
 
 void LLPanelProfileClassified::setClassifiedLocation(const std::string& location)
 {
-    mLocationText->setValue(location);
+    mClassifiedLocationStr = location;
     mLocationEdit->setValue(location);
+    mLocationText->setValue(gSavedSettings.getBOOL("SimplifyProfileText")
+        ? utf8str_simplify_decorative(location)
+        : location);
 }
 
 std::string LLPanelProfileClassified::getClassifiedLocation()
 {
-    return mLocationText->getValue().asString();
+    return mClassifiedLocationStr;
+}
+
+void LLPanelProfileClassified::refreshTextDisplay()
+{
+    const bool simplify = gSavedSettings.getBOOL("SimplifyProfileText");
+    mClassifiedNameText->setValue(simplify
+        ? utf8str_simplify_decorative(mClassifiedNameStr)
+        : mClassifiedNameStr);
+    mClassifiedDescText->setValue(simplify
+        ? utf8str_simplify_decorative(mClassifiedDescriptionStr)
+        : mClassifiedDescriptionStr);
+    mLocationText->setValue(simplify
+        ? utf8str_simplify_decorative(mClassifiedLocationStr)
+        : mClassifiedLocationStr);
+    updateInfoRect();
 }
 
 void LLPanelProfileClassified::setSnapshotId(const LLUUID& id)

@@ -66,6 +66,17 @@
     Toast text;
   </text>
  </panel>
+  <icon
+    follows="top"
+    height="8"
+    image_name="hint_arrow_up"
+    layout="topleft"
+    left="0"
+    mouse_opaque="false"
+    name="chiclet_anchor_arrow"
+    top="0"
+    visible="false"
+    width="11" />
   <button
     layout="topleft"
     top="0"

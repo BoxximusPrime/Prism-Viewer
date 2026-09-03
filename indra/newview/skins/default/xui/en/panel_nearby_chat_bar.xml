@@ -46,6 +46,7 @@
      name="translate_language"
      tool_tip="Automatically translate outgoing nearby chat to this language or style; leave blank to disable"
      top="2"
+     visibility_control="TranslateChat"
      width="90" />
     <button
      follows="right"

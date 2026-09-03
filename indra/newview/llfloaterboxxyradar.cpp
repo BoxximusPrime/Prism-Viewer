@@ -20,6 +20,7 @@
 #include "llcallingcard.h"
 #include "llfiltereditor.h"
 #include "llflatlistview.h"
+#include "llfloaterreg.h"
 #include "lliconctrl.h"
 #include "lllineeditor.h"
 #include "lllayoutstack.h"
@@ -28,6 +29,7 @@
 #include "llpanelpeoplemenus.h"
 #include "llscrolllistctrl.h"
 #include "llspeakers.h"
+#include "llstyle.h"
 #include "lltextbox.h"
 #include "lluicolortable.h"
 #include "llviewercontrol.h"
@@ -46,6 +48,9 @@ namespace
 constexpr F64 METERS_TO_YARDS       = 1.0936132983377078;
 constexpr F64 NEAR_DISTANCE_YARDS   = 20.0;
 constexpr F32 RADAR_REFRESH_SECONDS = 0.5f;
+constexpr S32 SIMPLE_RADAR_NORMAL_LIMIT = 5;
+constexpr S32 SIMPLE_RADAR_LINE_HEIGHT  = 16;
+constexpr S32 SIMPLE_RADAR_TEXT_GAP     = 10;
 
 std::string formatDistance(F64 distance_yards)
 {
@@ -53,6 +58,11 @@ std::string formatDistance(F64 distance_yards)
     {
         return llformat("%.1f yd", distance_yards);
     }
+    return llformat("%.0f yd", distance_yards);
+}
+
+std::string formatSimpleDistance(F64 distance_yards)
+{
     return llformat("%.0f yd", distance_yards);
 }
 
@@ -177,8 +187,22 @@ void LLFloaterBoxxyRadar::onOpen(const LLSD& key)
     mRefreshTimer.reset();
 }
 
+void LLFloaterBoxxyRadar::onClose(bool app_quitting)
+{
+    if (!app_quitting && gSavedSettings.getBOOL("BoxxySimpleRadarEnabled"))
+    {
+        LLFloaterReg::showInstance("boxxy_radar_simple", LLSD(), false);
+    }
+}
+
 void LLFloaterBoxxyRadar::draw()
 {
+    if (gSavedSettings.getBOOL("BoxxySimpleRadarEnabled")
+        && !LLFloaterReg::instanceVisible("boxxy_radar_simple"))
+    {
+        LLFloaterReg::showInstance("boxxy_radar_simple", LLSD(), false);
+    }
+
     if (mForceRebuild || mRefreshTimer.getElapsedTimeF32() >= RADAR_REFRESH_SECONDS)
     {
         refreshRadar();
@@ -299,15 +323,29 @@ void LLFloaterBoxxyRadar::refreshRadar()
                   return left.formatted_name < right.formatted_name;
               });
 
+    mRadarList->setNoItemsCommentText(total_avatar_count == 0
+        ? "No avatars detected"
+        : "No avatars match this search.");
+
     std::vector<std::string> structure;
-    for (S32 category = 0; category < CATEGORY_COUNT; ++category)
+    if (!entries.empty())
     {
-        structure.push_back(llformat("header:%d", category));
-        for (const AvatarEntry& entry : entries)
+        for (S32 category = 0; category < CATEGORY_COUNT; ++category)
         {
-            if (entry.category == category)
+            const bool has_entries = std::any_of(entries.begin(), entries.end(),
+                [category](const AvatarEntry& entry) { return entry.category == category; });
+            if (!has_entries)
             {
-                structure.push_back(llformat("%d:%s", category, entry.id.asString().c_str()));
+                continue;
+            }
+
+            structure.push_back(llformat("header:%d", category));
+            for (const AvatarEntry& entry : entries)
+            {
+                if (entry.category == category)
+                {
+                    structure.push_back(llformat("%d:%s", category, entry.id.asString().c_str()));
+                }
             }
         }
     }
@@ -334,10 +372,20 @@ void LLFloaterBoxxyRadar::rebuildRadar(const std::vector<AvatarEntry>& entries, 
     mRadarList->clear();
     mRows.clear();
 
+    if (entries.empty())
+    {
+        mStructure = structure;
+        return;
+    }
+
     for (S32 category = 0; category < CATEGORY_COUNT; ++category)
     {
         const S32 count = static_cast<S32>(
             std::count_if(entries.begin(), entries.end(), [category](const AvatarEntry& entry) { return entry.category == category; }));
+        if (count == 0)
+        {
+            continue;
+        }
         addSection(static_cast<ECategory>(category), count);
 
         for (const AvatarEntry& entry : entries)
@@ -518,4 +566,205 @@ void LLFloaterBoxxyRadar::saveVipTerms(const std::vector<std::string>& terms)
 bool LLFloaterBoxxyRadar::isVip(const LLAvatarName& name, const std::vector<std::string>& terms) const
 {
     return LLBoxxyVIP::matches(name, terms);
+}
+
+LLFloaterBoxxyRadarSimple::LLFloaterBoxxyRadarSimple(const LLSD& key) : LLFloater(key)
+{
+}
+
+bool LLFloaterBoxxyRadarSimple::postBuild()
+{
+    mNearNames = getChild<LLTextBox>("near_names");
+    mFarNames  = getChild<LLTextBox>("far_names");
+    mNearTotal = getChild<LLTextBox>("near_total");
+    mFarTotal  = getChild<LLTextBox>("far_total");
+    return true;
+}
+
+void LLFloaterBoxxyRadarSimple::onOpen(const LLSD& key)
+{
+    LLFloater::onOpen(key);
+    refreshRadar();
+    mRefreshTimer.reset();
+}
+
+void LLFloaterBoxxyRadarSimple::draw()
+{
+    if (!gSavedSettings.getBOOL("BoxxySimpleRadarEnabled"))
+    {
+        setVisible(false);
+        return;
+    }
+
+    if (mRefreshTimer.getElapsedTimeF32() >= RADAR_REFRESH_SECONDS)
+    {
+        refreshRadar();
+        mRefreshTimer.reset();
+    }
+    LLFloater::draw();
+}
+
+void LLFloaterBoxxyRadarSimple::refreshRadar()
+{
+    if (!mNearNames || !mFarNames || !mNearTotal || !mFarTotal || gAgentID.isNull())
+    {
+        return;
+    }
+
+    struct SimpleEntry
+    {
+        std::string name;
+        F64 distance_yards = 0.0;
+        S32 priority = 2;
+        bool typing = false;
+        bool vip = false;
+        bool is_friend = false;
+        bool blocked = false;
+    };
+
+    uuid_vec_t avatar_ids;
+    std::vector<LLVector3d> positions;
+    const F32 all_known_avatars_radius = std::sqrt(std::numeric_limits<F32>::max());
+    LLWorld::getInstance()->getAvatars(&avatar_ids, &positions, gAgent.getPositionGlobal(), all_known_avatars_radius);
+
+    const std::vector<std::string> vip_terms = LLBoxxyVIP::getTerms();
+    std::vector<SimpleEntry> promoted;
+    std::vector<SimpleEntry> normal_near;
+    std::vector<SimpleEntry> normal_far;
+    S32 total_near = 0;
+    S32 total_far = 0;
+
+    for (size_t index = 0; index < avatar_ids.size() && index < positions.size(); ++index)
+    {
+        const LLUUID& avatar_id = avatar_ids[index];
+        if (avatar_id.isNull() || avatar_id == gAgentID)
+        {
+            continue;
+        }
+
+        SimpleEntry entry;
+        entry.distance_yards = dist_vec(positions[index], gAgent.getPositionGlobal()) * METERS_TO_YARDS;
+        if (entry.distance_yards <= NEAR_DISTANCE_YARDS)
+        {
+            ++total_near;
+        }
+        else
+        {
+            ++total_far;
+        }
+        entry.blocked = LLMuteList::getInstance()->isMuted(avatar_id);
+
+        LLAvatarName avatar_name;
+        if (LLAvatarNameCache::get(avatar_id, &avatar_name))
+        {
+            entry.name = avatar_name.getDisplayName(true);
+            if (entry.name.empty())
+            {
+                entry.name = avatar_name.getAccountName();
+            }
+            entry.vip = LLBoxxyVIP::matches(avatar_name, vip_terms);
+            if (entry.vip)
+            {
+                entry.priority = 0;
+            }
+            else if (LLAvatarTracker::instance().isBuddy(avatar_id))
+            {
+                entry.is_friend = true;
+                entry.priority = 1;
+            }
+        }
+        else
+        {
+            entry.name = "(loading...)";
+        }
+
+        LLPointer<LLSpeaker> speaker = LLLocalSpeakerMgr::instance().findSpeaker(avatar_id);
+        entry.typing = speaker.notNull() && speaker->mTyping;
+        LLViewerObject* avatar_object = gObjectList.findObject(avatar_id);
+        if (avatar_object && avatar_object->isAvatar())
+        {
+            entry.typing = entry.typing || static_cast<LLVOAvatar*>(avatar_object)->isTyping();
+        }
+
+        if (entry.priority < 2)
+        {
+            promoted.push_back(entry);
+        }
+        else if (entry.distance_yards <= NEAR_DISTANCE_YARDS)
+        {
+            normal_near.push_back(entry);
+        }
+        else
+        {
+            normal_far.push_back(entry);
+        }
+    }
+
+    const auto sorter = [](const SimpleEntry& left, const SimpleEntry& right)
+    {
+        if (left.priority != right.priority)
+        {
+            return left.priority < right.priority;
+        }
+        if (left.distance_yards != right.distance_yards)
+        {
+            return left.distance_yards < right.distance_yards;
+        }
+        return left.name < right.name;
+    };
+    std::sort(promoted.begin(), promoted.end(), sorter);
+    std::sort(normal_near.begin(), normal_near.end(), sorter);
+    std::sort(normal_far.begin(), normal_far.end(), sorter);
+
+    if (normal_far.size() > SIMPLE_RADAR_NORMAL_LIMIT)
+    {
+        normal_far.resize(SIMPLE_RADAR_NORMAL_LIMIT);
+    }
+    promoted.insert(promoted.end(), normal_near.begin(), normal_near.end());
+    if (promoted.size() > SIMPLE_RADAR_NORMAL_LIMIT)
+    {
+        promoted.resize(SIMPLE_RADAR_NORMAL_LIMIT);
+    }
+
+    const LLUIColor normal_color = LLUIColorTable::instance().getColor("White");
+    const LLUIColor vip_color = LLUIColorTable::instance().getColor("BoxxyRadarVIPColor");
+    const LLUIColor friend_color = LLUIColorTable::instance().getColor("BoxxyRadarNearColor");
+    const LLUIColor blocked_color = LLUIColorTable::instance().getColor("LtRed");
+    const auto format_list = [&](LLTextBox* box, const std::vector<SimpleEntry>& entries)
+    {
+        box->setText(LLStringExplicit(""));
+        bool first = true;
+        for (const SimpleEntry& entry : entries)
+        {
+            if (!first)
+            {
+                box->appendText("\n", false);
+            }
+            first = false;
+            LLStyle::Params name_style;
+            name_style.color(entry.blocked ? blocked_color : entry.vip ? vip_color : entry.is_friend ? friend_color : normal_color);
+            box->appendText((entry.typing ? "[...] " : "") + entry.name, false, name_style);
+            box->appendText("  " + formatSimpleDistance(entry.distance_yards), false,
+                            LLStyle::Params().color(normal_color));
+        }
+    };
+
+    format_list(mNearNames, promoted);
+    format_list(mFarNames, normal_far);
+    mNearTotal->setValue(llformat("Near: %d", total_near));
+    mFarTotal->setValue(llformat("Everyone else: %d", total_far));
+
+    const S32 near_lines  = static_cast<S32>(promoted.size());
+    const S32 far_lines   = static_cast<S32>(normal_far.size());
+    const S32 bubble_top  = llmax(getChildView("near_bubble")->getRect().mTop,
+                                  getChildView("far_bubble")->getRect().mTop);
+    const S32 text_bottom = bubble_top + SIMPLE_RADAR_TEXT_GAP;
+    constexpr S32 TOTALS_HEIGHT = 16;
+    const S32 totals_top = text_bottom + TOTALS_HEIGHT;
+    const S32 text_top   = totals_top + llmax(near_lines, far_lines) * SIMPLE_RADAR_LINE_HEIGHT;
+    reshape(getRect().getWidth(), text_top, false);
+    mNearNames->setRect(LLRect(0, totals_top + near_lines * SIMPLE_RADAR_LINE_HEIGHT, 174, totals_top));
+    mFarNames->setRect(LLRect(182, totals_top + far_lines * SIMPLE_RADAR_LINE_HEIGHT, 356, totals_top));
+    mNearTotal->setRect(LLRect(0, totals_top, 174, text_bottom));
+    mFarTotal->setRect(LLRect(182, totals_top, 356, text_bottom));
 }

@@ -1672,7 +1672,15 @@ void LLPanelProfileSecondLife::setDescriptionText(const std::string &text)
     mHasUnsavedDescriptionChanges = false;
 
     mDescriptionText = text;
-    mDescriptionEdit->setValue(mDescriptionText);
+    refreshTextDisplay();
+}
+
+void LLPanelProfileSecondLife::refreshTextDisplay()
+{
+    const bool simplify = gSavedSettings.getBOOL("SimplifyProfileText") && !getSelfProfile();
+    mDescriptionEdit->setValue(simplify
+        ? utf8str_simplify_decorative(mDescriptionText)
+        : mDescriptionText);
 }
 
 void LLPanelProfileSecondLife::onSetDescriptionDirty()
@@ -2148,7 +2156,15 @@ void LLPanelProfileFirstLife::setDescriptionText(const std::string &text)
     mHasUnsavedChanges = false;
 
     mCurrentDescription = text;
-    mDescriptionEdit->setValue(mCurrentDescription);
+    refreshTextDisplay();
+}
+
+void LLPanelProfileFirstLife::refreshTextDisplay()
+{
+    const bool simplify = gSavedSettings.getBOOL("SimplifyProfileText") && !getSelfProfile();
+    mDescriptionEdit->setValue(simplify
+        ? utf8str_simplify_decorative(mCurrentDescription)
+        : mCurrentDescription);
 }
 
 void LLPanelProfileFirstLife::onSetDescriptionDirty()
@@ -2329,11 +2345,30 @@ LLPanelProfile::LLPanelProfile()
 
 LLPanelProfile::~LLPanelProfile()
 {
+    mSimplifyTextConnection.disconnect();
 }
 
 bool LLPanelProfile::postBuild()
 {
+    mTabContainer       = getChild<LLTabContainer>("panel_profile_tabs");
+    mPanelSecondlife    = findChild<LLPanelProfileSecondLife>(PANEL_SECONDLIFE);
+    mPanelWeb           = findChild<LLPanelProfileWeb>(PANEL_WEB);
+    mPanelPicks         = findChild<LLPanelProfilePicks>(PANEL_PICKS);
+    mPanelClassifieds   = findChild<LLPanelProfileClassifieds>(PANEL_CLASSIFIEDS);
+    mPanelFirstlife     = findChild<LLPanelProfileFirstLife>(PANEL_FIRSTLIFE);
+    mPanelNotes         = findChild<LLPanelProfileNotes>(PANEL_NOTES);
+
+    mSimplifyTextConnection = gSavedSettings.getControl("SimplifyProfileText")->getSignal()->connect(
+        [this](LLControlVariable*, const LLSD&, const LLSD&) { onSimplifyTextChanged(); });
     return true;
+}
+
+void LLPanelProfile::onSimplifyTextChanged()
+{
+    mPanelSecondlife->refreshTextDisplay();
+    mPanelFirstlife->refreshTextDisplay();
+    mPanelPicks->refreshTextDisplay();
+    mPanelClassifieds->refreshTextDisplay();
 }
 
 void LLPanelProfile::onTabChange()
@@ -2356,14 +2391,6 @@ void LLPanelProfile::onOpen(const LLSD& key)
     }
 
     LLPanelProfileTab::onOpen(avatar_id);
-
-    mTabContainer       = getChild<LLTabContainer>("panel_profile_tabs");
-    mPanelSecondlife    = findChild<LLPanelProfileSecondLife>(PANEL_SECONDLIFE);
-    mPanelWeb           = findChild<LLPanelProfileWeb>(PANEL_WEB);
-    mPanelPicks         = findChild<LLPanelProfilePicks>(PANEL_PICKS);
-    mPanelClassifieds   = findChild<LLPanelProfileClassifieds>(PANEL_CLASSIFIEDS);
-    mPanelFirstlife     = findChild<LLPanelProfileFirstLife>(PANEL_FIRSTLIFE);
-    mPanelNotes         = findChild<LLPanelProfileNotes>(PANEL_NOTES);
 
     mPanelSecondlife->onOpen(avatar_id);
     mPanelWeb->onOpen(avatar_id);
