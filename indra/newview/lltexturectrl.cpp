@@ -2060,14 +2060,17 @@ bool LLTextureCtrl::handleMouseDown(S32 x, S32 y, MASK mask)
             if (getImageAssetID().notNull())
             {
                 LLPreviewTexture* preview_texture = LLFloaterReg::showTypedInstance<LLPreviewTexture>("preview_texture", getValue());
-                if (preview_texture && !preview_texture->isDependent())
+                if (preview_texture)
                 {
-                    LLFloater* root_floater = gFloaterView->getParentFloater(this);
-                    if (root_floater)
+                    // Read-only texture previews (currently used by profile picks)
+                    // are independent windows.  Parenting one to the profile makes
+                    // Ctrl+W close both and snaps the preview beside the profile.
+                    if (LLFloater* dependee = preview_texture->getDependee())
                     {
-                        root_floater->addDependentFloater(preview_texture);
-                        preview_texture->hideCtrlButtons();
+                        dependee->removeDependentFloater(preview_texture);
+                        preview_texture->clearSnapTarget();
                     }
+                    preview_texture->hideCtrlButtons();
                 }
             }
         }
@@ -2536,7 +2539,6 @@ namespace LLInitParam
         declare("material", PICK_MATERIAL);
     }
 }
-
 
 
 

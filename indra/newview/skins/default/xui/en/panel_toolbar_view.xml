@@ -87,6 +87,16 @@
                bg_visible="false"
                width="20">
         </panel>          
+        <panel
+             follows="right|top"
+             height="28"
+             layout="topleft"
+             mouse_opaque="false"
+             name="notification_well_container"
+             right="-4"
+             top="0"
+             width="37">
+        </panel>
         <panel bottom="100"
                follows="left|right|bottom"
                height="25"

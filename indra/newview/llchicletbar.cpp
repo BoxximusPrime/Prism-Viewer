@@ -61,6 +61,17 @@ bool LLChicletBar::postBuild()
     mChicletPanel = getChild<LLChicletPanel>("chiclet_list");
     mObjectChicletPanel = getChild<LLChicletPanel>("object_chiclet_list");
 
+    // The notification chiclet must be constructed after gFloaterView exists,
+    // but it should live in the toolbar's stable top-right container.
+    LLView* notification_panel = getChildView("notification_well_panel");
+    LLView* notification_container = LLUI::getInstance()->getRootView()->findChild<LLView>(
+        "notification_well_container", true);
+    if (notification_panel && notification_container)
+    {
+        notification_panel->setRect(notification_container->getLocalRect());
+        notification_container->addChild(notification_panel);
+    }
+
     showWellButton("notification_well", !LLFloaterNotificationsTabbed::getInstance()->isWindowEmpty());
 
     LLPanelTopInfoBar::instance().setResizeCallback(boost::bind(&LLChicletBar::fitWithTopInfoBar, this));
@@ -116,7 +127,7 @@ void LLChicletBar::sessionIDUpdated(const LLUUID& old_session_id, const LLUUID& 
 
 void LLChicletBar::showWellButton(const std::string& well_name, bool visible)
 {
-    LLView * panel = findChild<LLView>(well_name + "_panel");
+    LLView* panel = LLUI::getInstance()->getRootView()->findChild<LLView>(well_name + "_panel", true);
     if (!panel) return;
 
     panel->setVisible(visible);
@@ -204,6 +215,7 @@ void LLChicletBar::reshape(S32 width, S32 height, bool called_from_parent)
     {
         LL_DEBUGS() << "Reshape all children with width: " << width << LL_ENDL;
         LLPanel::reshape(width, height, called_from_parent);
+
     }
 
     if (mChicletPanel)          log(mChicletPanel, "after");

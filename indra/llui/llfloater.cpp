@@ -2045,6 +2045,27 @@ void LLFloater::draw()
                     titlebar_focus_color % alpha, 0, true);
             }
         }
+
+        S32 mouse_x;
+        S32 mouse_y;
+        LLUI::getInstance()->getMousePositionLocal(this, &mouse_x, &mouse_y);
+        if (pointInView(mouse_x, mouse_y))
+        {
+            static LLUIColor hover_color = LLUIColorTable::instance().getColor("FloaterHoverGradientColor");
+            LLColor4 gradient_top = hover_color.get() % alpha;
+            LLColor4 gradient_bottom = gradient_top;
+            gradient_bottom.mV[VALPHA] = 0.f;
+
+            gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+            gGL.begin(LLRender::TRIANGLE_STRIP);
+            gGL.color4fv(gradient_bottom.mV);
+            gGL.vertex2i(left, bottom);
+            gGL.vertex2i(right, bottom);
+            gGL.color4fv(gradient_top.mV);
+            gGL.vertex2i(left, top);
+            gGL.vertex2i(right, top);
+            gGL.end();
+        }
     }
 
     LLPanel::updateDefaultBtn();
@@ -2754,6 +2775,19 @@ LLFloater* LLFloaterView::getFrontmostClosableFloater()
 {
     child_list_const_iter_t child_it;
     LLFloater* frontmost_floater = NULL;
+
+    // Keyboard shortcuts should act on the floater containing the focused
+    // control, even when dependent-floater ordering puts its parent first.
+    for (child_it = getChildList()->begin(); child_it != getChildList()->end(); ++child_it)
+    {
+        frontmost_floater = (LLFloater*)(*child_it);
+        if (frontmost_floater->isInVisibleChain()
+            && frontmost_floater->isCloseable()
+            && gFocusMgr.childHasKeyboardFocus(frontmost_floater))
+        {
+            return frontmost_floater;
+        }
+    }
 
     for ( child_it = getChildList()->begin(); child_it != getChildList()->end(); ++child_it)
     {

@@ -599,10 +599,18 @@ void translateSuccess(const LLUUID& session_id, const LLUUID& request_id, bool l
                       std::string originalMsg, std::string expectLang,
                       std::string translation, const std::string detected_language)
 {
+    // The response uses English language names while the viewer's target is an
+    // ISO code (for example, "English" versus "en").
+    const bool same_as_target_language =
+        LLTranslate::getCurrentService() == LLTranslate::SERVICE_OPENAI
+        && !detected_language.empty()
+        && LLTranslate::isSameLanguage(detected_language, expectLang);
+
     std::string translated_text;
     // filter out non-interesting responses
     if (!translation.empty()
         && ((detected_language.empty()) || (expectLang != detected_language))
+        && !same_as_target_language
         && (LLStringUtil::compareInsensitive(translation, originalMsg) != 0))
     {   // Note - if this format changes, also fix code in addMessagesFromServerHistory()
         translated_text = LLTranslate::removeNoTranslateTags(translation);

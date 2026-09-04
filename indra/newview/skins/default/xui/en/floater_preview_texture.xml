@@ -8,6 +8,7 @@
  min_width="370"
  name="preview_texture"
  help_topic="preview_texture"
+ positioning="centered"
  width="370">
    <floater.string
      name="Title">
@@ -93,7 +94,7 @@
            max_chars="20"
            mouse_opaque="true"
            enabled="true"
-           width="90"
+           width="120"
            name="combo_aspect_ratio"
            tool_tip="Preview at a fixed aspect ratio">
 	      </combo_box>

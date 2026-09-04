@@ -535,7 +535,7 @@ Account: [ACCTTYPE]
        follows="all"
        layout="topleft"
        bg_readonly_color="Transparent"
-       border_visible="true"
+       border_visible="false"
        font="SansSerifSmall"
        h_pad="2"
        max_length="65000"

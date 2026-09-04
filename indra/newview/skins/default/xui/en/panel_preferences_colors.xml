@@ -337,8 +337,8 @@
    height="12"
    name="mentions_colors"
    top_pad="20"
-   width="170">
-    Chat mentions highlight colors:
+   width="300">
+    Chat highlights and IM bubble colors:
   </text>
   <color_swatch
    can_apply_immediately="true"
@@ -349,7 +349,7 @@
    left="40"
    name="mention_self"
    top_pad="10"
-   width="44" >
+   width="28" >
     <color_swatch.init_callback
          function="Pref.getUIColor"
          parameter="ChatSelfMentionHighlight" />
@@ -367,8 +367,8 @@
    mouse_opaque="false"
    name="text_mentions_self"
    top_delta="5"
-   width="95">
-    Me
+   width="77">
+    Mention me
   </text>
   <color_swatch
      can_apply_immediately="true"
@@ -376,10 +376,10 @@
      height="24"
      label_height="0"
      layout="topleft"
-     left="190"
+     left="155"
      name="mention_others"
      top_pad="-15"
-     width="44" >
+     width="28" >
         <color_swatch.init_callback
              function="Pref.getUIColor"
              parameter="ChatMentionHighlight" />
@@ -397,9 +397,67 @@
      mouse_opaque="false"
      name="text_mentions_others"
      top_delta="5"
-     width="95">
-        Others
+     width="77">
+        Mention others
     </text>
+  <color_swatch
+   can_apply_immediately="true"
+   follows="left|top"
+   height="24"
+   label_height="0"
+   layout="topleft"
+   left="270"
+   name="im_bubble_self"
+   tool_tip="Background color for your outgoing instant-message bubbles."
+   top_pad="-15"
+   width="28">
+    <color_swatch.init_callback
+     function="Pref.getUIColor"
+     parameter="IMBubbleOutgoingColor" />
+    <color_swatch.commit_callback
+     function="Pref.applyUIColor"
+     parameter="IMBubbleOutgoingColor" />
+  </color_swatch>
+  <text
+   follows="left|top"
+   height="10"
+   layout="topleft"
+   left_pad="5"
+   mouse_opaque="false"
+   name="text_im_bubble_self"
+   top_delta="5"
+   width="77">
+    My bubble
+  </text>
+  <color_swatch
+   can_apply_immediately="true"
+   follows="left|top"
+   height="24"
+   label_height="0"
+   layout="topleft"
+   left="385"
+   name="im_bubble_other"
+   tool_tip="Background color for the other avatar's instant-message bubbles."
+   top_pad="-15"
+   width="28">
+    <color_swatch.init_callback
+     function="Pref.getUIColor"
+     parameter="IMBubbleIncomingColor" />
+    <color_swatch.commit_callback
+     function="Pref.applyUIColor"
+     parameter="IMBubbleIncomingColor" />
+  </color_swatch>
+  <text
+   follows="left|top"
+   height="10"
+   layout="topleft"
+   left_pad="5"
+   mouse_opaque="false"
+   name="text_im_bubble_other"
+   top_delta="5"
+   width="82">
+    Other bubble
+  </text>
   <text
    follows="left|top"
    layout="topleft"

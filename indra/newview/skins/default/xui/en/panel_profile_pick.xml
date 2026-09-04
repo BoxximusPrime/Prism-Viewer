@@ -96,7 +96,7 @@
        follows="all"
        layout="topleft"
        allow_html="true"
-       border_visible="true"
+       border_visible="false"
        h_pad="4"
        max_length="1023"
        v_pad="3"

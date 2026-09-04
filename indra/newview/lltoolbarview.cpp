@@ -31,6 +31,7 @@
 
 #include "llappviewer.h"
 #include "llbutton.h"
+#include "llcheckboxctrl.h"
 #include "llclipboard.h"
 #include "lldir.h"
 #include "lldockablefloater.h"
@@ -42,6 +43,7 @@
 #include "llxmlnode.h"
 
 #include "llagent.h"  // HACK for destinations guide on startup
+#include "llboxxyao.h"
 #include "llfloaterreg.h"  // HACK for destinations guide on startup
 #include "llviewercontrol.h"  // HACK for destinations guide on startup
 #include "llinventorymodel.h" // HACK to disable starter avatars button for NUX
@@ -459,7 +461,26 @@ void LLToolBarView::onToolBarButtonAdded(LLView* button)
 {
     llassert(button);
 
-    if (button->getName() == "speak")
+    if (button->getName() == "boxxy_ao")
+    {
+        LLCheckBoxCtrl::Params checkbox_p;
+        checkbox_p.name = "ao_enabled_toggle";
+        checkbox_p.label = "";
+        checkbox_p.tool_tip = "Enable or disable the animation overrider";
+        checkbox_p.rect = LLRect(button->getRect().getWidth() - 20,
+                                 button->getRect().getHeight(),
+                                 button->getRect().getWidth(),
+                                 button->getRect().getHeight() - 20);
+        checkbox_p.follows.flags = FOLLOWS_RIGHT | FOLLOWS_TOP;
+        checkbox_p.initial_value = LLBoxxyAO::instance().isEnabled();
+        checkbox_p.control_name = "BoxxyAOEnabled";
+        checkbox_p.commit_callback.function = [](LLUICtrl* ctrl, const LLSD&)
+        {
+            LLBoxxyAO::instance().setEnabled(ctrl->getValue().asBoolean());
+        };
+        button->addChild(LLUICtrlFactory::create<LLCheckBoxCtrl>(checkbox_p));
+    }
+    else if (button->getName() == "speak")
     {
         // Add the "Speak" button as a control view in LLTransientFloaterMgr
         // to prevent hiding the transient IM floater upon pressing "Speak".

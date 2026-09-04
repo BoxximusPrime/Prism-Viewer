@@ -353,6 +353,10 @@ public:
                                 text_selected_color,
                                 bg_selected_color;
 
+        Optional<LLUIImage*>    background_image,
+                                background_image_disabled,
+                                background_image_focused;
+
         Optional<bool>          bg_visible,
                                 border_visible,
                                 track_end,
@@ -726,6 +730,9 @@ protected:
     LLUIColor                   mFocusBgColor;
     LLUIColor                   mTextSelectedColor;
     LLUIColor                   mSelectedBGColor;
+    LLUIImagePtr                mBgImage;
+    LLUIImagePtr                mBgImageDisabled;
+    LLUIImagePtr                mBgImageFocused;
 
     // cursor
     S32                         mCursorPos;         // I-beam is just after the mCursorPos-th character.

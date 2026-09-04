@@ -2320,6 +2320,9 @@ void translateSuccess(LLChat chat, std::string originalMsg, std::string expectLa
     // filter out non-interesting responses
     if (!translation.empty()
         && ((detected_language.empty()) || (expectLang != detected_language))
+        && !(LLTranslate::getCurrentService() == LLTranslate::SERVICE_OPENAI
+             && !detected_language.empty()
+             && LLTranslate::isSameLanguage(detected_language, expectLang))
         && (LLStringUtil::compareInsensitive(translation, originalMsg) != 0))
     {
         chat.mTranslatedText = LLTranslate::removeNoTranslateTags(translation);

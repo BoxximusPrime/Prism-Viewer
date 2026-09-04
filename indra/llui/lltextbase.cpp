@@ -153,6 +153,9 @@ LLTextBase::Params::Params()
     bg_focus_color("bg_focus_color"),
     text_selected_color("text_selected_color"),
     bg_selected_color("bg_selected_color"),
+    background_image("background_image"),
+    background_image_disabled("background_image_disabled"),
+    background_image_focused("background_image_focused"),
     allow_scroll("allow_scroll", true),
     plain_text("plain_text",false),
     track_end("track_end", false),
@@ -209,6 +212,9 @@ LLTextBase::LLTextBase(const LLTextBase::Params &p)
     mFocusBgColor(p.bg_focus_color),
     mTextSelectedColor(p.text_selected_color),
     mSelectedBGColor(p.bg_selected_color),
+    mBgImage(p.background_image),
+    mBgImageDisabled(p.background_image_disabled),
+    mBgImageFocused(p.background_image_focused),
     mReflowIndex(S32_MAX),
     mCursorPos( 0 ),
     mScrollNeeded(false),
@@ -1550,12 +1556,24 @@ void LLTextBase::draw()
         {
             bg_rect.intersectWith(text_rect);
         }
-        const LLColor4& bg_color = mReadOnly
-                            ? mReadOnlyBgColor.get()
-                            : hasFocus()
-                                ? mFocusBgColor.get()
-                                : mWriteableBgColor.get();
-        gl_rect_2d(text_rect, bg_color % alpha, true);
+        LLUIImage* bg_image = mReadOnly
+                                ? mBgImageDisabled.get()
+                                : hasFocus()
+                                    ? mBgImageFocused.get()
+                                    : mBgImage.get();
+        if (bg_image)
+        {
+            bg_image->draw(getLocalRect(), UI_VERTEX_COLOR % alpha);
+        }
+        else
+        {
+            const LLColor4& bg_color = mReadOnly
+                                        ? mReadOnlyBgColor.get()
+                                        : hasFocus()
+                                            ? mFocusBgColor.get()
+                                            : mWriteableBgColor.get();
+            gl_rect_2d(text_rect, bg_color % alpha, true);
+        }
     }
 
     // Draw highlighted if needed
