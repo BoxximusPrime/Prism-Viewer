@@ -102,6 +102,11 @@ public :
      */
     static std::string getTranslateLanguage();
 
+    /**
+     * Compare a translation service language name or code with the target code.
+     */
+    static bool isSameLanguage(const std::string& language, const std::string& target);
+
     static EService getCurrentService();
 
     /**

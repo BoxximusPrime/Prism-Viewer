@@ -377,7 +377,10 @@ void LLFloaterIMSession::initIMFloater()
 
     mTypingStart = LLTrans::getString("IM_typing_start_string");
 
-    getChild<LLLineEditor>("translate_language")->setVisible(
+    LLLineEditor* translate_editor = getChild<LLLineEditor>("translate_language");
+    const LLSD translate_languages = gSavedPerAccountSettings.getLLSD("IMTranslateLanguages");
+    translate_editor->setText(translate_languages[mOtherParticipantUUID.asString()].asString());
+    translate_editor->setVisible(
         mIsP2PChat && gSavedSettings.getBOOL("TranslateChat"));
 
     // Show control panel in torn off floaters only.
@@ -408,6 +411,13 @@ bool LLFloaterIMSession::postBuild()
     mInputEditor->setFocusLostCallback( boost::bind(onInputEditorFocusLost, _1, this) );
     mInputEditor->setKeystrokeCallback( boost::bind(onInputEditorKeystroke, _1, this) );
     mInputEditor->setCommitCallback(boost::bind(onSendMsg, _1, this));
+    getChild<LLLineEditor>("translate_language")->setCommitCallback(
+        [this](LLUICtrl* ctrl, const LLSD&)
+        {
+            LLSD translate_languages = gSavedPerAccountSettings.getLLSD("IMTranslateLanguages");
+            translate_languages[mOtherParticipantUUID.asString()] = ctrl->getValue().asString();
+            gSavedPerAccountSettings.setLLSD("IMTranslateLanguages", translate_languages);
+        });
 
     setDocked(true);
 
@@ -717,6 +727,13 @@ void LLFloaterIMSession::setDocked(bool docked, bool pop_on_undock)
 
 void LLFloaterIMSession::setMinimized(bool b)
 {
+    // Use the DM chiclet as the minimized state instead of creating a mini-floater.
+    if (b && mIsP2PChat)
+    {
+        setVisible(false);
+        return;
+    }
+
     bool wasMinimized = isMinimized();
     LLFloaterIMSessionTab::setMinimized(b);
 

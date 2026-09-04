@@ -36,6 +36,7 @@
 #include "llimview.h"
 #include "llcommandhandler.h"
 #include "llpanel.h"
+#include "llrender2dutils.h"
 #include "lluictrlfactory.h"
 #include "llscrollcontainer.h"
 #include "llagent.h"
@@ -57,6 +58,7 @@
 #include "llnotifications.h"
 #include "llnotificationsutil.h"
 #include "lltoastnotifypanel.h"
+#include "lltextbox.h"
 #include "lltooltip.h"
 #include "llviewerregion.h"
 #include "llviewertexteditor.h"
@@ -107,6 +109,99 @@ public:
 };
 LLObjectIMHandler gObjectIMHandler;
 
+class LLChatHistoryBubble final : public LLPanel
+{
+public:
+    LLChatHistoryBubble(const LLPanel::Params& p, bool from_me,
+                        const std::string& message,
+                        const std::string& translated_message,
+                        const LLStyle::Params& message_style)
+    :   LLPanel(p),
+        mFromMe(from_me),
+        mBubbleImage(LLUI::getUIImage("Rounded_Square")),
+        mBubble(NULL),
+        mText(NULL)
+    {
+        LLPanel::Params bubble_p;
+        bubble_p.name = from_me ? "outgoing_message_bubble" : "incoming_message_bubble";
+        bubble_p.background_visible = false;
+        bubble_p.background_opaque = false;
+        bubble_p.rect = LLRect(0, 28, getRect().getWidth(), 0);
+        bubble_p.mouse_opaque = false;
+        mBubble = LLUICtrlFactory::create<LLPanel>(bubble_p, this);
+
+        LLTextBox::Params text_p;
+        text_p.name = "message_text";
+        text_p.rect = LLRect(HORIZONTAL_PAD, 24,
+                             getRect().getWidth() - HORIZONTAL_PAD, 4);
+        text_p.wrap = true;
+        text_p.parse_urls = true;
+        text_p.mouse_opaque = true;
+        text_p.text_valign = LLFontGL::VCENTER;
+        mText = LLUICtrlFactory::create<LLTextBox>(text_p, mBubble);
+        mText->setText(message, message_style);
+
+        if (!translated_message.empty())
+        {
+            LLStyle::Params translation_style(message_style);
+            const LLUIColor translation_color = LLUIColorTable::instance().getColor("TranslationChatColor");
+            translation_style.color(translation_color);
+            translation_style.readonly_color(translation_color);
+            mText->appendText(" (" + translated_message + ")", false, translation_style);
+        }
+
+        reshape(getRect().getWidth(), getRect().getHeight(), false);
+    }
+
+    void draw() override
+    {
+        if (mBubble)
+        {
+            const LLRect& rect = mBubble->getRect();
+            const LLColor4 shadow = LLUIColorTable::instance().getColor("IMBubbleShadowColor");
+            gl_drop_shadow(rect.mLeft, rect.mTop, rect.mRight, rect.mBottom,
+                           shadow % getDrawContext().mAlpha, SHADOW_SIZE);
+            const LLColor4 bubble_color = LLUIColorTable::instance().getColor(
+                mFromMe ? "IMBubbleOutgoingColor" : "IMBubbleIncomingColor");
+            mBubbleImage->draw(rect, bubble_color % getDrawContext().mAlpha);
+        }
+        LLPanel::draw();
+    }
+
+    void reshape(S32 width, S32 height, bool called_from_parent = true) override
+    {
+        if (!mBubble || !mText)
+        {
+            LLPanel::reshape(width, height, called_from_parent);
+            return;
+        }
+
+        const S32 bubble_width = llmin(width, llmax(120, ll_round(width * 0.76f)));
+        mText->reshape(bubble_width - 2 * HORIZONTAL_PAD,
+                       mText->getRect().getHeight(), false);
+        const S32 bubble_height = llmax(28,
+            mText->getTextPixelHeight() + 2 * VERTICAL_PAD + 2);
+        const S32 row_height = bubble_height + SHADOW_SIZE;
+
+        LLPanel::reshape(width, row_height, called_from_parent);
+        const S32 bubble_left = mFromMe ? width - bubble_width - SHADOW_SIZE : 0;
+        mBubble->setShape(LLRect(bubble_left, row_height,
+                                 bubble_left + bubble_width, SHADOW_SIZE));
+        mText->setShape(LLRect(HORIZONTAL_PAD, bubble_height - VERTICAL_PAD,
+                               bubble_width - HORIZONTAL_PAD, VERTICAL_PAD));
+    }
+
+private:
+    static constexpr S32 HORIZONTAL_PAD = 9;
+    static constexpr S32 VERTICAL_PAD = 6;
+    static constexpr S32 SHADOW_SIZE = 2;
+
+    bool mFromMe;
+    LLPointer<LLUIImage> mBubbleImage;
+    LLPanel* mBubble;
+    LLTextBox* mText;
+};
+
 class LLChatHistoryHeader: public LLPanel
 {
 public:
@@ -125,6 +220,8 @@ public:
         mUserNameTextBox(NULL),
         mTimeBoxTextBox(NULL),
         mNeedsTimeBox(true),
+        mBubbleStyle(false),
+        mFromMe(false),
         mAvatarNameCacheConnection()
     {}
 
@@ -724,6 +821,12 @@ public:
         mAvatarID = chat.mFromID;
         mSessionID = chat.mSessionID;
         mSourceType = chat.mSourceType;
+        mBubbleStyle = chat.mSessionID.notNull() && chat.mSourceType == CHAT_SOURCE_AGENT;
+        mFromMe = chat.mFromID == gAgent.getID();
+        if (mBubbleStyle)
+        {
+            setBackgroundVisible(false);
+        }
 
         // To be able to report a message, we need a copy of it's text
         // and it's easier to store text directly than trying to get
@@ -805,7 +908,8 @@ public:
                     style_params_name.font.name("SansSerifSmall");
                     style_params_name.font.style("NORMAL");
                     style_params_name.readonly_color(userNameColor);
-                    user_name->appendText("  - " + username, false, style_params_name);
+                    user_name->appendText((mBubbleStyle ? " / " : "  - ") + username,
+                                          false, style_params_name);
                 }
             }
             else
@@ -825,6 +929,12 @@ public:
 
 
         setTimeField(chat);
+        if (mBubbleStyle)
+        {
+            const LLUIColor timestamp_color = LLUIColorTable::instance().getColor("ChatTimestampColor");
+            mTimeBoxTextBox->setColor(timestamp_color);
+            mTimeBoxTextBox->setReadOnlyColor(timestamp_color);
+        }
 
         // Set up the icon.
         LLAvatarIconCtrl* icon = getChild<LLAvatarIconCtrl>("avatar_icon");
@@ -880,6 +990,58 @@ public:
     {
         LLTextBox* user_name = mUserNameTextBox; //getChild<LLTextBox>("user_name");
         LLTextBox* time_box = mTimeBoxTextBox; //getChild<LLTextBox>("time_box");
+
+        if (mBubbleStyle)
+        {
+            LLAvatarIconCtrl* icon = getChild<LLAvatarIconCtrl>("avatar_icon");
+            const S32 margin = 10;
+            const S32 gap = 5;
+            const S32 icon_width = icon->getRect().getWidth();
+            const S32 icon_height = icon->getRect().getHeight();
+            const S32 time_height = 13;
+            const S32 time_bottom = (getRect().getHeight() - time_height) / 2;
+            const S32 time_width = time_box->getVisible() ? time_box->getRect().getWidth() : 0;
+            const S32 max_name_width = llmax(40, getRect().getWidth() - 2 * margin
+                - icon_width - time_width - 2 * gap);
+            const S32 name_width = llmin(max_name_width,
+                mUserNameFont ? mUserNameFont->getWidth(user_name->getWText().c_str()) + 4
+                              : max_name_width);
+            const S32 content_width = icon_width + gap + name_width
+                + (time_width ? gap + time_width : 0);
+            S32 x = mFromMe ? getRect().getWidth() - margin - content_width : margin;
+            const S32 icon_bottom = (getRect().getHeight() - icon_height) / 2;
+
+            if (mFromMe && time_width)
+            {
+                time_box->setShape(LLRect(x, time_bottom + time_height,
+                                          x + time_width, time_bottom));
+                x += time_width + gap;
+            }
+
+            if (!mFromMe)
+            {
+                icon->setOrigin(x, icon_bottom);
+                x += icon_width + gap;
+            }
+
+            user_name->setHAlign(mFromMe ? LLFontGL::RIGHT : LLFontGL::LEFT);
+            user_name->setShape(LLRect(x, getRect().getHeight(), x + name_width, 0));
+            x += name_width + gap;
+
+            if (!mFromMe && time_width)
+            {
+                time_box->setShape(LLRect(x, time_bottom + time_height,
+                                          x + time_width, time_bottom));
+            }
+            else if (mFromMe)
+            {
+                icon->setOrigin(x, icon_bottom);
+            }
+
+            time_box->setHAlign(mFromMe ? LLFontGL::RIGHT : LLFontGL::LEFT);
+            LLPanel::draw();
+            return;
+        }
 
         LLRect user_name_rect = user_name->getRect();
         S32 user_name_width = user_name_rect.getWidth();
@@ -1103,7 +1265,8 @@ private:
             style_params_name.font.name("SansSerifSmall");
             style_params_name.font.style("NORMAL");
             style_params_name.readonly_color(userNameColor);
-            user_name->appendText("  - " + av_name.getUserName(), false, style_params_name);
+            user_name->appendText((mBubbleStyle ? " / " : "  - ") + av_name.getUserName(),
+                                  false, style_params_name);
         }
         setToolTip( av_name.getUserName() );
         // name might have changed, update width
@@ -1131,6 +1294,8 @@ protected:
     LLTextBox*          mTimeBoxTextBox;
 
     bool                mNeedsTimeBox;
+    bool                mBubbleStyle;
+    bool                mFromMe;
 
 private:
     boost::signals2::connection mAvatarNameCacheConnection;
@@ -1283,6 +1448,9 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
         return;
 
     bool from_me = chat.mFromID == gAgent.getID();
+    const bool use_message_bubble = !use_plain_text_chat_history
+        && chat.mSessionID.notNull()
+        && chat.mSourceType == CHAT_SOURCE_AGENT;
     mEditor->setPlainText(use_plain_text_chat_history);
 
     if (mNotifyAboutUnreadMsg && !mEditor->scrolledToEnd() && !from_me && !chat.mFromName.empty())
@@ -1450,7 +1618,7 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
         prependNewLineState = false;
         LLView* view = NULL;
         LLInlineViewSegment::Params p;
-        p.force_newline = true;
+        p.force_newline = !use_message_bubble;
         p.left_pad = mLeftWidgetPad;
         p.right_pad = mRightWidgetPad;
 
@@ -1470,8 +1638,8 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
                 return;
             }
 
-            p.top_pad = mTopSeparatorPad;
-            p.bottom_pad = mBottomSeparatorPad;
+            p.top_pad = use_message_bubble ? 0 : mTopSeparatorPad;
+            p.bottom_pad = use_message_bubble ? 0 : mBottomSeparatorPad;
         }
         else
         {
@@ -1482,8 +1650,12 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
                 return;
             }
 
-            p.top_pad = mEditor->getLength() ? mTopHeaderPad : 0;
-            p.bottom_pad = teleport_separator ? mBottomSeparatorPad : mBottomHeaderPad;
+            p.top_pad = mEditor->getLength()
+                ? (use_message_bubble ? mTopHeaderPad / 4 : mTopHeaderPad)
+                : 0;
+            p.bottom_pad = teleport_separator
+                ? mBottomSeparatorPad
+                : (use_message_bubble ? llmax(1, mBottomHeaderPad / 4) : mBottomHeaderPad);
         }
         p.view = view;
 
@@ -1495,7 +1667,8 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
         view->reshape(target_rect.getWidth(), view->getRect().getHeight());
         view->setOrigin(target_rect.mLeft, view->getRect().mBottom);
 
-        std::string widget_associated_text = "\n[" + chat.mTimeStr + "] ";
+        std::string widget_associated_text = (use_message_bubble ? "[" : "\n[")
+            + chat.mTimeStr + "] ";
         if (utf8str_trim(chat.mFromName).size() != 0 && chat.mFromName != SYSTEM_FROM)
             widget_associated_text += chat.mFromName + delimiter;
 
@@ -1590,14 +1763,51 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
             message += "]";
         }
 
-        mEditor->appendText(message, prependNewLineState, body_message_params);
-        if (!chat.mTranslatedText.empty())
+        if (use_message_bubble)
         {
-            LLStyle::Params translation_params(body_message_params);
-            LLUIColor translation_color = LLUIColorTable::instance().getColor("TranslationChatColor");
-            translation_params.color(translation_color);
-            translation_params.readonly_color(translation_color);
-            mEditor->appendText(" (" + chat.mTranslatedText + ")", false, translation_params);
+            // Size against the fixed viewport, not the document: the latter
+            // grows to contain widgets and creates runaway horizontal width.
+            const S32 available_width = llmax(120,
+                mEditor->getVisibleTextRect().getWidth()
+                    - mEditor->getHPad() - mLeftTextPad - mRightTextPad);
+            LLPanel::Params row_p;
+            row_p.name = from_me ? "outgoing_message_row" : "incoming_message_row";
+            row_p.background_visible = false;
+            row_p.rect = LLRect(0, 28, available_width, 0);
+            row_p.mouse_opaque = false;
+            row_p.follows.flags = FOLLOWS_LEFT | FOLLOWS_RIGHT;
+            LLChatHistoryBubble* bubble = new LLChatHistoryBubble(
+                row_p, from_me, message, chat.mTranslatedText, body_message_params);
+
+            LLInlineViewSegment::Params bubble_segment;
+            bubble_segment.view = bubble;
+            // The row consumes the full available width through its left/right
+            // padding, so normal wrapping starts the next widget on a new line.
+            // Forcing another newline reserves an extra font-height line and
+            // corrupts restored-history layout calculations.
+            bubble_segment.force_newline = false;
+            bubble_segment.left_pad = mLeftTextPad;
+            bubble_segment.right_pad = mRightTextPad;
+            bubble_segment.top_pad = 0;
+            bubble_segment.bottom_pad = 1;
+            std::string associated_text = message;
+            if (!chat.mTranslatedText.empty())
+            {
+                associated_text += " (" + chat.mTranslatedText + ")";
+            }
+            mEditor->appendWidget(bubble_segment, associated_text, false);
+        }
+        else
+        {
+            mEditor->appendText(message, prependNewLineState, body_message_params);
+            if (!chat.mTranslatedText.empty())
+            {
+                LLStyle::Params translation_params(body_message_params);
+                LLUIColor translation_color = LLUIColorTable::instance().getColor("TranslationChatColor");
+                translation_params.color(translation_color);
+                translation_params.readonly_color(translation_color);
+                mEditor->appendText(" (" + chat.mTranslatedText + ")", false, translation_params);
+            }
         }
         prependNewLineState = false;
     }

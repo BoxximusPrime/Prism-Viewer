@@ -1524,7 +1524,7 @@ void LLIMProcessing::processNewMessage(LLUUID from_id,
     }
 
     LLWindow* viewer_window = gViewerWindow->getWindow();
-    if (viewer_window)
+    if (viewer_window && dialog != IM_TYPING_START && dialog != IM_TYPING_STOP)
     {
         viewer_window->flashIcon(5.f);
     }

@@ -148,6 +148,10 @@ LLCheckBoxCtrl::LLCheckBoxCtrl(const LLCheckBoxCtrl::Params& p)
     params.follows.flags(FOLLOWS_LEFT | FOLLOWS_BOTTOM);
 
     mButton = LLUICtrlFactory::create<LLButton>(params);
+    // The generic button template supplies push-button hover artwork.  A
+    // checkbox has its own off/on artwork and must not inherit that chrome.
+    mButton->setImageHoverSelected(LLUIImagePtr());
+    mButton->setImageHoverUnselected(LLUIImagePtr());
     addChild(mButton);
 }
 

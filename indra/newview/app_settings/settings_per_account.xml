@@ -524,5 +524,16 @@
         <key>Value</key>
         <integer>2</integer>
       </map>
+      <key>IMTranslateLanguages</key>
+      <map>
+        <key>Comment</key>
+        <string>Outgoing direct-message translation language or style, keyed by participant UUID.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>LLSD</string>
+        <key>Value</key>
+        <map />
+      </map>
     </map>
 </llsd>

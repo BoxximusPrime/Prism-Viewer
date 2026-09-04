@@ -31,6 +31,7 @@
 #include <curl/curl.h>
 
 #include <algorithm>
+#include <array>
 #include <deque>
 #include <map>
 
@@ -1642,6 +1643,47 @@ std::string LLTranslate::getTranslateLanguage()
     }
     language = language.substr(0,2);
     return language;
+}
+
+// static
+bool LLTranslate::isSameLanguage(const std::string& language, const std::string& target)
+{
+    static const std::array<std::pair<const char*, const char*>, 16> language_names = {{
+        {"chinese", "zh"}, {"danish", "da"}, {"dutch", "nl"},
+        {"english", "en"}, {"french", "fr"}, {"german", "de"},
+        {"hungarian", "hu"}, {"italian", "it"}, {"japanese", "ja"},
+        {"korean", "ko"}, {"polish", "pl"}, {"portuguese", "pt"},
+        {"russian", "ru"}, {"spanish", "es"}, {"turkish", "tr"},
+        {"ukrainian", "uk"}
+    }};
+
+    std::string language_code = language;
+    std::string target_code = target;
+    LLStringUtil::toLower(language_code);
+    LLStringUtil::toLower(target_code);
+    const size_t language_suffix = language_code.find_first_of("-_");
+    if (language_suffix != std::string::npos)
+    {
+        language_code.erase(language_suffix);
+    }
+    const size_t target_suffix = target_code.find_first_of("-_");
+    if (target_suffix != std::string::npos)
+    {
+        target_code.erase(target_suffix);
+    }
+    if (language_code == target_code)
+    {
+        return true;
+    }
+
+    for (const auto& language_name : language_names)
+    {
+        if (language_code == language_name.first)
+        {
+            return target_code == language_name.second;
+        }
+    }
+    return false;
 }
 
 // static

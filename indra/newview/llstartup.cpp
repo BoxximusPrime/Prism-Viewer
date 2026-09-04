@@ -4149,4 +4149,3 @@ void transition_back_to_login_panel(const std::string& emsg)
     reset_login(); // calls LLStartUp::setStartupState( STATE_LOGIN_SHOW );
     gSavedSettings.setBOOL("AutoLogin", false);
 }
-

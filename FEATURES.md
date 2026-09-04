@@ -6,7 +6,7 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## BoxxyViewer-specific systems
 
-- Boxxy Animation Overrider (AO), including animation sets, inventory-backed configuration, per-account persistence, toolbar/floater controls, and animation synchronization improvements.
+- Boxxy Animation Overrider (AO), including animation sets, inventory-backed configuration, per-account persistence, a toolbar enable checkbox plus configuration button (in progress), and animation synchronization improvements.
 - Boxxy Radar, including full and compact radar floaters, near/far avatar grouping, distance display, search, radar options, toolbar integration, and automatic display behavior.
 - Radar VIP matching with fuzzy configured-name matching.
 - Radar friend highlighting, typing indicators, and muted/blocked-avatar display.
@@ -17,6 +17,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Single-bar Enter-to-chat behavior.
 - Compact nearby-chat bar and revised bottom-toolbar layout.
 - Inline outgoing translation language selector.
+- Per-person persistent DM translation targets and chiclet-reopened hidden DM windows. (in progress)
 - Automatic translation of nearby chat and IMs.
 - Multiple translation providers, including an OpenAI-compatible translation handler.
 - Asynchronous translation that displays the original immediately and updates the message when translation completes.
@@ -25,9 +26,10 @@ The committed feature list is based on the differences from the `upstream/develo
 - Exclusion of self-authored messages from incoming automatic translation.
 - Group-chat ignore settings.
 - Group-invitation ignore setting.
-- Improved detached IM behavior and notification bubbles.
-- Incoming-message window/taskbar flashing.
+- Improved detached IM behavior, stable centered tear-off placement, and notification bubbles. (in progress)
+- Incoming-message window/taskbar flashing without typing-state flashes. (in progress)
 - VIP and friend coloring in chat history.
+- Modernized incoming/outgoing IM bubbles with compact mirrored speaker headers, live-previewable configurable colors, and subtle drop shadows. (in progress)
 
 ## Avatar and world interaction
 
@@ -37,10 +39,11 @@ The committed feature list is based on the differences from the `upstream/develo
 - Camera movement and zoom-limit changes.
 - Avatar animation synchronization improvements.
 - Attachment visibility and rendering adjustments.
+- Animation-stable avatar nameplate positioning with avatar-relative height. (in progress)
 
 ## Profiles and inventory
 
-- Improved profile texture viewers and modal sizing/behavior.
+- Improved profile texture viewers and modal sizing/behavior, including an unconstrained default, native-size initial previews, centered resizing, independently closable picks previews, and focused-window closing (in progress).
 - Profile, classified, and picks loading improvements.
 - Removal of individual items from outfits.
 - Dragging individual or multiple inventory items into outfits.
@@ -57,9 +60,11 @@ The committed feature list is based on the differences from the `upstream/develo
 
 - Dedicated BoxxyViewer preferences panel.
 - Toolbar commands for AO, radar, and translation.
-- Login-screen redesign and customization.
+- Login-screen redesign and Boxxy cube branding across application, taskbar, installer, startup, and login surfaces. (in progress)
 - Custom fonts and font configuration.
-- Customized modal, floater, toast, scrollbar, button, text-field, and chat styling.
+- Customized modal, floater, toast, scrollbar, button, tab, themed single- and multiline text fields, unified green accent states, and chat styling (multiline refresh in progress; tab and accent refresh in progress).
+- Subtle hover gradient on floater backgrounds (in progress).
+- Separated top-center DM chiclets and top-right notification controls (in progress).
 - Custom colors for VIP, friend, blocked, and radar states.
 - Volume and audio UI adjustments.
 - Group visibility and notification preferences.

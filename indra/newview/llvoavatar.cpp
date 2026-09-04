@@ -4104,6 +4104,11 @@ LLVector3 LLVOAvatar::idleCalcNameTagPosition(const LLVector3 &root_pos_last)
     mCurRootToHeadOffset = lerp(mCurRootToHeadOffset, mTargetRootToHeadOffset, LLSmoothInterpolation::getInterpolant(0.2f));
 
     LLVector3 name_position = mRoot->getLastWorldPosition() + (mCurRootToHeadOffset * root_rot);
+    // Keep the height derived from the avatar's head/body, but anchor the
+    // horizontal position to the avatar origin so animation offsets do not
+    // make the nameplate sway with the rig.
+    name_position[VX] = root_pos_last[VX];
+    name_position[VY] = root_pos_last[VY];
     name_position += (local_camera_up * root_rot) - (projected_vec(local_camera_at * root_rot, camera_to_av));
     name_position += pixel_up_vec * NAMETAG_VERTICAL_SCREEN_OFFSET;
 

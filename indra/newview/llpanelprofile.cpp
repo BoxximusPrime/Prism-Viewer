@@ -116,7 +116,7 @@ void showTexturePreview(LLView* owner, const LLUUID& image_id)
         LLFloater* parent_floater = gFloaterView->getParentFloater(owner);
         if (parent_floater)
         {
-            parent_floater->addDependentFloater(preview_texture);
+            parent_floater->addDependentFloater(preview_texture, false);
             preview_texture->hideCtrlButtons();
         }
     }
