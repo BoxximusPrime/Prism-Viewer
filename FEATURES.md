@@ -44,6 +44,11 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Profiles and inventory
 
+- Inventory Cleanup with whole demo-folder discovery based only on folder names, with full descendant review, same-asset copy groups, possible object versions, acquired-before review, saved protected folders, and mandatory exact-identity review before bounded moves to Trash, including frozen folder membership and overlap checks. Linked targets, worn items, outfit folders, and Marketplace contents are excluded; stale reviews are rejected. (in progress; Release build and 31 regression checks verified; runtime verification pending)
+- Inventory Cleanup landing page with four themed square tool cards, focused results screens, protected-folder toggle, and loading diagnostics shown only on request. (in progress; Release build and existing regression checks passed; UI runtime verification pending)
+- Inventory Cleanup loading diagnostics with live folder/item and request counts, explicit idle-but-incomplete state, blocker details, and bounded forced refresh of incomplete entries. (in progress; Release build and 20 regression checks passed; runtime verification pending)
+- Inventory cache restores now mark successfully parsed, valid item records complete, avoiding unnecessary per-item refetches and stalled cleanup scans after login. (in progress; Release build verified; runtime verification pending)
+
 - Inventory search operators for multiple required terms, excluded terms, and exact phrases. (in progress)
 - Alt-click recursive expansion and collapse for inventory folder trees. (in progress)
 - Improved profile texture viewers and modal sizing/behavior, including an unconstrained default, native-size initial previews, centered resizing, independently closable picks previews, and focused-window closing (in progress).

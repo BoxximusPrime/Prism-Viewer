@@ -77,6 +77,10 @@ public:
     void incrFetchFolderCount(S32 fetching);
 
     bool isBulkFetchProcessingComplete() const;
+    // Shared background inventory/library work; diagnostic counts, not percentages.
+    size_t getQueuedFolderCount() const { return mFetchFolderQueue.size(); }
+    size_t getQueuedItemCount() const { return mFetchItemQueue.size(); }
+    S32 getActiveFetchCount() const { return mFetchCount; }
     void setAllFoldersFetched();
 
     typedef std::function<void()> folders_fetched_callback_t;

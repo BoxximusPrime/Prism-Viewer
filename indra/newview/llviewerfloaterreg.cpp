@@ -94,6 +94,7 @@
 #include "llfloaterimagepreview.h"
 #include "llfloaterimsession.h"
 #include "llfloaterinspect.h"
+#include "llfloaterinventorycleanup.h"
 #include "llfloaterinventorysettings.h"
 #include "llfloaterinventorythumbnailshelper.h"
 #include "llfloaterjoystick.h"
@@ -414,6 +415,8 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("inventory_thumbnails_helper", "floater_inventory_thumbnails_helper.xml", (LLFloaterBuildFunc) &LLFloaterReg::build<LLFloaterInventoryThumbnailsHelper>);
     LLFloaterReg::add("item_properties", "floater_item_properties.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterItemProperties>);
     LLFloaterReg::add("task_properties", "floater_task_properties.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterItemProperties>);
+    LLFloaterReg::add("inventory_cleanup", "floater_inventory_cleanup.xml", &LLFloaterReg::build<LLFloaterInventoryCleanup>);
+    LLFloaterReg::add("inventory_cleanup_review", "floater_inventory_cleanup_review.xml", &LLFloaterReg::build<LLFloaterInventoryCleanupReview>);
     LLFloaterReg::add("inventory_settings", "floater_inventory_settings.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterInventorySettings>);
     LLInspectAvatarUtil::registerFloater();
     LLInspectGroupUtil::registerFloater();

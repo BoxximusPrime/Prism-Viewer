@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+project(inventory_cleanup_tests LANGUAGES CXX)
+enable_testing()
+add_executable(inventory_cleanup_plan_test inventory_cleanup_plan_test.cpp)
+target_compile_features(inventory_cleanup_plan_test PRIVATE cxx_std_17)
+add_test(NAME inventory_cleanup_plan COMMAND inventory_cleanup_plan_test)
