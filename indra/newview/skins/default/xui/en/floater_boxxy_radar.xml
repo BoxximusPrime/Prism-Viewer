@@ -32,7 +32,7 @@
      height="25"
      label="Search display names or usernames"
      max_length_chars="128"
-     text_color="Black"
+     text_color="TextFgColor"
      text_pad_left="10"
      tool_tip="Live fuzzy search across display names and usernames" />
     <menu_button

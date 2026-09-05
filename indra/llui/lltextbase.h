@@ -89,6 +89,9 @@ public:
     virtual void                updateLayout(const class LLTextBase& editor);
     virtual F32                 draw(S32 start, S32 end, S32 selection_start, S32 selection_end, const LLRectf& draw_rect);
     virtual bool                canEdit() const;
+    virtual class LLTextBase*   getSelectionText() const { return nullptr; }
+    virtual bool                drawsSelectionBackground() const { return true; }
+    virtual void                prepareLayout(const class LLTextBase& editor) const {}
     virtual void                unlinkFromDocument(class LLTextBase* editor);
     virtual void                linkToDocument(class LLTextBase* editor);
 
@@ -244,6 +247,9 @@ public:
     struct Params : public LLInitParam::Block<Params>
     {
         Mandatory<LLView*>      view;
+        Optional<class LLTextBase*> selection_text;
+        Optional<bool>          hide_selection,
+                                fit_to_width;
         Optional<bool>          force_newline;
         Optional<S32>           left_pad,
                                 right_pad,
@@ -252,6 +258,9 @@ public:
     };
 
     LLInlineViewSegment(const Params& p, S32 start, S32 end);
+    LLTextBase* getSelectionText() const override { return mSelectionText; }
+    bool drawsSelectionBackground() const override { return !mHideSelection && !mSelectionText; }
+    void prepareLayout(const LLTextBase& editor) const override;
     ~LLInlineViewSegment();
     /*virtual*/ LLTextSegmentPtr clone(LLTextBase& target) const;
 
@@ -270,6 +279,9 @@ private:
     S32 mTopPad;
     S32 mBottomPad;
     LLView* mView;
+    LLTextBase* mSelectionText;
+    bool mHideSelection;
+    bool mFitToWidth;
     bool    mForceNewLine;
 };
 
@@ -326,6 +338,7 @@ class LLTextBase
 {
 public:
     friend class LLTextSegment;
+    friend class LLInlineViewSegment;
     friend class LLNormalTextSegment;
     friend class LLEmbeddedItemSegment;
     friend class LLUICtrlFactory;
@@ -513,7 +526,7 @@ public:
 
     S32                     getDocIndexFromLocalCoord( S32 local_x, S32 local_y, bool round, bool hit_past_end_of_line = true) const;
     LLRect                  getLocalRectFromDocIndex(S32 pos) const;
-    LLRect                  getDocRectFromDocIndex(S32 pos) const;
+    LLRect                  getDocRectFromDocIndex(S32 pos, bool use_inline_text = true) const;
 
     void                    setReadOnly(bool read_only) { mReadOnly = read_only; }
     bool                    getReadOnly() const { return mReadOnly; }

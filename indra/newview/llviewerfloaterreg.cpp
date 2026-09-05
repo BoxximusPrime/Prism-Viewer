@@ -43,6 +43,7 @@
 #include "llfloateravatarwelcomepack.h"
 #include "llfloateravatarrendersettings.h"
 #include "llfloateravatartextures.h"
+#include "llfloaterwornattachments.h"
 #include "llfloaterbanduration.h"
 #include "llfloaterbeacons.h"
 #include "llfloaterbuildoptions.h"
@@ -64,6 +65,7 @@
 #include "llfloaterchatvoicevolume.h"
 #include "llfloaterclassified.h"
 #include "llfloaterconversationlog.h"
+#include "llfloatereconomylog.h"
 #include "llfloaterconversationpreview.h"
 #include "llfloatercreatelandmark.h"
 #include "llfloaterdeleteprefpreset.h"
@@ -339,6 +341,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("avatar_welcome_pack", "floater_avatar_welcome_pack.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterAvatarWelcomePack>);
     LLFloaterReg::add("avatar_render_settings", "floater_avatar_render_settings.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterAvatarRenderSettings>);
     LLFloaterReg::add("avatar_textures", "floater_avatar_textures.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterAvatarTextures>);
+    LLFloaterReg::add("worn_attachments", "floater_worn_attachments.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterWornAttachments>);
 
     LLFloaterReg::add("ban_duration", "floater_ban_duration.xml", &LLFloaterReg::build<LLFloaterBanDuration>);
     LLFloaterReg::add("beacons", "floater_beacons.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBeacons>);
@@ -366,6 +369,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("classified", "floater_classified.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterClassified>);
     LLFloaterReg::add("compile_queue", "floater_script_queue.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterCompileQueue>);
     LLFloaterReg::add("conversation", "floater_conversation_log.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterConversationLog>);
+    LLFloaterReg::add("money_log", "floater_money_log.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterEconomyLog>);
     LLFloaterReg::add("add_landmark", "floater_create_landmark.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterCreateLandmark>);
 
     LLFloaterReg::add("delete_pref_preset", "floater_delete_pref_preset.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterDeletePrefPreset>);

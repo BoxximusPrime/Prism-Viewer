@@ -6868,6 +6868,19 @@ class LLAvatarResetSkeleton : public view_listener_t
     }
 };
 
+class LLAvatarShowWornAttachments : public view_listener_t
+{
+    bool handleEvent(const LLSD& userdata) override
+    {
+        if (LLVOAvatar* avatar = find_avatar_from_object(
+                LLSelectMgr::getInstance()->getSelection()->getPrimaryObject()))
+        {
+            LLFloaterReg::showInstance("worn_attachments", avatar->getID());
+        }
+        return true;
+    }
+};
+
 class LLAvatarEnableResetSkeleton : public view_listener_t
 {
     bool handleEvent(const LLSD& userdata)
@@ -10340,6 +10353,7 @@ void initialize_menus()
     view_listener_t::addMenu(new LLAvatarTogglePicks(), "Avatar.TogglePicks");
     view_listener_t::addMenu(new LLAvatarToggleSearch(), "Avatar.ToggleSearch");
     view_listener_t::addMenu(new LLAvatarResetSkeleton(), "Avatar.ResetSkeleton");
+    view_listener_t::addMenu(new LLAvatarShowWornAttachments(), "Avatar.ShowWornAttachments");
     view_listener_t::addMenu(new LLAvatarEnableResetSkeleton(), "Avatar.EnableResetSkeleton");
     view_listener_t::addMenu(new LLAvatarResetSkeletonAndAnimations(), "Avatar.ResetSkeletonAndAnimations");
     view_listener_t::addMenu(new LLAvatarResetSelfSkeleton(), "Avatar.ResetSelfSkeleton");

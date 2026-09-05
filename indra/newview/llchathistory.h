@@ -127,6 +127,7 @@ class LLChatHistory : public LLUICtrl
         LLDate mLastMessageTime;
         bool mIsLastMessageFromLog;
         bool mNotifyAboutUnreadMsg;
+        bool mHasBottomSpacer;
         //std::string mLastMessageTimeStr;
 
         std::string mMessageHeaderFilename;

@@ -10,12 +10,24 @@
  width="340">
   <icon
    name="hovered_icon"
-   follows="all"
+   follows="left|right|top"
    left="0"
-   right="0"
    top="0"
+   width="340"
    height="30"
    image_name="ListItem_Over"
+   mouse_opaque="false"
+   scale_image="true"
+   visible="false" />
+  <icon
+   name="hovered_accent"
+   follows="left|top"
+   left="0"
+   top="2"
+   width="3"
+   height="26"
+   image_name="Rounded_Square"
+   color="AccentColor"
    mouse_opaque="false"
    visible="false" />
   <text

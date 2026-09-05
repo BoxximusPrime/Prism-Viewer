@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater
+ can_resize="true"
+ height="550"
+ min_height="300"
+ min_width="420"
+ name="money_log"
+ positioning="cascading"
+ save_rect="true"
+ single_instance="true"
+ title="MONEY LOG"
+ width="500">
+    <layout_stack
+     follows="left|right|top"
+     height="20"
+     left="12"
+     name="headers"
+     orientation="horizontal"
+     right="-12"
+     top="12">
+        <layout_panel
+         auto_resize="true"
+         height="20"
+         name="transaction_header_column"
+         user_resize="false"
+         width="338">
+            <text
+             follows="left|right|top"
+             font="SansSerifSmall"
+             font.style="BOLD"
+             height="20"
+             left="12"
+             name="transaction_header"
+             right="-12"
+             text_color="LabelTextColor"
+             top="0"
+             value="TRANSACTION" />
+        </layout_panel>
+        <layout_panel
+         auto_resize="true"
+         height="20"
+         name="time_header_column"
+         user_resize="false"
+         width="338">
+            <text
+             follows="left|right|top"
+             font="SansSerifSmall"
+             font.style="BOLD"
+             halign="right"
+             height="20"
+             left="12"
+             name="time_header"
+             right="-12"
+             text_color="LabelTextColor"
+             top="0"
+             value="TIME" />
+        </layout_panel>
+    </layout_stack>
+    <flat_list_view
+     allow_select="false"
+     bottom="-52"
+     follows="all"
+     left="12"
+     name="transactions"
+     right="-12"
+     top="36"
+     item_pad="6">
+        <flat_list_view.no_items_text
+         value="Money received and spent this session will appear here." />
+    </flat_list_view>
+    <button
+     bottom="-12"
+     follows="right|bottom"
+     height="28"
+     label="Clear Log"
+     name="clear_btn"
+     right="-12"
+     width="110" />
+</floater>

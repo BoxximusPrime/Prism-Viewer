@@ -60,6 +60,7 @@
 #include "llfirstuse.h"
 #include "llfloaterbump.h"
 #include "llfloaterbuyland.h"
+#include "llfloatereconomylog.h"
 #include "llfloaterland.h"
 #include "llfloaterregioninfo.h"
 #include "llfloaterlandholdings.h"
@@ -146,7 +147,7 @@ extern bool gShiftFrame;
 // function prototypes
 bool check_offer_throttle(const std::string& from_name, bool check_only);
 bool check_asset_previewable(const LLAssetType::EType asset_type);
-static void process_money_balance_reply_extended(LLMessageSystem* msg);
+static void process_money_balance_reply_extended(LLMessageSystem* msg, bool show_notification);
 bool handle_trusted_experiences_notification(const LLSD&);
 
 //inventory offer throttle globals
@@ -4542,8 +4543,10 @@ void process_money_balance_reply( LLMessageSystem* msg, void** )
         gStatusBar->setLandCommitted(committed);
     }
 
-    if (desc.empty()
-        || !gSavedSettings.getBOOL("NotifyMoneyChange"))
+    const bool has_extended_info = msg->has("TransactionInfo");
+    const bool show_notification = !desc.empty()
+        && gSavedSettings.getBOOL("NotifyMoneyChange");
+    if (!has_extended_info && !show_notification)
     {
         // ...nothing to display
         return;
@@ -4568,10 +4571,10 @@ void process_money_balance_reply( LLMessageSystem* msg, void** )
     //LL_DEBUGS("Messaging") << "Pushing back transaction " << tid << LL_ENDL;
     recent.push_back(tid);
 
-    if (msg->has("TransactionInfo"))
+    if (has_extended_info)
     {
         // ...message has extended info for localization
-        process_money_balance_reply_extended(msg);
+        process_money_balance_reply_extended(msg, show_notification);
     }
     else
     {
@@ -4661,7 +4664,37 @@ static void money_balance_avatar_notify(const LLUUID& agent_id,
     LLNotificationsUtil::add(notification, args, payload);
 }
 
-static void process_money_balance_reply_extended(LLMessageSystem* msg)
+static void money_log_group_name(const LLUUID& group_id,
+                                 const std::string& name,
+                                 bool is_group,
+                                 bool outgoing,
+                                 S32 amount,
+                                 std::string detail,
+                                 LLDate timestamp,
+                                 U32 generation)
+{
+    LLFloaterEconomyLog::addTransaction(outgoing, amount, name, "Group",
+        detail, timestamp, generation);
+}
+
+static void money_log_avatar_name(const LLUUID& agent_id,
+                                  const LLAvatarName& av_name,
+                                  bool outgoing,
+                                  S32 amount,
+                                  std::string detail,
+                                  LLDate timestamp,
+                                  U32 generation)
+{
+    std::string username = av_name.getAccountName();
+    if (username.empty())
+    {
+        username = av_name.getUserName(true);
+    }
+    LLFloaterEconomyLog::addTransaction(outgoing, amount,
+        av_name.getDisplayName(true), username, detail, timestamp, generation);
+}
+
+static void process_money_balance_reply_extended(LLMessageSystem* msg, bool show_notification)
 {
     // Added in server 1.40 and viewer 2.1, support for localization
     // and agent ids for name lookup.
@@ -4720,6 +4753,41 @@ static void process_money_balance_reply_extended(LLMessageSystem* msg)
     std::string reason =
         reason_from_transaction_type(transaction_type, item_description);
 
+    const bool you_paid_someone = (source_id == gAgentID);
+    if (success)
+    {
+        const LLUUID& counterparty_id = you_paid_someone ? dest_id : source_id;
+        const bool counterparty_is_group = you_paid_someone ? is_dest_group : is_source_group;
+        const std::string detail = !reason.empty()
+            ? reason
+            : (item_description == "Payment" ? std::string() : item_description);
+        const LLDate timestamp = LLDate::now();
+        const U32 generation = LLFloaterEconomyLog::getGeneration();
+
+        if (counterparty_id.isNull())
+        {
+            LLFloaterEconomyLog::addTransaction(you_paid_someone, amount,
+                "Second Life", "System", detail, timestamp, generation);
+        }
+        else if (counterparty_is_group)
+        {
+            gCacheName->getGroup(counterparty_id,
+                boost::bind(&money_log_group_name, _1, _2, _3,
+                    you_paid_someone, amount, detail, timestamp, generation));
+        }
+        else
+        {
+            LLAvatarNameCache::get(counterparty_id,
+                boost::bind(&money_log_avatar_name, _1, _2,
+                    you_paid_someone, amount, detail, timestamp, generation));
+        }
+    }
+
+    if (!show_notification)
+    {
+        return;
+    }
+
     LLStringUtil::format_map_t args;
     args["REASON"] = reason; // could be empty
     args["AMOUNT"] = llformat("%d", amount);
@@ -4733,7 +4801,6 @@ static void process_money_balance_reply_extended(LLMessageSystem* msg)
     LLSD final_args;
     LLSD payload;
 
-    bool you_paid_someone = (source_id == gAgentID);
     std::string gift_suffix = (transaction_type == TRANS_GIFT ? "_gift" : "");
     if (you_paid_someone)
     {

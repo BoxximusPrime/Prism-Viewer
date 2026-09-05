@@ -8239,6 +8239,32 @@
     <key>Value</key>
     <real>0.75</real>
   </map>
+  <key>RenderExactOIT</key>
+  <map>
+    <key>Comment</key>
+    <string>Use exact per-pixel linked-list transparency for supported post-water alpha rendering.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+    <key>Backup</key>
+    <integer>0</integer>
+  </map>
+  <key>RenderExactOITDebugMode</key>
+  <map>
+    <key>Comment</key>
+    <string>Exact OIT diagnostic view: 0 final, 1 fragment count, 2 nearest depth, 3 farthest depth, 4 sort validation, 5 blend mode.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>S32</string>
+    <key>Value</key>
+    <integer>0</integer>
+    <key>Backup</key>
+    <integer>0</integer>
+  </map>
   <key>RenderDeferredNoise</key>
   <map>
     <key>Comment</key>

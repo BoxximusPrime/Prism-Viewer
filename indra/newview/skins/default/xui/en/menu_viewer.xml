@@ -106,6 +106,16 @@
         <menu_item_call.on_click
          function="BuyCurrency" />
       </menu_item_call>
+      <menu_item_check
+       label="Money Log..."
+       name="Money Log...">
+        <menu_item_check.on_check
+         function="Floater.Visible"
+         parameter="money_log" />
+        <menu_item_check.on_click
+         function="Floater.Toggle"
+         parameter="money_log" />
+      </menu_item_check>
         <menu_item_call
             label="Marketplace listings..."
             name="MarketplaceListings">

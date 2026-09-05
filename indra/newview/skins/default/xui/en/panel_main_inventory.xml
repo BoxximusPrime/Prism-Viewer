@@ -148,6 +148,7 @@
        max_length_chars="300"
        highlight_text_field="true"
        name="inventory search editor"
+       tool_tip="Search inventory. Use spaces or + for AND, | for OR, -word to exclude, and quotes for an exact phrase."
        width="150" />
       <menu_button
        follows="top|right"
