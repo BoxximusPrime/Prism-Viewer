@@ -89,6 +89,7 @@ set(viewer_SOURCE_FILES
     gltf/animation.cpp
     gltf/llgltfloader.cpp
     groupchatlistener.cpp
+    fsexactoit.cpp
     llaccountingcostmanager.cpp
     llaisapi.cpp
     llagent.cpp
@@ -198,6 +199,7 @@ set(viewer_SOURCE_FILES
     llfloateravatarpicker.cpp
     llfloateravatarrendersettings.cpp
     llfloateravatartextures.cpp
+    llfloaterwornattachments.cpp
     llfloaterbanduration.cpp
     llfloaterbeacons.cpp
     llfloaterbuildoptions.cpp
@@ -217,6 +219,7 @@ set(viewer_SOURCE_FILES
     llfloaterclassified.cpp
     llfloatercolorpicker.cpp
     llfloaterconversationlog.cpp
+    llfloatereconomylog.cpp
     llfloaterboxxyao.cpp
     llfloaterboxxyradar.cpp
     llfloaterconversationpreview.cpp
@@ -371,6 +374,7 @@ set(viewer_SOURCE_FILES
     llinspecttoast.cpp
     llinventorybridge.cpp
     llinventoryfilter.cpp
+    llinventorysearch.cpp
     llinventoryfunctions.cpp
     llinventorygallery.cpp
     llinventorygallerymenu.cpp
@@ -886,6 +890,7 @@ set(viewer_HEADER_FILES
     llfloateravatarpicker.h
     llfloateravatarrendersettings.h
     llfloateravatartextures.h
+    llfloaterwornattachments.h
     llfloaterbanduration.h
     llfloaterbeacons.h
     llfloaterbuildoptions.h
@@ -905,6 +910,7 @@ set(viewer_HEADER_FILES
     llfloaterclassified.h
     llfloatercolorpicker.h
     llfloaterconversationlog.h
+    llfloatereconomylog.h
     llfloaterboxxyao.h
     llfloaterboxxyradar.h
     llfloaterconversationpreview.h
@@ -917,6 +923,7 @@ set(viewer_HEADER_FILES
     llfloatereditextdaycycle.h
     llfloateremojipicker.h
     llfloaterenvironmentadjust.h
+    fsexactoit.h
     llfloaterevent.h
     llfloaterexperiencepicker.h
     llfloaterexperienceprofile.h
@@ -1061,6 +1068,7 @@ set(viewer_HEADER_FILES
     llinspecttoast.h
     llinventorybridge.h
     llinventoryfilter.h
+    llinventorysearch.h
     llinventoryfunctions.h
     llinventorygallery.h
     llinventorygallerymenu.h
@@ -2439,6 +2447,7 @@ if (LL_TESTS)
   SET(viewer_TEST_SOURCE_FILES
     llagentaccess.cpp
     lldateutil.cpp
+    llinventorysearch.cpp
 #    llmediadataclient.cpp
     lllogininstance.cpp
     llremoteparcelrequest.cpp

@@ -36,7 +36,6 @@
 #include "llinventorymodelbackgroundfetch.h"
 #include "llinventoryfunctions.h"
 #include "llmarketplacefunctions.h"
-#include "llregex.h"
 #include "llviewercontrol.h"
 #include "llfolderview.h"
 #include "llinventorybridge.h"
@@ -122,37 +121,7 @@ bool LLInventoryFilter::check(const LLFolderViewModelItem* item)
     }
 
 
-    bool passed = true;
-    if (!mExactToken.empty() && (mSearchType == SEARCHTYPE_NAME))
-    {
-        passed = false;
-        typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-        boost::char_separator<char> sep(" ");
-        tokenizer tokens(desc, sep);
-
-        for (const auto& token_iter : tokens)
-        {
-            if (token_iter == mExactToken)
-            {
-                passed = true;
-                break;
-            }
-        }
-    }
-    else if (!mFilterTokens.empty() && mSearchType == SEARCHTYPE_NAME)
-    {
-        for (const auto& token_iter : mFilterTokens)
-        {
-            if (desc.find(token_iter) == std::string::npos)
-            {
-                return false;
-            }
-        }
-    }
-    else
-    {
-        passed = checkAgainstFilterSubString(desc);
-    }
+    bool passed = matchesSearchableText(desc);
 
     passed = passed && checkAgainstFilterType(listener);
     passed = passed && checkAgainstPermissions(listener);
@@ -168,7 +137,7 @@ bool LLInventoryFilter::check(const LLFolderViewModelItem* item)
 
 bool LLInventoryFilter::check(const LLInventoryItem* item)
 {
-    const bool passed_string = checkAgainstFilterSubString(item->getName());
+    const bool passed_string = matchesSearchableText(item->getName());
     const bool passed_filtertype = checkAgainstFilterType(item);
     const bool passed_permissions = checkAgainstPermissions(item);
 
@@ -320,13 +289,9 @@ bool LLInventoryFilter::checkFolder(const LLUUID& folder_id) const
     return true;
 }
 
-bool LLInventoryFilter::checkAgainstFilterSubString(const std::string& desc) const
+bool LLInventoryFilter::matchesSearchableText(const std::string& text) const
 {
-    if (mFilterSubString.empty())
-        return true;
-
-    size_t pos = desc.find(mFilterSubString);
-    return pos != std::string::npos;
+    return mSearchQuery.matches(text);
 }
 
 bool LLInventoryFilter::checkAgainstFilterType(const LLFolderViewModelItemInventory* listener) const
@@ -710,7 +675,8 @@ std::string::size_type LLInventoryFilter::getStringMatchOffset(LLFolderViewModel
 {
     if (mSearchType == SEARCHTYPE_NAME)
     {
-        return mFilterSubString.size() ? item->getSearchableName().find(mFilterSubString) : std::string::npos;
+        const std::string& term = mSearchQuery.getFirstIncludedTerm();
+        return term.empty() ? std::string::npos : item->getSearchableName().find(term);
     }
 
     return std::string::npos;
@@ -1026,36 +992,9 @@ void LLInventoryFilter::setFilterSubString(const std::string& string)
 
     if (mFilterSubString != filter_sub_string_new)
     {
-        mFilterTokens.clear();
-        if (filter_sub_string_new.find_first_of("+") != std::string::npos)
-        {
-            typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-            boost::char_separator<char> sep("+");
-            tokenizer tokens(filter_sub_string_new, sep);
-
-            for (const auto& token_iter : tokens)
-            {
-                mFilterTokens.push_back(token_iter);
-            }
-        }
-
-        std::string old_token = mExactToken;
-        mExactToken.clear();
-        bool exact_token_changed = false;
-        if (mFilterTokens.empty() && filter_sub_string_new.size() > 2)
-        {
-            boost::regex mPattern = boost::regex("\"\\s*([^<]*)?\\s*\"",
-                boost::regex::perl | boost::regex::icase);
-            boost::match_results<std::string::const_iterator> matches;
-            mExactToken = (ll_regex_match(filter_sub_string_new, matches, mPattern) && matches[1].matched)
-                ? matches[1]
-                : LLStringUtil::null;
-            if ((old_token.empty() && !mExactToken.empty())
-                || (!old_token.empty() && mExactToken.empty()))
-            {
-                exact_token_changed = true;
-            }
-        }
+        const bool had_exclusions = mSearchQuery.hasExclusions();
+        const bool had_complex_syntax = mFilterSubString.find_first_of("+\"|") != std::string::npos;
+        mSearchQuery = LLInventorySearchQuery(filter_sub_string_new);
 
         // hitting BACKSPACE, for example
         const bool less_restrictive = mFilterSubString.size() >= filter_sub_string_new.size()
@@ -1066,7 +1005,9 @@ void LLInventoryFilter::setFilterSubString(const std::string& string)
             && !filter_sub_string_new.substr(0, mFilterSubString.size()).compare(mFilterSubString);
 
         mFilterSubString = filter_sub_string_new;
-        if (exact_token_changed)
+        if (had_exclusions || mSearchQuery.hasExclusions()
+            || had_complex_syntax
+            || filter_sub_string_new.find_first_of("+\"|") != std::string::npos)
         {
             setModified(FILTER_RESTART);
         }
@@ -1701,7 +1642,7 @@ bool LLInventoryFilter::hasFilterString() const
 
 std::string::size_type LLInventoryFilter::getFilterStringSize() const
 {
-    return mFilterSubString.size();
+    return mSearchQuery.getFirstIncludedTerm().size();
 }
 
 PermissionMask LLInventoryFilter::getFilterPermissions() const

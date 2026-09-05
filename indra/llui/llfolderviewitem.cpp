@@ -2349,7 +2349,12 @@ bool LLFolderViewFolder::handleMouseDown( S32 x, S32 y, MASK mask )
     }
     if( !handled )
     {
-        if((mIndentation < x && x < mIndentation + (isCollapsed() ? 0 : mArrowSize) + mTextPad)
+        if ((mask & MASK_ALT) && !mSingleFolderMode)
+        {
+            setOpenArrangeRecursively(!isOpen(), RECURSE_DOWN);
+            handled = true;
+        }
+        else if((mIndentation < x && x < mIndentation + (isCollapsed() ? 0 : mArrowSize) + mTextPad)
            && !mSingleFolderMode)
         {
             toggleOpen();

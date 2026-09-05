@@ -112,6 +112,8 @@ LLObjectIMHandler gObjectIMHandler;
 class LLChatHistoryBubble final : public LLPanel
 {
 public:
+    LLTextBase* getSelectionText() const { return mText; }
+
     LLChatHistoryBubble(const LLPanel::Params& p, bool from_me,
                         const std::string& message,
                         const std::string& translated_message,
@@ -136,7 +138,11 @@ public:
                              getRect().getWidth() - HORIZONTAL_PAD, 4);
         text_p.wrap = true;
         text_p.parse_urls = true;
-        text_p.mouse_opaque = true;
+        text_p.bg_selected_color = LLUIColorTable::instance().getColor("SelectionColor");
+        text_p.text_selected_color = LLUIColorTable::instance().getColor("Black");
+        // The containing history editor owns selection so a drag can cross
+        // headers and bubbles instead of ending at this message's boundary.
+        text_p.mouse_opaque = false;
         text_p.text_valign = LLFontGL::VCENTER;
         mText = LLUICtrlFactory::create<LLTextBox>(text_p, mBubble);
         mText->setText(message, message_style);
@@ -1314,7 +1320,8 @@ LLChatHistory::LLChatHistory(const LLChatHistory::Params& p)
     mTopHeaderPad(p.top_header_pad),
     mBottomHeaderPad(p.bottom_header_pad),
     mIsLastMessageFromLog(false),
-    mNotifyAboutUnreadMsg(p.notify_unread_msg)
+    mNotifyAboutUnreadMsg(p.notify_unread_msg),
+    mHasBottomSpacer(false)
 {
     LLTextEditor::Params editor_params(p);
     editor_params.rect = getLocalRect();
@@ -1432,6 +1439,7 @@ void LLChatHistory::clear()
 {
     mLastFromName.clear();
     mEditor->clear();
+    mHasBottomSpacer = false;
     mLastFromID = LLUUID::null;
 }
 
@@ -1446,6 +1454,12 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
     llassert(mEditor);
     if (!mEditor)
         return;
+
+    if (mHasBottomSpacer)
+    {
+        mEditor->removeTextFromEnd(1);
+        mHasBottomSpacer = false;
+    }
 
     bool from_me = chat.mFromID == gAgent.getID();
     const bool use_message_bubble = !use_plain_text_chat_history
@@ -1484,6 +1498,7 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
     LLStyle::Params body_message_params;
     body_message_params.color(txt_color);
     body_message_params.readonly_color(txt_color);
+    body_message_params.selected_color(LLUIColorTable::instance().getColor("Black"));
     body_message_params.alpha(alpha);
     body_message_params.font.name(font_name);
     body_message_params.font.size(font_size);
@@ -1618,6 +1633,8 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
         prependNewLineState = false;
         LLView* view = NULL;
         LLInlineViewSegment::Params p;
+        p.hide_selection = use_message_bubble;
+        p.fit_to_width = use_message_bubble;
         p.force_newline = !use_message_bubble;
         p.left_pad = mLeftWidgetPad;
         p.right_pad = mRightWidgetPad;
@@ -1660,7 +1677,7 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
         p.view = view;
 
         //Prepare the rect for the view
-        LLRect target_rect = mEditor->getDocumentView()->getRect();
+        LLRect target_rect = mEditor->getVisibleTextRect();
         // squeeze down the widget by subtracting padding off left and right
         target_rect.mLeft += mLeftWidgetPad + mEditor->getHPad();
         target_rect.mRight -= mRightWidgetPad;
@@ -1781,6 +1798,8 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
 
             LLInlineViewSegment::Params bubble_segment;
             bubble_segment.view = bubble;
+            bubble_segment.fit_to_width = true;
+            bubble_segment.selection_text = bubble->getSelectionText();
             // The row consumes the full available width through its left/right
             // padding, so normal wrapping starts the next widget on a new line.
             // Forcing another newline reserves an extra font-height line and
@@ -1790,11 +1809,10 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
             bubble_segment.right_pad = mRightTextPad;
             bubble_segment.top_pad = 0;
             bubble_segment.bottom_pad = 1;
-            std::string associated_text = message;
-            if (!chat.mTranslatedText.empty())
-            {
-                associated_text += " (" + chat.mTranslatedText + ")";
-            }
+            // Match the rendered characters, including parsed URL labels, so
+            // mouse positions and clipboard offsets use the same document.
+            std::string associated_text = bubble->getSelectionText()->getText();
+            associated_text += "\n";
             mEditor->appendWidget(bubble_segment, associated_text, false);
         }
         else
@@ -1810,6 +1828,22 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
             }
         }
         prependNewLineState = false;
+    }
+
+    if (use_message_bubble)
+    {
+        LLPanel::Params spacer_params;
+        spacer_params.name = "message_bottom_padding";
+        spacer_params.rect = LLRect(0, 8, 1, 0);
+        spacer_params.background_visible = false;
+        spacer_params.mouse_opaque = false;
+
+        LLInlineViewSegment::Params spacer_segment;
+        spacer_segment.hide_selection = true;
+        spacer_segment.view = LLUICtrlFactory::create<LLPanel>(spacer_params);
+        spacer_segment.force_newline = false;
+        mEditor->appendWidget(spacer_segment, "\n", false);
+        mHasBottomSpacer = true;
     }
 
     mEditor->blockUndo();

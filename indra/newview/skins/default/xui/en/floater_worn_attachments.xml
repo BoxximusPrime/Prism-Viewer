@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater
+ can_resize="true"
+ height="650"
+ min_height="180"
+ min_width="420"
+ name="worn_attachments"
+ save_rect="true"
+ single_instance="true"
+ title="WORN ATTACHMENTS"
+ width="900">
+    <string name="avatar_unavailable">This avatar is no longer available.</string>
+    <string name="loading">Loading attachment details...</string>
+    <string name="no_attachments">No visible attachments were found.</string>
+    <string name="unnamed_attachment">Unnamed attachment</string>
+    <name_list
+     draw_heading="true"
+     follows="all"
+     left="12"
+     name="attachments"
+     name_column="creator"
+     right="-12"
+     sort_ascending="true"
+     sort_column="attachment_point"
+     top="12"
+     bottom="-42">
+        <name_list.columns
+         label="Attachment Point"
+         name="attachment_point"
+         relative_width="0.25" />
+        <name_list.columns
+         label="Attachment"
+         name="attachment"
+         width="450" />
+        <name_list.columns
+         label="Creator"
+         name="creator"
+         relative_width="0.35" />
+    </name_list>
+    <text
+     follows="left|right|bottom"
+     height="24"
+     left="12"
+     name="status"
+     right="-12"
+     top="-34"
+     value="Loading attachment details..." />
+</floater>

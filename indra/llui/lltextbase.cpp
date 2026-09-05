@@ -411,6 +411,12 @@ std::vector<LLRect> LLTextBase::getSelectionRects()
             S32 segment_offset;
             getSegmentAndOffset(line_iter->mDocIndexStart, &segment_iter, &segment_offset);
 
+            // Embedded text paints its own character-level selection.
+            if (segment_iter != mSegments.end() && !(*segment_iter)->drawsSelectionBackground())
+            {
+                continue;
+            }
+
             // Use F32 otherwise a string of multiple segments
             // will accumulate a large error
             F32 left_precise = (F32)line_iter->mRect.mLeft;
@@ -1590,6 +1596,16 @@ void LLTextBase::draw()
     bool should_clip = mClip || mScroller != NULL;
     { LLLocalClipRect clip(text_rect, should_clip);
 
+        // Mirror the document selection before embedded text controls draw.
+        for (const auto& segment : mSegments)
+        {
+            if (LLTextBase* text = segment->getSelectionText())
+            {
+                text->mSelectionStart = llclamp(mSelectionStart - segment->getStart(), 0, text->getLength());
+                text->mSelectionEnd = llclamp(mSelectionEnd - segment->getStart(), 0, text->getLength());
+            }
+        }
+
         // draw document view
         if (mScroller)
         {
@@ -1869,6 +1885,11 @@ void LLTextBase::reflow()
         if (mWordWrap)
         {
             mDocumentView->reshape(mVisibleTextRect.getWidth(), mDocumentView->getRect().getHeight());
+        }
+
+        for (const auto& segment : mSegments)
+        {
+            segment->prepareLayout(*this);
         }
 
         S32 cur_top = 0;
@@ -2899,6 +2920,13 @@ S32 LLTextBase::getDocIndexFromLocalCoord( S32 local_x, S32 local_y, bool round,
         }
         if (local_x < start_x + text_width)         // cursor to left of right edge of text
         {
+            if (LLTextBase* text = segmentp->getSelectionText())
+            {
+                S32 text_x, text_y;
+                localPointToOtherView(local_x, local_y, &text_x, &text_y, text);
+                const S32 offset = text->getDocIndexFromLocalCoord(text_x, text_y, round, hit_past_end_of_line);
+                return segmentp->getStart() + llclamp(offset, 0, segmentp->getEnd() - segmentp->getStart());
+            }
             // Figure out which character we're nearest to.
             S32 offset;
             if (!segmentp->canEdit())
@@ -2945,7 +2973,7 @@ S32 LLTextBase::getDocIndexFromLocalCoord( S32 local_x, S32 local_y, bool round,
 
 // returns rectangle of insertion caret
 // in document coordinate frame from given index into text
-LLRect LLTextBase::getDocRectFromDocIndex(S32 pos) const
+LLRect LLTextBase::getDocRectFromDocIndex(S32 pos, bool use_inline_text) const
 {
     if (mLineInfoList.empty())
     {
@@ -2963,6 +2991,16 @@ LLRect LLTextBase::getDocRectFromDocIndex(S32 pos) const
     S32 cursor_seg_offset;
     getSegmentAndOffset(line_iter->mDocIndexStart, &line_seg_iter, &line_seg_offset);
     getSegmentAndOffset(pos, &cursor_seg_iter, &cursor_seg_offset);
+
+    if (use_inline_text && cursor_seg_iter != mSegments.end())
+    {
+        if (LLTextBase* text = (*cursor_seg_iter)->getSelectionText())
+        {
+            LLRect rect = text->getLocalRectFromDocIndex(cursor_seg_offset);
+            text->localRectToOtherView(rect, &rect, mDocumentView);
+            return rect;
+        }
+    }
 
     F32 doc_left_precise = (F32)line_iter->mRect.mLeft;
 
@@ -3220,7 +3258,7 @@ S32 LLTextBase::getEditableIndex(S32 index, bool increasing_direction)
 
     LLTextSegmentPtr segmentp = *segment_iter;
 
-    if (segmentp->canEdit())
+    if (segmentp->canEdit() || segmentp->getSelectionText())
     {
         return segmentp->getStart() + offset;
     }
@@ -4100,6 +4138,9 @@ bool LLOnHoverChangeableTextSegment::handleHover(S32 x, S32 y, MASK mask)
 LLInlineViewSegment::LLInlineViewSegment(const Params& p, S32 start, S32 end)
 :   LLTextSegment(start, end),
     mView(p.view),
+    mSelectionText(p.selection_text.isProvided() ? p.selection_text() : nullptr),
+    mHideSelection(p.hide_selection.isProvided() && p.hide_selection()),
+    mFitToWidth(p.fit_to_width.isProvided() && p.fit_to_width()),
     mForceNewLine(p.force_newline),
     mLeftPad(p.left_pad),
     mRightPad(p.right_pad),
@@ -4161,7 +4202,7 @@ S32 LLInlineViewSegment::getNumChars(S32 num_pixels, S32 segment_offset, S32 lin
     {
         return 0;
     }
-    else if (line_offset != 0 && num_pixels < mView->getRect().getWidth())
+    else if (line_offset != 0 && num_pixels < mLeftPad + mView->getRect().getWidth() + mRightPad)
     {
         return 0;
     }
@@ -4171,9 +4212,22 @@ S32 LLInlineViewSegment::getNumChars(S32 num_pixels, S32 segment_offset, S32 lin
     }
 }
 
+void LLInlineViewSegment::prepareLayout(const LLTextBase& editor) const
+{
+    if (mFitToWidth)
+    {
+        const S32 width = llmax(1, editor.getVisibleTextRect().getWidth()
+            - editor.getHPad() - mLeftPad - mRightPad);
+        mView->reshape(width, mView->getRect().getHeight(), false);
+    }
+}
+
 void LLInlineViewSegment::updateLayout(const LLTextBase& editor)
 {
-    LLRect start_rect = editor.getDocRectFromDocIndex(mStart);
+    // Layout must use the document's row anchor. The embedded caret includes
+    // the widget's current origin and padding, so using it here accumulates
+    // an offset on every reflow. Selection and scrolling still use the caret.
+    LLRect start_rect = editor.getDocRectFromDocIndex(mStart, false);
     mView->setOrigin(start_rect.mLeft + mLeftPad, start_rect.mBottom + mBottomPad);
 }
 

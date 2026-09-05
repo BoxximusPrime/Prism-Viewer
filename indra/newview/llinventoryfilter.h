@@ -28,6 +28,7 @@
 #define LLINVENTORYFILTER_H
 
 #include "llinventorytype.h"
+#include "llinventorysearch.h"
 #include "llpermissionsflags.h"
 #include "llfolderviewmodel.h"
 
@@ -294,6 +295,7 @@ public:
     // +-------------------------------------------------------------------+
     bool                check(const LLFolderViewModelItem* item);
     bool                check(const LLInventoryItem* item);
+    bool                matchesSearchableText(const std::string& text) const;
     bool                checkFolder(const LLFolderViewModelItem* item) const;
     bool                checkFolder(const LLUUID& folder_id) const;
 
@@ -359,7 +361,6 @@ public:
 
 private:
     bool                areDateLimitsSet() const;
-    bool                checkAgainstFilterSubString(const std::string& desc) const;
     bool                checkAgainstFilterType(const class LLFolderViewModelItemInventory* listener) const;
     bool                checkAgainstFilterType(const LLInventoryItem* item) const;
     bool                checkAgainstPermissions(const class LLFolderViewModelItemInventory* listener) const;
@@ -394,8 +395,7 @@ private:
 
     ESearchType             mSearchType;
 
-    std::vector<std::string> mFilterTokens;
-    std::string              mExactToken;
+    LLInventorySearchQuery   mSearchQuery;
 
     bool mSingleFolderMode;
 };

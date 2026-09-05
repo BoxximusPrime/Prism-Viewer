@@ -455,7 +455,9 @@ bool LLGLSLShader::createShader()
         vector< pair<string, GLenum> >::iterator fileIter = mShaderFiles.begin();
         for (; fileIter != mShaderFiles.end(); fileIter++)
         {
-            GLuint shaderhandle = LLShaderMgr::instance()->loadShaderFile((*fileIter).first, mShaderLevel, (*fileIter).second, &mDefines, mFeatures.mIndexedTextureChannels);
+            // Exact OIT's capture library supplies no indexed-texture helper of its own.
+            const S32 texture_index_channels = (*fileIter).first == "deferred/exactOITCaptureF.glsl" ? -1 : mFeatures.mIndexedTextureChannels;
+            GLuint shaderhandle = LLShaderMgr::instance()->loadShaderFile((*fileIter).first, mShaderLevel, (*fileIter).second, &mDefines, texture_index_channels);
             LL_DEBUGS("ShaderLoading") << "SHADER FILE: " << (*fileIter).first << " mShaderLevel=" << mShaderLevel << LL_ENDL;
             if (shaderhandle)
             {

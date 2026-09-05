@@ -117,12 +117,14 @@ public:
     void onMouseEnter(S32 x, S32 y, MASK mask) override
     {
         getChildView("hovered_icon")->setVisible(true);
+        getChildView("hovered_accent")->setVisible(true);
         LLPanel::onMouseEnter(x, y, mask);
     }
 
     void onMouseLeave(S32 x, S32 y, MASK mask) override
     {
         getChildView("hovered_icon")->setVisible(false);
+        getChildView("hovered_accent")->setVisible(false);
         LLPanel::onMouseLeave(x, y, mask);
     }
 

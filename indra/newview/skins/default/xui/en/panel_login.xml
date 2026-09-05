@@ -43,17 +43,39 @@
          user_resize="false"
          background_visible="false"
          width="400"
-         height="190">
+         height="290">
           <icon
-           follows="all"
+           follows="left|top"
+           layout="topleft"
+           name="boxxy_login_shadow_soft"
+           image_name="Rounded_Square"
+           color="Black_25"
+           mouse_opaque="false"
+           left="90"
+           top="257"
+           width="220"
+           height="18" />
+          <icon
+           follows="left|top"
+           layout="topleft"
+           name="boxxy_login_shadow_core"
+           image_name="Rounded_Square"
+           color="Black_50"
+           mouse_opaque="false"
+           left="130"
+           top="261"
+           width="140"
+           height="10" />
+          <icon
+           follows="left|top"
            layout="topleft"
            name="boxxy_login_brand"
-           image_name="boxxy_login_brand"
+           image_name="startup_logo"
            mouse_opaque="false"
-           left="0"
-           top="0"
-           width="400"
-           height="190" />
+           left="72"
+           top="2"
+           width="256"
+           height="256" />
         </layout_panel>
         <layout_panel
          auto_resize="false"
@@ -138,26 +160,36 @@
            top="178"
            width="340"
            height="38">
-            <layout_panel name="location_panel" auto_resize="true" user_resize="false" min_width="164">
+            <layout_panel name="location_panel" auto_resize="true" user_resize="false" min_width="164" width="164" height="38">
               <combo_box
                name="start_location_combo"
                control_name="NextLoginLocation"
                allow_text_entry="true"
                label="Start location"
+               font="SansSerifLarge"
+               combo_editor.font="SansSerifLarge"
+               combo_editor.text_pad_left="12"
                follows="all"
                left="0"
                top="0"
                width="164"
                height="38">
+                <combo_box.combo_button
+                 image_unselected="ComboButton_Transparent"
+                 image_selected="ComboButton_Transparent"
+                 image_disabled="ComboButton_Transparent"
+                 image_overlay="ComboButton_Arrow" />
                 <combo_box.item label="My last location" name="MyLastLocation" value="last" />
                 <combo_box.item label="My home" name="MyHome" value="home" />
               </combo_box>
             </layout_panel>
-            <layout_panel name="grid_panel" auto_resize="false" user_resize="false" width="164">
+            <layout_panel name="grid_panel" auto_resize="false" user_resize="false" width="164" height="38">
               <combo_box
                name="server_combo"
                allow_text_entry="false"
                label="Grid"
+               font="SansSerifLarge"
+               drop_down_button.font="SansSerifLarge"
                follows="all"
                left="0"
                top="0"
@@ -167,9 +199,11 @@
           </layout_stack>
           <button
            follows="left|top"
-           image_unselected="PushButton_Login"
-           image_pressed="PushButton_Login_Pressed"
-           image_hover_unselected="PushButton_Login_Over"
+           image_unselected="Rounded_Square"
+           image_selected="Rounded_Square"
+           image_pressed="Rounded_Square"
+           image_hover_unselected="Rounded_Square"
+           image_color="AccentColor"
            label="Log in"
            label_color="Black"
            label_color_disabled="Black"

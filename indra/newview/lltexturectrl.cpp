@@ -2059,7 +2059,7 @@ bool LLTextureCtrl::handleMouseDown(S32 x, S32 y, MASK mask)
         {
             if (getImageAssetID().notNull())
             {
-                LLPreviewTexture* preview_texture = LLFloaterReg::showTypedInstance<LLPreviewTexture>("preview_texture", getValue());
+                LLPreviewTexture* preview_texture = LLFloaterReg::showTypedInstance<LLPreviewTexture>("preview_texture", getValue(), TAKE_FOCUS_YES);
                 if (preview_texture)
                 {
                     // Read-only texture previews (currently used by profile picks)
@@ -2539,7 +2539,6 @@ namespace LLInitParam
         declare("material", PICK_MATERIAL);
     }
 }
-
 
 
 

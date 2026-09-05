@@ -821,10 +821,7 @@ bool LLInventoryGallery::checkAgainstFilters(LLInventoryGalleryItem* item, const
 
     LLStringUtil::toUpper(desc);
 
-    std::string cur_filter = filter_substring;
-    LLStringUtil::toUpper(cur_filter);
-
-    hidden = (std::string::npos == desc.find(cur_filter));
+    hidden = !mFilter->matchesSearchableText(desc);
     return !hidden;
 }
 

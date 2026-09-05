@@ -55,6 +55,7 @@
 #include "llagentcamera.h"
 #include "llattachmentsmgr.h"
 #include "llviewerwindow.h"
+#include "llfloaterwornattachments.h"
 #include "lldrawable.h"
 #include "llfloatergltfasseteditor.h"
 #include "llfloaterinspect.h"
@@ -5969,6 +5970,8 @@ void LLSelectMgr::processObjectProperties(LLMessageSystem* msg, void** user_data
         std::string desc;
         msg->getStringFast(_PREHASH_ObjectData, _PREHASH_Description, desc, i);
 
+        LLFloaterWornAttachments::processObjectProperties(id, creator_id, name);
+
         std::string touch_name;
         msg->getStringFast(_PREHASH_ObjectData, _PREHASH_TouchName, touch_name, i);
         std::string sit_name;
@@ -8883,4 +8886,3 @@ bool LLCheckIdenticalFunctor<class LLFace *>::same(class LLFace* const & a, clas
     (void)tolerance;                                                                \
     return a == b;                                                                  \
 }
-

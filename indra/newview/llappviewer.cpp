@@ -26,6 +26,10 @@
 
 #include "llviewerprecompiledheaders.h"
 
+// <AS:Chanayane> Exact OIT
+#include "fsexactoit.h"
+// </AS:Chanayane>
+
 #include "llappviewer.h"
 
 // Viewer includes
@@ -3596,6 +3600,7 @@ LLSD LLAppViewer::getViewerInfo() const
     info["OS_VERSION"] = LLOSInfo::instance().getOSString();
     info["GRAPHICS_CARD_VENDOR"] = ll_safe_string((const char*)(glGetString(GL_VENDOR)));
     info["GRAPHICS_CARD"] = ll_safe_string((const char*)(glGetString(GL_RENDERER)));
+    FSExactOIT::appendDiagnostics(info);
 
 #if LL_WINDOWS
     std::string drvinfo;
