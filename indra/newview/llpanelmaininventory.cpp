@@ -1860,6 +1860,10 @@ void LLPanelMainInventory::onCustomAction(const LLSD& userdata)
 
     const std::string command_name = userdata.asString();
 
+    if (command_name == "cleanup")
+    {
+        LLFloaterReg::showInstance("inventory_cleanup");
+    }
     if (command_name == "new_window")
     {
         newWindow();

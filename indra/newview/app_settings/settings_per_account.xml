@@ -535,5 +535,13 @@
         <key>Value</key>
         <map />
       </map>
+      <key>InventoryCleanupProtectedFolders</key>
+      <map>
+        <key>Comment</key>
+        <string>Inventory folders excluded from cleanup, including all descendants.</string>
+        <key>Persist</key><integer>1</integer>
+        <key>Type</key><string>LLSD</string>
+        <key>Value</key><array />
+      </map>
     </map>
 </llsd>

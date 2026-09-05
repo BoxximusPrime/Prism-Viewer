@@ -3606,6 +3606,12 @@ bool LLInventoryModel::loadFromFile(const std::string& filename,
                             }
                             else
                             {
+                                // The cache contains full item records. fromLLSD() is
+                                // the base-class parser and does not update the viewer
+                                // completion flag (unlike importLegacyStream()). Without
+                                // this, restored metadata appears unfinished until each
+                                // item is unnecessarily fetched again from the server.
+                                inv_item->setComplete(true);
                                 items.push_back(inv_item);
                             }
                         }

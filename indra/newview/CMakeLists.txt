@@ -257,6 +257,7 @@ set(viewer_SOURCE_FILES
     llfloaterimsession.cpp
     llfloaterimcontainer.cpp
     llfloaterinspect.cpp
+    llfloaterinventorycleanup.cpp
     llfloaterinventorysettings.cpp
     llfloaterinventorythumbnailshelper.cpp
     llfloaterjoystick.cpp
@@ -952,6 +953,8 @@ set(viewer_HEADER_FILES
     llfloaterimsession.h
     llfloaterimcontainer.h
     llfloaterinspect.h
+    llinventorycleanupplan.h
+    llfloaterinventorycleanup.h
     llfloaterinventorysettings.h
     llfloaterinventorythumbnailshelper.h
     llfloaterjoystick.h

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="inventory_cleanup_review" title="REVIEW INVENTORY CHANGES" width="1120" height="650"
+ can_resize="true" min_width="1000" min_height="650" save_rect="true" single_instance="true">
+    <text left="12" top="30" right="-12" height="55" word_wrap="true">
+        Whole-folder moves include every listed descendant, preserving the folder structure. Review all rows; highlighted rows do not change the move set. Contents are rechecked before sending requests. Nothing is permanently deleted. Cancel to change selection.
+    </text>
+    <scroll_list name="items" left="12" top="92" right="-12" bottom="-270" follows="all" draw_heading="true" commit_on_selection_change="true">
+        <scroll_list.columns name="reason" label="Reason / action" width="250" />
+        <scroll_list.columns name="item" label="Folder / item" width="260" />
+        <scroll_list.columns name="acquired" label="Acquired (UTC)" width="105" />
+        <scroll_list.columns name="creator" label="Creator" width="170" />
+        <scroll_list.columns name="folder" label="Source folder" dynamic_width="true" />
+    </scroll_list>
+    <text_editor name="details" left="12" top="-260" right="-12" height="105" follows="left|right|bottom" read_only="true" word_wrap="true" />
+    <check_box name="acknowledge" left="12" top="-142" right="-12" height="24" follows="left|right|bottom"
+       label="I reviewed all folders and contents listed here and want the entire selection moved to Trash." />
+    <button name="execute" label="Move reviewed items to Trash" left="12" top="-106" width="300" height="28" follows="left|bottom" enabled="false" />
+    <button name="cancel" label="Close / cancel" left="328" top="-106" width="150" height="28" follows="left|bottom" />
+    <text name="status" left="12" top="-65" right="-12" height="54" follows="left|right|bottom" word_wrap="true" />
+</floater>

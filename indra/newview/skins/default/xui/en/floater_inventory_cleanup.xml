@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="inventory_cleanup" title="INVENTORY CLEANUP" width="1120" height="810"
+ can_resize="true" min_width="1000" min_height="810" save_rect="true" single_instance="true">
+    <panel name="home" left="0" top="30" right="-1" bottom="-1" follows="all">
+        <text left="24" top="22" right="-24" height="32" font="SansSerifLarge" halign="center">Clean up your inventory</text>
+        <text left="24" top="62" right="-24" height="24" halign="center">Choose a tool to find items and folders you may no longer need.</text>
+        <panel name="tool_grid" left="252" top="110" width="616" height="616">
+            <panel name="card_demos" left="0" top="0" width="300" height="300">
+                <button name="choose_demos" label="Demo folders" left="0" top="0" right="-1" bottom="-1" follows="all"
+                  font="SansSerifLarge" pad_bottom="40" scale_image="true" tool_tip="Demo folders: Find folders with DEMO in their name. Review and remove the entire package." />
+                <text left="24" top="150" right="-24" height="78" follows="left|right|top" halign="center"
+                  word_wrap="true" mouse_opaque="false" text_color="LabelTextColor">Find folders with DEMO in their name.
+Review and remove the entire package.</text>
+                <text left="20" top="-42" right="-20" height="22" follows="left|right|bottom" halign="center"
+                  mouse_opaque="false" text_color="LabelTextColor">Review whole folders</text>
+            </panel>
+            <panel name="card_assets" left="316" top="0" width="300" height="300">
+                <button name="choose_assets" label="Duplicate copies" left="0" top="0" right="-1" bottom="-1" follows="all"
+                  font="SansSerifLarge" pad_bottom="40" scale_image="true" tool_tip="Duplicate copies: Find inventory entries that share the same asset. Compare copies and choose what to keep." />
+                <text left="24" top="150" right="-24" height="78" follows="left|right|top" halign="center"
+                  word_wrap="true" mouse_opaque="false" text_color="LabelTextColor">Find inventory entries that share the same asset.
+Compare copies and choose what to keep.</text>
+                <text left="20" top="-42" right="-20" height="22" follows="left|right|bottom" halign="center"
+                  mouse_opaque="false" text_color="LabelTextColor">Compare item copies</text>
+            </panel>
+            <panel name="card_versions" left="0" top="316" width="300" height="300">
+                <button name="choose_versions" label="Object versions" left="0" top="0" right="-1" bottom="-1" follows="all"
+                  font="SansSerifLarge" pad_bottom="40" scale_image="true" tool_tip="Object versions: Find objects with the same name and creator, but different assets." />
+                <text left="24" top="150" right="-24" height="78" follows="left|right|top" halign="center"
+                  word_wrap="true" mouse_opaque="false" text_color="LabelTextColor">Find objects with the same name and creator, but different assets.</text>
+                <text left="20" top="-42" right="-20" height="22" follows="left|right|bottom" halign="center"
+                  mouse_opaque="false" text_color="LabelTextColor">Review possible versions</text>
+            </panel>
+            <panel name="card_old" left="316" top="316" width="300" height="300">
+                <button name="choose_old" label="Older inventory" left="0" top="0" right="-1" bottom="-1" follows="all"
+                  font="SansSerifLarge" pad_bottom="40" scale_image="true" tool_tip="Older inventory: Browse items acquired before a year you choose. Rediscover or remove older belongings." />
+                <text left="24" top="150" right="-24" height="78" follows="left|right|top" halign="center"
+                  word_wrap="true" mouse_opaque="false" text_color="LabelTextColor">Browse items acquired before a year you choose.
+Rediscover or remove older belongings.</text>
+                <text left="20" top="-42" right="-20" height="22" follows="left|right|bottom" halign="center"
+                  mouse_opaque="false" text_color="LabelTextColor">Browse by acquired date</text>
+            </panel>
+        </panel>
+        <text left="24" top="-62" right="-24" height="24" follows="left|right|bottom" halign="center">Nothing moves until you review and confirm your selection.</text>
+        <text name="home_loading" left="24" top="-32" right="-24" height="24" follows="left|right|bottom" halign="center" />
+    </panel>
+    <panel name="workspace" left="0" top="30" right="-1" bottom="-1" follows="all" visible="false">
+        <button name="back" label="All cleanup tools" left="24" top="16" width="155" height="26" />
+        <text name="tool_title" left="24" top="58" right="-24" height="30" font="SansSerifLarge" />
+        <text name="tool_description" left="24" top="96" right="-24" height="30" word_wrap="true" />
+        <button name="scan" label="Scan again" left="24" top="140" width="120" height="28" />
+        <spinner name="year" label="Acquired before:" left="164" top="142" width="225" height="24"
+          label_width="125" min_val="1970" max_val="2100" initial_value="2006" increment="1" decimal_digits="0" />
+        <button name="retry_loading" label="Retry loading" right="-184" top="140" width="135" height="28" visible="false" />
+        <button name="loading_details" label="Loading details" right="-24" top="140" width="145" height="28" visible="false" />
+        <text name="loading_status" left="24" top="178" right="-24" height="22" />
+        <scroll_list name="items" left="24" top="210" right="-24" bottom="-252" follows="all"
+          draw_heading="true" multi_select="true" commit_on_selection_change="true">
+        <scroll_list.columns name="reason" label="Reason / action" width="250" />
+        <scroll_list.columns name="item" label="Folder / item" width="260" />
+        <scroll_list.columns name="acquired" label="Acquired (UTC)" width="105" />
+        <scroll_list.columns name="creator" label="Creator" width="170" />
+        <scroll_list.columns name="folder" label="Source folder" dynamic_width="true" />
+
+        </scroll_list>
+        <button name="previous" label="Previous" left="24" top="-240" width="95" height="28" follows="left|bottom" />
+        <button name="next" label="Next" left="127" top="-240" width="95" height="28" follows="left|bottom" />
+        <button name="show" label="Show in Inventory" left="238" top="-240" width="155" height="28" follows="left|bottom" />
+        <button name="protect" label="Protect folder" left="405" top="-240" width="135" height="28" follows="left|bottom" />
+        <button name="toggle_protected" label="Protected folders" right="-24" top="-240" width="180" height="28" follows="right|bottom" />
+        <text_editor name="details" left="24" top="-200" right="-24" height="104" follows="left|right|bottom" read_only="true" word_wrap="true" />
+        <panel name="protected_panel" left="24" top="-200" right="-24" height="104" follows="left|right|bottom" visible="false">
+            <text left="0" top="0" right="-1" height="22">These folders and their contents are excluded from every cleanup tool.</text>
+            <scroll_list name="protected" left="0" top="28" right="-190" bottom="-1" follows="all" multi_select="true">
+                <scroll_list.columns name="folder" label="Folder" dynamic_width="true" />
+            </scroll_list>
+            <button name="unprotect" label="Remove protection" right="-1" top="28" width="175" height="28" follows="right|top" />
+        </panel>
+        <text name="status" left="24" top="-88" right="-24" height="40" follows="left|right|bottom" word_wrap="true" />
+        <text left="24" top="-35" right="-250" height="24" follows="left|right|bottom">Your selection will be reviewed before anything moves.</text>
+        <button name="review" label="Review selection..." right="-24" top="-42" width="210" height="28" follows="right|bottom" enabled="false" />
+    </panel>
+</floater>
