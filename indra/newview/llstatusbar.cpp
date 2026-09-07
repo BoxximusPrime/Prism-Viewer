@@ -25,6 +25,8 @@
 */
 
 #include "llviewerprecompiledheaders.h"
+#include "llaudioengine.h"
+#include "llstreamingaudio.h"
 
 #include "llstatusbar.h"
 
@@ -354,6 +356,13 @@ void LLStatusBar::refresh()
                               media_inst->isParcelMediaPlaying() ||
                               media_inst->isParcelAudioPlaying());
     mMediaToggle->setValue(!any_media_playing);
+    std::string media_tip = getString(any_media_playing ? "media_stop_tooltip" : "media_play_tooltip");
+    if (media_inst->hasParcelAudio() && gAudiop && gAudiop->getStreamingAudioImpl())
+    {
+        const std::string status = gAudiop->getStreamingAudioImpl()->getStatusText();
+        if (!status.empty()) media_tip += "\n" + status;
+    }
+    mMediaToggle->setToolTip(media_tip);
 }
 
 void LLStatusBar::setVisibleForMouselook(bool visible)
@@ -363,6 +372,7 @@ void LLStatusBar::setVisibleForMouselook(bool visible)
     mBoxBalance->setVisible(visible);
     mBtnVolume->setVisible(visible);
     mMediaToggle->setVisible(visible);
+    getChild<LLUICtrl>("now_playing_toggle_btn")->setVisible(visible);
     mSGBandwidth->setVisible(visible);
     mSGPacketLoss->setVisible(visible);
     mSearchPanel->setVisible(visible && gSavedSettings.getBOOL("MenuSearch"));

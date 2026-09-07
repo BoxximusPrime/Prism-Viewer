@@ -695,7 +695,7 @@ void LLFloaterIMNearbyChat::sendChat( EChatType type )
             // Try to trigger a gesture, if not chat to a script.
             std::string utf8_revised_text;
             const bool translate_command = 0 == channel
-                && LLTranslate::translateChatCommand(
+                && LLChatBar::translateNearbyChat(
                     utf8text,
                     [type](std::string translation, std::string)
                     {
@@ -816,7 +816,7 @@ void LLFloaterIMNearbyChat::updateTranslatedMessage(const LLUUID& request_id,
         S32 name_prefix_chars = 0;
         if (updated.mChatStyle == CHAT_STYLE_IRC)
         {
-            console_text = updated.mFromName;
+            console_text = updated.mFromName + " ";
             name_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName).length();
             if (updated.mText.length() > 3)
             {
@@ -825,8 +825,9 @@ void LLFloaterIMNearbyChat::updateTranslatedMessage(const LLUUID& request_id,
         }
         else if (!updated.mFromName.empty())
         {
-            console_text = updated.mFromName + ": " + console_text;
-            name_prefix_chars = (S32)utf8str_to_wstring(updated.mFromName + ": ").length();
+            const std::string sender = "[" + LLViewerChat::getSenderLabel(updated) + "]: ";
+            console_text = sender + console_text;
+            name_prefix_chars = (S32)utf8str_to_wstring(sender).length();
         }
         if (!updated.mTranslatedText.empty())
         {

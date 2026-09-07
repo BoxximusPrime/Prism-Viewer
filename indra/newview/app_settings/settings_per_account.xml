@@ -513,6 +513,17 @@
         <key>Value</key>
         <integer>0</integer>
       </map>
+      <key>BoxxyTPoseToolbarInstalled</key>
+      <map>
+        <key>Comment</key>
+        <string>Whether the T-Pose command has been offered on this account's toolbar.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>Boolean</string>
+        <key>Value</key>
+        <integer>0</integer>
+      </map>
       <key>ExperienceSearchMaturity</key>
       <map>
         <key>Comment</key>

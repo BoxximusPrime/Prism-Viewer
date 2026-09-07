@@ -4,6 +4,23 @@
      For example, the strings used in avatar chat bubbles, and strings
      that are returned from one component and may appear in many places-->
 <strings>
+  <string name="NotificationAgeNow">Just now</string>
+  <string name="NotificationAgeMinute">[COUNT] minute ago</string>
+  <string name="NotificationAgeMinutes">[COUNT] minutes ago</string>
+  <string name="NotificationAgeHour">[COUNT] hour ago</string>
+  <string name="NotificationAgeHours">[COUNT] hours ago</string>
+  <string name="NotificationAgeDay">[COUNT] day ago</string>
+  <string name="NotificationAgeDays">[COUNT] days ago</string>
+    <string name="MusicNowPlaying">Now playing: [TITLE]</string>
+    <string name="MusicConnecting">Connecting to music stream...</string>
+    <string name="MusicPluginUnavailable">The streaming audio player could not start. Check that SLPlugin.exe, the VLC plugin, and its dependencies are installed and allowed to run.</string>
+    <string name="MusicPluginCrashed">The streaming audio player stopped unexpectedly. Click Play to retry.</string>
+    <string name="MusicPlaybackFailed">VLC could not open or decode this stream and supplied no further details. The server may be offline or the stream format unsupported.</string>
+    <string name="MusicStreamEnded">The stream ended or the server closed the connection. Click Play to reconnect.</string>
+    <string name="MusicConnectionTimeout">The music stream did not start within 30 seconds. The server or audio player may be unresponsive. Click Play to retry.</string>
+    <string name="MusicDisabled">Streaming music is disabled. Enable it in Preferences > Sound.</string>
+    <string name="MusicNoURL">This parcel has no music stream URL.</string>
+    <string name="MusicInvalidURL">The parcel music URL must start with http:// or https://.</string>
 
 	<!-- Default Args - these arguments will be replaced in all strings -->
 	<string name="SECOND_LIFE">Second Life</string>
@@ -4206,6 +4223,7 @@ name="Command_360_Capture_Label">360 snapshot</string>
   <string name="Command_Avatar_Label">Avatar Welcome Pack</string>
   <string name="Command_BoxxyAO_Label">Animation Overrider</string>
   <string name="Command_BoxxyRadar_Label">Radar</string>
+  <string name="Command_BoxxyTPose_Label">T-Pose</string>
   <string name="Command_Build_Label">Build</string>
   <string name="Command_Chat_Label">Chat</string>
   <string name="Command_TranslateChat_Label">Translate</string>
@@ -4241,6 +4259,7 @@ name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
   <string name="Command_Avatar_Tooltip">Choose a complete avatar</string>
     <string name="Command_BoxxyAO_Tooltip">Open the Boxxy animation overrider</string>
   <string name="Command_BoxxyRadar_Tooltip">Show VIP, near, and far avatars</string>
+  <string name="Command_BoxxyTPose_Tooltip">Open the T-Pose animation floater</string>
   <string name="Command_Build_Tooltip">Building objects and reshaping terrain</string>
   <string name="Command_Chat_Tooltip">Chat with people nearby using text</string>
   <string name="Command_TranslateChat_Tooltip">Toggle automatic chat translation</string>

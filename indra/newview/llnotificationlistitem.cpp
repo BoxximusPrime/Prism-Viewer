@@ -81,8 +81,16 @@ bool LLNotificationListItem::postBuild()
     mTitleBoxExp->setContentTrusted(false);
     mNoticeTextExp->setContentTrusted(false);
 
-    mTimeBox->setValue(buildNotificationDate(mParams.time_stamp));
-    mTimeBoxExp->setValue(buildNotificationDate(mParams.time_stamp));
+    mDisplayTime = mParams.time_stamp.isNull() ? mParams.received_time : mParams.time_stamp;
+    mTimeBox->setValue(std::string());
+    mTimeBoxExp->setValue(std::string());
+    if (!mDisplayTime.isNull())
+    {
+        const std::string exact_time = buildNotificationDate(mDisplayTime);
+        mTimeBox->setToolTip(exact_time);
+        mTimeBoxExp->setToolTip(exact_time);
+    }
+    updateTimeLabel();
 
     mExpandBtn->setClickedCallback(boost::bind(&LLNotificationListItem::onClickExpandBtn,this));
     mCondenseBtn->setClickedCallback(boost::bind(&LLNotificationListItem::onClickCondenseBtn,this));
@@ -107,6 +115,62 @@ bool LLNotificationListItem::postBuild()
 
 LLNotificationListItem::~LLNotificationListItem()
 {
+}
+
+void LLNotificationListItem::draw()
+{
+    if (mAgeUpdateTimer.getElapsedTimeF32() >= 1.f)
+    {
+        updateTimeLabel();
+        mAgeUpdateTimer.reset();
+    }
+    LLPanel::draw();
+}
+
+std::string LLNotificationListItem::buildNotificationAge(const LLDate& time_stamp)
+{
+    if (time_stamp.isNull())
+    {
+        return std::string();
+    }
+
+    const F64 elapsed = llmax(0.0,
+        LLDate::now().secondsSinceEpoch() - time_stamp.secondsSinceEpoch());
+    LLStringUtil::format_map_t args;
+
+    if (elapsed < 60.0)
+    {
+        return LLTrans::getString("NotificationAgeNow");
+    }
+
+    const S32 minutes = llfloor(static_cast<F32>(elapsed / 60.0));
+    if (minutes < 60)
+    {
+        args["COUNT"] = llformat("%d", minutes);
+        return LLTrans::getString(minutes == 1 ? "NotificationAgeMinute" : "NotificationAgeMinutes", args);
+    }
+
+    const S32 hours = llfloor(static_cast<F32>(elapsed / 3600.0));
+    if (hours < 24)
+    {
+        args["COUNT"] = llformat("%d", hours);
+        return LLTrans::getString(hours == 1 ? "NotificationAgeHour" : "NotificationAgeHours", args);
+    }
+
+    const S32 days = llfloor(static_cast<F32>(elapsed / 86400.0));
+    args["COUNT"] = llformat("%d", days);
+    return LLTrans::getString(days == 1 ? "NotificationAgeDay" : "NotificationAgeDays", args);
+}
+
+void LLNotificationListItem::updateTimeLabel()
+{
+    const std::string age = buildNotificationAge(mDisplayTime);
+    if (age != mDisplayedAge)
+    {
+        mDisplayedAge = age;
+        mTimeBox->setValue(age);
+        mTimeBoxExp->setValue(age);
+    }
 }
 
 //static
@@ -393,14 +457,6 @@ bool LLGroupNoticeNotificationListItem::postBuild()
     mTitleBoxExp->setValue(mParams.subject);
     mNoticeTextExp->setValue(mParams.message);
 
-    mTimeBox->setValue(buildNotificationDate(mParams.time_stamp));
-    mTimeBoxExp->setValue(buildNotificationDate(mParams.time_stamp));
-    //Workaround: in case server timestamp is 0 - we use the time when notification was actually received
-    if (mParams.time_stamp.isNull())
-    {
-        mTimeBox->setValue(buildNotificationDate(mParams.received_time));
-        mTimeBoxExp->setValue(buildNotificationDate(mParams.received_time));
-    }
     setSender(mParams.sender);
 
     if (mInventoryOffer != NULL)

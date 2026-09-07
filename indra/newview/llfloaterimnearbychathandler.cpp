@@ -727,11 +727,13 @@ void LLFloaterIMNearbyChatHandler::processChat(const LLChat& chat_msg,
             LLViewerChat::getChatColor(chat_msg, text_color, r_color_alpha);
             if (chat_msg.mChatStyle != CHAT_STYLE_IRC && !chat_msg.mFromName.empty())
             {
-                toast_msg = chat_msg.mFromName + ": " + toast_msg;
-                name_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName + ": ").length();
+                const std::string sender = "[" + LLViewerChat::getSenderLabel(chat_msg) + "]: ";
+                toast_msg = sender + toast_msg;
+                name_prefix_chars = (S32)utf8str_to_wstring(sender).length();
             }
             else if (chat_msg.mChatStyle == CHAT_STYLE_IRC && !chat_msg.mFromName.empty())
             {
+                toast_msg.insert(chat_msg.mFromName.length(), " ");
                 name_prefix_chars = (S32)utf8str_to_wstring(chat_msg.mFromName).length();
             }
             if (gConsole)

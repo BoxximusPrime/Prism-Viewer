@@ -244,10 +244,13 @@
 		left_pad="5"
 		name="enable_music"
 		top_delta="2"
-		width="350">
+		width="75">
 		<check_box.commit_callback
 			function="Pref.updateMediaAutoPlayCheckbox"/>
 	</check_box>
+    <check_box control_name="ShowStreamMetadata" name="show_stream_metadata"
+     label="Song in chat" tool_tip="Show Now playing in nearby chat when the music stream sends song metadata."
+     layout="topleft" follows="left|top" left_pad="0" top_delta="0" height="16" width="105" />
 	<slider
 		control_name="AudioLevelMedia"
 		disabled_control="MuteAudio"

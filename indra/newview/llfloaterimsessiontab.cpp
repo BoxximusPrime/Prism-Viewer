@@ -663,8 +663,11 @@ void LLFloaterIMSessionTab::appendMessage(const LLChat& chat, const LLSD& args)
     tmp_chat.mFromName = chat.mFromName;
 
     LLSD chat_args = args;
-    chat_args["use_plain_text_chat_history"] =
+    // Nearby chat is rendered as one compact line so sender names do not add
+    // a separate header panel behind each message.
+    chat_args["use_plain_text_chat_history"] = mIsNearbyChat ||
             gSavedSettings.getBOOL("PlainTextChatHistory");
+    chat_args["nearby_chat"] = mIsNearbyChat;
     chat_args["show_time"] = gSavedSettings.getBOOL("IMShowTime");
     chat_args["show_names_for_p2p_conv"] = !mIsP2PChat ||
             gSavedSettings.getBOOL("IMShowNamesForP2PConv");

@@ -32,10 +32,12 @@
 #include "stdtypes.h" // from llcommon
 
 #include "llstreamingaudio.h"
+#include "llpluginclassmediaowner.h"
+#include "lltimer.h"
 
 class LLPluginClassMedia;
 
-class LLStreamingAudio_MediaPlugins : public LLStreamingAudioInterface
+class LLStreamingAudio_MediaPlugins : public LLStreamingAudioInterface, public LLPluginClassMediaOwner
 {
  public:
     LLStreamingAudio_MediaPlugins();
@@ -49,14 +51,29 @@ class LLStreamingAudio_MediaPlugins : public LLStreamingAudioInterface
     /*virtual*/ void setGain(F32 vol);
     /*virtual*/ F32 getGain();
     /*virtual*/ std::string getURL();
+    void handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event) override;
+    std::string getStatusText() const override;
+    bool hasPlaybackStarted() const { return mPlaybackStarted && mMediaPlugin && !mFailed; }
+    const std::string& getTrackTitle() const { return mLastTitle; }
+    F64 getPlaybackSeconds() const;
 
 private:
     LLPluginClassMedia* initializeMedia(const std::string& media_type);
+    void reportError(const std::string& reason);
 
     LLPluginClassMedia *mMediaPlugin;
 
     std::string mURL;
     F32 mGain;
+    LLTimer mConnectTimer;
+    bool mConnecting = false;
+    bool mFailed = false;
+    std::string mError;
+    std::string mLastTitle;
+    LLTimer mPlaybackTimer;
+    F64 mPlaybackSeconds = 0.0;
+    bool mPlaybackRunning = false;
+    bool mPlaybackStarted = false;
 };
 
 

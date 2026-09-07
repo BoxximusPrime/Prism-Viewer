@@ -101,6 +101,9 @@ private:
 public:
     bool postBuild() override;
     void onOpen(const LLSD& key) override;
+    bool canClose() override { return false; }
+    bool handleMouseDown(S32 x, S32 y, MASK mask) override;
+    void handleReshape(const LLRect& new_rect, bool by_user = false) override;
     void draw() override;
 
 private:

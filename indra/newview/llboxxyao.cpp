@@ -157,6 +157,16 @@ void LLBoxxyAO::onLoginComplete()
         gSavedPerAccountSettings.setBOOL("BoxxyRadarToolbarInstalled", true);
     }
 
+    if (gToolBarView && !gSavedPerAccountSettings.getBOOL("BoxxyTPoseToolbarInstalled"))
+    {
+        const LLCommandId command_id("boxxy_tpose");
+        if (gToolBarView->hasCommand(command_id) == LLToolBarEnums::TOOLBAR_NONE)
+        {
+            gToolBarView->addCommand(command_id, LLToolBarEnums::TOOLBAR_RIGHT);
+        }
+        gSavedPerAccountSettings.setBOOL("BoxxyTPoseToolbarInstalled", true);
+    }
+
     if (gSavedSettings.getBOOL("BoxxySimpleRadarEnabled") && !LLFloaterReg::instanceVisible("boxxy_radar"))
     {
         LLFloaterReg::showInstance("boxxy_radar_simple", LLSD(), false);

@@ -6,20 +6,30 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## BoxxyViewer-specific systems
 
+- Bundled UI sounds for opening floaters, buttons, floater focus changes, and checkboxes, using the existing UI audio controls. (in progress)
+- Bundled incoming-IM sound, per-message DM sound defaults, Click 2 on already-focused floater clicks, and single-sound floater closing without extra button/focus cues. (in progress)
+
 - Boxxy Animation Overrider (AO), including animation sets, inventory-backed configuration, per-account persistence, a toolbar enable checkbox plus configuration button (in progress), and animation synchronization improvements.
 - Boxxy Radar, including full and compact radar floaters, near/far avatar grouping, distance display, search, radar options, toolbar integration, and automatic display behavior.
+- Minimalist radar with shadowed text, remembered position, Shift-only dragging, safe click-through without Shift, and protection from Ctrl+W closing. (in progress)
 - Radar VIP matching with fuzzy configured-name matching.
 - Radar friend highlighting, typing indicators, and muted/blocked-avatar display.
+- Radar retains avatars in the current and neighboring regions while dropping distant cached entries after travel. (in progress; runtime verification pending)
 - VIP and friend color highlighting in radar and chat.
 
 ## Chat and messaging
 
 - Single-bar Enter-to-chat behavior.
 - Compact nearby-chat bar and revised bottom-toolbar layout.
-- Inline outgoing translation language selector.
+- Nearby chat uses compact `[display name | username]: message` lines with accent-green sender names instead of separate name boxes. (in progress; runtime verification pending)
+- Bottom-left custom chat log draws behind normal floating windows. (in progress)
+- Inline outgoing translation language selector, shared by the bottom chat bar and Conversations nearby chat. (in progress)
+- Offer notifications no longer skip the next participant DM when no duplicate notification log is present. (in progress)
 - Per-person persistent DM translation targets and chiclet-reopened hidden DM windows. (in progress)
+- Saved DM translation targets are used only while automatic translation is enabled; explicit `/tr` commands remain available. (in progress; runtime verification pending)
 - Automatic translation of nearby chat and IMs.
 - Multiple translation providers, including an OpenAI-compatible translation handler.
+- OpenAI-compatible translation prompt requests natural, meaning-preserving phrasing and explicitly ignores URL contents while preserving links. (in progress)
 - Asynchronous translation that displays the original immediately and updates the message when translation completes.
 - Safe handling of simultaneous translation requests that finish out of order.
 - Translation markers, failure handling, and suppression of unnecessary same-language translations.
@@ -28,6 +38,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Group-invitation ignore setting.
 - Improved detached IM behavior, stable centered tear-off placement, and notification bubbles. (in progress)
 - Incoming-message window/taskbar flashing without typing-state flashes. (in progress)
+- New incoming DM bubbles have a subtle entrance animation. (in progress; runtime verification pending)
 - VIP and friend coloring in chat history.
 - Modernized incoming/outgoing IM bubbles with character-level selection across messages, readable theme selection colors, viewport-sized rows, independent row/caret positioning for stable resizing, compact mirrored speaker headers, live-previewable configurable colors, and subtle drop shadows. (in progress; selection and resize fixes awaiting runtime verification)
 
@@ -39,8 +50,10 @@ The committed feature list is based on the differences from the `upstream/develo
 - Typing indicators integrated into avatar/radar presentation.
 - Camera movement and zoom-limit changes.
 - Avatar animation synchronization improvements.
+- T-Pose toolbar floater with Firestorm pose choices and temporary built-in AO suspension, restoring the prior enabled state when closed. (in progress)
 - Attachment visibility and rendering adjustments.
 - Animation-stable avatar nameplate positioning with avatar-relative height. (in progress)
+- Avatar name tags block clicks from reaching world objects behind them. (in progress; runtime verification pending)
 
 ## Profiles and inventory
 
@@ -70,6 +83,8 @@ The committed feature list is based on the differences from the `upstream/develo
 
 - Session Money Log floater for successful incoming and outgoing L$ transactions, with counterparties, transaction context, timestamps, live "seconds ago" ages, and clearing. (in progress)
 - Dedicated BoxxyViewer preferences panel.
+- Preference to prevent left-click world-object actions while retaining action cursors. (in progress; runtime verification pending)
+- Notification list timestamps display live relative ages. (in progress; runtime verification pending)
 - Toolbar commands for AO, radar, and translation.
 - Login-screen redesign and Boxxy cube branding across application, taskbar, installer, startup, and login surfaces; larger login cube, consistently sized location dropdown, and accent-green login button. (in progress)
 - Custom fonts and font configuration.
@@ -78,6 +93,8 @@ The committed feature list is based on the differences from the `upstream/develo
 - Separated top-center DM chiclets and top-right notification controls (in progress).
 - Custom colors for VIP, friend, blocked, and radar states.
 - Volume and audio UI adjustments.
+- Themed Now Playing card with a top-right visibility toggle, copyable stream URL and track title, pause-aware listening time, decorative playback bars, and parcel-music volume control, positioned clear of the right-side notifications. (in progress)
+- Parcel music plugin initialization and retry fixes, playback error notifications and connection status, and optional "Now playing" song announcements in nearby chat (Preferences > Sound > Song in chat; enabled by default). (in progress)
 - Group visibility and notification preferences.
 
 ## Maintenance notes

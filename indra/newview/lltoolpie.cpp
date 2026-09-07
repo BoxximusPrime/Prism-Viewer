@@ -121,11 +121,13 @@ bool LLToolPie::handleMouseDown(S32 x, S32 y, MASK mask)
     LLViewerObject *visible_object = visible_pick.getObject();
 
     // Current set of priorities
-    // 1. Transparent attachment pick
-    // 2. Transparent actionable pick
-    // 3. Visible attachment pick (e.x we click on attachment under invisible floor)
-    // 4. Visible actionable pick
-    // 5. Transparent pick (e.x. movement on transparent object/floor, our default pick)
+    // 1. Transparent HUD attachment pick
+    // 2. Visible name tag pick
+    // 3. Transparent attachment pick
+    // 4. Transparent actionable pick
+    // 5. Visible attachment pick (e.x we click on attachment under invisible floor)
+    // 6. Visible actionable pick
+    // 7. Transparent pick (e.x. movement on transparent object/floor, our default pick)
     // left mouse down always picks transparent (but see handleMouseUp).
     // Also see LLToolPie::handleHover() - priorities are a bit different there.
     // Todo: we need a more consistent set of rules to work with
@@ -139,31 +141,42 @@ bool LLToolPie::handleMouseDown(S32 x, S32 y, MASK mask)
         // Select between two non-null picks
         LLViewerObject *transp_parent = transp_object->getRootEdit();
         LLViewerObject *visible_parent = visible_object->getRootEdit();
-        if (transp_object->isAttachment())
+        if (transp_object->isHUDAttachment())
         {
-            // 1. Transparent attachment
+            // 1. Transparent HUD attachment
+            mPick = transparent_pick;
+        }
+        else if (visible_pick.mPickNameTag)
+        {
+            // Name tags consume world clicks, even when a transparent actionable
+            // object is between the camera and the visible pick.
+            mPick = visible_pick;
+        }
+        else if (transp_object->isAttachment())
+        {
+            // 3. Transparent attachment
             mPick = transparent_pick;
         }
         else if (transp_object->getClickAction() != CLICK_ACTION_DISABLED
                  && (useClickAction(mask, transp_object, transp_parent) || transp_object->flagHandleTouch() || (transp_parent && transp_parent->flagHandleTouch())))
         {
-            // 2. Transparent actionable pick
+            // 4. Transparent actionable pick
             mPick = transparent_pick;
         }
         else if (visible_object->isAttachment())
         {
-            // 3. Visible attachment pick
+            // 5. Visible attachment pick
             mPick = visible_pick;
         }
         else if (visible_object->getClickAction() != CLICK_ACTION_DISABLED
                  && (useClickAction(mask, visible_object, visible_parent) || visible_object->flagHandleTouch() || (visible_parent && visible_parent->flagHandleTouch())))
         {
-            // 4. Visible actionable pick
+            // 6. Visible actionable pick
             mPick = visible_pick;
         }
         else
         {
-            // 5. Default: transparent
+            // 7. Default: transparent
             mPick = transparent_pick;
         }
     }
@@ -276,6 +289,19 @@ bool LLToolPie::handleLeftClickPick()
     if (object)
     {
         parent = object->getRootEdit();
+    }
+
+    if (mPick.mPickNameTag)
+    {
+        mMouseButtonDown = false;
+        return true;
+    }
+
+    static LLCachedControl<bool> prevent_left_click_actions(gSavedSettings, "BoxxyPreventLeftClickActions", false);
+    if (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment())
+    {
+        mMouseButtonDown = false;
+        return true;
     }
 
     if (handleMediaClick(mPick))
@@ -857,6 +883,14 @@ bool LLToolPie::handleDoubleClick(S32 x, S32 y, MASK mask)
     if (gDebugClicks)
     {
         LL_INFOS() << "LLToolPie handleDoubleClick (becoming mouseDown)" << LL_ENDL;
+    }
+
+    static LLCachedControl<bool> prevent_left_click_actions(gSavedSettings, "BoxxyPreventLeftClickActions", false);
+    LLViewerObject* object = mPick.getObject();
+    if (mPick.mPickNameTag ||
+        (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment()))
+    {
+        return true;
     }
 
     if (handleMediaDblClick(mPick))

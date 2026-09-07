@@ -37,6 +37,7 @@
 #include "llchatentry.h"
 #include "llgroupmgr.h"
 #include "llviewermessage.h"
+#include "llframetimer.h"
 
 #include <string>
 
@@ -94,6 +95,7 @@ public:
     virtual bool showPopup() { return true; }
     void setExpanded(bool value);
     virtual bool postBuild();
+    void draw() override;
     void reshapeNotification();
 
     typedef enum e_time_type
@@ -108,6 +110,8 @@ protected:
     virtual ~LLNotificationListItem();
 
     static std::string buildNotificationDate(const LLDate& time_stamp, ETimeType time_type = SLT);
+    static std::string buildNotificationAge(const LLDate& time_stamp);
+    void updateTimeLabel();
     void onClickExpandBtn();
     void onClickCondenseBtn();
     void onClickCloseBtn();
@@ -131,6 +135,9 @@ protected:
     S32                 mExpandedHeight;
     S32                 mExpandedHeightResize;
     bool                mExpanded;
+    LLDate              mDisplayTime;
+    std::string         mDisplayedAge;
+    LLFrameTimer        mAgeUpdateTimer;
 };
 
 class LLGroupNotificationListItem
@@ -247,5 +254,3 @@ private:
 };
 
 #endif // LL_LLNOTIFICATIONLISTITEM_H
-
-

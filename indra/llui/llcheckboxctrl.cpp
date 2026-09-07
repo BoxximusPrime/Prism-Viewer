@@ -142,6 +142,7 @@ LLCheckBoxCtrl::LLCheckBoxCtrl(const LLCheckBoxCtrl::Params& p)
     //params.control_name(p.control_name);
     params.click_callback.function(boost::bind(&LLCheckBoxCtrl::onCommit, this));
     params.commit_on_return(false);
+    params.sound_flags(SILENT); // The checkbox commit supplies its own sound.
     // Checkboxes only allow boolean initial values, but buttons can
     // take any LLSD.
     params.initial_value(LLSD(p.initial_value));
@@ -164,6 +165,10 @@ void LLCheckBoxCtrl::onCommit()
 {
     if( getEnabled() )
     {
+        if (getSoundFlags() != SILENT)
+        {
+            make_ui_sound("UISndCheckbox");
+        }
         setTentative(false);
         setControlValue(getValue());
         LLUICtrl::onCommit();

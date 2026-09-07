@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <notifications>
+  <notification name="MusicStreamError" type="notify" icon="notifytip.tga">
+    Music stream cannot play: [REASON]
+  </notification>
+  <notification name="MusicStreamMuted" type="notify" icon="notifytip.tga">
+    Music playback was requested, but music or master audio is muted or its volume is zero. Adjust Preferences > Sound to hear the stream.
+  </notification>
     <global name="skipnexttime">
 
 		Don&apos;t show me this again

@@ -29,6 +29,7 @@
 #include "llpanelnearbymedia.h"
 
 #include "llaudioengine.h"
+#include "llstreamingaudio.h"
 #include "llbase64.h"
 #include "llcheckboxctrl.h"
 #include "llclipboard.h"
@@ -631,13 +632,25 @@ void LLPanelNearByMedia::refreshParcelItems()
 
         std::string url;
         url = media_inst->getParcelAudioURL();
+        std::string audio_name = mParcelAudioName;
+        bool show_playing_suffix = is_playing;
+        if (gAudiop && gAudiop->getStreamingAudioImpl())
+        {
+            const std::string status = gAudiop->getStreamingAudioImpl()->getStatusText();
+            if (!status.empty())
+            {
+                audio_name += " - " + status;
+                url = status + "\n" + url;
+                show_playing_suffix = false;
+            }
+        }
 
         updateListItem(mParcelAudioItem,
-                       mParcelAudioName,
+                       audio_name,
                        url,
                        -1, // Proximity after Parcel Media, but closer than anything else
                        (!is_playing),
-                       is_playing,
+                       show_playing_suffix,
                        is_playing,
                        MEDIA_CLASS_ALL,
                        "parcel audio");
@@ -892,21 +905,7 @@ void LLPanelNearByMedia::onClickParcelAudioPlay()
     // User *explicitly* started the internet stream, so keep the stream
     // playing and updated as they cross to other parcels etc.
     mParcelAudioAutoStart = true;
-    if (!gAudiop)
-    {
-        LL_WARNS("AudioEngine") << "LLAudioEngine instance doesn't exist!" << LL_ENDL;
-        return;
-    }
-
-    if (LLAudioEngine::AUDIO_PAUSED == gAudiop->isInternetStreamPlaying())
-    {
-        // 'false' means unpause
-        gAudiop->pauseInternetStream(false);
-    }
-    else
-    {
-        LLViewerAudio::getInstance()->startInternetStreamWithAutoFade(LLViewerMedia::getInstance()->getParcelAudioURL());
-    }
+    LLViewerAudio::getInstance()->playParcelStream();
 }
 
 void LLPanelNearByMedia::onClickParcelAudioStop()
@@ -1327,4 +1326,3 @@ std::string LLPanelNearByMedia::getSelectedUrl()
     }
     return url;
 }
-

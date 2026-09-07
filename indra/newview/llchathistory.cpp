@@ -117,9 +117,11 @@ public:
     LLChatHistoryBubble(const LLPanel::Params& p, bool from_me,
                         const std::string& message,
                         const std::string& translated_message,
-                        const LLStyle::Params& message_style)
+                        const LLStyle::Params& message_style,
+                        bool animate)
     :   LLPanel(p),
         mFromMe(from_me),
+        mAnimate(animate),
         mBubbleImage(LLUI::getUIImage("Rounded_Square")),
         mBubble(NULL),
         mText(NULL)
@@ -161,6 +163,19 @@ public:
 
     void draw() override
     {
+        F32 animation = 1.f;
+        if (mAnimate)
+        {
+            animation = llclamp(mAnimationTimer.getElapsedTimeF32() / 0.18f, 0.f, 1.f);
+            animation = 1.f - (1.f - animation) * (1.f - animation);
+            if (animation >= 1.f)
+            {
+                mAnimate = false;
+            }
+        }
+
+        LLUI::pushMatrix();
+        LLUI::translate(static_cast<F32>(ll_round(-8.f * (1.f - animation))), 0.f);
         if (mBubble)
         {
             const LLRect& rect = mBubble->getRect();
@@ -172,6 +187,7 @@ public:
             mBubbleImage->draw(rect, bubble_color % getDrawContext().mAlpha);
         }
         LLPanel::draw();
+        LLUI::popMatrix();
     }
 
     void reshape(S32 width, S32 height, bool called_from_parent = true) override
@@ -203,6 +219,8 @@ private:
     static constexpr S32 SHADOW_SIZE = 2;
 
     bool mFromMe;
+    bool mAnimate;
+    LLFrameTimer mAnimationTimer;
     LLPointer<LLUIImage> mBubbleImage;
     LLPanel* mBubble;
     LLTextBox* mText;
@@ -1543,6 +1561,8 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
 
     bool message_from_log = chat.mChatStyle == CHAT_STYLE_HISTORY;
     bool teleport_separator = chat.mSourceType == CHAT_SOURCE_TELEPORT;
+    const bool nearby_chat = args["nearby_chat"].asBoolean();
+
     // We graying out chat history by graying out messages that contains full date in a time string
     if (message_from_log)
     {
@@ -1585,8 +1605,26 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
         // names showing
         if (args["show_names_for_p2p_conv"].asBoolean() && utf8str_trim(chat.mFromName).size())
         {
+            if (nearby_chat)
+            {
+                LLStyle::Params nearby_name_params(body_message_params);
+                const LLUIColor accent_color = LLUIColorTable::instance().getColor("AccentColor");
+                nearby_name_params.color(accent_color);
+                nearby_name_params.readonly_color(accent_color);
+                const std::string sender = "[" + LLViewerChat::getSenderLabel(chat) + "]: ";
+
+                if (chat.mSourceType == CHAT_SOURCE_AGENT && chat.mFromID.notNull()
+                    && !message_from_log)
+                {
+                    nearby_name_params.overwriteFrom(LLStyleMap::instance().lookupAgent(chat.mFromID));
+                    nearby_name_params.color(accent_color);
+                    nearby_name_params.readonly_color(accent_color);
+                }
+                mEditor->appendText(sender, prependNewLineState, nearby_name_params);
+                prependNewLineState = false;
+            }
             // Don't hotlink any messages from the system (e.g. "Second Life:"), so just add those in plain text.
-            if (chat.mSourceType == CHAT_SOURCE_OBJECT && chat.mFromID.notNull())
+            else if (chat.mSourceType == CHAT_SOURCE_OBJECT && chat.mFromID.notNull())
             {
                 // for object IMs, create a secondlife:///app/objectim SLapp
                 std::string url = LLViewerChat::getSenderSLURL(chat, args);
@@ -1794,7 +1832,8 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
             row_p.mouse_opaque = false;
             row_p.follows.flags = FOLLOWS_LEFT | FOLLOWS_RIGHT;
             LLChatHistoryBubble* bubble = new LLChatHistoryBubble(
-                row_p, from_me, message, chat.mTranslatedText, body_message_params);
+                row_p, from_me, message, chat.mTranslatedText, body_message_params,
+                !from_me && !message_from_log && args["animate_message_bubble"].asBoolean());
 
             LLInlineViewSegment::Params bubble_segment;
             bubble_segment.view = bubble;

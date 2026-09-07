@@ -29,5 +29,6 @@
     button_display_mode="icons_only">
     <command name="boxxy_ao"/>
     <command name="boxxy_radar"/>
+    <command name="boxxy_tpose"/>
   </right_toolbar>
 </toolbars>

@@ -30,6 +30,7 @@
 #include "llpanel.h"
 #include "llframetimer.h"
 #include "llchat.h"
+#include "lltranslate.h"
 
 class LLLineEditor;
 class LLMessageSystem;
@@ -69,6 +70,9 @@ public:
 
     bool        inputEditorHasFocus();
     std::string getCurrentChat();
+    static bool translateNearbyChat(const std::string& text,
+        LLTranslate::TranslationSuccess_fn success,
+        LLTranslate::TranslationFailure_fn failure);
 
     // since chat bar logic is reused for chat history
     // gesture combo box might not be a direct child

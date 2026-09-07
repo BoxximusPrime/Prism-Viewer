@@ -34,6 +34,11 @@
 
 #include "llmimetypes.h"
 #include "lldir.h"
+#include "llchat.h"
+#include "llnotificationmanager.h"
+#include "llnotificationsutil.h"
+#include "llviewercontrol.h"
+#include "lltrans.h"
 
 LLStreamingAudio_MediaPlugins::LLStreamingAudio_MediaPlugins() :
     mMediaPlugin(NULL),
@@ -51,45 +56,45 @@ LLStreamingAudio_MediaPlugins::~LLStreamingAudio_MediaPlugins()
 
 void LLStreamingAudio_MediaPlugins::start(const std::string& url)
 {
-    if (!mMediaPlugin) // lazy-init the underlying media plugin
-    {
-        mMediaPlugin = initializeMedia("audio/mpeg"); // assumes that whatever media implementation supports mp3 also supports vorbis.
-        LL_INFOS() << "streaming audio mMediaPlugin is now " << mMediaPlugin << LL_ENDL;
-    }
-
-    if(!mMediaPlugin)
+    stop();
+    mFailed = false;
+    mError.clear();
+    mLastTitle.clear();
+    if (url.empty())
         return;
 
-    if (!url.empty())
-    {
-        LL_INFOS() << "Starting internet stream: " << url << LL_ENDL;
+    mURL = url;
+    mConnecting = true;
+    mConnectTimer.reset();
+    mMediaPlugin = initializeMedia("audio/mpeg"); // VLC also handles AAC and Vorbis streams.
 
-        mURL = url; // keep original url here for comparison purposes
-        std::string snt_url = url;
-        LLStringUtil::trim(snt_url);
-        size_t pos = snt_url.find(' ');
-        if (pos != std::string::npos)
-        {
-            // fmod permited having names after the url and people were using it.
-            // People label their streams this way, ignore the 'label'.
-            snt_url = snt_url.substr(0, pos);
-        }
-        mMediaPlugin->loadURI(snt_url);
-        mMediaPlugin->start();
-        LL_INFOS() << "Playing stream..." << LL_ENDL;
-    }
-    else
+    if(!mMediaPlugin)
     {
-        LL_INFOS() << "setting stream to NULL"<< LL_ENDL;
-        mURL.clear();
-        mMediaPlugin->stop();
-        delete mMediaPlugin;
-        mMediaPlugin = nullptr;
+        reportError(LLTrans::getString("MusicPluginUnavailable"));
+        return;
     }
+
+    LL_INFOS() << "Starting internet stream: " << url << LL_ENDL;
+    std::string snt_url = url;
+    LLStringUtil::trim(snt_url);
+    size_t pos = snt_url.find(' ');
+    if (pos != std::string::npos)
+    {
+        // Preserve support for parcel URLs with a human-readable label after a space.
+        snt_url = snt_url.substr(0, pos);
+    }
+    mMediaPlugin->loadURI(snt_url);
+    mMediaPlugin->setVolume(mGain);
+    mMediaPlugin->start();
 }
 
 void LLStreamingAudio_MediaPlugins::stop()
 {
+    mPlaybackSeconds = 0.0;
+    mPlaybackRunning = false;
+    mPlaybackStarted = false;
+    mLastTitle.clear();
+    mConnecting = false;
     LL_INFOS() << "Stopping internet stream." << LL_ENDL;
     if(mMediaPlugin)
     {
@@ -121,13 +126,92 @@ void LLStreamingAudio_MediaPlugins::pause(int pause)
 void LLStreamingAudio_MediaPlugins::update()
 {
     if (mMediaPlugin)
+    {
         mMediaPlugin->idle();
+        if (mPlaybackRunning)
+            mPlaybackSeconds += mPlaybackTimer.getElapsedTimeF64();
+        mPlaybackTimer.reset();
+        mPlaybackRunning = !mFailed && mMediaPlugin->getStatus() == MEDIA_PLAYING;
+        mPlaybackStarted = mPlaybackStarted || mPlaybackRunning;
+        if (!mFailed && !mURL.empty())
+        {
+            const auto status = mMediaPlugin->getStatus();
+            if (status == MEDIA_ERROR)
+                reportError(mMediaPlugin->getStatusText().empty() ? LLTrans::getString("MusicPlaybackFailed") : mMediaPlugin->getStatusText());
+            else if (status == MEDIA_DONE)
+                reportError(LLTrans::getString("MusicStreamEnded"));
+            else if (status == MEDIA_PLAYING || status == MEDIA_PAUSED)
+                mConnecting = false;
+            else if (mConnecting && mConnectTimer.getElapsedTimeF32() > 30.f)
+                reportError(LLTrans::getString("MusicConnectionTimeout"));
+
+            if (!mFailed && status == MEDIA_PLAYING)
+            {
+                std::string title = mMediaPlugin->getMediaName();
+                LLStringUtil::trim(title);
+                if (title.empty()) mLastTitle.clear();
+                if (!title.empty() && title != "LibVLC Plugin" && title != mURL && title != mLastTitle)
+                {
+                    mLastTitle = title;
+                    if (gSavedSettings.getBOOL("ShowStreamMetadata"))
+                    {
+                        LLSD args;
+                        args["TITLE"] = title;
+                        LLChat chat(LLTrans::getString("MusicNowPlaying", args));
+                        chat.mSourceType = CHAT_SOURCE_SYSTEM;
+                        LLNotificationsUI::LLNotificationManager::instance().onChat(chat, LLSD());
+                    }
+                }
+            }
+        }
+        // Do not delete the plugin from inside one of its event callbacks.
+        if (mFailed)
+        {
+            delete mMediaPlugin;
+            mMediaPlugin = nullptr;
+        }
+    }
+}
+
+void LLStreamingAudio_MediaPlugins::reportError(const std::string& reason)
+{
+    if (mFailed) return;
+    mFailed = true;
+    mConnecting = false;
+    mError = reason;
+    LLSD args;
+    args["REASON"] = reason;
+    LLNotificationsUtil::add("MusicStreamError", args);
+    LL_WARNS("AudioEngine") << "Streaming audio failed: " << reason << LL_ENDL;
+}
+
+void LLStreamingAudio_MediaPlugins::handleMediaEvent(LLPluginClassMedia*, EMediaEvent event)
+{
+    if (event == MEDIA_EVENT_PLUGIN_FAILED_LAUNCH)
+        reportError(LLTrans::getString("MusicPluginUnavailable"));
+    else if (event == MEDIA_EVENT_PLUGIN_FAILED)
+        reportError(LLTrans::getString("MusicPluginCrashed"));
+}
+
+std::string LLStreamingAudio_MediaPlugins::getStatusText() const
+{
+    if (mFailed) return mError;
+    if (mConnecting) return LLTrans::getString("MusicConnecting");
+    if (!mLastTitle.empty()) return mLastTitle;
+    return std::string();
+}
+
+F64 LLStreamingAudio_MediaPlugins::getPlaybackSeconds() const
+{
+    return mPlaybackSeconds + (mPlaybackRunning ? static_cast<F64>(mPlaybackTimer.getElapsedTimeF64()) : 0.0);
 }
 
 int LLStreamingAudio_MediaPlugins::isPlaying()
 {
-    if (!mMediaPlugin)
+    if (!mMediaPlugin || mFailed)
         return 0; // stopped
+
+    if (mConnecting) return 1;
 
     LLPluginClassMediaOwner::EMediaStatus status =
         mMediaPlugin->getStatus();
@@ -167,7 +251,7 @@ std::string LLStreamingAudio_MediaPlugins::getURL()
 
 LLPluginClassMedia* LLStreamingAudio_MediaPlugins::initializeMedia(const std::string& media_type)
 {
-    LLPluginClassMediaOwner* owner = NULL;
+    LLPluginClassMediaOwner* owner = this;
     S32 default_size = 1; // audio-only - be minimal, doesn't matter
     F64 default_zoom = 1.0;
     LLPluginClassMedia* media_source = LLViewerMediaImpl::newSourceFromMediaType(media_type, owner, default_size, default_size, default_zoom);
@@ -179,4 +263,3 @@ LLPluginClassMedia* LLStreamingAudio_MediaPlugins::initializeMedia(const std::st
 
     return media_source;
 }
-

@@ -30,8 +30,6 @@
 // newview includes
 #include "llagent.h"    // gAgent
 #include "llavatarnamecache.h"
-#include "llboxxyvip.h"
-#include "llcallingcard.h"
 #include "llslurl.h"
 #include "lluicolor.h"
 #include "lluicolortable.h"
@@ -44,21 +42,32 @@
 // LLViewerChat
 LLViewerChat::font_change_signal_t LLViewerChat::sChatFontChangedSignal;
 
-LLColor4 LLViewerChat::getSenderNameColor(const LLChat& chat)
+std::string LLViewerChat::getSenderLabel(const LLChat& chat)
 {
-    if (chat.mSourceType == CHAT_SOURCE_AGENT && chat.mFromID.notNull() && chat.mFromID != gAgentID)
+    if (chat.mSourceType == CHAT_SOURCE_AGENT && chat.mFromID.notNull())
     {
         LLAvatarName avatar_name;
-        if (LLAvatarNameCache::get(chat.mFromID, &avatar_name) && LLBoxxyVIP::matches(avatar_name))
+        if (LLAvatarNameCache::get(chat.mFromID, &avatar_name))
         {
-            return LLUIColorTable::instance().getColor("BoxxyRadarVIPColor").get();
-        }
-        if (LLAvatarTracker::instance().isBuddy(chat.mFromID))
-        {
-            return LLUIColorTable::instance().getColor("BoxxyRadarNearColor").get();
+            return avatar_name.getDisplayName() + " | " + avatar_name.getUserName();
         }
     }
-    return LLColor4::white;
+
+    const std::string::size_type username_start = chat.mFromName.rfind(" (");
+    const std::string::size_type username_end = chat.mFromName.rfind(')');
+    if (username_start != std::string::npos &&
+        username_end == chat.mFromName.length() - 1)
+    {
+        return chat.mFromName.substr(0, username_start) + " | "
+            + chat.mFromName.substr(username_start + 2,
+                username_end - username_start - 2);
+    }
+    return chat.mFromName;
+}
+
+LLColor4 LLViewerChat::getSenderNameColor(const LLChat&)
+{
+    return LLUIColorTable::instance().getColor("AccentColor").get();
 }
 
 //static

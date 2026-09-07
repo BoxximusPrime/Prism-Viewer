@@ -965,23 +965,20 @@ void LLAudioEngine::cleanupAudioSource(LLAudioSource *asp)
     }
 }
 
+static std::string decoded_sound_path(const LLUUID& uuid)
+{
+    const std::string bundled = gDirUtilp->getExpandedFilename(
+        LL_PATH_APP_SETTINGS, "sounds", uuid.asString() + ".wav");
+    if (gDirUtilp->fileExists(bundled))
+    {
+        return bundled;
+    }
+    return gDirUtilp->getExpandedFilename(LL_PATH_CACHE, uuid.asString()) + ".dsf";
+}
+
 bool LLAudioEngine::hasDecodedFile(const LLUUID &uuid)
 {
-    std::string uuid_str;
-    uuid.toString(uuid_str);
-
-    std::string wav_path;
-    wav_path = gDirUtilp->getExpandedFilename(LL_PATH_CACHE,uuid_str);
-    wav_path += ".dsf";
-
-    if (gDirUtilp->fileExists(wav_path))
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return gDirUtilp->fileExists(decoded_sound_path(uuid));
 }
 
 
@@ -1818,10 +1815,7 @@ bool LLAudioData::load()
         return true;
     }
 
-    std::string uuid_str;
-    std::string wav_path;
-    mID.toString(uuid_str);
-    wav_path= gDirUtilp->getExpandedFilename(LL_PATH_CACHE,uuid_str) + ".dsf";
+    const std::string wav_path = decoded_sound_path(mID);
 
     mHasWAVLoadFailed = !mBufferp->loadWAV(wav_path);
     if (mHasWAVLoadFailed)
