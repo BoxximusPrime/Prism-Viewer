@@ -99,6 +99,7 @@ private:
     explicit LLFloaterBoxxyRadarSimple(const LLSD& key);
 
 public:
+    bool applyRectControl() override;
     bool postBuild() override;
     void onOpen(const LLSD& key) override;
     bool canClose() override { return false; }

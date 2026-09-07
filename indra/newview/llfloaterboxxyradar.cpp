@@ -624,6 +624,23 @@ void LLFloaterBoxxyRadarSimple::onOpen(const LLSD& key)
     mRefreshTimer.reset();
 }
 
+bool LLFloaterBoxxyRadarSimple::applyRectControl()
+{
+    // This HUD grows upward as names arrive. Restoring its normalized center
+    // with a different height moves the bubbles away from their saved anchor.
+    if (!mRectControl.empty())
+    {
+        const LLRect rect = getControlGroup()->getRect(mRectControl);
+        if (rect.notEmpty())
+        {
+            setOrigin(rect.mLeft, rect.mBottom);
+            setOpenPositioning(LLFloaterEnums::POSITIONING_SPECIFIED);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool LLFloaterBoxxyRadarSimple::handleMouseDown(S32 x, S32 y, MASK mask)
 {
     // Do not enter LLFloater's handler for a click-through event: it brings

@@ -6,6 +6,8 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Prism-specific systems
 
+- Nameplate chat-range colors can be enabled or disabled in Prism preferences and update immediately. (in progress; runtime verification pending)
+
 - First-run defaults: translation and sending look targets off, gesture sounds on, all available toolbar buttons present, 540×480 DM floaters, and green/brown name-tag chat ranges. Window title is `Prism`, then `Prism - <account name>` after login. Privacy labels use “Send My Look Targets” and “Show Look Targets”. (in progress; updated installer testing pending)
 
 - Redesigned login with the neutral crystal-to-wireframe Prism logo, an emerald/charcoal backdrop and a compact rounded login card in its established position, flat fields and full-width focus outlines. (in progress; verified in Release at ultrawide and windowed sizes)
@@ -24,6 +26,8 @@ The committed feature list is based on the differences from the `upstream/develo
 - VIP and friend color highlighting in radar and chat.
 
 ## Chat and messaging
+
+- DM popouts retain their own size when detached from Conversations, starting at the XUI default of 540×480; reattaching and detaching preserves a manually resized popout. Minimal radar restores its saved bottom-left anchor, independent of list height, and the Now Playing border follows the card's rounded background. (in progress; installer regression testing pending)
 
 - Single-bar Enter-to-chat behavior.
 - Compact nearby-chat bar and revised bottom-toolbar layout.

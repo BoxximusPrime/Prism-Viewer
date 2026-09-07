@@ -15,6 +15,7 @@
 #include "llstartup.h"
 #include "lltextbox.h"
 #include "lluicolortable.h"
+#include "lluiimage.h"
 #include "llviewercontrol.h"
 #include "llviewermedia_streamingaudio.h"
 
@@ -89,11 +90,10 @@ void LLPanelBoxxyNowPlaying::draw()
     LLUI::pushMatrix();
     LLUI::translate(static_cast<F32>(getRect().mLeft - old_rect.mLeft),
                     static_cast<F32>(getRect().mBottom - old_rect.mBottom));
-    LLPanel::draw();
-
     const LLColor4 accent = LLUIColorTable::instance().getColor("BoxxyRadarNearColor").get();
     const LLColor4 border = LLUIColorTable::instance().getColor("LtGray").get();
-    gl_rect_2d(getLocalRect(), border % 0.65f, false);
+    LLUI::getUIImage("Rounded_Square")->drawBorder(getLocalRect(), border % 0.65f, 1);
+    LLPanel::draw();
     // Decorative playback bars, deliberately independent of audio amplitude.
     const F64 phase = stream->getPlaybackSeconds();
     gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);

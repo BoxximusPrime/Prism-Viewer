@@ -250,6 +250,7 @@ void LLFloaterIMSessionTab::assignResizeLimits()
 bool LLFloaterIMSessionTab::postBuild()
 {
     bool result;
+    mDetachedRect = getRect();
 
     mContentsView = getChild<LLView>("contents_view");
     mBodyStack = getChild<LLLayoutStack>("main_stack");
@@ -1221,6 +1222,10 @@ void LLFloaterIMSessionTab::onOpen(const LLSD& key)
 void LLFloaterIMSessionTab::onTearOffClicked()
 {
     restoreFloater();
+    if (mIsP2PChat && isTornOff())
+    {
+        mDetachedRect = getRect();
+    }
     setFollows(isTornOff()? FOLLOWS_ALL : FOLLOWS_NONE);
     mSaveRect = isTornOff();
     initRectControl();
@@ -1229,6 +1234,12 @@ void LLFloaterIMSessionTab::onTearOffClicked()
 
     if (isTornOff())
     {
+        if (mIsP2PChat)
+        {
+            // Hosting stretches the conversation to fill its parent. Restore
+            // the separate window's size, initially supplied by the XUI file.
+            reshape(mDetachedRect.getWidth(), mDetachedRect.getHeight());
+        }
         if (container->getVisible())
         {
             container->selectAdjacentConversation(false);

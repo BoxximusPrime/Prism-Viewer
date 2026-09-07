@@ -254,6 +254,7 @@ private:
     S32 mInputEditorPad;
     S32 mChatLayoutPanelHeight;
     S32 mFloaterHeight;
+    LLRect mDetachedRect;
 
     boost::signals2::connection mEmojiCloseConn;
     U32 mEmojiHelperLastCallbackFrame = { 0 };
