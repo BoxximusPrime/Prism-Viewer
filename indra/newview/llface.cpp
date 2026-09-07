@@ -2280,7 +2280,9 @@ bool LLFace::calcPixelArea(F32& cos_angle_to_view_dir, F32& radius)
     // don't update every frame
     if (gFrameTimeSeconds - mLastPixelAreaUpdate < PIXEL_AREA_UPDATE_PERIOD)
     {
-        return true;
+        radius = mPixelAreaRadius;
+        cos_angle_to_view_dir = mPixelAreaCosAngle;
+        return mPixelAreaInFrustum;
     }
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_FACE;
@@ -2381,22 +2383,26 @@ bool LLFace::calcPixelArea(F32& cos_angle_to_view_dir, F32& radius)
     t.load3(camera->getOrigin().mV);
     lookAt.setSub(center, t);
 
+    const F32 size_length = (F32) sqrt(size_squared);
     F32 dist = lookAt.getLength3().getF32();
-    dist = llmax(dist-size.getLength3().getF32(), 0.001f);
+    dist = llmax(dist-size_length, 0.001f);
 
     lookAt.normalize3fast() ;
 
     //get area of circle around node
-    F32 app_angle = atanf((F32) sqrt(size_squared) / dist);
+    F32 app_angle = atanf(size_length / dist);
     radius = app_angle*LLDrawable::sCurPixelAngle;
     mPixelArea = radius*radius * 3.14159f;
-
-    // remember last update time, add 10% noise to avoid all faces updating at the same time
-    mLastPixelAreaUpdate = gFrameTimeSeconds + ll_frand() * PIXEL_AREA_UPDATE_PERIOD * 0.1f;
 
     LLVector4a x_axis;
     x_axis.load3(camera->getXAxis().mV);
     cos_angle_to_view_dir = lookAt.dot3(x_axis).getF32();
+
+    // Cache all outputs together, including the media visibility result.
+    mPixelAreaRadius = radius;
+    mPixelAreaCosAngle = cos_angle_to_view_dir;
+    mPixelAreaInFrustum = true;
+    mLastPixelAreaUpdate = gFrameTimeSeconds + ll_frand() * PIXEL_AREA_UPDATE_PERIOD * 0.1f;
 
     //if has media, check if the face is out of the view frustum.
     if(hasMedia())
@@ -2404,6 +2410,7 @@ bool LLFace::calcPixelArea(F32& cos_angle_to_view_dir, F32& radius)
         if(!camera->AABBInFrustum(center, size))
         {
             mImportanceToCamera = 0.f ;
+            mPixelAreaInFrustum = false;
             return false ;
         }
         if(cos_angle_to_view_dir > camera->getCosHalfFov()) //the center is within the view frustum
@@ -2432,6 +2439,7 @@ bool LLFace::calcPixelArea(F32& cos_angle_to_view_dir, F32& radius)
         mImportanceToCamera = LLFace::calcImportanceToCamera(cos_angle_to_view_dir, dist) ;
     }
 
+    mPixelAreaCosAngle = cos_angle_to_view_dir;
     return true ;
 }
 

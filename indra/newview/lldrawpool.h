@@ -384,6 +384,7 @@ public:
     void pushMaskBatches(U32 type, bool texture = true, bool batch_textures = false);
     void pushRiggedMaskBatches(U32 type, bool texture = true, bool batch_textures = false);
     void pushBatch(LLDrawInfo& params, bool texture, bool batch_textures = false);
+    void pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 start, U32 end, U32 count);
     void pushUntexturedBatch(LLDrawInfo& params);
     void pushBumpBatch(LLDrawInfo& params, bool texture, bool batch_textures = false);
     static bool uploadMatrixPalette(LLDrawInfo& params);

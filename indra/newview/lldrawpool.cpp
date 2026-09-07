@@ -465,9 +465,45 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
 
-        if (pparams)
+        if (pparams && pparams->mCount)
         {
-            pushUntexturedBatch(*pparams);
+            if (!LLPipeline::sShadowRender ||
+                LLGLSLShader::sCurBoundShaderPtr != &gDeferredShadowProgram || pparams->mAvatar)
+            {
+                pushUntexturedBatch(*pparams);
+                continue;
+            }
+
+            U32 start = pparams->mStart;
+            U32 finish = pparams->mEnd;
+            U32 count = pparams->mCount;
+            // Plain shadow depth ignores surface-material batch boundaries.
+            // Merge only consecutive index ranges; never draw gaps or mutate draw infos.
+            while (i != end)
+            {
+                LLDrawInfo* next = *i;
+                if (!next || !next->mCount || next->mAvatar ||
+                    next->mVertexBuffer != pparams->mVertexBuffer ||
+                    next->mModelMatrix != pparams->mModelMatrix ||
+                    U64(pparams->mOffset) + count != next->mOffset)
+                {
+                    break;
+                }
+#if LL_DARWIN
+                if (llmax(finish, U32(next->mEnd)) - llmin(start, U32(next->mStart)) > U32(gGLManager.mGLMaxVertexRange) ||
+                    U64(count) + next->mCount > U32(gGLManager.mGLMaxIndexRange))
+                {
+                    break;
+                }
+#endif
+                start = llmin(start, U32(next->mStart));
+                finish = llmax(finish, U32(next->mEnd));
+                count += next->mCount;
+                LLCullResult::increment_iterator(i, end);
+            }
+            applyModelMatrix(*pparams);
+            pparams->mVertexBuffer->setBuffer();
+            pparams->mVertexBuffer->drawRange(LLRender::TRIANGLES, start, finish, count, pparams->mOffset);
         }
     }
 }
@@ -525,14 +561,61 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
     auto* begin = gPipeline.beginRenderMap(type);
     auto* end = gPipeline.endRenderMap(type);
+    auto* shader = LLGLSLShader::sCurBoundShaderPtr;
+    const bool merge = texture && LLPipeline::sShadowRender &&
+        (shader == &gDeferredShadowAlphaMaskProgram ||
+         shader == &gDeferredShadowFullbrightAlphaMaskProgram || shader == &gDeferredTreeShadowProgram);
+    bool alpha_set = false;
+    F32 last_alpha = 0.f;
     for (LLCullResult::drawinfo_iterator i = begin; i != end; )
     {
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
-        if (pparams)
+        if (pparams && pparams->mCount)
         {
-            LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(pparams->mAlphaMaskCutoff);
-            pushBatch(*pparams, texture, batch_textures);
+            if (!alpha_set || last_alpha != pparams->mAlphaMaskCutoff)
+            {
+                shader->setMinimumAlpha(pparams->mAlphaMaskCutoff);
+                last_alpha = pparams->mAlphaMaskCutoff;
+                alpha_set = true;
+            }
+            if (!merge || pparams->mAvatar)
+            {
+                pushBatch(*pparams, texture, batch_textures);
+                continue;
+            }
+            U32 start = pparams->mStart;
+            U32 finish = pparams->mEnd;
+            U32 count = pparams->mCount;
+            // These shadow shaders only consume transform, diffuse alpha and cutoff.
+            // Keep texture bindings identical and combine adjacent indices only.
+            while (i != end)
+            {
+                LLDrawInfo* next = *i;
+                if (!next || !next->mCount || next->mAvatar ||
+                    next->mVertexBuffer != pparams->mVertexBuffer ||
+                    next->mModelMatrix != pparams->mModelMatrix ||
+                    U64(pparams->mOffset) + count != next->mOffset ||
+                    next->mAlphaMaskCutoff != pparams->mAlphaMaskCutoff ||
+                    next->mTexture != pparams->mTexture ||
+                    next->mTextureMatrix != pparams->mTextureMatrix ||
+                    (batch_textures && next->mTextureList != pparams->mTextureList))
+                {
+                    break;
+                }
+#if LL_DARWIN
+                if (llmax(finish, U32(next->mEnd)) - llmin(start, U32(next->mStart)) > U32(gGLManager.mGLMaxVertexRange) ||
+                    U64(count) + next->mCount > U32(gGLManager.mGLMaxIndexRange))
+                {
+                    break;
+                }
+#endif
+                start = llmin(start, U32(next->mStart));
+                finish = llmax(finish, U32(next->mEnd));
+                count += next->mCount;
+                LLCullResult::increment_iterator(i, end);
+            }
+            pushBatchRange(*pparams, batch_textures, start, finish, count);
         }
     }
 }
@@ -543,6 +626,8 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
     const LLVOAvatar* lastAvatar = nullptr;
     U64 lastMeshId = 0;
     bool skipLastSkin = false;
+    bool alpha_set = false;
+    F32 last_alpha = 0.f;
     auto* begin = gPipeline.beginRenderMap(type);
     auto* end = gPipeline.endRenderMap(type);
     for (LLCullResult::drawinfo_iterator i = begin; i != end; )
@@ -555,7 +640,12 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
         if (pparams)
         {
-            LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(pparams->mAlphaMaskCutoff);
+            if (!alpha_set || last_alpha != pparams->mAlphaMaskCutoff)
+            {
+                LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(pparams->mAlphaMaskCutoff);
+                last_alpha = pparams->mAlphaMaskCutoff;
+                alpha_set = true;
+            }
 
             if (uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
             {
@@ -567,13 +657,14 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
 void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
 {
-    if (LLGLSLShader::sCurBoundShaderPtr)
+    // Shadow shaders do not write the G-buffer's skin-scattering marker.
+    if (!LLPipeline::sShadowRender && LLGLSLShader::sCurBoundShaderPtr)
     {
         static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
         static const LLStaticHashedString sss_object("sss_object");
         const bool skin = params.mSSS && sss_enabled && !gCubeSnapshot && !LLPipeline::sImpostorRender;
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(sss_object, skin ? 1.f : 0.f);
-        if (skin && !LLPipeline::sShadowRender)
+        if (skin)
         {
             gPipeline.mHasSSSGeometry = true;
         }
@@ -598,10 +689,14 @@ void LLRenderPass::applyModelMatrix(const LLMatrix4* model_matrix)
 
 void LLRenderPass::pushBatch(LLDrawInfo& params, bool texture, bool batch_textures)
 {
-    LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
     llassert(texture);
+    pushBatchRange(params, batch_textures, params.mStart, params.mEnd, params.mCount);
+}
 
-    if (!params.mCount)
+void LLRenderPass::pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 start, U32 end, U32 count)
+{
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
+    if (!count)
     {
         return;
     }
@@ -643,7 +738,7 @@ void LLRenderPass::pushBatch(LLDrawInfo& params, bool texture, bool batch_textur
     }
 
     params.mVertexBuffer->setBuffer();
-    params.mVertexBuffer->drawRange(LLRender::TRIANGLES, params.mStart, params.mEnd, params.mCount, params.mOffset);
+    params.mVertexBuffer->drawRange(LLRender::TRIANGLES, start, end, count, params.mOffset);
 
     if (tex_setup)
     {

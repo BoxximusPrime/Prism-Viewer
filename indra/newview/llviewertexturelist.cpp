@@ -906,6 +906,11 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
     {
         static LLCachedControl<F32> texture_scale_min(gSavedSettings, "TextureScaleMinAreaFactor", 0.0095f);
         static LLCachedControl<F32> texture_scale_max(gSavedSettings, "TextureScaleMaxAreaFactor", 25.f);
+        static LLCachedControl<F32> texture_camera_boost(gSavedSettings, "TextureCameraBoost", 8.f);
+        const F32 scale_min = texture_scale_min;
+        const F32 scale_max = texture_scale_max;
+        const F32 camera_boost = texture_camera_boost;
+        const F32 desired_bias = LLViewerTexture::sDesiredDiscardBias;
 
         F32 max_vsize = 0.f;
         bool on_screen = false;
@@ -916,7 +921,7 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
         // get adjusted bias based on image resolution
         LLImageGL* img = imagep->getGLTexture();
         F32 max_discard = F32(img ? img->getMaxDiscardLevel() : MAX_DISCARD_LEVEL);
-        F32 bias = llclamp(max_discard - 2.f, 1.f, LLViewerTexture::sDesiredDiscardBias);
+        F32 bias = llclamp(max_discard - 2.f, 1.f, desired_bias);
 
         // convert bias into a vsize scaler
         bias = (F32) llroundf(powf(4, bias - 1.f));
@@ -924,14 +929,17 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
         LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
         for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; ++i)
         {
-            face_count += imagep->getNumFaces(i);
-            S32 faces_to_check = (face_count > max_faces_to_check) ? 0 : imagep->getNumFaces(i);
+            const S32 channel_faces = imagep->getNumFaces(i);
+            face_count += channel_faces;
+            const S32 faces_to_check = (face_count > max_faces_to_check) ? 0 : channel_faces;
+            const auto& faces = *imagep->getFaceList(i);
 
             for (S32 fi = 0; fi < faces_to_check; ++fi)
             {
-                LLFace* face = (*(imagep->getFaceList(i)))[fi];
+                LLFace* face = faces[fi];
+                LLViewerObject* objp = face ? face->getViewerObject() : nullptr;
 
-                if (face && face->getViewerObject())
+                if (objp)
                 {
                     F32 radius;
                     F32 cos_angle_to_view_dir;
@@ -957,15 +965,14 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
                     // Maximum usage examples: huge chunk of terrain repeats texture
                     // TODO: make this work with the GLTF texture transforms
                     S32 te_offset = face->getTEOffset();  // offset is -1 if not inited
-                    LLViewerObject* objp = face->getViewerObject();
                     const LLTextureEntry* te = (te_offset < 0 || te_offset >= objp->getNumTEs()) ? nullptr : objp->getTE(te_offset);
                     F32 min_scale = te ? llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT())) : 1.f;
-                    min_scale = llclamp(min_scale * min_scale, texture_scale_min(), texture_scale_max());
+                    min_scale = llclamp(min_scale * min_scale, scale_min, scale_max);
                     vsize /= min_scale;
 
                     // apply bias to offscreen faces all the time, but only to onscreen faces when bias is large
                     // use mImportanceToCamera to make bias switch a bit more gradual
-                    if (!face->mInFrustum || LLViewerTexture::sDesiredDiscardBias > 1.9f + face->mImportanceToCamera / 2.f)
+                    if (!face->mInFrustum || desired_bias > 1.9f + face->mImportanceToCamera / 2.f)
                     {
                         vsize /= bias;
                     }
@@ -973,15 +980,14 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
                     // boost resolution of textures that are important to the camera
                     if (face->mInFrustum)
                     {
-                        static LLCachedControl<F32> texture_camera_boost(gSavedSettings, "TextureCameraBoost", 8.f);
-                        vsize *= llmax(face->mImportanceToCamera*texture_camera_boost, 1.f);
+                        vsize *= llmax(face->mImportanceToCamera*camera_boost, 1.f);
                     }
 
                     max_vsize = llmax(max_vsize, vsize);
 
                     // addTextureStats limits size to sMaxVirtualSize
                     if (max_vsize >= LLViewerFetchedTexture::sMaxVirtualSize
-                        && (on_screen || LLViewerTexture::sDesiredDiscardBias <= BIAS_TRS_ON_SCREEN))
+                        && (on_screen || desired_bias <= BIAS_TRS_ON_SCREEN))
                     {
                         break;
                     }
@@ -989,7 +995,7 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
             }
 
             if (max_vsize >= LLViewerFetchedTexture::sMaxVirtualSize
-                && (on_screen || LLViewerTexture::sDesiredDiscardBias <= BIAS_TRS_ON_SCREEN))
+                && (on_screen || desired_bias <= BIAS_TRS_ON_SCREEN))
             {
                 break;
             }
@@ -1006,8 +1012,8 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
           // this is an alternative to decaying mMaxVirtualSize over time
           // that keeps textures from continously downrezzing and uprezzing in the background
 
-            if (LLViewerTexture::sDesiredDiscardBias > BIAS_TRS_OUT_OF_SCREEN ||
-                (!on_screen && LLViewerTexture::sDesiredDiscardBias > BIAS_TRS_ON_SCREEN))
+            if (desired_bias > BIAS_TRS_OUT_OF_SCREEN ||
+                (!on_screen && desired_bias > BIAS_TRS_ON_SCREEN))
             {
                 imagep->mMaxVirtualSize = 0.f;
             }
@@ -1925,5 +1931,4 @@ bool LLUIImageList::initFromFile()
     }
     return true;
 }
-
 

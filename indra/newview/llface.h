@@ -302,7 +302,10 @@ private:
     std::vector<S32> mRiggedIndex;
 
     // gFrameTimeSeconds when mPixelArea was last updated
-    F32         mLastPixelAreaUpdate = 0.f;
+    F32         mLastPixelAreaUpdate = -1.f;
+    F32         mPixelAreaRadius = 0.f;
+    F32         mPixelAreaCosAngle = 0.f;
+    bool        mPixelAreaInFrustum = false;
 
     // virtual size of face in texture area  (mPixelArea adjusted by texture repeats)
     // used to determine desired resolution of texture

@@ -1154,20 +1154,28 @@ public:
             return;
         }
 
-        if ((mRes && group->hasState(LLSpatialGroup::SKIP_FRUSTUM_CHECK)) ||
-            mRes == 2)
-        {   //don't need to do frustum check
-            OctreeTraveler::traverse(n);
-        }
-        else
+        const bool inherited = (mRes && group->hasState(LLSpatialGroup::SKIP_FRUSTUM_CHECK)) || mRes == 2;
+        if (!inherited)
         {
             mRes = frustumCheck(group);
+        }
 
-            if (mRes)
-            { //at least partially in, run on down
+        if (mRes)
+        {
+            if (mRes == 2 && n->getElementCount() != 0)
+            {
+                // processGroup already includes this entire subtree's bounds.
+                // Visiting descendants cannot expand them, even with occlusion.
+                processGroup(group);
+            }
+            else
+            {
                 OctreeTraveler::traverse(n);
             }
+        }
 
+        if (!inherited)
+        {
             mRes = 0;
         }
     }
@@ -4168,4 +4176,3 @@ void LLCullResult::assertDrawMapsEmpty()
         }
     }
 }
-

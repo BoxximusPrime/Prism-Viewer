@@ -620,8 +620,7 @@ void LLVOPartGroup::getGeometry(S32 idx,
     *colorsp++ = color;
     *colorsp++ = color;
 
-    //if (pglow.mV[3] || part.mGlow.mV[3])
-    { //only write glow if it is not zero
+    { // Always initialize glow, including reused vertices whose glow is now zero.
         *emissivep++ = pglow;
         *emissivep++ = pglow;
         *emissivep++ = part.mGlow;
@@ -836,7 +835,10 @@ void LLParticlePartition::getGeometry(LLSpatialGroup* group)
 
         if (cur_glow.get() != start_glow)
         {
-            has_glow = true;
+            // Ribbon endpoints can have different glow. Inspect the values,
+            // not whether getGeometry wrote the always-present emissive data.
+            has_glow = start_glow[0].mV[3] || start_glow[1].mV[3] ||
+                       start_glow[2].mV[3] || start_glow[3].mV[3];
         }
 
         llassert(facep->getGeomCount() == 4);
@@ -923,4 +925,3 @@ LLVector3 LLVOHUDPartGroup::getCameraPosition() const
 {
     return LLVector3(-1,0,0);
 }
-

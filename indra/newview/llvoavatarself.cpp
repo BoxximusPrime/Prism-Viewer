@@ -775,7 +775,7 @@ bool LLVOAvatarSelf::setVisualParamWeight(S32 index, S32 type, F32 weight)
     return false;
 }
 
-bool LLVOAvatarSelf::setParamWeight(const LLViewerVisualParam *param, F32 weight)
+bool LLVOAvatarSelf::setParamWeight(LLViewerVisualParam *param, F32 weight)
 {
     if (!param)
     {
@@ -796,7 +796,10 @@ bool LLVOAvatarSelf::setParamWeight(const LLViewerVisualParam *param, F32 weight
         }
     }
 
-    return LLCharacter::setVisualParamWeight(param,weight);
+    // All callers already resolved this parameter from the avatar's index.
+    // Keep setWeight's driver propagation without looking up the same ID again.
+    param->setWeight(weight);
+    return true;
 }
 
 /*virtual*/
