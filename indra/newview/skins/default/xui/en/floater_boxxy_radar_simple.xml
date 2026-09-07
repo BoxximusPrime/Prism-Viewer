@@ -14,7 +14,7 @@
  layout="topleft"
  mouse_opaque="false"
  name="boxxy_radar_simple"
- save_rect="false"
+ save_rect="true"
  single_instance="true">
   <text
    name="near_names"
@@ -28,6 +28,7 @@
    valign="bottom"
    mouse_opaque="false"
    text_color="White"
+   font_shadow="hard"
    use_ellipses="true" />
   <text
    name="far_names"
@@ -41,6 +42,7 @@
    valign="bottom"
    mouse_opaque="false"
    text_color="White"
+   font_shadow="hard"
    use_ellipses="true" />
   <text
    name="near_total"
@@ -54,7 +56,8 @@
    halign="center"
    valign="top"
    mouse_opaque="false"
-   text_color="LtGray" />
+   text_color="LtGray"
+   font_shadow="hard" />
   <text
    name="far_total"
    follows="right|bottom"
@@ -67,7 +70,8 @@
    halign="center"
    valign="top"
    mouse_opaque="false"
-   text_color="LtGray" />
+   text_color="LtGray"
+   font_shadow="hard" />
   <icon
    name="near_bubble"
    follows="left|bottom"

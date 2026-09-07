@@ -136,6 +136,7 @@ public:
     bool            mPickUnselectable;
     bool            mPickReflectionProbe = false;
     bool            mPickHUD{ false };
+    bool            mPickNameTag{ false };
     void            getSurfaceInfo();
 
 private:
@@ -447,7 +448,8 @@ public:
                                     LLVector4a *normal = NULL,
                                     LLVector4a *tangent = NULL,
                                     LLVector4a* start = NULL,
-                                    LLVector4a* end = NULL);
+                                    LLVector4a* end = NULL,
+                                    bool* name_tag_hit = NULL);
 
 
     // Returns a pointer to the last object hit

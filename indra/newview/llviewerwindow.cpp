@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llpanelboxxynowplaying.h"
 #include "llviewerwindow.h"
 
 
@@ -2284,7 +2285,10 @@ void LLViewerWindow::initBase()
     cp.font_size_index(gSavedSettings.getS32("ChatFontSize"));
     cp.follows.flags(FOLLOWS_LEFT | FOLLOWS_RIGHT | FOLLOWS_BOTTOM);
     gConsole = LLUICtrlFactory::create<LLConsole>(cp);
-    getRootView()->addChild(gConsole);
+    // The chat console is a passive overlay. Keep it below normal UI and floaters
+    // so windows opened over the lower-left corner remain readable.
+    getRootView()->addChildInBack(gConsole);
+    getRootView()->addChildInBack(new LLPanelBoxxyNowPlaying());
 
     // optionally forward warnings to chat console/chat floater
     // for qa runs and dev builds
@@ -4589,7 +4593,8 @@ LLViewerObject* LLViewerWindow::cursorIntersect(S32 mouse_x, S32 mouse_y, F32 de
                                                 LLVector4a *normal,
                                                 LLVector4a *tangent,
                                                 LLVector4a* start,
-                                                LLVector4a* end)
+                                                LLVector4a* end,
+                                                bool* name_tag_hit)
 {
     S32 x = mouse_x;
     S32 y = mouse_y;
@@ -4677,7 +4682,8 @@ LLViewerObject* LLViewerWindow::cursorIntersect(S32 mouse_x, S32 mouse_y, F32 de
         if (!found) // if not found in HUD, look in world:
         {
             found = gPipeline.lineSegmentIntersectInWorld(mw_start, mw_end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe,
-                                                          face_hit, gltf_node_hit, gltf_primitive_hit, intersection, uv, normal, tangent);
+                                                          face_hit, gltf_node_hit, gltf_primitive_hit, intersection, uv, normal, tangent,
+                                                          name_tag_hit);
             if (found && !pick_transparent)
             {
                 gDebugRaycastIntersection = *intersection;
@@ -6304,6 +6310,7 @@ LLPickInfo::LLPickInfo(const LLCoordGL& mouse_pos,
 
 void LLPickInfo::fetchResults()
 {
+    mPickNameTag = false;
     S32 face_hit = -1;
 
     LLVector4a intersection, normal;
@@ -6329,7 +6336,7 @@ void LLPickInfo::fetchResults()
 
     LLViewerObject* hit_object = gViewerWindow->cursorIntersect(mMousePt.mX, mMousePt.mY, 512.f,
                                     nullptr, -1, mPickTransparent, mPickRigged, mPickUnselectable, mPickReflectionProbe, &face_hit, &mGLTFNodeIndex, &mGLTFPrimitiveIndex,
-                                &intersection, &uv, &normal, &tangent, &start, &end);
+                                &intersection, &uv, &normal, &tangent, &start, &end, &mPickNameTag);
 
     mPickPt = mMousePt;
 

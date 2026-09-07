@@ -222,6 +222,7 @@ set(viewer_SOURCE_FILES
     llfloatereconomylog.cpp
     llfloaterboxxyao.cpp
     llfloaterboxxyradar.cpp
+    llfloaterboxxytpose.cpp
     llfloaterconversationpreview.cpp
     llfloatercreatelandmark.cpp
     llfloaterdeleteprefpreset.cpp
@@ -495,6 +496,7 @@ set(viewer_SOURCE_FILES
     llpanelmediasettingspermissions.cpp
     llpanelmediasettingssecurity.cpp
     llpanelnearbymedia.cpp
+    llpanelboxxynowplaying.cpp
     llpanelobject.cpp
     llpanelobjectinventory.cpp
     llpanelonlinestatus.cpp
@@ -914,6 +916,7 @@ set(viewer_HEADER_FILES
     llfloatereconomylog.h
     llfloaterboxxyao.h
     llfloaterboxxyradar.h
+    llfloaterboxxytpose.h
     llfloaterconversationpreview.h
     llfloatercreatelandmark.h
     llfloaterdeleteprefpreset.h
@@ -1182,6 +1185,7 @@ set(viewer_HEADER_FILES
     llpanelmediasettingspermissions.h
     llpanelmediasettingssecurity.h
     llpanelnearbymedia.h
+    llpanelboxxynowplaying.h
     llpanelobject.h
     llpanelobjectinventory.h
     llpanelonlinestatus.h

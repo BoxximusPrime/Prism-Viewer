@@ -227,6 +227,7 @@ public:
     /*virtual*/ bool canSnapTo(const LLView* other_view);
     /*virtual*/ void setSnappedTo(const LLView* snap_view);
     /*virtual*/ void setFocus( bool b );
+    void onFocusReceived() override;
     /*virtual*/ void setIsChrome(bool is_chrome);
     /*virtual*/ void setRect(const LLRect &rect);
                 void setIsSingleInstance(bool is_single_instance);
@@ -523,6 +524,7 @@ private:
     bool            mButtonsEnabled[BUTTON_COUNT];
     F32             mButtonScale;
     bool            mAutoFocus;
+    bool            mOpening = false;
     LLHandle<LLFloater> mSnappedTo;
 
     LLHandle<LLFloater> mHostHandle;
@@ -640,6 +642,5 @@ private:
 extern LLFloaterView* gFloaterView;
 
 #endif  // LL_FLOATER_H
-
 
 

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<panel name="boxxy_now_playing" width="300" height="126" layout="topleft"
+       background_visible="true" background_opaque="true" bg_opaque_image="Rounded_Square"
+       bg_opaque_image_overlay="PanelDefaultBackgroundColor" mouse_opaque="false">
+  <string name="no_title">No title supplied by this stream</string>
+  <string name="playing">NOW PLAYING</string>
+  <string name="paused">PAUSED</string>
+  <string name="copy_title">Click to copy title:&#10;</string>
+  <string name="copy_url">Click to copy stream URL:&#10;</string>
+  <text name="playback_state" left="16" top="12" width="190" height="16"
+        font="SansSerifSmall" font.style="BOLD" text_color="BoxxyRadarNearColor" mouse_opaque="false" />
+  <text name="track_title" left="16" top="34" right="-16" height="20" follows="left|right|top"
+        font="SansSerif" font.style="BOLD" text_color="White" use_ellipses="true"
+        wrap="false" parse_urls="false" mouse_opaque="true" />
+  <text name="stream_url" left="16" top="58" right="-16" height="16" follows="left|right|top"
+        font="SansSerifSmall" text_color="LtGray" use_ellipses="true" wrap="false"
+        parse_urls="false" mouse_opaque="true" />
+  <text name="elapsed" right="-16" top="81" width="115" height="16" follows="right|top"
+        font="SansSerifSmall" halign="right" text_color="LtGray" mouse_opaque="false"
+        />
+  <slider name="music_volume" control_name="AudioLevelMusic" disabled_control="MuteAudio"
+          left="80" top="103" width="140" height="15" follows="bottom"
+          increment="0.025" initial_value="0.5" show_text="false" volume="true"
+          tool_tip="Parcel music volume" />
+</panel>

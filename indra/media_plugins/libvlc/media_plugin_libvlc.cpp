@@ -41,6 +41,9 @@ typedef SSIZE_T ssize_t;
 
 #include "vlc/vlc.h"
 #include "vlc/libvlc_version.h"
+#include <atomic>
+#include <chrono>
+#include <mutex>
 
 #if LL_WINDOWS
 // needed for waveOut call - see below for description
@@ -67,6 +70,8 @@ private:
     void setVolume(const F64 volume);
     void setVolumeVLC();
     void updateTitle(const char* title);
+    void updateMetadata();
+    static void logCallback(void* data, int level, const libvlc_log_t*, const char* format, va_list args);
 
     static void* lock(void* data, void** p_pixels);
     static void unlock(void* data, void* id, void* const* raw_pixels);
@@ -96,7 +101,11 @@ private:
 
     F64 mCurTime;
     F64 mDuration;
-    EStatus mVlcStatus;
+    std::atomic<EStatus> mVlcStatus;
+    std::mutex mErrorMutex;
+    std::string mLastError;
+    std::string mLastTitle;
+    std::chrono::steady_clock::time_point mMetadataPoll;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -179,6 +188,8 @@ void MediaPluginLibVLC::initVLC()
 
     int vlc_argc = sizeof(vlc_argv) / sizeof(*vlc_argv);
     mLibVLC = libvlc_new(vlc_argc, vlc_argv);
+    if (mLibVLC)
+        libvlc_log_set(mLibVLC, logCallback, this);
 
     if (!mLibVLC)
     {
@@ -191,9 +202,23 @@ void MediaPluginLibVLC::initVLC()
 //
 void MediaPluginLibVLC::resetVLC()
 {
-    libvlc_media_player_stop(mLibVLCMediaPlayer);
-    libvlc_media_player_release(mLibVLCMediaPlayer);
-    libvlc_release(mLibVLC);
+    if (mLibVLCMediaPlayer)
+    {
+        libvlc_media_player_stop(mLibVLCMediaPlayer);
+        libvlc_media_player_release(mLibVLCMediaPlayer);
+        mLibVLCMediaPlayer = nullptr;
+    }
+    if (mLibVLCMedia)
+    {
+        libvlc_media_release(mLibVLCMedia);
+        mLibVLCMedia = nullptr;
+    }
+    if (mLibVLC)
+    {
+        libvlc_log_unset(mLibVLC);
+        libvlc_release(mLibVLC);
+        mLibVLC = nullptr;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -255,11 +280,13 @@ void MediaPluginLibVLC::eventCallbacks(const libvlc_event_t* event, void* ptr)
         break;
 
     case libvlc_MediaPlayerStopped:
-        parent->mVlcStatus = STATUS_DONE;
+        if (parent->mVlcStatus != STATUS_ERROR)
+            parent->mVlcStatus = STATUS_DONE;
         break;
 
     case libvlc_MediaPlayerEndReached:
-        parent->mVlcStatus = STATUS_DONE;
+        if (parent->mVlcStatus != STATUS_ERROR)
+            parent->mVlcStatus = STATUS_DONE;
         parent->mCurTime = parent->mDuration;
         parent->setDurationDirty();
         break;
@@ -291,9 +318,10 @@ void MediaPluginLibVLC::eventCallbacks(const libvlc_event_t* event, void* ptr)
         if (title)
         {
             parent->updateTitle(title);
+            libvlc_free(title);
         }
+        break;
     }
-    break;
     }
 }
 
@@ -316,20 +344,39 @@ void MediaPluginLibVLC::playMedia()
     if (mLibVLCMediaPlayer)
     {
         libvlc_media_player_stop(mLibVLCMediaPlayer);
+        libvlc_media_player_release(mLibVLCMediaPlayer);
+        mLibVLCMediaPlayer = nullptr;
+    }
+
+    if (mLibVLCMedia)
+    {
+        libvlc_media_release(mLibVLCMedia);
+        mLibVLCMedia = nullptr;
+    }
+    mLastTitle.clear();
+    {
+        std::lock_guard<std::mutex> lock(mErrorMutex);
+        mLastError.clear();
+    }
+    mVlcStatus = STATUS_LOADING;
+    if (!mLibVLC)
+    {
+        mVlcStatus = STATUS_ERROR;
+        return;
     }
 
     mLibVLCMedia = libvlc_media_new_location(mLibVLC, mURL.c_str());
     if (!mLibVLCMedia)
     {
         mLibVLCMediaPlayer = 0;
-        setStatus(STATUS_ERROR);
+        mVlcStatus = STATUS_ERROR;
         return;
     }
 
     mLibVLCMediaPlayer = libvlc_media_player_new_from_media(mLibVLCMedia);
     if (!mLibVLCMediaPlayer)
     {
-        setStatus(STATUS_ERROR);
+        mVlcStatus = STATUS_ERROR;
         return;
     }
 
@@ -380,7 +427,8 @@ void MediaPluginLibVLC::playMedia()
         libvlc_media_add_option(mLibVLCMedia, "input-repeat=65535");
     }
 
-    libvlc_media_player_play(mLibVLCMediaPlayer);
+    if (libvlc_media_player_play(mLibVLCMediaPlayer) < 0)
+        mVlcStatus = STATUS_ERROR;
 
     // send a "location_changed" message - this informs the media system
     // that a new URL is the 'current' one and is used extensively.
@@ -408,6 +456,45 @@ void MediaPluginLibVLC::updateTitle(const char* title)
     LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "name_text");
     message.setValue("name", title);
     sendMessage(message);
+}
+
+void MediaPluginLibVLC::logCallback(void* data, int level, const libvlc_log_t*, const char* format, va_list args)
+{
+    if (level < LIBVLC_ERROR) return;
+    char buffer[1024];
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    auto* self = static_cast<MediaPluginLibVLC*>(data);
+    std::lock_guard<std::mutex> lock(self->mErrorMutex);
+    if (self->mLastError.empty())
+        self->mLastError = buffer;
+}
+
+void MediaPluginLibVLC::updateMetadata()
+{
+    const auto now = std::chrono::steady_clock::now();
+    if (!mLibVLCMedia || mVlcStatus != STATUS_PLAYING ||
+        now - mMetadataPoll < std::chrono::seconds(1)) return;
+    mMetadataPoll = now;
+
+    // ICY/Shoutcast song changes update NowPlaying, not the player's title index.
+    char* playing = libvlc_media_get_meta(mLibVLCMedia, libvlc_meta_NowPlaying);
+    std::string title = playing ? playing : "";
+    libvlc_free(playing);
+    if (title.empty())
+    {
+        char* track = libvlc_media_get_meta(mLibVLCMedia, libvlc_meta_Title);
+        char* artist = libvlc_media_get_meta(mLibVLCMedia, libvlc_meta_Artist);
+        // A title without an artist is often just a station name or URL.
+        if (track && *track && artist && *artist)
+            title = std::string(artist) + " - " + track;
+        libvlc_free(track);
+        libvlc_free(artist);
+    }
+    if (title != mLastTitle)
+    {
+        mLastTitle = title;
+        updateTitle(title.c_str());
+    }
 }
 
 void MediaPluginLibVLC::setVolumeVLC()
@@ -498,7 +585,16 @@ void MediaPluginLibVLC::receiveMessage(const char* message_string)
             }
             else if (message_name == "idle")
             {
-                setStatus(mVlcStatus);
+                const EStatus status = mVlcStatus.load();
+                if (status == STATUS_ERROR && mStatus != STATUS_ERROR)
+                {
+                    std::lock_guard<std::mutex> lock(mErrorMutex);
+                    LLPluginMessage error(LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER, "status_text");
+                    error.setValue("status", mLastError);
+                    sendMessage(error);
+                }
+                setStatus(status);
+                updateMetadata();
             }
             else if (message_name == "cleanup")
             {

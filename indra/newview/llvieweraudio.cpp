@@ -46,6 +46,8 @@
 #include "llviewermessage.h"
 
 #include "llstreamingaudio.h"
+#include "llnotificationsutil.h"
+#include "lltrans.h"
 
 /////////////////////////////////////////////////////////
 const U32 FMODEX_DECODE_BUFFER_SIZE = 1000; // in milliseconds
@@ -83,12 +85,45 @@ void LLViewerAudio::registerIdleListener()
     }
 }
 
+void LLViewerAudio::playParcelStream()
+{
+    std::string reason;
+    std::string url = LLViewerMedia::getInstance()->getParcelAudioURL();
+    LLStringUtil::trim(url);
+    if (!gAudiop || !gAudiop->getStreamingAudioImpl())
+        reason = LLTrans::getString("MusicPluginUnavailable");
+    else if (!gSavedSettings.getBOOL("AudioStreamingMusic"))
+        reason = LLTrans::getString("MusicDisabled");
+    else if (url.empty())
+        reason = LLTrans::getString("MusicNoURL");
+    else if (url.compare(0, 7, "http://") && url.compare(0, 8, "https://"))
+        reason = LLTrans::getString("MusicInvalidURL");
+
+    if (!reason.empty())
+    {
+        LLSD args;
+        args["REASON"] = reason;
+        LLNotificationsUtil::add("MusicStreamError", args);
+        return;
+    }
+    if (gSavedSettings.getBOOL("MuteAudio") || gSavedSettings.getBOOL("MuteMusic") ||
+        gSavedSettings.getF32("AudioLevelMaster") <= 0.f || gSavedSettings.getF32("AudioLevelMusic") <= 0.f)
+        LLNotificationsUtil::add("MusicStreamMuted");
+
+    if (gAudiop->isInternetStreamPlaying() == LLAudioEngine::AUDIO_PAUSED)
+        gAudiop->pauseInternetStream(false);
+    else
+        startInternetStreamWithAutoFade(url);
+}
+
 void LLViewerAudio::startInternetStreamWithAutoFade(const std::string &streamURI)
 {
     LL_DEBUGS("AudioEngine") << "Start with outo fade: " << streamURI << LL_ENDL;
 
     // Old and new stream are identical
-    if (mNextStreamURI == streamURI)
+    if (mNextStreamURI == streamURI &&
+        (streamURI.empty() || mFadeState != FADE_IDLE ||
+         (gAudiop && gAudiop->isInternetStreamPlaying() != LLAudioEngine::AUDIO_STOPPED)))
     {
         return;
     }
@@ -364,6 +399,9 @@ void init_audio()
         //gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndChatFromObject")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndClick")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndClickRelease")));
+        gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndCheckbox")));
+        gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndWindowFocus")));
+        gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndNewIncomingIMSession")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndHealthReductionF")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndHealthReductionM")));
         //gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndIncomingChat")));

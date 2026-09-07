@@ -410,6 +410,27 @@ LLWString LLChatBar::stripChannelNumber(const LLWString &mesg, S32* channel)
 }
 
 
+bool LLChatBar::translateNearbyChat(const std::string& text,
+    LLTranslate::TranslationSuccess_fn success,
+    LLTranslate::TranslationFailure_fn failure)
+{
+    if (LLTranslate::translateChatCommand(text, success, failure))
+    {
+        return true;
+    }
+    LLLineEditor* editor = gChatBar ? gChatBar->findChild<LLLineEditor>("translate_language") : nullptr;
+    std::string language = editor ? utf8str_trim(editor->getText()) : std::string();
+    if (language.empty())
+    {
+        return false;
+    }
+    if (language.find_first_of(" \t") != std::string::npos)
+    {
+        language = "\"" + language + "\"";
+    }
+    return LLTranslate::translateChatCommand("/tr " + language + " " + text, success, failure);
+}
+
 void LLChatBar::sendChat( EChatType type )
 {
     if (mInputEditor)
@@ -442,26 +463,10 @@ void LLChatBar::sendChat( EChatType type )
                     args["MESSAGE"] = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", reason));
                     LLNotificationsUtil::add("GenericAlert", args);
                 };
-                bool translating = LLTranslate::translateChatCommand(
+                bool translating = translateNearbyChat(
                         utf8text,
                         translation_success,
                         translation_failure);
-                if (!translating)
-                {
-                    std::string language = utf8str_trim(
-                        getChild<LLLineEditor>("translate_language")->getText());
-                    if (!language.empty())
-                    {
-                        if (language.find_first_of(" \t") != std::string::npos)
-                        {
-                            language = "\"" + language + "\"";
-                        }
-                        translating = LLTranslate::translateChatCommand(
-                            "/tr " + language + " " + utf8text,
-                            translation_success,
-                            translation_failure);
-                    }
-                }
 
                 if (translating)
                 {

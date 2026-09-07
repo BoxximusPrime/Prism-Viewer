@@ -54,6 +54,7 @@ public:
     };
 
     void startInternetStreamWithAutoFade(const std::string &streamURI);
+    void playParcelStream();
     void stopInternetStreamWithAutoFade();
 
     bool onIdleUpdate();

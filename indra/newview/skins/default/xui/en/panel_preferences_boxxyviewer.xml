@@ -42,6 +42,28 @@
    wrap="true">
     Preserve animation phase while assets load and while avatars are offscreen, impostored, or reduced to a simplified appearance.
   </text>
+  <text
+   follows="left|top"
+   font="SansSerifLarge"
+   height="20"
+   layout="topleft"
+   left="30"
+   name="interaction_heading"
+   top_pad="8"
+   width="115">
+    Interaction
+  </text>
+  <check_box
+   control_name="BoxxyPreventLeftClickActions"
+   follows="left|top"
+   height="20"
+   label="Prevent left-click actions"
+   layout="topleft"
+   left="150"
+   name="prevent_left_click_actions"
+   tool_tip="Prevent left clicks from activating world objects and worn attachments. HUD attachments remain interactive, and action cursor icons are still shown."
+   top_delta="0"
+   width="330" />
   <view_border
    bevel_style="none"
    follows="left|top"
@@ -49,7 +71,7 @@
    layout="topleft"
    left="30"
    name="hover_text_separator"
-   top_pad="14"
+   top_pad="8"
    width="450" />
   <text
    follows="left|top"
@@ -58,7 +80,7 @@
    layout="topleft"
    left="30"
    name="hover_text_heading"
-   top_pad="14"
+   top_pad="8"
    width="450">
     Hover Text
   </text>
@@ -126,7 +148,7 @@
    layout="topleft"
    left="30"
    name="name_tag_separator"
-   top_pad="10"
+   top_pad="4"
    width="450" />
   <text
    follows="left|top"
@@ -135,7 +157,7 @@
    layout="topleft"
    left="30"
    name="name_tag_heading"
-   top_pad="10"
+   top_pad="4"
    width="450">
     Name Tag Chat Range
   </text>

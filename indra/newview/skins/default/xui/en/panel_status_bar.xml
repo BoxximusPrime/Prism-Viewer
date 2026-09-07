@@ -12,6 +12,8 @@
  name="status"
  top="19"
  width="1000">
+    <panel.string name="media_play_tooltip">Play media and parcel music</panel.string>
+    <panel.string name="media_stop_tooltip">Pause media and parcel music</panel.string>
     <panel.string
      name="packet_loss_tooltip">
         Packet Loss
@@ -178,6 +180,21 @@
      tool_tip="Start/Stop All Media (Music, Video, Web pages)"
      width="16" >
     </button>
+    <button
+     control_name="BoxxyShowNowPlaying"
+     follows="right|top"
+     height="16"
+     image_overlay="Inv_Sound"
+     image_overlay_color="LtGray"
+     image_overlay_selected_color="BoxxyRadarNearColor"
+     image_selected="PushButton_Selected"
+     image_unselected="PushButton_Off"
+     is_toggle="true"
+     left_pad="5"
+     name="now_playing_toggle_btn"
+     tool_tip="Show or hide the Now Playing card"
+     top="1"
+     width="16" />
     <button
      follows="right|top"
      height="16"

@@ -45,6 +45,7 @@ class LLStreamingAudioInterface
     virtual void setGain(F32 vol) = 0;
     virtual F32 getGain() = 0;
     virtual std::string getURL() = 0;
+    virtual std::string getStatusText() const { return std::string(); }
     virtual bool supportsAdjustableBufferSizes(){return false;}
     virtual void setBufferSizes(U32 streambuffertime, U32 decodebuffertime){};
 };

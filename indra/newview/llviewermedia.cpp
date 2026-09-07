@@ -962,15 +962,7 @@ void LLViewerMedia::setAllMediaEnabled(bool val)
             gAudiop &&
             LLViewerMedia::hasParcelAudio())
         {
-            if (LLAudioEngine::AUDIO_PAUSED == gAudiop->isInternetStreamPlaying())
-            {
-                // 'false' means unpause
-                gAudiop->pauseInternetStream(false);
-            }
-            else
-            {
-                LLViewerAudio::getInstance()->startInternetStreamWithAutoFade(LLViewerMedia::getParcelAudioURL());
-            }
+            LLViewerAudio::getInstance()->playParcelStream();
         }
     }
     else {
@@ -1035,15 +1027,7 @@ void LLViewerMedia::setAllMediaPaused(bool val)
             gAudiop &&
             LLViewerMedia::hasParcelAudio())
         {
-            if (LLAudioEngine::AUDIO_PAUSED == gAudiop->isInternetStreamPlaying())
-            {
-                // 'false' means unpause
-                gAudiop->pauseInternetStream(false);
-            }
-            else
-            {
-                LLViewerAudio::getInstance()->startInternetStreamWithAutoFade(LLViewerMedia::getParcelAudioURL());
-            }
+            LLViewerAudio::getInstance()->playParcelStream();
         }
     }
     else {

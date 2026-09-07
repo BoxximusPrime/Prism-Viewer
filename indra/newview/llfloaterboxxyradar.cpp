@@ -20,8 +20,11 @@
 #include "llcallingcard.h"
 #include "llfiltereditor.h"
 #include "llflatlistview.h"
+#include "llfocusmgr.h"
 #include "llfloaterreg.h"
 #include "lliconctrl.h"
+#include "lldraghandle.h"
+#include "llkeyboard.h"
 #include "lllineeditor.h"
 #include "lllayoutstack.h"
 #include "llmutelist.h"
@@ -34,6 +37,7 @@
 #include "lluicolortable.h"
 #include "llviewercontrol.h"
 #include "llviewerobjectlist.h"
+#include "llviewerregion.h"
 #include "llvoiceclient.h"
 #include "llvoavatar.h"
 #include "llwindow.h"
@@ -64,6 +68,37 @@ std::string formatDistance(F64 distance_yards)
 std::string formatSimpleDistance(F64 distance_yards)
 {
     return llformat("%.0f yd", distance_yards);
+}
+
+void getLocalRegionAvatars(uuid_vec_t& avatar_ids, std::vector<LLVector3d>& positions)
+{
+    const F32 all_known_avatars_radius = std::sqrt(std::numeric_limits<F32>::max());
+    LLWorld::getInstance()->getAvatars(&avatar_ids, &positions, gAgent.getPositionGlobal(), all_known_avatars_radius);
+
+    LLViewerRegion* current_region = gAgent.getRegion();
+    if (!current_region)
+    {
+        avatar_ids.clear();
+        positions.clear();
+        return;
+    }
+
+    const LLVector3d& origin = current_region->getOriginGlobal();
+    const F64 width = current_region->getWidth();
+    for (size_t index = positions.size(); index-- > 0;)
+    {
+        const LLVector3d& position = positions[index];
+        const bool in_local_region_neighborhood =
+            position.mdV[VX] >= origin.mdV[VX] - width
+            && position.mdV[VX] < origin.mdV[VX] + 2.0 * width
+            && position.mdV[VY] >= origin.mdV[VY] - width
+            && position.mdV[VY] < origin.mdV[VY] + 2.0 * width;
+        if (!in_local_region_neighborhood)
+        {
+            avatar_ids.erase(avatar_ids.begin() + index);
+            positions.erase(positions.begin() + index);
+        }
+    }
 }
 
 } // namespace
@@ -222,8 +257,7 @@ void LLFloaterBoxxyRadar::refreshRadar()
 
     uuid_vec_t              avatar_ids;
     std::vector<LLVector3d> positions;
-    const F32               all_known_avatars_radius = std::sqrt(std::numeric_limits<F32>::max());
-    LLWorld::getInstance()->getAvatars(&avatar_ids, &positions, gAgent.getPositionGlobal(), all_known_avatars_radius);
+    getLocalRegionAvatars(avatar_ids, positions);
 
     const std::vector<std::string> vip_terms = loadVipTerms();
     std::vector<AvatarEntry>       entries;
@@ -590,6 +624,32 @@ void LLFloaterBoxxyRadarSimple::onOpen(const LLSD& key)
     mRefreshTimer.reset();
 }
 
+bool LLFloaterBoxxyRadarSimple::handleMouseDown(S32 x, S32 y, MASK mask)
+{
+    // Do not enter LLFloater's handler for a click-through event: it brings
+    // this floater to the front, invalidating the parent's mouse-event iterator
+    // if we then return false with dragging disabled.
+    if (!(mask & MASK_SHIFT))
+    {
+        return false;
+    }
+    return LLFloater::handleMouseDown(x, y, mask);
+}
+
+void LLFloaterBoxxyRadarSimple::handleReshape(const LLRect& new_rect, bool by_user)
+{
+    LLDragHandle* drag_handle = getDragHandle();
+    if (by_user && drag_handle && drag_handle->hasMouseCapture()
+        && (!gKeyboard || !(gKeyboard->currentMask(true) & MASK_SHIFT)))
+    {
+        // Stop an in-progress HUD drag as soon as Shift is released. The
+        // drag handle calls this hook for its user-driven position update.
+        gFocusMgr.setMouseCapture(nullptr);
+        return;
+    }
+    LLFloater::handleReshape(new_rect, by_user);
+}
+
 void LLFloaterBoxxyRadarSimple::draw()
 {
     if (!gSavedSettings.getBOOL("BoxxySimpleRadarEnabled"))
@@ -626,8 +686,7 @@ void LLFloaterBoxxyRadarSimple::refreshRadar()
 
     uuid_vec_t avatar_ids;
     std::vector<LLVector3d> positions;
-    const F32 all_known_avatars_radius = std::sqrt(std::numeric_limits<F32>::max());
-    LLWorld::getInstance()->getAvatars(&avatar_ids, &positions, gAgent.getPositionGlobal(), all_known_avatars_radius);
+    getLocalRegionAvatars(avatar_ids, positions);
 
     const std::vector<std::string> vip_terms = LLBoxxyVIP::getTerms();
     std::vector<SimpleEntry> promoted;

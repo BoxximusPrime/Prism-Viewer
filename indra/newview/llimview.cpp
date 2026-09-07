@@ -1799,6 +1799,10 @@ LLIMModel::LLIMSession* LLIMModel::addMessageSilently(const LLUUID& session_id, 
     }
 
     addToHistory(session_id, from_name, from_id, utf8_text, is_region_msg, timestamp, translation_id);
+    if (INTERACTIVE_SYSTEM_FROM == from)
+    {
+        session->mMsgs.front()["notification_log"] = true;
+    }
     if (log2file)
     {
         logToFile(getHistoryFileName(session_id), from_name, from_id, utf8_text);
@@ -3339,7 +3343,13 @@ void LLIMMgr::addMessage(
             }
 
             //Play sound for new conversations
-            if (!skip_message && !gAgent.isDoNotDisturb() && (gSavedSettings.getBOOL("PlaySoundNewConversation")))
+            const bool play_message_sound = session->isP2PSessionType()
+                ? gSavedSettings.getBOOL(LLAvatarTracker::instance().isBuddy(other_participant_id)
+                    ? "PlaySoundFriendIM" : "PlaySoundNonFriendIM")
+                : gSavedSettings.getBOOL(session->isGroupSessionType()
+                    ? "PlaySoundGroupChatIM" : "PlaySoundConferenceIM");
+            if (!skip_message && !play_message_sound && !gAgent.isDoNotDisturb()
+                && gSavedSettings.getBOOL("PlaySoundNewConversation"))
             {
                 static LLCachedControl<bool> play_snd_mention_pref(gSavedSettings, "PlaySoundChatMention", false);
                 if (!play_snd_mention_pref || !LLUrlRegistry::getInstance()->containsAgentMention(msg))

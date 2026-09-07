@@ -73,6 +73,7 @@ floater_showed_signal_t LLFloaterIMSession::sIMFloaterShowedSignal;
 LLFloaterIMSession::LLFloaterIMSession(const LLUUID& session_id)
   : LLFloaterIMSessionTab(session_id),
     mLastMessageIndex(-1),
+    mHasLoadedMessages(false),
     mDialog(IM_NOTHING_SPECIAL),
     mTypingStart(),
     mShouldSendTypingState(false),
@@ -286,8 +287,12 @@ void LLFloaterIMSession::sendMsgFromInputEditor()
                         translation_failure,
                         original_text.get()))
                 {
-                    std::string language = utf8str_trim(
-                        getChild<LLLineEditor>("translate_language")->getText());
+                    std::string language;
+                    if (mIsP2PChat && gSavedSettings.getBOOL("TranslateChat"))
+                    {
+                        language = utf8str_trim(
+                            getChild<LLLineEditor>("translate_language")->getText());
+                    }
                     if (language.empty())
                     {
                         sendMsg(utf8_text);
@@ -889,6 +894,7 @@ void LLFloaterIMSession::sessionInitReplyReceived(const LLUUID& im_session_id)
 void LLFloaterIMSession::updateMessages()
 {
     std::list<LLSD> messages;
+    const bool animate_new_messages = mHasLoadedMessages && mIsP2PChat;
 
     // we shouldn't reset unread message counters if IM floater doesn't have focus
     LLIMModel::instance().getMessages(
@@ -952,23 +958,25 @@ void LLFloaterIMSession::updateMessages()
             }
 
             // Add the message to the chat log
-            appendMessage(chat);
+            LLSD chat_args;
+            chat_args["animate_message_bubble"] = animate_new_messages;
+            appendMessage(chat, chat_args);
             mLastMessageIndex = msg["index"].asInteger();
 
-            // if it is a notification - next message is a notification history log, so skip it
+            // Only skip a duplicate notification log, never the next participant message.
             if (chat.mNotifId.notNull() && LLNotificationsUtil::find(chat.mNotifId) != NULL)
             {
-                if (++iter == iter_end)
+                auto next = iter;
+                ++next;
+                if (next != iter_end && (*next)["notification_log"].asBoolean())
                 {
-                    break;
-                }
-                else
-                {
-                    mLastMessageIndex++;
+                    iter = next;
+                    mLastMessageIndex = (*iter)["index"].asInteger();
                 }
             }
         }
     }
+    mHasLoadedMessages = true;
 }
 
 void LLFloaterIMSession::reloadMessages(bool clean_messages/* = false*/)
@@ -985,6 +993,7 @@ void LLFloaterIMSession::reloadMessages(bool clean_messages/* = false*/)
 
     mChatHistory->clear();
     mLastMessageIndex = -1;
+    mHasLoadedMessages = false;
     updateMessages();
     mInputEditor->setFont(LLViewerChat::getChatFont());
 }

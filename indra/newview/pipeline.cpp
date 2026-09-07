@@ -6605,10 +6605,12 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
                                                         LLVector4a* intersection,         // return the intersection point
                                                         LLVector2* tex_coord,            // return the texture coordinates of the intersection point
                                                         LLVector4a* normal,               // return the surface normal at the intersection point
-                                                        LLVector4a* tangent             // return the surface tangent at the intersection point
+                                                        LLVector4a* tangent,            // return the surface tangent at the intersection point
+                                                        bool* name_tag_hit
     )
 {
     LLDrawable* drawable = NULL;
+    bool hit_name_tag = false;
 
     LLVector4a local_end = end;
 
@@ -6740,6 +6742,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
         {
             drawable = avatar->mDrawable;
             local_end = position;
+            hit_name_tag = true;
         }
     }
 
@@ -6750,6 +6753,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
     {
         drawable = hit;
         local_end = position;
+        hit_name_tag = false;
     }
 
     if (gltf_node_hit)
@@ -6765,6 +6769,11 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
     if (intersection)
     {
         *intersection = position;
+    }
+
+    if (name_tag_hit)
+    {
+        *name_tag_hit = hit_name_tag;
     }
 
     return drawable ? drawable->getVObj().get() : NULL;

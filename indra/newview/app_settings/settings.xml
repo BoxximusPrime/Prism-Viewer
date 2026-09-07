@@ -2,6 +2,24 @@
 <llsd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="llsd.xsd">
 <map>
+  <key>BoxxyShowNowPlaying</key>
+  <map>
+    <key>Comment</key>
+    <string>Show the Now Playing card while parcel music is playing.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
+  <key>ShowStreamMetadata</key>
+  <map>
+    <key>Comment</key><string>Show streaming music song metadata in nearby chat.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><boolean>1</boolean>
+  </map>
   <key>BoxxySimpleRadarEnabled</key>
   <map>
     <key>Comment</key>
@@ -6501,7 +6519,7 @@
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
-      <integer>0</integer>
+      <integer>1</integer>
     </map>
     <key>PlaySoundNonFriendIM</key>
     <map>
@@ -6512,7 +6530,7 @@
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
-      <integer>0</integer>
+      <integer>1</integer>
     </map>
     <key>PlaySoundConferenceIM</key>
     <map>
@@ -12891,24 +12909,24 @@
     <key>UISndClick</key>
     <map>
       <key>Comment</key>
-      <string>Sound file for mouse click (uuid for sound asset)</string>
+        <string>Sound file for mouse click (uuid for sound asset)</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>4c8c3c77-de8d-bde2-b9b8-32635e0fd4a6</string>
+        <string>43c4ee7d-22c5-479d-8ac9-b7415e70c09d</string>
     </map>
     <key>UISndClickRelease</key>
     <map>
       <key>Comment</key>
-      <string>Sound file for mouse button release (uuid for sound asset)</string>
+        <string>Sound file for mouse button release (uuid for sound asset)</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>4c8c3c77-de8d-bde2-b9b8-32635e0fd4a6</string>
+        <string>43c4ee7d-22c5-479d-8ac9-b7415e70c09d</string>
     </map>
     <key>UISndDebugSpamToggle</key>
     <map>
@@ -13007,7 +13025,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>67cc2844-00f3-2b3c-b991-6418d01e1bb7</string>
+      <string>166afcab-e75a-44b5-a251-c56f57a9fc90</string>
     </map>
     <key>UISndObjectCreate</key>
     <map>
@@ -13117,7 +13135,29 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>2c346eda-b60c-ab33-1119-b8941916a499</string>
+      <string>43c4ee7d-22c5-479d-8ac9-b7415e70c09d</string>
+    </map>
+    <key>UISndCheckbox</key>
+    <map>
+      <key>Comment</key>
+      <string>Sound for checkbox changes (bundled sound UUID)</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>e16876ed-bd4b-4262-85e8-3ce3f5995c21</string>
+    </map>
+    <key>UISndWindowFocus</key>
+    <map>
+      <key>Comment</key>
+      <string>Sound for changing floater focus (bundled sound UUID)</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>0d043efb-d04d-4455-9728-bd26c7211180</string>
     </map>
     <key>UISndWindowOpen</key>
     <map>
@@ -13128,7 +13168,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>c80260ba-41fd-8a46-768a-6bf236360e3a</string>
+        <string>d2a01341-0605-43ce-9bb1-6019585d36c3</string>
     </map>
     <key>UISpinctrlBtnHeight</key>
     <map>
@@ -16455,6 +16495,17 @@
   <map>
     <key>Comment</key>
     <string>Keep simulator-signaled avatar animations on a persistent phase clock through loading and reduced-detail rendering</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>BoxxyPreventLeftClickActions</key>
+  <map>
+    <key>Comment</key>
+    <string>Prevent left clicks from activating world objects while retaining their action cursors</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>

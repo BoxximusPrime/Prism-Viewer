@@ -64,6 +64,18 @@
 // use this to control "jumping" behavior when Ctrl-Tabbing
 const S32 TABBED_FLOATER_OFFSET = 0;
 
+namespace
+{
+    U32 closing_floater_count = 0;
+    U32 clicking_floater_count = 0;
+    struct FloaterSoundScope
+    {
+        U32& count;
+        explicit FloaterSoundScope(U32& value) : count(value) { ++count; }
+        ~FloaterSoundScope() { --count; }
+    };
+}
+
 const F32 LLFloater::CONTEXT_CONE_IN_ALPHA = 0.0f;
 const F32 LLFloater::CONTEXT_CONE_OUT_ALPHA = 1.f;
 const F32 LLFloater::CONTEXT_CONE_FADE_TIME = 0.08f;
@@ -669,6 +681,7 @@ void LLFloater::openFloater(const LLSD& key)
     LLViewerEventRecorder::instance().logVisibilityChange( getPathname(), getName(), true,"floater"); // Last param is event subtype or empty string
 
     mKey = key; // in case we need to open ourselves again
+    mOpening = !getVisible() || isMinimized();
 
     if (getSoundFlags() != SILENT
     // don't play open sound for hosted (tabbed) windows
@@ -708,12 +721,14 @@ void LLFloater::openFloater(const LLSD& key)
 
     mOpenSignal(this, key);
     onOpen(key);
+    mOpening = false;
 
     dirtyRect();
 }
 
 void LLFloater::closeFloater(bool app_quitting)
 {
+    FloaterSoundScope closing_scope(closing_floater_count);
     LL_INFOS() << "Closing floater " << getName() << LL_ENDL;
     LLViewerEventRecorder::instance().logVisibilityChange( getPathname(), getName(), false,"floater"); // Last param is event subtype or empty string
     if (app_quitting)
@@ -734,6 +749,7 @@ void LLFloater::closeFloater(bool app_quitting)
         }
 
         if (getSoundFlags() != SILENT
+            && closing_floater_count == 1
             && getVisible()
             && !getHost()
             && !app_quitting)
@@ -1421,6 +1437,17 @@ void LLFloater::setMinimized(bool minimize)
     applyTitle ();
 }
 
+void LLFloater::onFocusReceived()
+{
+    if (!mOpening && !closing_floater_count && !clicking_floater_count
+        && !sQuitting && getVisible() && !getIsChrome()
+        && !getHost() && getSoundFlags() != SILENT)
+    {
+        make_ui_sound("UISndWindowFocus");
+    }
+    LLPanel::onFocusReceived();
+}
+
 void LLFloater::setFocus( bool b )
 {
     if (b && getIsChrome())
@@ -1697,6 +1724,15 @@ bool LLFloater::handleMouseUp(S32 x, S32 y, MASK mask)
 // virtual
 bool LLFloater::handleMouseDown(S32 x, S32 y, MASK mask)
 {
+    FloaterSoundScope clicking_scope(clicking_floater_count);
+    const bool clicking_close = mButtons[BUTTON_CLOSE]
+        && mButtons[BUTTON_CLOSE]->getVisible()
+        && mButtons[BUTTON_CLOSE]->getRect().pointInRect(x, y);
+    if (clicking_floater_count == 1 && !clicking_close && !getIsChrome()
+        && getVisible() && pointInView(x, y) && getSoundFlags() != SILENT)
+    {
+        make_ui_sound("UISndWindowFocus");
+    }
     if( mMinimized )
     {
         // Offer the click to titlebar buttons.
@@ -2377,6 +2413,7 @@ void LLFloater::buildButtons(const Params& floater_params)
         // Floater chrome uses icon-only hover feedback, never push-button chrome.
         if (i == BUTTON_CLOSE)
         {
+            p.sound_flags(SILENT); // closeFloater supplies the one close sound.
             p.image_hover_unselected = LLUI::getUIImage("Icon_Close_Hover");
         }
         else

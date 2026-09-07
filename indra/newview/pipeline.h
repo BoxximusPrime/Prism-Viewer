@@ -226,7 +226,8 @@ public:
                                                 LLVector4a* intersection = NULL,         // return the intersection point
                                                 LLVector2* tex_coord = NULL,            // return the texture coordinates of the intersection point
                                                 LLVector4a* normal = NULL,               // return the surface normal at the intersection point
-                                                LLVector4a* tangent = NULL             // return the surface tangent at the intersection point
+                                                LLVector4a* tangent = NULL,            // return the surface tangent at the intersection point
+                                                bool* name_tag_hit = NULL
         );
 
     //get the closest particle to start between start and end, returns the LLVOPartGroup and particle index
