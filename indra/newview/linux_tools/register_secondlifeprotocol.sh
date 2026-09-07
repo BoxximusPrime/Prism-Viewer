@@ -24,21 +24,21 @@ function install_desktop_entry()
 
     local desktop_entry="\
 [Desktop Entry]\n\
-Name=Second Life SLURL handler\n\
+Name=Prism SLURL handler\n\
 Path=${installation_prefix}\n\
 Exec=${HANDLER} %u\n\
 Icon=${installation_prefix}/secondlife_icon.png\n\
 Terminal=false\n\
 Type=Application\n\
 StartupNotify=true\n\
-StartupWMClass="com.secondlife.indra.viewer"\n\
+StartupWMClass="Prism Viewer"\n\
 NoDisplay=true\n\
 MimeType=x-scheme-handler/secondlife\n\
 X-Desktop-File-Install-Version=3.0"
 
     echo " - Installing protocol entries in ${desktop_entries_dir}"
     WORK_DIR=`mktemp -d`
-    PROTOCOL_HANDLER="secondlife-protocol.desktop"
+    PROTOCOL_HANDLER="prism-protocol.desktop"
     echo -e $desktop_entry > "${WORK_DIR}/${PROTOCOL_HANDLER}" || "Failed to create desktop file!"
     desktop-file-install --dir="${desktop_entries_dir}" "${WORK_DIR}/${PROTOCOL_HANDLER}" || "Failed to install desktop file!"
     rm -r $WORK_DIR

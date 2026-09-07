@@ -4,15 +4,15 @@
  can_close="true"
  can_minimize="true"
  can_resize="true"
- height="470"
- min_height="430"
- min_width="580"
- width="640"
+ height="560"
+ min_height="520"
+ min_width="740"
+ width="820"
  layout="topleft"
  name="boxxy_ao"
  save_rect="true"
  single_instance="true"
- title="BOXXY ANIMATION OVERRIDER">
+ title="PRISM ANIMATION OVERRIDER">
 
   <check_box
    name="ao_enabled"
@@ -78,7 +78,7 @@
    left="12"
    top="112"
    width="205"
-   bottom="-96"
+   bottom="-198"
    follows="left|top|bottom"
    multi_select="false">
     <scroll_list.columns name="state" label="State" dynamic_width="true" />
@@ -90,7 +90,7 @@
    left="230"
    top="112"
    right="-12"
-   bottom="-176"
+   bottom="-284"
    follows="all"
    multi_select="false">
     <scroll_list.columns name="playing" label="" dynamic_width="false" width="24" />
@@ -99,25 +99,29 @@
 
   <button
    name="play_animation"
+   follows="left|bottom"
    label="Play"
    left="230"
-   bottom="-169"
+   bottom="-250"
    width="58"
    height="24" />
   <button
    name="move_up"
+   follows="left|bottom"
    label="Move Up"
    left_pad="6"
    width="70"
    height="24" />
   <button
    name="move_down"
+   follows="left|bottom"
    label="Move Down"
    left_pad="6"
    width="80"
    height="24" />
   <button
    name="remove_animation"
+   follows="left|bottom"
    label="Remove Link"
    left_pad="6"
    width="92"
@@ -125,12 +129,14 @@
    tool_tip="Remove only the AO link; the original animation remains in Inventory" />
   <button
    name="previous_animation"
+   follows="left|bottom"
    label="Previous"
    left_pad="14"
    width="68"
    height="24" />
   <button
    name="next_animation"
+   follows="left|bottom"
    label="Next"
    left_pad="6"
    width="58"
@@ -139,14 +145,14 @@
   <view_border
    name="drop_border"
    left="230"
-   bottom="-134"
+   bottom="-196"
    right="-12"
    height="38"
    follows="left|right|bottom" />
   <text
    name="drop_hint"
    left="242"
-   bottom="-126"
+   bottom="-205"
    right="-118"
    height="24"
    follows="left|right|bottom"
@@ -158,7 +164,7 @@
    name="open_inventory"
    label="Open Inventory"
    right="-22"
-   bottom="-127"
+   bottom="-205"
    width="94"
    height="24"
    follows="right|bottom" />
@@ -166,7 +172,7 @@
   <panel
    name="cycle_panel"
    left="230"
-   bottom="-88"
+   bottom="-146"
    right="-12"
    height="36"
    follows="left|right|bottom"
@@ -215,12 +221,29 @@
 
   <text
    left="12"
-   bottom="-67"
+   bottom="-144"
    width="205"
    height="48"
    follows="left|bottom"
-   wrap="true"
+   word_wrap="true"
    text_color="LabelDisabledColor">
-    Sets and animation links are saved in Inventory under #Boxxy/#AO.
+    Inventory: #Prism/#AO
+    (or your existing #Boxxy/#AO).
   </text>
+  <panel name="transfer_panel" left="12" right="-12" bottom="-12" height="104"
+   follows="left|right|bottom" layout="topleft" background_visible="true" bg_alpha_color="DkGray2">
+    <text left="10" top="8" width="300" height="18" font.style="BOLD">Import and export</text>
+    <button name="import_ao" label="Import from Inventory" left="10" top="31" width="160" height="24"
+     tool_tip="Open Inventory, then drag a set folder from #Firestorm/#AO or an AO notecard into this window." />
+    <button name="export_firestorm" label="Export to Firestorm" left_pad="8" width="150" height="24"
+     tool_tip="Create a new set in #Firestorm/#AO, preserving animation order, cycling, randomization and sit override." />
+    <button name="export_notecard" label="Export Notecard" left_pad="8" width="135" height="24"
+     tool_tip="Create a ZHAO-II notecard and animation links in a new Inventory folder. This format stores animation assignments only." />
+    <text name="transfer_status" left="10" top="61" right="-10" height="18" follows="left|top|right">
+      Drop one Firestorm set folder or a ZHAO-II / Oracul notecard into this window to import.
+    </text>
+    <text left="10" top="82" right="-10" height="18" follows="left|top|right" text_color="LabelDisabledColor">
+      Transfers link animations already in your Inventory; they do not export animation files.
+    </text>
+  </panel>
 </floater>

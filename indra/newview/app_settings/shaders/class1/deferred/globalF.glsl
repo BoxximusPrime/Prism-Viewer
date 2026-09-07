@@ -28,6 +28,7 @@
  // DO NOT declare sampler uniforms here as OS X doesn't compile
  // them out
 
+uniform float sss_object;
 uniform float mirror_flag;
 uniform vec4 clipPlane;
 uniform float clipSign;
@@ -46,7 +47,7 @@ void mirrorClip(vec3 pos)
 vec4 encodeNormal(vec3 n, float env, float gbuffer_flag)
 {
     float f = sqrt(8 * n.z + 8);
-    return vec4(n.xy / f + 0.5, env, gbuffer_flag);
+    return vec4(n.xy / f + 0.5, env, gbuffer_flag + 0.12 * sss_object);
 }
 
 vec4 decodeNormal(vec4 norm)

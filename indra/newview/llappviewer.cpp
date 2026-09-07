@@ -700,7 +700,7 @@ LLAppViewer::LLAppViewer()
 
     // Need to do this initialization before we do anything else, since anything
     // that touches files should really go through the lldir API
-    gDirUtilp->initAppDirs("SecondLife");
+    gDirUtilp->initAppDirs("Prism");
     //
     // IMPORTANT! Do NOT put anything that will write
     // into the log files during normal startup until AFTER
@@ -1158,17 +1158,8 @@ bool LLAppViewer::init()
 
     gGLActive = false;
 
-#if !LL_LINUX
-    // Launch VVM update check (Linux updater is future work: Velopack port)
-    if (!gSavedSettings.getBOOL("CmdLineSkipUpdater") && !gNonInteractive)
-    {
-        initVVMUpdateCheck();
-    }
-    else
-#endif
-    {
-        LL_WARNS("InitInfo") << "Skipping updater check." << LL_ENDL;
-    }
+    // Prism has no update service yet; never query the official viewer updater.
+    LL_INFOS("InitInfo") << "Prism automatic updates are not configured." << LL_ENDL;
 
     {
         // Iterate over --leap command-line options. But this is a bit tricky: if
@@ -3106,7 +3097,7 @@ bool LLAppViewer::initConfiguration()
     {
         std::string splash_msg;
         LLStringUtil::format_map_t args;
-        args["[APP_NAME]"] = LLTrans::getString("SECOND_LIFE");
+        args["[APP_NAME]"] = LLTrans::getString("APP_NAME");
         splash_msg = LLTrans::getString("StartupLoading", args);
         LLSplashScreen::show();
         LLSplashScreen::update(splash_msg);
@@ -3124,22 +3115,15 @@ bool LLAppViewer::initConfiguration()
     //
     // Set the name of the window
     //
-    gWindowTitle = "SecondLife - Boxxy Viewer";
-#if LL_DEBUG
-    gWindowTitle += std::string(" [DEBUG]");
-#endif
-    if (!gArgs.empty())
-    {
-        gWindowTitle += std::string(" ") + gArgs;
-    }
-    LLStringUtil::truncate(gWindowTitle, 255);
+    gWindowTitle = "Prism";
 
     //
     // Check for another instance of the app running
     // This happens AFTER LLSplashScreen::show(). That may or may not be
     // important.
     //
-    if (mSecondInstance && !gSavedSettings.getBOOL("AllowMultipleViewers"))
+    // The GPU benchmark is an internal helper, not a second interactive viewer.
+    if (mSecondInstance && !gGPUBenchmarkMode && !gSavedSettings.getBOOL("AllowMultipleViewers"))
     {
         OSMessageBox(
             LLTrans::getString("MBAlreadyRunning"),

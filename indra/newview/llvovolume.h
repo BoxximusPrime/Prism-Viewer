@@ -317,6 +317,7 @@ public:
     virtual bool isFlexible() const override;
     virtual bool isSculpted() const override;
     virtual bool isMesh() const override;
+    bool isSSSEnabled() const;
     virtual bool isRiggedMesh() const override;
     virtual bool hasLightTexture() const override;
 
@@ -482,6 +483,9 @@ private:
     // cached value of getIsAnimatedObject to avoid redundant map lookups
     // accessed by getIsAnimatedObjectFast
     mutable bool mIsAnimatedObject = false;
+    mutable bool mSSSStateInitialized = false;
+    mutable bool mLastSSSState = false;
+    LLFrameTimer mSSSUpdateTimer;
     bool mResetDebugText;
 
     LLPointer<LLRiggedVolume> mRiggedVolume;
@@ -503,4 +507,3 @@ protected:
 };
 
 #endif // LL_LLVOVOLUME_H
-

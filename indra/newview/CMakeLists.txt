@@ -81,6 +81,8 @@ configure_file(llversioninfovars.h.in llversioninfovars.h @ONLY)
 
 set(viewer_SOURCE_FILES
     llboxxyao.cpp
+    llboxxyaonotecard.cpp
+    llboxxyaotransfer.cpp
     llboxxyvip.cpp
     gltfscenemanager.cpp
     gltf/asset.cpp
@@ -771,6 +773,8 @@ set(VIEWER_BINARY_NAME "secondlife-bin" CACHE STRING
 
 set(viewer_HEADER_FILES
     llboxxyao.h
+    llboxxyaonotecard.h
+    llboxxyaotransfer.h
     llboxxyvip.h
     CMakeLists.txt
     ViewerInstall.cmake
@@ -1581,13 +1585,13 @@ if (WINDOWS)
     set(ICON_PATH "test")
     set(VIEWER_MACOSX_PHASE "d")
     string(TOLOWER ${VIEWER_CHANNEL} channel_lower)
-    if(channel_lower MATCHES "^second life release")
+    if(channel_lower MATCHES "^prism release")
         set(ICON_PATH "release")
         set(VIEWER_MACOSX_PHASE "f")
-    elseif(channel_lower MATCHES "^second life beta")
+    elseif(channel_lower MATCHES "^prism beta")
         set(ICON_PATH "beta")
         set(VIEWER_MACOSX_PHASE "b")
-    elseif(channel_lower MATCHES "^second life project")
+    elseif(channel_lower MATCHES "^prism project")
         set(ICON_PATH "project")
         set(VIEWER_MACOSX_PHASE "a")
     endif()
@@ -1843,6 +1847,9 @@ list(APPEND EVENT_HOST_SCRIPTS ${EVENT_HOST_SCRIPT_GLOB_LIST})
 
 set(PACKAGE ON CACHE BOOL
     "Add a package target that builds an installer package.")
+
+# The AO interchange parser is deliberately independent of viewer/runtime headers.
+set_source_files_properties(llboxxyaonotecard.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS TRUE)
 
 if(USE_PRECOMPILED_HEADERS)
   target_precompile_headers( ${VIEWER_BINARY_NAME} PRIVATE llviewerprecompiledheaders.h )
@@ -2297,7 +2304,7 @@ if (DARWIN)
   set(MACOSX_EXECUTABLE_NAME "${VIEWER_CHANNEL}")
   set(MACOSX_BUNDLE_INFO_STRING "${VIEWER_CHANNEL}")
   set(MACOSX_BUNDLE_ICON_FILE "secondlife.icns")
-  set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.secondlife.indra.viewer")
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER "org.prismviewer.viewer")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${VIEWER_CHANNEL} ${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION}")
   set(MACOSX_BUNDLE_BUNDLE_NAME "SecondLife")
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION}")

@@ -1275,6 +1275,12 @@ void LLFloaterPreference::buildPopupLists()
 
 void LLFloaterPreference::refreshEnabledState()
 {
+    const bool sss_combined = gSavedSettings.getBOOL("BoxxySSSEnabled") &&
+        gSavedSettings.getS32("BoxxySSSMode") == 2;
+    getChildView("BoxxySSSWrapAmount")->setEnabled(sss_combined);
+    getChildView("BoxxySSSTransmission")->setEnabled(sss_combined);
+    getChildView("BoxxySSSThickness")->setEnabled(sss_combined);
+
     // Cannot have floater active until caps have been received
     getChild<LLButton>("default_creation_permissions")->setEnabled(LLStartUp::getStartupState() >= STATE_STARTED);
 
@@ -2623,6 +2629,18 @@ void LLPanelPreferenceGraphics::saveSettings()
 }
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
+    gSavedSettings.getControl("BoxxySSSEnabled")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSAutoDetect")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSWhitelist")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSShowMask")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSMode")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSStrength")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSDepth")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSWarmth")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSMaxDistance")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSWrapAmount")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSTransmission")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSThickness")->resetToDefault(true);
     resetDirtyChilds();
 }
 

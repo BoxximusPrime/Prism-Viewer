@@ -15,6 +15,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llboxxyao.h"
+#include "llboxxyaotransfer.h"
 
 #include "llagent.h"
 #include "llanimationstates.h"
@@ -35,7 +36,8 @@
 namespace
 {
 constexpr F32 INVENTORY_RETRY_SECONDS = 1.5f;
-constexpr char BOXXY_FOLDER_NAME[] = "#Boxxy";
+constexpr char BOXXY_FOLDER_NAME[] = "#Prism";
+constexpr char LEGACY_FOLDER_NAME[] = "#Boxxy";
 constexpr char AO_FOLDER_NAME[] = "#AO";
 
 std::vector<std::string> splitOptions(const std::string& value)
@@ -175,6 +177,7 @@ void LLBoxxyAO::onLoginComplete()
 
 void LLBoxxyAO::shutdown()
 {
+    LLBoxxyAOTransfer::cancel();
     mLoggedIn = false;
     mOverrideApplyPending = false;
     mIgnoredStockStops.clear();
@@ -188,7 +191,12 @@ bool LLBoxxyAO::tick()
         return false;
     }
 
-    if ((!mInventoryReady || mReloadRequested) && mInventoryTimer.hasExpired())
+    LLBoxxyAOTransfer::update();
+
+    // Do not normalize a half-built import: link replies can arrive out of
+    // order, and compacting their indices early would lose the imported order.
+    if ((!mInventoryReady || mReloadRequested) && mInventoryTimer.hasExpired() &&
+        !LLBoxxyAOTransfer::isWriting())
     {
         ensureInventoryFolders();
         if (mAOFolder.notNull() && loadInventory())
@@ -285,6 +293,11 @@ void LLBoxxyAO::ensureInventoryFolders()
         {
             for (const auto& category : *root_categories)
             {
+                if (category->getName() == LEGACY_FOLDER_NAME)
+                {
+                    // Reuse existing sets without moving or duplicating inventory.
+                    mBoxxyFolder = category->getUUID();
+                }
                 if (category->getName() == BOXXY_FOLDER_NAME)
                 {
                     mBoxxyFolder = category->getUUID();
@@ -734,7 +747,7 @@ bool LLBoxxyAO::loadState(Set& set, const LLUUID& category_id, const std::string
             {
                 animation.asset_id = original->getAssetUUID();
             }
-            if (!LLStringUtil::convertToS32(item->getDescription(), animation.sort_order))
+            if (!LLStringUtil::convertToS32(item->LLInventoryItem::getDescription(), animation.sort_order))
             {
                 animation.sort_order = -1;
             }
@@ -1561,7 +1574,7 @@ void LLBoxxyAO::normalizeAnimationOrder(State* state)
         Animation& animation = state->animations[i];
         animation.sort_order = i;
         LLViewerInventoryItem* item = gInventory.getItem(animation.inventory_id);
-        if (item && item->getDescription() != llformat("%d", i))
+        if (item && item->LLInventoryItem::getDescription() != llformat("%d", i))
         {
             LLPointer<LLViewerInventoryItem> updated = new LLViewerInventoryItem(item);
             updated->setDescription(llformat("%d", i));

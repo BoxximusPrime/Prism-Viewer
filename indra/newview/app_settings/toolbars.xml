@@ -20,7 +20,6 @@
     <command name="inventory"/>
     <command name="search"/>
     <command name="places"/>
-    <command name="voice"/>
     <command name="minimap"/>
     <command name="snapshot"/>
     <command name="performance"/>
@@ -30,5 +29,15 @@
     <command name="boxxy_ao"/>
     <command name="boxxy_radar"/>
     <command name="boxxy_tpose"/>
+    <command name="aboutland"/>
+    <command name="build"/>
+    <command name="gestures"/>
+    <command name="marketplacelistings"/>
+    <command name="picks"/>
+    <command name="preferences"/>
+    <command name="reporter"/>
+    <command name="gridstatus"/>
+    <command name="myenvironments"/>
+    <command name="360capture"/>
   </right_toolbar>
 </toolbars>

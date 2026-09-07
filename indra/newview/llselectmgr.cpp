@@ -5621,6 +5621,7 @@ void LLSelectMgr::packObjectName(LLSelectNode* node, void* user_data)
     const std::string* name = (const std::string*)user_data;
     if(!name->empty())
     {
+        node->getObject()->setCachedObjectName(*name);
         gMessageSystem->nextBlockFast(_PREHASH_ObjectData);
         gMessageSystem->addU32Fast(_PREHASH_LocalID, node->getObject()->getLocalID());
         gMessageSystem->addStringFast(_PREHASH_Name, *name);
@@ -5633,6 +5634,7 @@ void LLSelectMgr::packObjectDescription(LLSelectNode* node, void* user_data)
     const std::string* desc = (const std::string*)user_data;
     if(desc)
     {   // Empty (non-null, but zero length) descriptions are OK
+        node->getObject()->setCachedObjectDescription(*desc);
         gMessageSystem->nextBlockFast(_PREHASH_ObjectData);
         gMessageSystem->addU32Fast(_PREHASH_LocalID, node->getObject()->getLocalID());
         gMessageSystem->addStringFast(_PREHASH_Description, *desc);
@@ -5970,6 +5972,12 @@ void LLSelectMgr::processObjectProperties(LLMessageSystem* msg, void** user_data
         std::string desc;
         msg->getStringFast(_PREHASH_ObjectData, _PREHASH_Description, desc, i);
 
+        if (LLViewerObject* object = gObjectList.findObject(id))
+        {
+            object->setCachedObjectName(name);
+            object->setCachedObjectDescription(desc);
+        }
+
         LLFloaterWornAttachments::processObjectProperties(id, creator_id, name);
 
         std::string touch_name;
@@ -6160,6 +6168,12 @@ void LLSelectMgr::processObjectPropertiesFamily(LLMessageSystem* msg, void** use
 
     std::string desc;
     msg->getStringFast(_PREHASH_ObjectData, _PREHASH_Description, desc);
+
+    if (LLViewerObject* object = gObjectList.findObject(id))
+    {
+        object->setCachedObjectName(name);
+        object->setCachedObjectDescription(desc);
+    }
 
     // the reporter widget askes the server for info about picked objects
     if (request_flags & COMPLAINT_REPORT_REQUEST )

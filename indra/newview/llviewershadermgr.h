@@ -289,6 +289,8 @@ extern LLGLSLShader         gHUDFullbrightShinyProgram;
 extern LLGLSLShader         gNormalMapGenProgram;
 extern LLGLSLShader         gDeferredGenBrdfLutProgram;
 extern LLGLSLShader         gDeferredBufferVisualProgram;
+extern LLGLSLShader         gSSSDiffusionProgram;
+extern LLGLSLShader         gSSSMaskProgram;
 
 // Deferred materials shaders
 extern LLGLSLShader         gDeferredMaterialProgram[LLMaterial::SHADER_COUNT*2];

@@ -189,6 +189,15 @@ public:
     virtual bool    isAttachment() const { return false; }
     const std::string& getAttachmentItemName() const;
 
+    // ObjectPropertiesFamily data used by rendering features which need an
+    // object's description without selecting it.
+    bool hasCachedObjectDescription() const { return mObjectDescriptionValid; }
+    const std::string& getCachedObjectDescription() const { return mObjectDescription; }
+    void setCachedObjectDescription(const std::string& description);
+    bool hasCachedObjectName() const { return mObjectNameValid; }
+    const std::string& getCachedObjectName() const { return mObjectName; }
+    void setCachedObjectName(const std::string& name);
+
     virtual LLVOAvatar* getAvatar() const;  //get the avatar this object is attached to, or NULL if object is not an attachment
 
     bool hasRenderMaterialParams() const;
@@ -922,6 +931,8 @@ private:
 
 protected:
 
+    void markDescriptionRenderStateChanged();
+
     typedef std::map<char *, LLNameValue *> name_value_map_t;
     name_value_map_t mNameValuePairs;   // Any name-value pairs stored by script
 
@@ -971,6 +982,11 @@ protected:
     EInventoryRequestState  mInvRequestState;
     U64                     mInvRequestXFerId;
     bool                    mInventoryDirty;
+
+    std::string             mObjectDescription;
+    bool                    mObjectDescriptionValid;
+    std::string             mObjectName;
+    bool                    mObjectNameValid;
 
     LLViewerRegion  *mRegionp;                  // Region that this object belongs to.
     bool            mDead;

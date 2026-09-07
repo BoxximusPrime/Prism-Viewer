@@ -642,7 +642,8 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_ATMOS    0.34\n"); // bit 0
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_PBR      0.67\n"); // bit 1
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_HDRI      1.0\n");  // bit 2
-    extra_code_text[extra_code_count++] = strdup("#define GET_GBUFFER_FLAG(data, flag)    (abs(data-flag)< 0.1)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_SSS_FLAG(data) ((abs((data)-0.46)<0.025 || abs((data)-0.79)<0.025) ? 1.0 : 0.0)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GET_GBUFFER_FLAG(data, flag) (abs((data)-0.12*GBUFFER_SSS_FLAG(data)-(flag))<0.1)\n");
 
     if (defines)
     {
@@ -754,7 +755,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
     }
 
     // Master definition can be found in deferredUtil.glsl
-    extra_code_text[extra_code_count++] = strdup("struct GBufferInfo { vec4 albedo; vec4 specular; vec3 normal; vec4 emissive; float gbufferFlag; float envIntensity; };\n");
+    extra_code_text[extra_code_count++] = strdup("struct GBufferInfo { vec4 albedo; vec4 specular; vec3 normal; vec4 emissive; float gbufferFlag; float envIntensity; float sss; };\n");
 
     //copy file into memory
     enum {

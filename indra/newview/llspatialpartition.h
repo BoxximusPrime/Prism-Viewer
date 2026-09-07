@@ -127,6 +127,7 @@ public:
     U8   mBump = 0;
     U8   mShiny = 0;
     bool mFullbright = false;
+    bool mSSS = false;
     bool mHasGlow = false;
 
     struct CompareTexture

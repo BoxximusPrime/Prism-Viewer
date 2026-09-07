@@ -31,6 +31,7 @@ private:
 public:
     bool postBuild() override;
     void onOpen(const LLSD& key) override;
+    void draw() override;
     bool handleDragAndDrop(S32 x, S32 y, MASK mask, bool drop,
                            EDragAndDropType cargo_type, void* cargo_data,
                            EAcceptance* accept, std::string& tooltip_msg) override;

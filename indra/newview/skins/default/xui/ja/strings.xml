@@ -3,12 +3,8 @@
 	<string name="SECOND_LIFE">
 		Second Life
 	</string>
-	<string name="APP_NAME">
-		Second Life
-	</string>
-	<string name="CAPITALIZED_APP_NAME">
-		SECOND LIFE
-	</string>
+	<string name="APP_NAME">The Prism Viewer</string>
+	<string name="CAPITALIZED_APP_NAME">THE PRISM VIEWER</string>
 	<string name="SECOND_LIFE_GRID">
 		Second Lifeグリッド
 	</string>

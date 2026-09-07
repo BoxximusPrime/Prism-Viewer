@@ -10,6 +10,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llfloaterboxxyao.h"
+#include "llboxxyaotransfer.h"
 
 #include "llbutton.h"
 #include "llcheckboxctrl.h"
@@ -64,6 +65,15 @@ bool LLFloaterBoxxyAO::postBuild()
     getChild<LLButton>("previous_animation")->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onCyclePrevious, this));
     getChild<LLButton>("next_animation")->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onCycleNext, this));
     getChild<LLButton>("open_inventory")->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onOpenInventory, this));
+    getChild<LLButton>("import_ao")->setCommitCallback([](LLUICtrl*, const LLSD&) { LLBoxxyAOTransfer::openImportInventory(); });
+    getChild<LLButton>("export_firestorm")->setCommitCallback([this](LLUICtrl*, const LLSD&)
+    {
+        if (const auto* set = selectedSet()) LLBoxxyAOTransfer::exportToFirestorm(set->inventory_id);
+    });
+    getChild<LLButton>("export_notecard")->setCommitCallback([this](LLUICtrl*, const LLSD&)
+    {
+        if (const auto* set = selectedSet()) LLBoxxyAOTransfer::exportNotecard(set->inventory_id);
+    });
 
     mEngineConnection = LLBoxxyAO::instance().setChangedCallback(
         boost::bind(&LLFloaterBoxxyAO::refresh, this));
@@ -75,6 +85,17 @@ void LLFloaterBoxxyAO::onOpen(const LLSD& key)
 {
     LLFloater::onOpen(key);
     refresh();
+}
+
+void LLFloaterBoxxyAO::draw()
+{
+    const bool busy = LLBoxxyAOTransfer::isBusy();
+    getChild<LLButton>("export_firestorm")->setEnabled(!busy && selectedSet());
+    getChild<LLButton>("export_notecard")->setEnabled(!busy && selectedSet());
+    getChild<LLTextBox>("transfer_status")->setValue(busy ?
+        "AO transfer in progress; waiting for Inventory..." :
+        "Drop one Firestorm set folder or a ZHAO-II / Oracul notecard into this window to import.");
+    LLFloater::draw();
 }
 
 void LLFloaterBoxxyAO::refresh()
@@ -354,6 +375,25 @@ bool LLFloaterBoxxyAO::handleDragAndDrop(S32 x, S32 y, MASK mask, bool drop,
                                          EDragAndDropType cargo_type, void* cargo_data,
                                          EAcceptance* accept, std::string& tooltip_msg)
 {
+    if (cargo_type == DAD_CATEGORY || cargo_type == DAD_NOTECARD)
+    {
+        *accept = LLBoxxyAOTransfer::isBusy() ? ACCEPT_NO : ACCEPT_YES_COPY_SINGLE;
+        tooltip_msg = "Import as a new AO set; the source and original animations stay in Inventory";
+        if (drop && !LLBoxxyAOTransfer::isBusy())
+        {
+            if (cargo_type == DAD_CATEGORY)
+            {
+                const auto* category = static_cast<const LLInventoryCategory*>(cargo_data);
+                if (category) LLBoxxyAOTransfer::importFolder(category->getUUID());
+            }
+            else
+            {
+                const auto* item = static_cast<const LLInventoryItem*>(cargo_data);
+                if (item) LLBoxxyAOTransfer::importNotecard(item->getLinkedUUID());
+            }
+        }
+        return true;
+    }
     if (cargo_type == DAD_ANIMATION && selectedSet() && selectedState())
     {
         *accept = ACCEPT_YES_COPY_SINGLE;
@@ -367,7 +407,7 @@ bool LLFloaterBoxxyAO::handleDragAndDrop(S32 x, S32 y, MASK mask, bool drop,
     }
 
     *accept = ACCEPT_NO;
-    tooltip_msg = "Select a set and state, then drag an animation from Inventory";
+    tooltip_msg = "Drop an AO set folder or notecard to import, or select a state and drop an animation";
     return true;
 }
 

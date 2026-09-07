@@ -10,6 +10,23 @@
  top="1"
  width="517">
 
+  <tab_container
+    follows="all"
+    height="438"
+    layout="topleft"
+    left="0"
+    name="graphics_tab_container"
+    tab_position="top"
+    top="0"
+    width="517">
+  <panel
+    follows="all"
+    height="410"
+    label="General"
+    layout="topleft"
+    name="graphics_general_panel"
+    width="517">
+
   <text
     follows="top|left|right"
     height="16"
@@ -450,5 +467,259 @@
       function="Pref.Advanced"
       parameter="advanced" />
   </button>
+
+  </panel>
+
+  <panel
+    follows="all"
+    height="410"
+    label="Skin Scattering"
+    layout="topleft"
+    name="graphics_skin_scattering_panel"
+    width="517">
+    <scroll_container name="SkinScatteringScroll" follows="all" layout="topleft"
+      left="0" top="0" width="517" height="410" reserve_scroll_corner="false">
+    <panel name="SkinScatteringContent" follows="left|top" layout="topleft"
+      left="0" top="0" width="495" height="500">
+
+    <text
+      follows="left|top|right"
+      height="34"
+      layout="topleft"
+      left="20"
+      name="SkinScatteringDescription"
+      top="8"
+      width="470"
+      word_wrap="true">
+      Softens lighting on surfaces tagged [sss] in the linkset description (or attachment name when no description is available).
+    </text>
+
+    <check_box
+      control_name="BoxxySSSEnabled"
+      height="20"
+      label="Enable skin subsurface scattering"
+      layout="topleft"
+      left="30"
+      name="BoxxySSSEnabled"
+      top="48"
+      tool_tip="Apply skin lighting to visible [sss]-tagged surfaces, including test prims. The default avatar mesh is excluded."
+      width="360">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+
+    <text
+      follows="left|top"
+      height="20"
+      layout="topleft"
+      left="30"
+      name="BoxxySSSModeLabel"
+      top="81"
+      width="180">
+      Scattering method:
+    </text>
+    <combo_box
+      control_name="BoxxySSSMode"
+      enabled_control="BoxxySSSEnabled"
+      height="23"
+      layout="topleft"
+      left="210"
+      name="BoxxySSSMode"
+      top="77"
+      tool_tip="Combined adds adjustable wrap and warm backlighting to screen diffusion. Wrapped lighting has the lowest GPU cost."
+      width="270">
+      <combo_box.item
+        label="Wrapped lighting (faster)"
+        name="WrappedLighting"
+        value="0" />
+      <combo_box.item
+        label="Screen diffusion (quality)"
+        name="ScreenDiffusion"
+        value="1" />
+      <combo_box.item label="Combined (diffusion + light)" name="CombinedScattering" value="2" />
+      <combo_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </combo_box>
+
+    <slider
+      control_name="BoxxySSSStrength"
+      decimal_digits="2"
+      enabled_control="BoxxySSSEnabled"
+      follows="left|top"
+      height="20"
+      increment="0.05"
+      label="Strength:"
+      label_width="180"
+      layout="topleft"
+      left="30"
+      max_val="1.0"
+      min_val="0.0"
+      name="BoxxySSSStrength"
+      show_text="true"
+      top="111"
+      tool_tip="Controls how strongly skin lighting wraps and diffuses."
+      width="450" />
+
+    <slider
+      control_name="BoxxySSSDepth"
+      decimal_digits="3"
+      enabled_control="BoxxySSSEnabled"
+      follows="left|top"
+      height="20"
+      increment="0.001"
+      label="Diffusion depth (m):"
+      label_width="180"
+      layout="topleft"
+      left="30"
+      max_val="0.03"
+      min_val="0.001"
+      name="BoxxySSSDepth"
+      show_text="true"
+      top="139"
+      tool_tip="Sets the diffusion radius in meters for Screen diffusion and Combined modes."
+      width="450" />
+
+    <slider
+      control_name="BoxxySSSWarmth"
+      decimal_digits="2"
+      enabled_control="BoxxySSSEnabled"
+      follows="left|top"
+      height="20"
+      increment="0.05"
+      label="Scattering warmth:"
+      label_width="180"
+      layout="topleft"
+      left="30"
+      max_val="1.0"
+      min_val="0.0"
+      name="BoxxySSSWarmth"
+      show_text="true"
+      top="167"
+      tool_tip="Controls the warmth of the scattering color response."
+      width="450" />
+
+    <slider
+      control_name="BoxxySSSMaxDistance"
+      decimal_digits="0"
+      enabled_control="BoxxySSSEnabled"
+      follows="left|top"
+      height="20"
+      increment="1"
+      label="Maximum distance (m):"
+      label_width="180"
+      layout="topleft"
+      left="30"
+      max_val="128"
+      min_val="1"
+      name="BoxxySSSMaxDistance"
+      show_text="true"
+      top="195"
+      tool_tip="Limits skin scattering to nearby affected surfaces to control GPU cost."
+      width="450" />
+
+    <slider
+      control_name="BoxxySSSWrapAmount"
+      decimal_digits="2"
+      follows="left|top"
+      height="20"
+      increment="0.05"
+      label="Combined wrap:"
+      label_width="180"
+      layout="topleft"
+      left="30"
+      max_val="1.0"
+      min_val="0.0"
+      name="BoxxySSSWrapAmount"
+      show_text="true"
+      top="223"
+      tool_tip="Adds wrapped lighting in Combined mode. Zero leaves diffusion and transmission."
+      width="450" />
+
+    <slider
+      control_name="BoxxySSSTransmission"
+      decimal_digits="2"
+      follows="left|top"
+      height="20"
+      increment="0.05"
+      label="Transmission:"
+      label_width="180"
+      layout="topleft"
+      left="30"
+      max_val="1.0"
+      min_val="0.0"
+      name="BoxxySSSTransmission"
+      show_text="true"
+      top="251"
+      tool_tip="Adds warm light from behind the skin in Combined mode. Uses existing light colors, attenuation and shadows."
+      width="450" />
+
+    <slider
+      control_name="BoxxySSSThickness"
+      decimal_digits="1"
+      follows="left|top"
+      height="20"
+      increment="0.5"
+      label="Thickness estimate (mm):"
+      label_width="180"
+      layout="topleft"
+      left="30"
+      max_val="20.0"
+      min_val="0.5"
+      name="BoxxySSSThickness"
+      show_text="true"
+      top="279"
+      tool_tip="Combined mode optical thickness estimate, tapered toward silhouettes. Lower values transmit more light. This does not measure the mesh."
+      width="450" />
+
+    <check_box
+      control_name="BoxxySSSAutoDetect"
+      enabled_control="BoxxySSSEnabled"
+      height="20"
+      label="Detect mesh body parts on all avatars"
+      layout="topleft"
+      left="30"
+      name="BoxxySSSAutoDetect"
+      top="311"
+      tool_tip="Detect your own and other avatars' mesh attachments when the linkset root name contains any whitelist term. Names load gradually for visible attachments within Maximum distance."
+      width="420" />
+
+    <check_box
+      control_name="BoxxySSSShowMask"
+      enabled_control="BoxxySSSEnabled"
+      height="20"
+      label="Highlight affected surfaces"
+      layout="topleft"
+      left="30"
+      name="BoxxySSSShowMask"
+      top="337"
+      tool_tip="Highlight every surface currently receiving skin scattering for setup and testing."
+      width="420" />
+
+    <text name="SSSWhitelistLabel" follows="left|top" layout="topleft"
+      left="30" top="367" width="440" height="18">Automatic detection whitelist:</text>
+    <line_editor name="BoxxySSSWhitelist" control_name="BoxxySSSWhitelist"
+      enabled_control="BoxxySSSAutoDetect" follows="left|top" layout="topleft"
+      left="30" top="390" width="450" height="23" max_length_bytes="2048"
+      tool_tip="Separate terms with commas. Matching ignores case and finds terms anywhere in the attachment root name. Empty terms are ignored." />
+    <text name="SSSWhitelistHelp" follows="left|top" layout="topleft"
+      left="30" top="419" width="450" height="28" word_wrap="true">
+      Comma-separated terms; body also matches eBODY. Clear the list to use only explicit [sss] tags.
+    </text>
+
+    <text
+      follows="left|top|right"
+      height="35"
+      layout="topleft"
+      left="30"
+      name="SkinScatteringPerformanceNote"
+      text_color="LtGray_50"
+      top="453"
+      width="440"
+      word_wrap="true">
+      Opaque and alpha-masked surfaces only. Combined uses an approximate thickness; reduce it for stronger transmission.
+    </text>
+
+    </panel>
+    </scroll_container>
+  </panel>
+  </tab_container>
 
 </panel>

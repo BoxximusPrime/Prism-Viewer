@@ -1,8 +1,6 @@
 <?xml version="1.0" ?>
 <strings>
-	<string name="CAPITALIZED_APP_NAME">
-		SECOND LIFE
-	</string>
+	<string name="CAPITALIZED_APP_NAME">THE PRISM VIEWER</string>
 	<string name="SUPPORT_SITE">
 		Portal de Soporte de Second Life
 	</string>

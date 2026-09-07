@@ -1,44 +1,25 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="doc/sl-logo-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="doc/sl-logo.png">
-  <img alt="Second Life Logo" src="doc/sl-logo.png">
-</picture>
+# The Prism Viewer
 
-**[Second Life][] is a free 3D virtual world where users can create, connect and chat with others from around the
-world.** This repository contains the source code for the official client.
+Prism is a customized third-party viewer for [Second Life](https://secondlife.com/),
+built from the open-source Linden Lab viewer. It was previously named BoxxyViewer.
 
-## Open Source
+See [FEATURES.md](FEATURES.md) for the feature inventory,
+[AO transfer](docs/AO-TRANSFER.md) for animation-set import/export, and
+[Prism profiles](docs/PRISM-PROFILE.md) for migrating existing preferences.
 
-Second Life provides a huge variety of tools for expression, content creation, socialization and play. Its vibrancy is
-only possible because of input and contributions from its residents. The client codebase has been open source since
-2007 and is available under the LGPL license. The [Open Source Portal][] contains additional information about Linden
-Lab's open source history and projects.
+## Windows development build
 
-## Download
+```powershell
+cmake --build build-vc170-64 --config Release --target secondlife-bin -- /m:2
+```
 
-Most people use a pre-built viewer release to access Second Life. Windows and macOS builds are
-[published on the official website][download]. More experimental viewers, such as release candidates and
-project viewers, are detailed on the [Alternate Viewers page](https://releasenotes.secondlife.com/viewer.html).
+The development executable is `build-vc170-64/newview/Release/secondlife-bin.exe`.
+New CMake configurations default to the `Prism Release` channel; existing build
+folders should be configured with `-DVIEWER_CHANNEL="Prism Release"`.
 
-### Third Party Viewers
+## Upstream and licensing
 
-Third party maintained forks, which include Linux compatible builds, are indexed in the [Third Party Viewer Directory][tpv].
-
-## Build Instructions
-
-[Windows](https://wiki.secondlife.com/wiki/Build_the_Viewer_on_Windows)
-
-[Mac](https://wiki.secondlife.com/wiki/Build_the_Viewer_on_macOS)
-
-[Linux](https://wiki.secondlife.com/wiki/Build_the_Viewer_on_Linux)
-
-## Contribute
-
-Help make Second Life better! You can get involved with improvements by filing bugs, suggesting enhancements, submitting
-pull requests and more. See the [CONTRIBUTING][] and the [open source portal][] for details.
-
-[Second Life]: https://secondlife.com/
-[download]: https://secondlife.com/support/downloads/
-[tpv]: http://wiki.secondlife.com/wiki/Third_Party_Viewer_Directory
-[open source portal]: http://wiki.secondlife.com/wiki/Open_Source_Portal
-[contributing]: https://github.com/secondlife/viewer/blob/main/CONTRIBUTING.md
+Prism retains the upstream LGPL license and copyright notices. See [LICENSE](LICENSE)
+and the [Second Life Open Source Portal](https://wiki.secondlife.com/wiki/Open_Source_Portal)
+for upstream history and build prerequisites. Prism is an independent viewer;
+Linden Lab's official viewer downloads and support apply to their own product.

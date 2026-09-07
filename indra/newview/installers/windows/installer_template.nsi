@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Second Life setup.nsi
+;; Prism Viewer setup.nsi
 ;; Copyright 2004-2015, Linden Research, Inc.
 ;;
 ;; This library is free software; you can redistribute it and/or
@@ -99,7 +99,7 @@ SetOverwrite on							# Overwrite files by default
 AutoCloseWindow true					# After all files install, close window
 
 # Registry key paths, ours and Microsoft's
-!define LINDEN_KEY      "SOFTWARE\Linden Research, Inc."
+!define LINDEN_KEY      "SOFTWARE\Prism Viewer"
 !define INSTNAME_KEY    "${LINDEN_KEY}\${INSTNAME}"
 !define MSCURRVER_KEY   "SOFTWARE\Microsoft\Windows\CurrentVersion"
 !define MSNTCURRVER_KEY "SOFTWARE\Microsoft\Windows NT\CurrentVersion"
@@ -149,7 +149,6 @@ Var COMMANDLINE         # Command line passed to this installer, set in .onInit
 Var SHORTCUT_LANG_PARAM # "--set InstallLanguage de", Passes language to viewer
 Var SKIP_DIALOGS        # Set from command line in  .onInit. autoinstall GUI and the defaults.
 Var SKIP_AUTORUN		# Skip automatic launch of the viewer after install
-Var DO_UNINSTALL_V2     # If non-null, path to a previous Viewer 2 installation that will be uninstalled.
 
 # Function definitions should go before file includes, because calls to
 # DLLs like LangDLL trigger an implicit file include, so if that call is at
@@ -424,11 +423,8 @@ StrCpy $VIEWER_EXE "${VIEWER_EXE}"
 StrCpy $INSTSHORTCUT "${SHORTCUT}"
 
 Call CheckIfAdministrator		# Make sure the user can install/uninstall
-Call CloseSecondLife			# Make sure Second Life not currently running
-Call CheckWillUninstallV2		# Check if Second Life is already installed
+Call CloseSecondLife			# Make sure Prism is not currently running
 
-StrCmp $DO_UNINSTALL_V2 "" PRESERVE_DONE
-PRESERVE_DONE:
 
 # Viewer had "SLLauncher" for some time and we was seting "IsHostApp" for viewer, make sure to clean it up
 DeleteRegValue HKEY_CLASSES_ROOT "Applications\$VIEWER_EXE" "IsHostApp"
@@ -504,11 +500,8 @@ WriteRegStr SHELL_CONTEXT "${INSTNAME_KEY}" "" "$INSTDIR"
 WriteRegStr SHELL_CONTEXT "${INSTNAME_KEY}" "Version" "${VERSION_LONG}"
 WriteRegStr SHELL_CONTEXT "${INSTNAME_KEY}" "Shortcut" "$INSTSHORTCUT"
 WriteRegStr SHELL_CONTEXT "${INSTNAME_KEY}" "Exe" "$VIEWER_EXE"
-WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "Publisher" "Linden Research, Inc."
-WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "URLInfoAbout" "http://secondlife.com/whatis/"
-WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "URLUpdateInfo" "http://secondlife.com/support/downloads/"
-WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "HelpLink" "https://support.secondlife.com/contact-support/"
-WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "DisplayName" "$INSTNAME"
+WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "Publisher" "Prism Viewer contributors"
+WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "DisplayName" "The Prism Viewer"
 WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "UninstallString" '"$INSTDIR\uninst.exe"'
 WriteRegStr SHELL_CONTEXT "${MSUNINSTALL_KEY}" "DisplayVersion" "${VERSION_LONG}"
 WriteRegDWORD SHELL_CONTEXT "${MSUNINSTALL_KEY}" "EstimatedSize" "0x0001D500"		# ~117 MB
@@ -540,13 +533,6 @@ WriteRegStr HKEY_CLASSES_ROOT "Applications\$INSTEXE" "IsHostApp" ""
 # Write out uninstaller
 WriteUninstaller "$INSTDIR\uninst.exe"
 
-# Uninstall existing "Second Life Viewer 2" install if needed.
-StrCmp $DO_UNINSTALL_V2 "" REMOVE_SLV2_DONE
-  ExecWait '"$PROGRAMFILES\SecondLifeViewer2\uninst.exe" /S _?=$PROGRAMFILES\SecondLifeViewer2'
-  Delete "$PROGRAMFILES\SecondLifeViewer2\uninst.exe"	# With _? option above, uninst.exe will be left behind.
-  RMDir "$PROGRAMFILES\SecondLifeViewer2"	# Will remove only if empty.
-
-REMOVE_SLV2_DONE:
 
 SectionEnd
 
@@ -595,8 +581,7 @@ Delete "$INSTDIR\Uninstall $INSTSHORTCUT.lnk"
 # Remove the main installation directory
 Call un.ProgramFiles
 
-# Clean up cache and log files, but leave them in-place for non AGNI installs.
-Call un.UserSettingsFiles
+# Preserve Prism preferences, account data and chat history on uninstall.
 
 SectionEnd
 
@@ -615,34 +600,12 @@ lbl_is_admin:
 FunctionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Function CheckWillUninstallV2               
-;;
-;; If called through auto-update, need to uninstall any existing V2 installation.
-;; Don't want to end up with SecondLifeViewer2 and SecondLifeViewer installations
-;;  existing side by side with no indication on which to use.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Function CheckWillUninstallV2
-
-  StrCpy $DO_UNINSTALL_V2 ""
-
-  StrCmp $SKIP_DIALOGS "true" 0 CHECKV2_DONE
-  StrCmp $INSTDIR "$PROGRAMFILES\SecondLifeViewer2" CHECKV2_DONE	# Don't uninstall our own install dir.
-  IfFileExists "$PROGRAMFILES\SecondLifeViewer2\uninst.exe" CHECKV2_FOUND CHECKV2_DONE
-
-CHECKV2_FOUND:
-  StrCpy $DO_UNINSTALL_V2 "true"
-
-CHECKV2_DONE:
-
-FunctionEnd
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Close the program, if running. Modifies no variables.
 ;; Allows user to bail out of install process.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function CloseSecondLife
   Push $0
-  FindWindow $0 "Second Life" ""
+  FindWindow $0 "Prism Viewer" ""
   IntCmp $0 0 DONE
   
   StrCmp $SKIP_DIALOGS "true" CLOSE
@@ -656,7 +619,7 @@ Function CloseSecondLife
     SendMessage $0 16 0 0
 
   LOOP:
-	  FindWindow $0 "Second Life" ""
+	  FindWindow $0 "Prism Viewer" ""
 	  IntCmp $0 0 SLEEP
 	  Sleep 500
 	  Goto LOOP
@@ -680,7 +643,7 @@ FunctionEnd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function un.CloseSecondLife
   Push $0
-  FindWindow $0 "Second Life" ""
+  FindWindow $0 "Prism Viewer" ""
   IntCmp $0 0 DONE
   MessageBox MB_OKCANCEL $(CloseSecondLifeUnInstMB) IDOK CLOSE IDCANCEL CANCEL_UNINSTALL
 
@@ -692,7 +655,7 @@ Function un.CloseSecondLife
     SendMessage $0 16 0 0
 
   LOOP:
-	  FindWindow $0 "Second Life" ""
+	  FindWindow $0 "Prism Viewer" ""
 	  IntCmp $0 0 DONE
 	  Sleep 500
 	  Goto LOOP
@@ -763,77 +726,7 @@ FunctionEnd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Delete files in \Users\<User>\AppData\
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Function un.UserSettingsFiles
 
-StrCmp $DO_UNINSTALL_V2 "true" Keep			# Don't remove user's settings files on auto upgrade
-
-ClearErrors
-Push $0
-${GetParameters} $COMMANDLINE
-${GetOptionsS} $COMMANDLINE "/clrusrfiles" $0
-# GetOptionsS returns an error if option does not exist, jump past Goto.
-IfErrors +3 0
-  Pop $0
-  Goto Remove
-
-Pop $0
-ClearErrors
-
-ifSilent Keep 0
-  # Ask if user wants to keep data files or not
-  MessageBox MB_YESNO|MB_ICONQUESTION $(RemoveDataFilesMB) IDYES Remove IDNO Keep
-
-Remove:
-Push $0
-Push $1
-Push $2
-
-  DetailPrint "Deleting Second Life data files"
-
-  StrCpy $0 0	# Index number used to iterate via EnumRegKey
-
-  LOOP:
-    EnumRegKey $1 SHELL_CONTEXT "${MSNTCURRVER_KEY}\ProfileList" $0
-    StrCmp $1 "" DONE               # No more users
-
-    ReadRegStr $2 SHELL_CONTEXT "${MSNTCURRVER_KEY}\ProfileList\$1" "ProfileImagePath" 
-    StrCmp $2 "" CONTINUE 0         # "ProfileImagePath" value is missing
-
-# Required since ProfileImagePath is of type REG_EXPAND_SZ
-    ExpandEnvStrings $2 $2
-
-# Delete files in \Users\<User>\AppData\Roaming\SecondLife
-# Remove all settings files but leave any other .txt files to preserve the chat logs
-;    RMDir /r "$2\AppData\Roaming\SecondLife\logs"
-    RMDir /r "$2\AppData\Roaming\SecondLife\browser_profile"
-    RMDir /r "$2\AppData\Roaming\SecondLife\user_settings"
-    Delete  "$2\AppData\Roaming\SecondLife\*.xml"
-    Delete  "$2\AppData\Roaming\SecondLife\*.bmp"
-    Delete  "$2\AppData\Roaming\SecondLife\search_history.txt"
-    Delete  "$2\AppData\Roaming\SecondLife\plugin_cookies.txt"
-    Delete  "$2\AppData\Roaming\SecondLife\typed_locations.txt"
-# Delete files in \Users\<User>\AppData\Local\SecondLife
-    RmDir /r  "$2\AppData\Local\SecondLife"							#Delete the cache folder
-
-  CONTINUE:
-    IntOp $0 $0 + 1
-    Goto LOOP
-  DONE:
-
-Pop $2
-Pop $1
-Pop $0
-
-# Delete files in ProgramData\Secondlife
-Push $0
-  ReadRegStr $0 SHELL_CONTEXT "${MSCURRVER_KEY}\Explorer\Shell Folders" "Common AppData"
-  StrCmp $0 "" +2
-  RMDir /r "$0\SecondLife"
-Pop $0
-
-Keep:
-
-FunctionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Delete the installed files
@@ -879,28 +772,14 @@ ifSilent NOFOLDER 0
 
 NOFOLDER:
 
-ClearErrors
-Push $0
-${GetParameters} $COMMANDLINE
-${GetOptionsS} $COMMANDLINE "/clearreg" $0
-# GetOptionsS returns an error if option does not exist, jump past Goto.
-IfErrors +3 0
-  Pop $0
-  Goto DeleteKeys
-
-Pop $0
-ClearErrors
-
-ifSilent NoDelete 0
-	MessageBox MB_YESNO $(DeleteRegistryKeysMB) IDYES DeleteKeys IDNO NoDelete
-
-DeleteKeys:
-  DeleteRegKey SHELL_CONTEXT "SOFTWARE\Classes\x-grid-location-info"
-  DeleteRegKey SHELL_CONTEXT "SOFTWARE\Classes\secondlife"
+# Remove shared SLURL handlers only while they still point to this installation.
+# A later install of another viewer may have taken ownership.
+ReadRegStr $0 HKEY_CLASSES_ROOT "${URLNAME}\shell\open\command" ""
+StrCmp $0 '"$INSTDIR\$VIEWER_EXE" -url "%1"' 0 +2
+  DeleteRegKey HKEY_CLASSES_ROOT "${URLNAME}"
+ReadRegStr $0 HKEY_CLASSES_ROOT "x-grid-location-info\shell\open\command" ""
+StrCmp $0 '"$INSTDIR\$VIEWER_EXE" -url "%1"' 0 +2
   DeleteRegKey HKEY_CLASSES_ROOT "x-grid-location-info"
-  DeleteRegKey HKEY_CLASSES_ROOT "secondlife"
-
-NoDelete:
 
 FunctionEnd
 

@@ -4127,10 +4127,12 @@ void LLSplashScreenWin32::showImpl()
         TEXT("SPLASHSCREEN"),
         NULL,   // no parent
         (DLGPROC) LLSplashScreenWin32::windowProc);
+    SendMessage(mWindow, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(hinst, gIconResource));
+    SendMessage(mWindow, WM_SETICON, ICON_SMALL, (LPARAM)LoadIcon(hinst, gIconSmallResource));
     ShowWindow(mWindow, SW_SHOW);
 
     // Should set taskbar text without creating a header for the window (caption)
-    SetWindowText(mWindow, TEXT("Second Life"));
+    SetWindowText(mWindow, TEXT("Prism"));
 }
 
 

@@ -47,44 +47,40 @@
           <icon
            follows="left|top"
            layout="topleft"
-           name="boxxy_login_shadow_soft"
-           image_name="Rounded_Square"
-           color="Black_25"
-           mouse_opaque="false"
-           left="90"
-           top="257"
-           width="220"
-           height="18" />
-          <icon
-           follows="left|top"
-           layout="topleft"
-           name="boxxy_login_shadow_core"
-           image_name="Rounded_Square"
-           color="Black_50"
-           mouse_opaque="false"
-           left="130"
-           top="261"
-           width="140"
-           height="10" />
-          <icon
-           follows="left|top"
-           layout="topleft"
            name="boxxy_login_brand"
-           image_name="startup_logo"
+           image_name="Prism_Login_Logo"
            mouse_opaque="false"
-           left="72"
-           top="2"
-           width="256"
-           height="256" />
+           left="88"
+           top="8"
+           width="224"
+           height="205" />
+          <text name="prism_wordmark" left="0" top="228" width="400" height="30"
+           font="SansSerifHuge" font.style="BOLD" halign="center"
+           text_color="0.91 0.95 0.93 1" mouse_opaque="false">P R I S M</text>
+          <text name="prism_descriptor" left="0" top="262" width="400" height="16"
+           font="SansSerifSmall" halign="center"
+           text_color="0.46 0.60 0.54 1" mouse_opaque="false">VIEWER FOR SECOND LIFE</text>
         </layout_panel>
         <layout_panel
          auto_resize="false"
          user_resize="false"
-         background_visible="true"
-         background_opaque="false"
-         bg_alpha_color="Black_50"
+         background_visible="false"
          width="400"
          height="300">
+          <icon name="prism_card_shadow" left="-6" top="4" width="412" height="306"
+           image_name="Rounded_Square" color="0 0 0 0.20" mouse_opaque="false" />
+          <icon name="prism_card_border" left="0" top="0" width="400" height="300"
+           image_name="Rounded_Square" color="0.18 0.26 0.23 0.8" mouse_opaque="false" />
+          <icon name="prism_card_surface" left="1" top="1" width="398" height="298"
+           image_name="Rounded_Square" color="0.035 0.050 0.047 1" mouse_opaque="false" />
+          <icon name="username_combo_border" follows="all" left="30" top="30" width="340" height="38"
+           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+          <icon name="username_combo_fill" follows="all" left="31" top="31" width="338" height="36"
+           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+          <icon name="password_edit_border" follows="all" left="30" top="91" width="340" height="38"
+           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+          <icon name="password_edit_fill" follows="all" left="31" top="92" width="338" height="36"
+           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
           <combo_box
            follows="left|top"
            layout="topleft"
@@ -113,12 +109,15 @@
              background_image_focused="TextField_Transparent"
              draw_focus_border="false"
              text_pad_left="12"
-             bg_image_always_focused="true" />
+             bg_image_always_focused="false" />
           </combo_box>
           <line_editor
            follows="left|top"
            layout="topleft"
            name="password_edit"
+           background_image="TextField_Transparent"
+           background_image_disabled="TextField_Transparent"
+           background_image_focused="TextField_Transparent"
            label="Password"
            left="30"
            top="91"
@@ -126,7 +125,7 @@
            height="38"
            max_length_chars="16"
            text_pad_left="12"
-           bg_image_always_focused="true"
+           bg_image_always_focused="false"
            font="SansSerifLarge"
            is_password="true"
            select_on_focus="true"
@@ -161,6 +160,11 @@
            width="340"
            height="38">
             <layout_panel name="location_panel" auto_resize="true" user_resize="false" min_width="164" width="164" height="38">
+          <icon name="start_location_combo_border" follows="all" left="0" top="0" width="164" height="38"
+           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+          <icon name="start_location_combo_fill" follows="all" left="1" top="1" width="162" height="36"
+           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+
               <combo_box
                name="start_location_combo"
                control_name="NextLoginLocation"
@@ -179,11 +183,19 @@
                  image_selected="ComboButton_Transparent"
                  image_disabled="ComboButton_Transparent"
                  image_overlay="ComboButton_Arrow" />
+                <combo_box.combo_editor background_image="TextField_Transparent"
+                 background_image_disabled="TextField_Transparent" background_image_focused="TextField_Transparent"
+                 draw_focus_border="false" />
                 <combo_box.item label="My last location" name="MyLastLocation" value="last" />
                 <combo_box.item label="My home" name="MyHome" value="home" />
               </combo_box>
             </layout_panel>
             <layout_panel name="grid_panel" auto_resize="false" user_resize="false" width="164" height="38">
+          <icon name="server_combo_border" follows="all" left="0" top="0" width="164" height="38"
+           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+          <icon name="server_combo_fill" follows="all" left="1" top="1" width="162" height="36"
+           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+
               <combo_box
                name="server_combo"
                allow_text_entry="false"
@@ -194,7 +206,12 @@
                left="0"
                top="0"
                width="164"
-               height="38" />
+               height="38">
+                <combo_box.drop_down_button image_unselected="ComboButton_Transparent"
+                 image_selected="ComboButton_Transparent" image_pressed="ComboButton_Transparent"
+                 image_pressed_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent"
+                 image_overlay="ComboButton_Arrow" image_overlay_alignment="right" image_overlay_right_delta="10" />
+              </combo_box>
             </layout_panel>
           </layout_stack>
           <button
@@ -206,7 +223,9 @@
            image_color="AccentColor"
            label="Log in"
            label_color="Black"
-           label_color_disabled="Black"
+           label_color_disabled="0.51 0.66 0.57 1"
+           image_disabled="Rounded_Square"
+           image_color_disabled="0.10 0.23 0.16 1"
            font="SansSerifLarge"
            font.style="BOLD"
            name="connect_btn"

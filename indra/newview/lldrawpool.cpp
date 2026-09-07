@@ -54,6 +54,8 @@
 #include "llvoavatar.h"
 #include "llviewershadermgr.h"
 
+extern bool gCubeSnapshot;
+
 S32 LLDrawPool::sNumDrawPools = 0;
 
 //=============================
@@ -565,6 +567,17 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
 void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
 {
+    if (LLGLSLShader::sCurBoundShaderPtr)
+    {
+        static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
+        static const LLStaticHashedString sss_object("sss_object");
+        const bool skin = params.mSSS && sss_enabled && !gCubeSnapshot && !LLPipeline::sImpostorRender;
+        LLGLSLShader::sCurBoundShaderPtr->uniform1f(sss_object, skin ? 1.f : 0.f);
+        if (skin && !LLPipeline::sShadowRender)
+        {
+            gPipeline.mHasSSSGeometry = true;
+        }
+    }
     applyModelMatrix(params.mModelMatrix);
 }
 

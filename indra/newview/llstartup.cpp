@@ -2581,6 +2581,7 @@ bool idle_startup()
         // LLUserAuth::getInstance()->reset();
 
         LLStartUp::setStartupState( STATE_STARTED );
+        gViewerWindow->getWindow()->setTitle("Prism - " + gAgentUsername);
         do_startup_frame();
 
         // Unmute audio if desired and setup volumes.
