@@ -562,6 +562,8 @@ void LLViewerShaderMgr::setShaders()
             // Program binary keys do not hash GLSL contents. Bump this revision
             // when changing SSS shaders so existing installations recompile them.
             hash_obj.update("boxxy-sss-3");
+            // Recompile shared alpha shaders after moving shadows past alpha rejection.
+            hash_obj.update("boxxy-alpha-shadow-1");
             current_cache_version = hash_obj.digest();
 
             old_cache_version = LLUUID(gSavedSettings.getString("RenderShaderCacheVersion"));

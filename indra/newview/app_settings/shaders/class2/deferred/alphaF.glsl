@@ -188,12 +188,6 @@ void main()
 #endif
     vec3 norm = vary_norm;
 
-    float shadow = 1.0f;
-
-#ifdef HAS_SUN_SHADOW
-    shadow = sampleDirectionalShadow(pos.xyz, norm.xyz, frag);
-#endif
-
 #ifdef USE_DIFFUSE_TEX
     vec4 diffuse_tap = texture(diffuseMap,vary_texcoord0.xy);
 #endif
@@ -249,6 +243,13 @@ void main()
     diffuse_srgb.rgb *= vertex_color.rgb;
     diffuse_linear.rgb = srgb_to_linear(diffuse_srgb.rgb);
 #endif // USE_VERTEX_COLOR
+
+    // Reject transparent card texels before filtered shadow lookups. This also
+    // keeps shadow sampling out of the unlit impostor path above.
+    float shadow = 1.0f;
+#ifdef HAS_SUN_SHADOW
+    shadow = sampleDirectionalShadow(pos.xyz, norm.xyz, frag);
+#endif
 
     vec3 sunlit;
     vec3 amblit;

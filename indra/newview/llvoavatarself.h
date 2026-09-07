@@ -104,7 +104,7 @@ public:
 
 private:
     // helper function. Passed in param is assumed to be in avatar's parameter list.
-    bool setParamWeight(const LLViewerVisualParam *param, F32 weight);
+    bool setParamWeight(LLViewerVisualParam *param, F32 weight);
 
     std::mutex          mJointMapMutex; // getJoint gets used from mesh thread
 

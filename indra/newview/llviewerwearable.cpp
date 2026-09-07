@@ -41,6 +41,8 @@
 #include "llviewercontrol.h"
 #include "llviewerregion.h"
 
+#include <array>
+
 using namespace LLAvatarAppearanceDefines;
 
 // support class - remove for 2.1 (hackity hack hack)
@@ -328,10 +330,25 @@ void LLViewerWearable::writeToAvatar(LLAvatarAppearance *avatarp)
     LLWearable::writeToAvatar(avatarp);
 
 
-    // Pull texture entries
-    for( S32 te = 0; te < TEX_NUM_INDICES; te++ )
+    // The dictionary's texture-to-wearable assignments are immutable. Index them
+    // once instead of searching every texture slot for every wearable each frame.
+    static const auto texture_slots = []
     {
-        if (LLAvatarAppearance::getDictionary()->getTEWearableType((ETextureIndex) te) == mType)
+        std::array<texture_vec_t, LLWearableType::WT_COUNT> slots;
+        for (const auto& entry : LLAvatarAppearance::getDictionary()->getTextures())
+        {
+            const auto type = entry.second->mWearableType;
+            if (type >= 0 && type < LLWearableType::WT_COUNT)
+            {
+                slots[type].push_back(entry.first);
+            }
+        }
+        return slots;
+    }();
+
+    if (mType >= 0 && mType < LLWearableType::WT_COUNT)
+    {
+        for (ETextureIndex te : texture_slots[mType])
         {
             te_map_t::const_iterator iter = mTEMap.find(te);
             LLUUID image_id;
@@ -342,6 +359,11 @@ void LLViewerWearable::writeToAvatar(LLAvatarAppearance *avatarp)
             else
             {
                 image_id = getDefaultTextureImageID((ETextureIndex) te);
+            }
+            // setLocalTextureTE would immediately return for this same image ID.
+            if (viewer_avatar->getTEImage(te)->getID() == image_id)
+            {
+                continue;
             }
             LLViewerTexture* image = LLViewerTextureManager::getFetchedTexture( image_id, FTT_DEFAULT, true, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE );
             // MULTI-WEARABLE: assume index 0 will be used when writing to avatar. TODO: eliminate the need for this.

@@ -85,6 +85,12 @@ The committed feature list is based on the differences from the `upstream/develo
 ## Asset loading and reliability
 
 - Exact-OIT alpha rendering for correctly composited overlapping transparent surfaces, with bounded GPU memory and automatic vanilla-renderer fallback.
+- Particle rendering skips glow passes for batches with no glow, and Exact OIT skips zero-glow capture entries while preserving glowing ribbon endpoints. (in progress; awaiting in-world performance and visual verification)
+- Legacy alpha-blended surfaces reject transparent texels before filtered shadow sampling in both ordinary and Exact OIT rendering, retaining the existing alpha cutoff and shadow quality. (in progress; awaiting dense-foliage performance and visual verification)
+- Shadow casting skips unused forward-alpha list construction and skin-scattering uniform setup, and reuses alpha-caster shader setup across consecutive batches. (in progress; awaiting in-world CPU timing and shadow verification)
+- Plain opaque shadow draws combine consecutive index ranges sharing a vertex buffer and transform; disabled cascades skip receiver-bound traversal and shadow fitting preallocates its temporary point arrays. (in progress; awaiting in-world performance and shadow verification)
+- Masked shadow draws merge compatible adjacent ranges and reuse unchanged alpha cutoffs; receiver-bound searches stop below fully enclosed nonempty groups, and shaders skip unused modelview inversions. (in progress; automated regression checks pass; in-world performance and visual verification pending)
+- Texture-priority work reuses loop inputs and complete cached face-projection results; avatar appearance writes reuse fixed texture-slot assignments, skip already-assigned texture fetches, and avoid duplicate parameter lookups while retaining driver and animation updates. (in progress; automated checks pass; appearance, texture-quality, and performance verification pending)
 
 - Texture retry and failed-asset handling improvements.
 - Mesh retry and loading changes.

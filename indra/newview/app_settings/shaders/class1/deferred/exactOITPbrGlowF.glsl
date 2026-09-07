@@ -20,6 +20,8 @@ layout(std430, binding = 0) buffer OITNodes { OITNode oitNodes[]; };
 layout(std430, binding = 1) buffer OITControl { uint oitNodeCount; uint oitNodeCapacity; uint oitOverflow; uint oitPad; };
 void exact_oit_store_glow(float glow)
 {
+    // Zero additive glow cannot change the composite; do not allocate a node.
+    if (glow == 0.0) return;
     uint index = atomicAdd(oitNodeCount, 1u);
     if (index >= oitNodeCapacity) { atomicOr(oitOverflow, 1u); return; }
     oitNodes[index].color = vec4(0.0);

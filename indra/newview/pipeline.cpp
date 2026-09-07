@@ -3688,7 +3688,8 @@ void LLPipeline::postSort(LLCamera &camera)
             }
         }
 
-        if (hasRenderType(LLPipeline::RENDER_TYPE_PASS_ALPHA))
+        // Shadow casters use the render map above, not the forward-alpha group lists.
+        if (!sShadowRender && hasRenderType(LLPipeline::RENDER_TYPE_PASS_ALPHA))
         {
             LLSpatialGroup::draw_map_t::iterator alpha = group->mDrawMap.find(LLRenderPass::PASS_ALPHA);
 
@@ -6938,6 +6939,7 @@ void LLPipeline::renderAlphaObjects(bool rigged)
     const LLVOAvatar* lastAvatarGLTF = nullptr;
     U64 lastMeshIdGLTF = 0;
     bool skipLastSkinGLTF;
+    LLGLSLShader* last_shader = nullptr;
     auto* begin = gPipeline.beginRenderMap(type);
     auto* end = gPipeline.endRenderMap(type);
 
@@ -6953,22 +6955,32 @@ void LLPipeline::renderAlphaObjects(bool rigged)
             continue;
         }
 
+        LLGLSLShader* shader = pparams->mGLTFMaterial ?
+            &gDeferredShadowGLTFAlphaBlendProgram : &gDeferredShadowAlphaMaskProgram;
+        if (rigged)
+        {
+            shader = shader->mRiggedVariant;
+        }
+
+        // These values are constant throughout this shadow map. Initialize on
+        // the first draw and shader changes, including re-entry from a mask pass.
+        if (shader != last_shader)
+        {
+            shader->bind();
+            shader->uniform1i(LLShaderMgr::SUN_UP_FACTOR, sun_up);
+            shader->uniform1f(LLShaderMgr::DEFERRED_SHADOW_TARGET_WIDTH, (float)target_width);
+            shader->setMinimumAlpha(ALPHA_BLEND_CUTOFF);
+            last_shader = shader;
+        }
+
         if (rigged)
         {
             if (pparams->mGLTFMaterial)
             {
-                gDeferredShadowGLTFAlphaBlendProgram.bind(rigged);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1i(LLShaderMgr::SUN_UP_FACTOR, sun_up);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLShaderMgr::DEFERRED_SHADOW_TARGET_WIDTH, (float)target_width);
-                LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(ALPHA_BLEND_CUTOFF);
                 LLRenderPass::pushRiggedGLTFBatch(*pparams, lastAvatarGLTF, lastMeshIdGLTF, skipLastSkinGLTF);
             }
             else
             {
-                gDeferredShadowAlphaMaskProgram.bind(rigged);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1i(LLShaderMgr::SUN_UP_FACTOR, sun_up);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLShaderMgr::DEFERRED_SHADOW_TARGET_WIDTH, (float)target_width);
-                LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(ALPHA_BLEND_CUTOFF);
                 if (mSimplePool->uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
                 {
                     mSimplePool->pushBatch(*pparams, true, true);
@@ -6979,18 +6991,10 @@ void LLPipeline::renderAlphaObjects(bool rigged)
         {
             if (pparams->mGLTFMaterial)
             {
-                gDeferredShadowGLTFAlphaBlendProgram.bind(rigged);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1i(LLShaderMgr::SUN_UP_FACTOR, sun_up);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLShaderMgr::DEFERRED_SHADOW_TARGET_WIDTH, (float)target_width);
-                LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(ALPHA_BLEND_CUTOFF);
                 LLRenderPass::pushGLTFBatch(*pparams);
             }
             else
             {
-                gDeferredShadowAlphaMaskProgram.bind(rigged);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1i(LLShaderMgr::SUN_UP_FACTOR, sun_up);
-                LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLShaderMgr::DEFERRED_SHADOW_TARGET_WIDTH, (float)target_width);
-                LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(ALPHA_BLEND_CUTOFF);
                 mSimplePool->pushBatch(*pparams, true, true);
             }
         }
@@ -9840,6 +9844,8 @@ bool LLPipeline::getVisiblePointCloud(LLCamera& camera, LLVector3& min, LLVector
 
     //potential points
     std::vector<LLVector3> pp;
+    // 16 corners plus at most 12 edges * 6 planes in each direction.
+    pp.reserve(160);
 
     //add corners of AABB
     pp.push_back(LLVector3(min.mV[0], min.mV[1], min.mV[2]));
@@ -10332,8 +10338,8 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
 
             std::vector<LLVector3> fp;
 
-            if (!gPipeline.getVisiblePointCloud(shadow_cam, min, max, fp, lightDir)
-                || j > RenderShadowSplits)
+            if (j > RenderShadowSplits ||
+                !gPipeline.getVisiblePointCloud(shadow_cam, min, max, fp, lightDir))
             {
                 //no possible shadow receivers
                 if (!gPipeline.hasRenderDebugMask(LLPipeline::RENDER_DEBUG_SHADOW_FRUSTA) && !gCubeSnapshot)
@@ -10371,6 +10377,7 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
             view[j] = look(camera.getOrigin(), lightDir, -up);
 
             std::vector<LLVector3> wpf;
+            wpf.reserve(fp.size());
 
             for (U32 i = 0; i < fp.size(); i++)
             {
