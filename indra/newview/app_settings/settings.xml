@@ -2,6 +2,17 @@
 <llsd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="llsd.xsd">
 <map>
+  <key>BoxxyNameTagChatRangeColors</key>
+  <map>
+    <key>Comment</key>
+    <string>Show chat-range colors on avatar nameplates.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
   <key>BoxxySSSEnabled</key>
   <map>
     <key>Comment</key>

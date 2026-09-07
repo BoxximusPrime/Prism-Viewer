@@ -8,6 +8,8 @@ The updated test build defaults to translation off, gesture sounds on, and sendi
 
 Reinstalling does not reset saved preferences, UI colors, toolbar layouts, or floater sizes. Test first-run defaults with a new profile, or back up the existing Prism profile before resetting it. Use the toolbar reset action to restore the shipped button layout in an existing profile.
 
+The latest layout fixes give each DM popout its own size instead of inheriting the Conversations container's dimensions. Minimal radar restores its saved bottom-left position independently of its changing list height, and Now Playing uses a rounded border. The Prism preferences page includes an “Enable colors” checkbox for nameplate chat-range colors, enabled by default.
+
 ## Build
 
 From the repository root in PowerShell, with the existing configured build directory and dependencies:
@@ -28,3 +30,5 @@ The canonical development executable remains `build-vc170-64/newview/Release/sec
 ## Initial install check
 
 Install, launch from the new shortcut, sign in, and check graphics, voice/media and AO behavior. Check that a subsequent install updates Prism and that uninstall removes its program files while retaining the Prism profile. Existing viewers should retain their own installations.
+
+For the layout regression check, open a new DM and detach it (540×480 UI units), resize it, then dock and detach it again; the resized dimensions should return. Move minimal radar, restart, and confirm its bottom-left anchor stays in place even if the avatar count changes. Play parcel music and inspect the rounded card border. Toggle nameplate “Enable colors” off and on; the range indicators should disappear and reappear without a restart.

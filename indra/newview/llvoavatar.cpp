@@ -3786,7 +3786,8 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
         is_vip = LLAvatarNameCache::get(getID(), &vip_name) && LLBoxxyVIP::matches(vip_name);
     }
 
-    if (isSelf())
+    static LLCachedControl<bool> name_tag_range_colors(gSavedSettings, "BoxxyNameTagChatRangeColors", true);
+    if (isSelf() || !name_tag_range_colors)
     {
         mNameText->clearBottomBorder();
     }

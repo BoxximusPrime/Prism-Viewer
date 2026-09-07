@@ -158,9 +158,20 @@
    left="30"
    name="name_tag_heading"
    top_pad="4"
-   width="450">
+   width="230">
     Name Tag Chat Range
   </text>
+  <check_box
+   control_name="BoxxyNameTagChatRangeColors"
+   follows="left|top"
+   height="20"
+   label="Enable colors"
+   layout="topleft"
+   left_pad="10"
+   name="name_tag_chat_range_colors"
+   tool_tip="Show near/far chat-range colors on avatar nameplates."
+   top_delta="0"
+   width="210" />
   <color_swatch
    can_apply_immediately="true"
    follows="left|top"
