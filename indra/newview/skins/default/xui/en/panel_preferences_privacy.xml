@@ -95,7 +95,7 @@
     <check_box
      control_name="EnableLookAtTarget"
      height="16"
-     label="Send LookAt Updates"
+     label="Send My Look Targets"
      tool_tip="Send your avatar's LookAt targets to the simulator. Turning this off sends one neutral target to clear the last update, then stops sending target changes."
      layout="topleft"
      left="30"
@@ -116,7 +116,7 @@
     <check_box
      control_name="ShowLookAtTargets"
      height="16"
-     label="Show LookAt Targets"
+     label="Show Look Targets"
      tool_tip="Show the official viewer's colored LookAt crosshairs for avatars whose targets have been received."
      layout="topleft"
      left="30"

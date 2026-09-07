@@ -12865,7 +12865,7 @@ are wearing now.
     <usetemplate name="okbutton" yestext="OK" />
   </notification>
   <notification icon="alertmodal.tga" name="BoxxyAONotReady" type="alertmodal">
-    The #Boxxy/#AO inventory folders are still being prepared. Please try again in a moment.
+    The AO inventory folders are still being prepared. Please try again in a moment.
     <usetemplate name="okbutton" yestext="OK" />
   </notification>
   <notification icon="alertmodal.tga" name="BoxxyAOAnimationUnavailable" type="alertmodal">
@@ -12875,5 +12875,15 @@ are wearing now.
   <notification icon="alertmodal.tga" name="BoxxyAOAnimationAlreadyAdded" type="alertmodal">
     That animation is already linked in the selected state.
     <usetemplate name="okbutton" yestext="OK" />
+  </notification>
+  <notification icon="alertmodal.tga" name="BoxxyAOTransferMessage" type="alertmodal">
+    [MESSAGE]
+    <usetemplate name="okbutton" yestext="OK" />
+  </notification>
+  <notification icon="alertmodal.tga" name="BoxxyAOTransferOptions" type="alertmodal">
+    This Firestorm set uses options that Prism does not currently implement:
+[OPTIONS]
+Import the animations, order, cycling and supported sit option without those options?
+    <usetemplate name="okcancelbuttons" notext="Cancel" yestext="Import" />
   </notification>
 </notifications>

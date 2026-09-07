@@ -46,12 +46,14 @@
 #include "llcombobox.h"
 #include "llviewercontrol.h"
 #include "llfocusmgr.h"
+#include "lliconctrl.h"
 #include "lllineeditor.h"
 #include "llnotificationsutil.h"
 #include "llsecapi.h"
 #include "llstartup.h"
 #include "lltextbox.h"
 #include "llui.h"
+#include "lluicolortable.h"
 #include "lluiconstants.h"
 #include "llslurl.h"
 #include "llviewerhelp.h"
@@ -328,19 +330,64 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
 
 void LLPanelLogin::draw()
 {
-    const S32 width = getRect().getWidth();
-    const S32 height = getRect().getHeight();
+    // Give the whole editable combo (including its arrow) a single focus ring.
+    for (const std::string name : {"username_combo", "password_edit", "start_location_combo", "server_combo"})
+    {
+        const bool focused = getChild<LLUICtrl>(name)->hasFocus();
+        getChild<LLIconCtrl>(name + "_border")->setColor(focused
+            ? LLUIColorTable::instance().getColor("AccentColor")
+            : LLUIColor(LLColor4(0.16f, 0.21f, 0.19f, 1.f)));
+    }
 
+    const F32 width = static_cast<F32>(getRect().getWidth());
+    const F32 height = static_cast<F32>(getRect().getHeight());
+
+    // Screen-space light pools stay smooth at every window size. Keep the
+    // centre quiet for the login form and echo the crystal's facets at the edges.
     gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
-    gGL.begin(LLRender::TRIANGLE_STRIP);
-    gGL.color4f(0.025f, 0.035f, 0.090f, 1.f);
-    gGL.vertex2i(0, 0);
-    gGL.color4f(0.090f, 0.025f, 0.100f, 1.f);
-    gGL.vertex2i(width, 0);
-    gGL.color4f(0.040f, 0.150f, 0.220f, 1.f);
-    gGL.vertex2i(0, height);
-    gGL.color4f(0.180f, 0.080f, 0.210f, 1.f);
-    gGL.vertex2i(width, height);
+    constexpr S32 columns = 48;
+    constexpr S32 rows = 32;
+    const F32 scale = llmax(1.f, height);
+    for (S32 row = 0; row < rows; ++row)
+    {
+        gGL.begin(LLRender::TRIANGLE_STRIP);
+        for (S32 column = 0; column <= columns; ++column)
+        {
+            for (S32 edge = 0; edge < 2; ++edge)
+            {
+                const F32 px = width * column / columns;
+                const F32 py = height * (row + edge) / rows;
+                const F32 x = (px - width * 0.5f) / scale;
+                const F32 y = py / scale;
+                const F32 halo = expf(-5.f * x * x - 12.f * (y - 0.65f) * (y - 0.65f));
+                const F32 sweep = y - 0.68f + 0.22f * x;
+                const F32 emerald = expf(-18.f * sweep * sweep - 0.9f * x * x);
+                const F32 mist = expf(-1.8f * (x + 0.85f) * (x + 0.85f)
+                    - 5.f * (y - 0.9f) * (y - 0.9f));
+                gGL.color4f(0.018f + 0.023f * halo + 0.016f * mist,
+                    0.026f + 0.048f * halo + 0.065f * emerald + 0.022f * mist,
+                    0.029f + 0.039f * halo + 0.038f * emerald + 0.025f * mist, 1.f);
+                gGL.vertex2f(px, py);
+            }
+        }
+        gGL.end();
+    }
+
+    // Broad, barely visible planes give the background depth without competing
+    // with the logo. Coordinates are proportional so ultrawide stays balanced.
+    gGL.begin(LLRender::TRIANGLES);
+    gGL.color4f(0.22f, 0.40f, 0.34f, 0.035f);
+    gGL.vertex2f(0.f, height * 0.14f);
+    gGL.color4f(0.22f, 0.40f, 0.34f, 0.f);
+    gGL.vertex2f(width * 0.37f, height * 0.44f);
+    gGL.color4f(0.22f, 0.40f, 0.34f, 0.025f);
+    gGL.vertex2f(0.f, height * 0.84f);
+    gGL.color4f(0.30f, 0.44f, 0.40f, 0.025f);
+    gGL.vertex2f(width, height * 0.18f);
+    gGL.color4f(0.30f, 0.44f, 0.40f, 0.f);
+    gGL.vertex2f(width * 0.64f, height * 0.56f);
+    gGL.color4f(0.30f, 0.44f, 0.40f, 0.035f);
+    gGL.vertex2f(width, height * 0.92f);
     gGL.end();
 
     LLPanel::draw();
@@ -1341,6 +1388,7 @@ bool LLPanelLogin::onUpdateNotification(const LLSD& notify)
 
 void LLPanelLogin::collapseGridPanel(bool collapse)
 {
+    mLoginStack->setPanelSpacing(collapse ? 0 : 12);
     if (mGridPanel->isCollapsed() == collapse)
     {
         return;

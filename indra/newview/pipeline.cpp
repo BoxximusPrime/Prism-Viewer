@@ -375,6 +375,11 @@ bool addDeferredAttachments(LLRenderTarget& target, bool for_impostor = false)
         emissive = GL_RGB;
     }
 
+    // The skin marker needs more than the two alpha bits of RGB10_A2.
+    if (gSavedSettings.getBOOL("BoxxySSSEnabled") && !for_impostor && !gCubeSnapshot)
+    {
+        norm = GL_RGBA16;
+    }
     bool valid = true;
     valid      = valid && target.addColorAttachment(orm);    // frag-data[1] specular OR PBR ORM
     valid      = valid && target.addColorAttachment(norm);
@@ -908,6 +913,18 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
 
     if (!gCubeSnapshot) // hack to not re-allocate various targets for cube snapshots
     {
+        mSSSDiffuse.release();
+        mSSSScratch.release();
+        if (gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getS32("BoxxySSSMode") >= 1)
+        {
+            if (!mSSSDiffuse.allocate(resX, resY, GL_RGBA16F) ||
+                !mSSSScratch.allocate(resX, resY, GL_RGBA16F))
+            {
+                mSSSDiffuse.release();
+                mSSSScratch.release();
+                LL_WARNS("Render") << "Skin diffusion buffers unavailable; using wrapped skin lighting." << LL_ENDL;
+            }
+        }
         U32 post_color_fmt = gSavedSettings.getBOOL("RenderHighPrecisionPostProcess") ? GL_RGBA16F : GL_RGBA;
 
         if (RenderUIBuffer)
@@ -1223,6 +1240,8 @@ void LLPipeline::releaseGLBuffers()
     mWaterExclusionMask.release();
 
     mPostPingMap.release();
+    mSSSDiffuse.release();
+    mSSSScratch.release();
     mPostPongMap.release();
 
     mFXAAMap.release();
@@ -4018,6 +4037,10 @@ U32 LLPipeline::sCurRenderPoolType = 0 ;
 
 void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
 {
+    if (!gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
+    {
+        mHasSSSGeometry = false;
+    }
     LLAppViewer::instance()->pingMainloopTimeout("Pipeline:RenderGeomDeferred");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL; //LL_RECORD_BLOCK_TIME(FTM_RENDER_GEOMETRY);
     LL_PROFILE_GPU_ZONE("renderGeomDeferred");
@@ -8270,6 +8293,23 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     LLRenderTarget* deferred_light_target = &mRT->deferredLight;
 
     shader.bind();
+    static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
+    static LLCachedControl<S32> sss_mode(gSavedSettings, "BoxxySSSMode", 2);
+    static LLCachedControl<F32> sss_strength(gSavedSettings, "BoxxySSSStrength", 0.90f);
+    static LLCachedControl<F32> sss_warmth(gSavedSettings, "BoxxySSSWarmth", 0.75f);
+    static LLCachedControl<F32> sss_distance(gSavedSettings, "BoxxySSSMaxDistance", 44.f);
+    static const LLStaticHashedString sss_params("sss_params");
+    shader.uniform4f(sss_params,
+        sss_enabled && !gCubeSnapshot && !sImpostorRender ? llclamp(F32(sss_strength), 0.f, 1.f) : 0.f,
+        sss_mode == 1 && !mSSSDiffuse.isComplete() ? 0.f : F32(sss_mode),
+        llclamp(F32(sss_warmth), 0.f, 1.f), llmax(F32(sss_distance), 1.f));
+    static LLCachedControl<F32> sss_wrap(gSavedSettings, "BoxxySSSWrapAmount", 0.65f);
+    static LLCachedControl<F32> sss_transmission(gSavedSettings, "BoxxySSSTransmission", 0.40f);
+    static LLCachedControl<F32> sss_thickness(gSavedSettings, "BoxxySSSThickness", 8.5f);
+    static const LLStaticHashedString sss_lighting("sss_lighting");
+    shader.uniform3f(sss_lighting, llclamp(F32(sss_wrap), 0.f, 1.f),
+        llclamp(F32(sss_transmission), 0.f, 1.f), llclamp(F32(sss_thickness), 0.5f, 20.f));
+
     S32 channel = 0;
     channel = shader.enableTexture(LLShaderMgr::DEFERRED_DIFFUSE, deferred_target->getUsage());
     if (channel > -1)
@@ -8514,6 +8554,10 @@ void LLPipeline::renderDeferredLighting()
     LLRenderTarget *screen_target         = &mRT->screen;
     LLRenderTarget* deferred_light_target = &mRT->deferredLight;
 
+    const bool sss_diffusion = mHasSSSGeometry && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
+        gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getS32("BoxxySSSMode") >= 1 &&
+        gSavedSettings.getF32("BoxxySSSStrength") > 0.f && mSSSDiffuse.isComplete();
+
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("deferred");
         LLViewerCamera *camera = LLViewerCamera::getInstance();
@@ -8635,6 +8679,13 @@ void LLPipeline::renderDeferredLighting()
         }
 
         screen_target->bindTarget();
+        if (sss_diffusion)
+        {
+            // Capture diffuse illumination alongside scene color, only during opaque lighting.
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mSSSDiffuse.getTexture(), 0);
+            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+            glDrawBuffers(2, buffers);
+        }
         // clear color buffer here - zeroing alpha (glow) is important or it will accumulate against sky
         glClearColor(0, 0, 0, 0);
         screen_target->clear(GL_COLOR_BUFFER_BIT);
@@ -8931,6 +8982,29 @@ void LLPipeline::renderDeferredLighting()
         gGL.setColorMask(true, true);
     }
 
+    if (sss_diffusion)
+    {
+        gGL.flush();
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
+        renderSSSDiffusion();
+    }
+
+    if (mHasSSSGeometry && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
+        gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getBOOL("BoxxySSSShowMask"))
+    {
+        LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+        LLGLDisable cull(GL_CULL_FACE);
+        LLGLEnable blend(GL_BLEND);
+        bindDeferredShader(gSSSMaskProgram);
+        gGL.setSceneBlendType(LLRender::BT_ALPHA);
+        gGL.setColorMask(true, false);
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        gGL.setColorMask(true, true);
+        unbindDeferredShader(gSSSMaskProgram);
+    }
+
     {  // render non-deferred geometry (alpha, fullbright, glow)
         LLGLDisable blend(GL_BLEND);
 
@@ -8991,6 +9065,40 @@ void LLPipeline::renderDeferredLighting()
         }
     }
     gGL.setColorMask(true, true);
+}
+
+void LLPipeline::renderSSSDiffusion()
+{
+    LL_PROFILE_GPU_ZONE("Skin diffusion");
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    LLGLDisable cull(GL_CULL_FACE);
+    LLGLDisable blend(GL_BLEND);
+    auto& shader = gSSSDiffusionProgram;
+    bindDeferredShader(shader);
+    static const LLStaticHashedString depth_name("sss_depth");
+    static const LLStaticHashedString pass_name("sss_pass");
+    shader.uniform1f(depth_name, llclamp(gSavedSettings.getF32("BoxxySSSDepth"), 0.001f, 0.03f));
+    shader.bindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP, &mSSSDiffuse, false, LLTexUnit::TFO_POINT);
+
+    mSSSScratch.bindTarget();
+    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSDiffuse, false, LLTexUnit::TFO_POINT);
+    shader.uniform1i(pass_name, 0);
+    mScreenTriangleVB->setBuffer();
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    mSSSScratch.flush(); // restores the screen target; the diffuse attachment is detached
+
+    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSScratch, false, LLTexUnit::TFO_POINT);
+    shader.uniform1i(pass_name, 1);
+    {
+        LLGLEnable additive(GL_BLEND);
+        gGL.setSceneBlendType(LLRender::BT_ADD);
+        gGL.setColorMask(true, false); // preserve scene glow
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        gGL.setColorMask(true, true);
+    }
+    shader.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+    shader.unbindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP);
+    unbindDeferredShader(shader);
 }
 
 void LLPipeline::doAtmospherics()

@@ -24,8 +24,8 @@
 
 	<!-- Default Args - these arguments will be replaced in all strings -->
 	<string name="SECOND_LIFE">Second Life</string>
-	<string name="APP_NAME">Second Life</string>
-	<string name="CAPITALIZED_APP_NAME">SECOND LIFE</string>
+	<string name="APP_NAME">The Prism Viewer</string>
+	<string name="CAPITALIZED_APP_NAME">THE PRISM VIEWER</string>
 	<string name="SECOND_LIFE_GRID">Second Life Grid</string>
 	<string name="SUPPORT_SITE">Second Life Support Portal</string>
 
@@ -4257,7 +4257,7 @@ name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
   <string name="Command_AboutLand_Tooltip">Information about the land you're visiting</string>
   <string name="Command_Appearance_Tooltip">Change your avatar</string>
   <string name="Command_Avatar_Tooltip">Choose a complete avatar</string>
-    <string name="Command_BoxxyAO_Tooltip">Open the Boxxy animation overrider</string>
+    <string name="Command_BoxxyAO_Tooltip">Open the Prism animation overrider</string>
   <string name="Command_BoxxyRadar_Tooltip">Show VIP, near, and far avatars</string>
   <string name="Command_BoxxyTPose_Tooltip">Open the T-Pose animation floater</string>
   <string name="Command_Build_Tooltip">Building objects and reshaping terrain</string>

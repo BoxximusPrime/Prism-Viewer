@@ -2,6 +2,138 @@
 <llsd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="llsd.xsd">
 <map>
+  <key>BoxxySSSEnabled</key>
+  <map>
+    <key>Comment</key>
+    <string>Enable subsurface-scattering skin lighting for tagged surfaces.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
+  <key>BoxxySSSAutoDetect</key>
+  <map>
+    <key>Comment</key>
+    <string>Automatically apply skin scattering to mesh attachments whose linkset root name matches a whitelist term.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
+  <key>BoxxySSSWhitelist</key>
+  <map>
+    <key>Comment</key>
+    <string>Comma-separated, case-insensitive substrings for automatic mesh attachment skin scattering.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>String</string>
+    <key>Value</key>
+    <string>body, head, hands, feet, ear, ears</string>
+  </map>
+  <key>BoxxySSSShowMask</key>
+  <map>
+    <key>Comment</key>
+    <string>Highlight surfaces currently affected by skin scattering.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>BoxxySSSMode</key>
+  <map>
+    <key>Comment</key>
+    <string>Skin scattering mode: 0 uses wrapped lighting, 1 uses screen diffusion, and 2 combines diffusion, wrap, and thickness-based transmission.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>S32</string>
+    <key>Value</key>
+    <integer>2</integer>
+  </map>
+  <key>BoxxySSSStrength</key>
+  <map>
+    <key>Comment</key>
+    <string>Strength of subsurface-scattering skin lighting.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>0.90</real>
+  </map>
+  <key>BoxxySSSDepth</key>
+  <map>
+    <key>Comment</key>
+    <string>Screen-space skin diffusion radius in meters.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>0.011</real>
+  </map>
+  <key>BoxxySSSWarmth</key>
+  <map>
+    <key>Comment</key>
+    <string>Warmth of the subsurface-scattering color response.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>0.75</real>
+  </map>
+  <key>BoxxySSSMaxDistance</key>
+  <map>
+    <key>Comment</key>
+    <string>Maximum camera distance in meters for subsurface-scattering skin lighting.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>44.0</real>
+  </map>
+  <key>BoxxySSSWrapAmount</key>
+  <map>
+    <key>Comment</key>
+    <string>Additional wrapped lighting in Combined skin scattering mode.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>0.65</real>
+  </map>
+  <key>BoxxySSSTransmission</key>
+  <map>
+    <key>Comment</key>
+    <string>Directional backlighting strength in Combined skin scattering mode.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>0.40</real>
+  </map>
+  <key>BoxxySSSThickness</key>
+  <map>
+    <key>Comment</key>
+    <string>Estimated optical skin thickness in millimeters, tapered toward silhouettes. An artistic fallback, not measured mesh thickness.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>8.5</real>
+  </map>
   <key>BoxxyShowNowPlaying</key>
   <map>
     <key>Comment</key>
@@ -40,7 +172,7 @@
     <key>Type</key>
     <string>Boolean</string>
     <key>Value</key>
-    <integer>0</integer>
+    <integer>1</integer>
   </map>
   <key>SimplifyProfileText</key>
   <map>
@@ -51,7 +183,7 @@
     <key>Type</key>
     <string>Boolean</string>
     <key>Value</key>
-    <integer>0</integer>
+    <integer>1</integer>
   </map>
   <key>ImporterDebugVerboseLogging</key>
   <map>
@@ -274,7 +406,7 @@
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
-      <integer>1</integer>
+      <integer>0</integer>
     </map>
     <key>ApplyColorImmediately</key>
     <map>
@@ -1603,7 +1735,7 @@
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>0.5</real>
+      <real>0.65</real>
     </map>
     <key>ChatFontSize</key>
     <map>
@@ -2881,7 +3013,7 @@
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
-      <integer>0</integer>
+      <integer>1</integer>
     </map>
     <key>FirstRunThisInstall</key>
     <map>
@@ -8778,7 +8910,7 @@
       <key>Type</key>
       <string>U32</string>
       <key>Value</key>
-      <integer>0</integer>
+      <integer>2</integer>
     </map>
     <key>RenderFarClip</key>
     <map>
@@ -8789,7 +8921,7 @@
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>256.0</real>
+      <real>128.0</real>
     </map>
     <key>RenderAutoMaskAlphaNonDeferred</key>
     <map>
@@ -11637,7 +11769,7 @@
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
-      <integer>0</integer>
+      <integer>1</integer>
     </map>
     <key>ShowTangentBasis</key>
     <map>
@@ -16500,7 +16632,7 @@
     <key>Type</key>
     <string>Boolean</string>
     <key>Value</key>
-    <integer>0</integer>
+    <integer>1</integer>
   </map>
   <key>BoxxyPreventLeftClickActions</key>
   <map>
@@ -16511,7 +16643,7 @@
     <key>Type</key>
     <string>Boolean</string>
     <key>Value</key>
-    <integer>0</integer>
+    <integer>1</integer>
   </map>
   <key>BoxxyTurnToSelected</key>
   <map>
@@ -16808,7 +16940,7 @@
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
-      <integer>1</integer>
+      <integer>0</integer>
     </map>
     <key>ShowLookAtTargets</key>
     <map>

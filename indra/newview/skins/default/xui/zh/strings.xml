@@ -3,12 +3,8 @@
 	<string name="SECOND_LIFE">
 		第二人生
 	</string>
-	<string name="APP_NAME">
-		第二人生
-	</string>
-	<string name="CAPITALIZED_APP_NAME">
-		第二人生
-	</string>
+	<string name="APP_NAME">The Prism Viewer</string>
+	<string name="CAPITALIZED_APP_NAME">THE PRISM VIEWER</string>
 	<string name="SECOND_LIFE_GRID">
 		第二人生網格
 	</string>

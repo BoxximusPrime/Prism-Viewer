@@ -68,7 +68,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_VISIBLE
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDI_LL_ICON,IDC_STATIC,7,7,20,20
-    LTEXT           "Loading Second Life...",666,36,13,211,8
+    LTEXT           "Loading Prism...",666,36,13,211,8
 END
 
 
@@ -153,13 +153,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Linden Lab"
-            VALUE "FileDescription", "Second Life"
+            VALUE "CompanyName", "Prism Viewer contributors"
+            VALUE "FileDescription", "The Prism Viewer"
             VALUE "FileVersion", "${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}"
-            VALUE "InternalName", "Second Life"
+            VALUE "InternalName", "PrismViewer"
             VALUE "LegalCopyright", "Copyright (c) 2026, Linden Research, Inc."
-            VALUE "OriginalFilename", "SecondLife.exe"
-            VALUE "ProductName", "Second Life"
+            VALUE "OriginalFilename", "secondlife-bin.exe"
+            VALUE "ProductName", "The Prism Viewer"
             VALUE "ProductVersion", "${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}"
         END
     END

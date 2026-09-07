@@ -29,7 +29,7 @@ def save_ico(path: Path, master: Image.Image) -> None:
 
 
 def save_bmp(path: Path, master: Image.Image) -> None:
-    background = Image.new("RGB", (256, 256), "#11182b")
+    background = Image.new("RGB", (256, 256), "#0a100e")
     icon = master.resize((256, 256), Image.Resampling.LANCZOS)
     background.paste(icon, mask=icon.getchannel("A"))
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,6 +122,9 @@ def main() -> None:
         ROOT / "indra/newview/installers/darwin/release-dmg/_VolumeIcon.icns",
     ):
         save_icns(path, master)
+
+    if "--icons-only" in sys.argv[2:]:
+        return
 
     master.save(WINDOW_TEXTURES / "startup_logo.png")
     save_logo_in_canvas(WINDOW_TEXTURES / "login_sl_logo.png", (225, 94), master)

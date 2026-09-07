@@ -337,7 +337,7 @@
   border="false"
   follows="all"
   height="380"
-  label="Boxxy Options"
+  label="Prism Options"
   layout="topleft"
   name="boxxy_options"
   width="515">

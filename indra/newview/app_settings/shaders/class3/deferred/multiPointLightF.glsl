@@ -25,7 +25,8 @@
 
 /*[EXTRA_CODE_HERE]*/
 
-out vec4 frag_color;
+layout(location = 0) out vec4 frag_color;
+layout(location = 1) out vec4 sss_diffuse;
 
 uniform sampler2D     lightFunc;
 
@@ -64,6 +65,11 @@ void pbrPunctual(vec3 diffuseColor, vec3 specularColor,
                     out vec3 spec);
 
 GBufferInfo getGBuffer(vec2 screenpos);
+float getSSSStrength(float mask, vec3 positionEye);
+bool useSSSWrappedDiffuse(float strength);
+bool useSSSScreenDiffusion(float strength);
+vec3 getSSSDiffuseFactor(float nl, float strength);
+vec3 getSSSTransmission(float nl, float nv, float strength);
 
 void main()
 {
@@ -76,6 +82,9 @@ void main()
     }
 
     GBufferInfo gb = getGBuffer(tc);
+    float sssStrength = getSSSStrength(gb.sss, pos);
+    float wrapStrength = useSSSWrappedDiffuse(sssStrength) ? sssStrength : 0.0;
+    vec3 diffuseLighting = vec3(0.0);
 
     vec3 n = gb.normal;
 
@@ -120,7 +129,19 @@ void main()
                 vec3 diff = vec3(0);
                 vec3 specPunc = vec3(0);
                 pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, lv, nl, diff, specPunc);
-                final_color += intensity * clamp(nl * (diff + specPunc), vec3(0), vec3(10));
+                float diffuseNl = wrapStrength > 0.0 ? dot(n, lv) : nl;
+                vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
+                vec3 transmitted = getSSSTransmission(diffuseNl, dot(n, v), wrapStrength) * diffuseColor / 3.14159265;
+                vec3 lightDiffuse = intensity * clamp(diffuseFactor * diff + transmitted, vec3(0), vec3(10));
+                diffuseLighting += lightDiffuse;
+                if (wrapStrength > 0.0)
+                {
+                    final_color += lightDiffuse + intensity * clamp(nl * specPunc, vec3(0), vec3(10));
+                }
+                else
+                {
+                    final_color += intensity * clamp(nl * (diff + specPunc), vec3(0), vec3(10));
+                }
             }
         }
     }
@@ -137,20 +158,26 @@ void main()
             dist /= light[i].w;
             if (dist <= 1.0)
             {
-                float nl = dot(n, lv);
-                if (nl > 0.0)
+                float rawNl = dot(n, normalize(lv));
+                if (rawNl > 0.0 || wrapStrength > 0.0)
                 {
+                    float nl = rawNl;
                     float lightDist;
                     calcHalfVectors(lv, n, v, h, l, nh, nl, nv, vh, lightDist);
 
                     float fa         = light_col[i].a;
                     float dist_atten = calcLegacyDistanceAttenuation(dist, fa);
 
-                    float lit = nl * dist_atten;
+                    float diffuseNl = wrapStrength > 0.0 ? rawNl : nl;
+                    vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
+                    diffuseFactor += getSSSTransmission(diffuseNl, dot(n, v), wrapStrength);
+                    float lit = max(nl, 0.0) * dist_atten;
 
-                    vec3 col = light_col[i].rgb * lit * diffuse;
+                    vec3 lightDiffuse = light_col[i].rgb * diffuseFactor * dist_atten * diffuse;
+                    vec3 col = lightDiffuse;
+                    diffuseLighting += lightDiffuse;
 
-                    if (spec.a > 0.0)
+                    if (spec.a > 0.0 && nl > 0.0)
                     {
                         lit        = min(nl * 6.0, 1.0) * dist_atten;
                         float fres = pow(1 - vh, 5) * 0.4 + 0.5;
@@ -175,6 +202,11 @@ void main()
         final_scale = 0.9;
     frag_color.rgb = max(final_color * final_scale, vec3(0));
     frag_color.a   = 0.0;
+    sss_diffuse = vec4(0.0);
+    if (useSSSScreenDiffusion(sssStrength))
+    {
+        sss_diffuse.rgb = diffuseLighting * final_scale;
+    }
 
 #ifdef IS_AMD_CARD
     // If it's AMD make sure the GLSL compiler sees the arrays referenced once by static index. Otherwise it seems to optimise the storage

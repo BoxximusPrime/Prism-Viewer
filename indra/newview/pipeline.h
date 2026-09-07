@@ -724,6 +724,10 @@ public:
     RenderTargetPack* mRT;
 
     LLRenderTarget          mSpotShadow[2];
+    bool                    mHasSSSGeometry = false;
+    LLRenderTarget          mSSSDiffuse;
+    LLRenderTarget          mSSSScratch;
+    void renderSSSDiffusion();
 
     LLRenderTarget          mPbrBrdfLut;
     LLRenderTarget          mWaterExclusionMask;

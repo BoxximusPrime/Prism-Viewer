@@ -25,7 +25,8 @@
 
 /*[EXTRA_CODE_HERE]*/
 
-out vec4 frag_color;
+layout(location = 0) out vec4 frag_color;
+layout(location = 1) out vec4 sss_diffuse;
 
 uniform samplerCube environmentMap;
 uniform sampler2D lightMap;
@@ -89,6 +90,11 @@ void pbrPunctual(vec3 diffuseColor, vec3 specularColor,
                     out vec3 spec);
 
 GBufferInfo getGBuffer(vec2 screenpos);
+float getSSSStrength(float mask, vec3 positionEye);
+bool useSSSWrappedDiffuse(float strength);
+bool useSSSScreenDiffusion(float strength);
+vec3 getSSSDiffuseFactor(float nl, float strength);
+vec3 getSSSTransmission(float nl, float nv, float strength);
 
 void main()
 {
@@ -122,6 +128,9 @@ void main()
     }
 
     GBufferInfo gb = getGBuffer(tc);
+    float sssStrength = getSSSStrength(gb.sss, pos);
+    float wrapStrength = useSSSWrappedDiffuse(sssStrength) ? sssStrength : 0.0;
+    vec3 diffuseLighting = vec3(0.0);
 
     vec3 n = gb.normal;
 
@@ -135,6 +144,7 @@ void main()
     vec3  h, l, v = -normalize(pos);
     float nh, nl, nv, vh, lightDist;
     calcHalfVectors(lv, n, v, h, l, nh, nl, nv, vh, lightDist);
+    float rawNl = dot(n, normalize(lv));
 
     vec3 diffuse = gb.albedo.rgb;
     vec4 spec    = gb.specular;
@@ -157,6 +167,7 @@ void main()
         vec3 specularColor = mix(f0, baseColor.rgb, metallic);
         vec3 diffPunc = vec3(0);
         vec3 specPunc = vec3(0);
+        float geometricNl = rawNl;
 
         // We need this additional test inside a light's frustum since a spotlight's ambiance can be applied
         if (proj_tc.x > 0.0 && proj_tc.x < 1.0
@@ -167,23 +178,54 @@ void main()
 
             lv = normalize(lv);
 
-            if (nl > 0.0)
+            if (nl > 0.0 || wrapStrength > 0.0)
             {
-                amb_da += (nl*0.5 + 0.5) * proj_ambiance;
+                if (nl > 0.0)
+                {
+                    amb_da += (nl*0.5 + 0.5) * proj_ambiance;
+                }
 
                 dlit = getProjectedLightDiffuseColor( l_dist, proj_tc.xy );
 
                 vec3 intensity = dist_atten * dlit * 3.25 * shadow; // Legacy attenuation, magic number to balance with legacy materials
 
-                pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, normalize(lv), nl, diffPunc, specPunc);
+                float punctualNl = 0.0;
+                pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic,
+                            n.xyz, v, normalize(lv), punctualNl, diffPunc, specPunc);
 
-                final_color += intensity * clamp(nl * (diffPunc + specPunc), vec3(0), vec3(10));
+                float diffuseNl = wrapStrength > 0.0 ? geometricNl : punctualNl;
+                vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
+                vec3 transmitted = getSSSTransmission(diffuseNl, dot(n, v), wrapStrength) * diffuseColor / 3.14159265;
+                vec3 lightDiffuse = intensity * clamp(diffuseFactor * diffPunc + transmitted, vec3(0), vec3(10));
+                diffuseLighting += lightDiffuse;
+                if (wrapStrength > 0.0)
+                {
+                    final_color += lightDiffuse + intensity * clamp(punctualNl * specPunc, vec3(0), vec3(10));
+                }
+                else
+                {
+                    final_color += intensity * clamp(punctualNl * (diffPunc + specPunc), vec3(0), vec3(10));
+                }
             }
 
-            amb_rgb = getProjectedLightAmbiance( amb_da, dist_atten, lit, nl, 1.0, proj_tc.xy ) * 3.25; //magic number to balance with legacy ambiance
-            pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, normalize(lv), nl, diffPunc, specPunc);
+            float ambianceInputNl = nl;
+            amb_rgb = getProjectedLightAmbiance( amb_da, dist_atten, lit, ambianceInputNl, 1.0, proj_tc.xy ) * 3.25; //magic number to balance with legacy ambiance
+            float ambiancePbrNl = 0.0;
+            pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic,
+                        n.xyz, v, normalize(lv), ambiancePbrNl, diffPunc, specPunc);
 
-            final_color += amb_rgb * clamp(nl * (diffPunc + specPunc), vec3(0), vec3(10));
+            float ambianceNl = wrapStrength > 0.0 ? geometricNl : ambiancePbrNl;
+            vec3 ambianceFactor = getSSSDiffuseFactor(ambianceNl, wrapStrength);
+            vec3 ambianceDiffuse = amb_rgb * clamp(ambianceFactor * diffPunc, vec3(0), vec3(10));
+            diffuseLighting += ambianceDiffuse;
+            if (wrapStrength > 0.0)
+            {
+                final_color += ambianceDiffuse + amb_rgb * clamp(ambiancePbrNl * specPunc, vec3(0), vec3(10));
+            }
+            else
+            {
+                final_color += amb_rgb * clamp(ambiancePbrNl * (diffPunc + specPunc), vec3(0), vec3(10));
+            }
         }
     }
     else
@@ -202,23 +244,32 @@ void main()
             float amb_da = 0;
             float lit = 0.0;
 
-            if (nl > 0.0)
+            if (nl > 0.0 || wrapStrength > 0.0)
             {
-                lit = nl * dist_atten;
+                lit = max(nl, 0.0) * dist_atten;
 
                 dlit = getProjectedLightDiffuseColor( l_dist, proj_tc.xy );
 
-                final_color = dlit*lit*diffuse*shadow;
+                float diffuseNl = wrapStrength > 0.0 ? rawNl : nl;
+                vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
+                diffuseFactor += getSSSTransmission(diffuseNl, dot(n, v), wrapStrength);
+                vec3 lightDiffuse = dlit * diffuseFactor * dist_atten * diffuse * shadow;
+                diffuseLighting += lightDiffuse;
+                final_color = lightDiffuse;
 
                 // unshadowed for consistency between forward and deferred?
                 amb_da += (nl*0.5+0.5) /* * (1.0-shadow) */ * proj_ambiance;
             }
 
             amb_rgb = getProjectedLightAmbiance( amb_da, dist_atten, lit, nl, 1.0, proj_tc.xy );
-            final_color += diffuse.rgb * amb_rgb * max(dot(-normalize(lv), n), 0.0);
+            float ambianceNl = dot(-normalize(lv), n);
+            vec3 ambianceFactor = getSSSDiffuseFactor(ambianceNl, wrapStrength);
+            vec3 ambianceDiffuse = diffuse.rgb * amb_rgb * ambianceFactor;
+            diffuseLighting += ambianceDiffuse;
+            final_color += ambianceDiffuse;
         }
 
-        if (spec.a > 0.0)
+        if (spec.a > 0.0 && nl > 0.0)
         {
             dlit *= min(nl*6.0, 1.0) * dist_atten;
 
@@ -274,4 +325,9 @@ void main()
     //output linear
     frag_color.rgb = final_color * final_scale;
     frag_color.a = 0.0;
+    sss_diffuse = vec4(0.0);
+    if (useSSSScreenDiffusion(sssStrength))
+    {
+        sss_diffuse.rgb = diffuseLighting * final_scale;
+    }
 }

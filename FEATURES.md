@@ -1,16 +1,22 @@
-# BoxxyViewer Feature Inventory
+# Prism Feature Inventory
 
-This document tracks major features and user-facing customizations added to BoxxyViewer beyond the official Second Life viewer.
+This document tracks major features and user-facing customizations added to Prism beyond the official Second Life viewer.
 
-The committed feature list is based on the differences from the `upstream/develop` branch, the BoxxyViewer commit history, and related development notes. Current uncommitted changes may include additional work in progress and should not be treated as final until committed.
+The committed feature list is based on the differences from the `upstream/develop` branch, the Prism commit history, and related development notes. Current uncommitted changes may include additional work in progress and should not be treated as final until committed.
 
-## BoxxyViewer-specific systems
+## Prism-specific systems
+
+- First-run defaults: translation and sending look targets off, gesture sounds on, all available toolbar buttons present, 540×480 DM floaters, and green/brown name-tag chat ranges. Window title is `Prism`, then `Prism - <account name>` after login. Privacy labels use “Send My Look Targets” and “Show Look Targets”. (in progress; updated installer testing pending)
+
+- Redesigned login with the neutral crystal-to-wireframe Prism logo, an emerald/charcoal backdrop and a compact rounded login card in its established position, flat fields and full-width focus outlines. (in progress; verified in Release at ultrawide and windowed sizes)
+
+- Prism product branding, separate Prism settings/cache directories and Windows installer identity; uninstall preserves preferences. Existing Boxxy AO inventory folders and saved setting keys remain compatible. (in progress; Windows Release installer built for initial testing, install/uninstall verification pending)
 
 - Bundled UI sounds for opening floaters, buttons, floater focus changes, and checkboxes, using the existing UI audio controls. (in progress)
 - Bundled incoming-IM sound, per-message DM sound defaults, Click 2 on already-focused floater clicks, and single-sound floater closing without extra button/focus cues. (in progress)
 
-- Boxxy Animation Overrider (AO), including animation sets, inventory-backed configuration, per-account persistence, a toolbar enable checkbox plus configuration button (in progress), and animation synchronization improvements.
-- Boxxy Radar, including full and compact radar floaters, near/far avatar grouping, distance display, search, radar options, toolbar integration, and automatic display behavior.
+- Prism Animation Overrider (AO), including animation sets, inventory-backed configuration, per-account persistence, a toolbar enable checkbox plus configuration button (in progress), animation synchronization improvements, Firestorm set-folder import/export preserving standard state options, and ZHAO-II/Oracul notecard import with ZHAO-II notecard export. Transfers create new inventory links; unsupported groups/tracks and states are reported. (in progress; transfer interoperability awaiting in-world verification)
+- Prism Radar, including full and compact radar floaters, near/far avatar grouping, distance display, search, radar options, toolbar integration, and automatic display behavior.
 - Minimalist radar with shadowed text, remembered position, Shift-only dragging, safe click-through without Shift, and protection from Ctrl+W closing. (in progress)
 - Radar VIP matching with fuzzy configured-name matching.
 - Radar friend highlighting, typing indicators, and muted/blocked-avatar display.
@@ -44,12 +50,14 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Avatar and world interaction
 
+- `[sss]` linkset-description skin lighting for tagged surfaces and test prims (attachment-name fallback), editable comma-separated mesh body-part whitelist with case-insensitive substring matching across nearby avatars and affected-surface highlighting, with wrapped lighting, screen diffusion, or a Combined mode adding adjustable wrap and directional transmission with estimated thickness; controls under Graphics > Skin Scattering. Supports opaque and alpha-masked surfaces, excluding the default avatar mesh. Remote detection uses rendered attachment positions, refreshes draw batches when names arrive, uses full attachment-property requests with transient-selection cleanup, and bounds metadata queue work. Enabled by default with the tuned Combined preset; the Skin Scattering tab scrolls to fit whitelist controls. (in progress; default and whitelist changes awaiting in-world verification)
 - Nearby-avatar worn-attachments inspector with attachment points, attachment names, and linked creator profiles. (in progress)
 - Avatar look-at crosshairs with visible avatar names.
 - Correct 3D-depth rendering for look-at crosshairs.
 - Typing indicators integrated into avatar/radar presentation.
 - Camera movement and zoom-limit changes.
-- Avatar animation synchronization improvements.
+- Avatar animation synchronization improvements; enabled by default. (in progress)
+- Tuned first-run preferences: start-location selector, mouselook body, readable profile text, translation after provider setup, gesture muting, group-invite suppression and left-click action blocking enabled; appearance camera movement disabled; 128 m draw distance, SMAA and 0.65 chat bubble opacity, with a softer sage/gray/pink chat palette and green/slate IM bubbles. Existing saved choices and hardware graphics presets still take precedence. (in progress)
 - T-Pose toolbar floater with Firestorm pose choices and temporary built-in AO suspension, restoring the prior enabled state when closed. (in progress)
 - Attachment visibility and rendering adjustments.
 - Animation-stable avatar nameplate positioning with avatar-relative height. (in progress)
@@ -82,11 +90,11 @@ The committed feature list is based on the differences from the `upstream/develo
 ## Interface and preferences
 
 - Session Money Log floater for successful incoming and outgoing L$ transactions, with counterparties, transaction context, timestamps, live "seconds ago" ages, and clearing. (in progress)
-- Dedicated BoxxyViewer preferences panel.
+- Dedicated Prism preferences panel.
 - Preference to prevent left-click world-object actions while retaining action cursors. (in progress; runtime verification pending)
 - Notification list timestamps display live relative ages. (in progress; runtime verification pending)
 - Toolbar commands for AO, radar, and translation.
-- Login-screen redesign and Boxxy cube branding across application, taskbar, installer, startup, and login surfaces; larger login cube, consistently sized location dropdown, and accent-green login button. (in progress)
+- Crystal-to-wireframe Prism application and taskbar icons, Windows installer icons, and Mac/Linux icon sets, with flat white vertices and edges for contrast and transparent multi-resolution assets. (in progress; installer and other-platform verification pending)
 - Custom fonts and font configuration.
 - Customized modal, floater, toast, scrollbar, button, tab, themed single- and multiline text fields, unified green accent states, and chat styling (multiline refresh in progress; tab and accent refresh in progress).
 - Subtle hover gradient on floater backgrounds (in progress).

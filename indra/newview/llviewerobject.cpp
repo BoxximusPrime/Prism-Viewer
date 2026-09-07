@@ -288,6 +288,10 @@ LLViewerObject::LLViewerObject(const LLUUID &id, const LLPCode pcode, LLViewerRe
     mInvRequestState(INVENTORY_REQUEST_STOPPED),
     mInvRequestXFerId(0),
     mInventoryDirty(false),
+    mObjectDescription(),
+    mObjectDescriptionValid(false),
+    mObjectName(),
+    mObjectNameValid(false),
     mRegionp(regionp),
     mDead(false),
     mOrphaned(false),
@@ -7640,6 +7644,42 @@ const std::string& LLViewerObject::getAttachmentItemName() const
         return item->getName();
     }
     return empty;
+}
+
+void LLViewerObject::setCachedObjectDescription(const std::string& description)
+{
+    const bool changed = !mObjectDescriptionValid || mObjectDescription != description;
+    mObjectDescription = description;
+    mObjectDescriptionValid = true;
+
+    if (changed)
+    {
+        // A description marker can change the render batch this object belongs
+        // to, so rebuild its draw info when fresh properties arrive.
+        markDescriptionRenderStateChanged();
+    }
+}
+
+void LLViewerObject::setCachedObjectName(const std::string& name)
+{
+    const bool changed = !mObjectNameValid || mObjectName != name;
+    mObjectName = name;
+    mObjectNameValid = true;
+    if (changed)
+    {
+        markDescriptionRenderStateChanged();
+    }
+}
+
+void LLViewerObject::markDescriptionRenderStateChanged()
+{
+    // New metadata can split or merge SSS batches. REBUILD_ALL only dirties the
+    // mesh here; GEOM_DIRTY is required to regenerate LLDrawInfo and its flags.
+    dirtySpatialGroup();
+    for (LLPointer<LLViewerObject>& child : mChildList)
+    {
+        child->markDescriptionRenderStateChanged();
+    }
 }
 
 //virtual

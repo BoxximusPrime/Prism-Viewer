@@ -30,7 +30,10 @@
 
 #include "llvovolume.h"
 
+#include <deque>
 #include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "llviewercontrol.h"
 #include "lldir.h"
@@ -106,6 +109,73 @@ LLPointer<LLObjectMediaDataClient> LLVOVolume::sObjectMediaClient = NULL;
 LLPointer<LLObjectMediaNavigateClient> LLVOVolume::sObjectMediaNavigateClient = NULL;
 
 extern bool gCubeSnapshot;
+
+namespace
+{
+struct SSSPropertyRequest
+{
+    LLUUID mObjectID;
+    LLUUID mRelevanceObjectID;
+    F64 mNotBefore = 0.0;
+    U8 mAttempts = 0;
+};
+
+std::deque<SSSPropertyRequest> sSSSPropertyRequests;
+std::unordered_set<LLUUID> sSSSQueuedObjectIDs;
+F64 sNextSSSPropertyRequestTime = 0.0;
+std::unordered_map<LLUUID, F64> sSSSTransientSelections;
+
+void sendSSSSelection(LLViewerObject* object, bool select)
+{
+    gMessageSystem->newMessageFast(select ? _PREHASH_ObjectSelect : _PREHASH_ObjectDeselect);
+    gMessageSystem->nextBlockFast(_PREHASH_AgentData);
+    gMessageSystem->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
+    gMessageSystem->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
+    gMessageSystem->nextBlockFast(_PREHASH_ObjectData);
+    gMessageSystem->addU32Fast(_PREHASH_ObjectLocalID, object->getLocalID());
+    gMessageSystem->sendReliable(object->getRegion()->getHost());
+}
+
+bool hasSSSTag(std::string value)
+{
+    LLStringUtil::toLower(value);
+    return value.find("[sss]") != std::string::npos;
+}
+
+bool matchesSSSWhitelist(std::string name)
+{
+    static LLCachedControl<std::string> whitelist(gSavedSettings, "BoxxySSSWhitelist");
+    static std::string cached_setting;
+    static std::vector<std::string> terms;
+    const std::string& setting = whitelist;
+    if (setting != cached_setting)
+    {
+        cached_setting = setting;
+        terms = LLStringUtil::getTokens(setting, ",");
+        for (std::string& term : terms)
+        {
+            LLStringUtil::trim(term);
+            LLStringUtil::toLower(term);
+        }
+    }
+    LLStringUtil::toLower(name);
+    for (const std::string& term : terms)
+    {
+        if (!term.empty() && name.find(term) != std::string::npos)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isUsableSSSDescription(std::string value)
+{
+    LLStringUtil::trim(value);
+    LLStringUtil::toLower(value);
+    return !value.empty() && value != "(no description)";
+}
+}
 
 // Implementation class of LLMediaDataClientObject.  See llmediadataclient.h
 class LLMediaDataClientObjectImpl : public LLMediaDataClientObject
@@ -724,6 +794,21 @@ void LLVOVolume::updateTextures()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
     updateTextureVirtualSize();
+
+    static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
+    if (sss_enabled && isVisible() && !isHUDAttachment() && mSSSUpdateTimer.getElapsedTimeF32() >= 1.f)
+    {
+        mSSSUpdateTimer.reset();
+        const bool state_initialized = mSSSStateInitialized;
+        const bool previous_state = mLastSSSState;
+        const bool enabled = isSSSEnabled();
+        if (state_initialized && enabled != previous_state && mDrawable.notNull())
+        {
+            // The SSS flag belongs to draw batches. Updating vertex data alone
+            // leaves existing batches with the previous eligibility flag.
+            dirtySpatialGroup();
+        }
+    }
 }
 
 bool LLVOVolume::isVisible() const
@@ -3663,6 +3748,77 @@ bool LLVOVolume::isMesh() const
     return false;
 }
 
+bool LLVOVolume::isSSSEnabled() const
+{
+    const auto remember_state = [this](bool enabled)
+    {
+        mSSSStateInitialized = true;
+        mLastSSSState = enabled;
+        return enabled;
+    };
+
+    const LLViewerObject* linkset_root = getRootEdit();
+    if (isHUDAttachment() || (linkset_root && linkset_root->isHUDAttachment()))
+    {
+        return remember_state(false);
+    }
+
+    const bool own_description_available = hasCachedObjectDescription();
+    const bool root_description_available = linkset_root && linkset_root->hasCachedObjectDescription();
+    if ((own_description_available && hasSSSTag(getCachedObjectDescription())) ||
+        (root_description_available && hasSSSTag(linkset_root->getCachedObjectDescription())))
+    {
+        // Explicit tags also work on prims, which makes the effect easy to test.
+        return remember_state(true);
+    }
+
+    static LLCachedControl<bool> auto_detect(gSavedSettings, "BoxxySSSAutoDetect", true);
+    const bool detect_name = auto_detect && isMesh() && linkset_root && linkset_root->isAttachment();
+    const bool root_name_available = linkset_root && linkset_root->hasCachedObjectName();
+    const std::string attachment_name = linkset_root ? linkset_root->getAttachmentItemName() : LLStringUtil::null;
+    bool automatic_match = false;
+    if (detect_name)
+    {
+        // The in-world root name works for other avatars and no-mod linksets.
+        // Local inventory is an immediate fallback while root properties load.
+        std::string name = root_name_available ? linkset_root->getCachedObjectName() : attachment_name;
+        automatic_match = matchesSSSWhitelist(name);
+    }
+
+    if (!own_description_available || !root_description_available || (detect_name && !root_name_available))
+    {
+        static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
+        static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 44.f);
+        const bool request_relevant = sss_enabled && isVisible() &&
+            (LLViewerCamera::instance().getOrigin() - getRenderPosition()).magVec() <=
+                llmax(F32(sss_max_distance), 1.f);
+        if (getRegion() && request_relevant)
+        {
+            if (linkset_root && (!root_description_available || (detect_name && !root_name_available)) &&
+                sSSSQueuedObjectIDs.insert(linkset_root->getID()).second)
+            {
+                if (detect_name && !root_name_available)
+                {
+                    // Identify nearby bodies before background prim-description queries.
+                    sSSSPropertyRequests.push_front({ linkset_root->getID(), getID() });
+                }
+                else
+                {
+                    sSSSPropertyRequests.push_back({ linkset_root->getID(), getID() });
+                }
+            }
+            if (!own_description_available && sSSSQueuedObjectIDs.insert(getID()).second)
+            {
+                sSSSPropertyRequests.push_back({ getID(), getID() });
+            }
+        }
+    }
+
+    const bool own_description_usable = own_description_available && isUsableSSSDescription(getCachedObjectDescription());
+    const bool root_description_usable = root_description_available && isUsableSSSDescription(linkset_root->getCachedObjectDescription());
+    return remember_state(automatic_match || (!own_description_usable && !root_description_usable && hasSSSTag(attachment_name)));
+}
+
 bool LLVOVolume::hasLightTexture() const
 {
     if (getLightImageParams())
@@ -4487,6 +4643,94 @@ U32 LLVOVolume::getHighLODTriangleCount()
 void LLVOVolume::preUpdateGeom()
 {
     sNumLODChanges = 0;
+
+    static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
+    static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 44.f);
+    const F64 now = LLFrameTimer::getElapsedSeconds();
+    // Release simulator-only selections after their full properties arrive, or
+    // on timeout. Always clean up, including after the user disables SSS.
+    for (auto it = sSSSTransientSelections.begin(); it != sSSSTransientSelections.end(); )
+    {
+        LLViewerObject* object = gObjectList.findObject(it->first);
+        if (!object || object->isDead() || !sss_enabled || now >= it->second ||
+            (object->hasCachedObjectName() && object->hasCachedObjectDescription()))
+        {
+            if (object && !object->isDead() && object->getRegion() && !object->isSelected())
+            {
+                sendSSSSelection(object, false);
+            }
+            it = sSSSTransientSelections.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    if (!sss_enabled || now < sNextSSSPropertyRequestTime)
+    {
+        return;
+    }
+
+    // Bound both network traffic and queue maintenance in crowded scenes. An
+    // attachment's object position may be joint-local; use its rendered position.
+    sNextSSSPropertyRequestTime = now + 0.1;
+    const size_t requests_to_check = llmin(sSSSPropertyRequests.size(), size_t(64));
+    for (size_t i = 0; i < requests_to_check; ++i)
+    {
+        SSSPropertyRequest request = sSSSPropertyRequests.front();
+        sSSSPropertyRequests.pop_front();
+
+        LLViewerObject* object = gObjectList.findObject(request.mObjectID);
+        LLVOVolume* volume = dynamic_cast<LLVOVolume*>(object);
+        if (!volume || volume->isDead() || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))
+        {
+            sSSSQueuedObjectIDs.erase(request.mObjectID);
+            continue;
+        }
+
+        LLViewerObject* relevance_object = gObjectList.findObject(request.mRelevanceObjectID);
+        LLVOVolume* relevance_volume = dynamic_cast<LLVOVolume*>(relevance_object);
+        const bool relevant = volume->getRegion() && relevance_volume &&
+            !relevance_volume->isDead() && relevance_volume->isVisible() &&
+            (LLViewerCamera::instance().getOrigin() - relevance_volume->getRenderPosition()).magVec() <=
+                llmax(F32(sss_max_distance), 1.f);
+        if (!relevant)
+        {
+            // Visible volumes enqueue again when they return to range.
+            sSSSQueuedObjectIDs.erase(request.mObjectID);
+            continue;
+        }
+        if (now < request.mNotBefore)
+        {
+            sSSSPropertyRequests.push_back(request);
+            continue;
+        }
+
+        if (volume->isAttachment())
+        {
+            // Match Worn Attachments: remote attachments need the full property
+            // request. Do not change the viewer's visible selection.
+            sendSSSSelection(volume, true);
+            if (!volume->isSelected())
+            {
+                sSSSTransientSelections[volume->getID()] = now + 5.0;
+            }
+        }
+        else
+        {
+            LLSelectMgr::instance().requestObjectPropertiesFamily(volume);
+        }
+        if (++request.mAttempts < 2)
+        {
+            request.mNotBefore = now + 30.0;
+            sSSSPropertyRequests.push_back(request);
+        }
+        else
+        {
+            sSSSQueuedObjectIDs.erase(request.mObjectID);
+        }
+        break;
+    }
 }
 
 void LLVOVolume::parameterChanged(U16 param_type, bool local_origin)
@@ -5489,6 +5733,8 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
     }
 
     LLDrawInfo* info = idx >= 0 ? draw_vec[idx] : nullptr;
+    LLVOVolume* volume = facep->getDrawable()->getVOVolume();
+    const bool sss = volume && volume->isSSSEnabled();
 
     if (info &&
         info->mVertexBuffer == facep->getVertexBuffer() &&
@@ -5505,6 +5751,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         info->mTextureMatrix == tex_mat &&
         info->mModelMatrix == model_mat &&
         info->mShaderMask == shader_mask &&
+        info->mSSS == sss &&
         info->mAvatar == facep->mAvatar &&
         info->getSkinHash() == facep->getSkinHash())
     {
@@ -5551,6 +5798,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_info->mMaterial = mat;
         draw_info->mGLTFMaterial = gltf_mat;
         draw_info->mShaderMask = shader_mask;
+        draw_info->mSSS = sss;
         draw_info->mAvatar = facep->mAvatar;
         draw_info->mSkinInfo = facep->mSkinInfo;
 

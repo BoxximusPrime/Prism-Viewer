@@ -665,6 +665,7 @@ with the same filename but different name
   <texture name="Snapshot_Email" file_name="snapshot_email.png" preload="false" />
   <texture name="Snapshot_Inventory" file_name="toolbar_icons/inventory.png" preload="false" />
   <texture name="Snapshot_Profile" file_name="toolbar_icons/profile.png" preload="false" />
+  <texture name="Prism_Login_Logo" file_name="windows/prism_login_logo.png" preload="true" />
   <texture name="startup_logo"  file_name="windows/startup_logo.png" preload="true" />
   <texture name="boxxy_login_brand" file_name="windows/boxxy_login_brand.png" preload="true" />
 

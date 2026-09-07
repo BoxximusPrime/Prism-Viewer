@@ -229,6 +229,8 @@ LLGLSLShader            gDeferredSkinnedFullbrightAlphaMaskAlphaProgram;
 LLGLSLShader            gNormalMapGenProgram;
 LLGLSLShader            gDeferredGenBrdfLutProgram;
 LLGLSLShader            gDeferredBufferVisualProgram;
+LLGLSLShader            gSSSDiffusionProgram;
+LLGLSLShader            gSSSMaskProgram;
 
 // Deferred materials shaders
 LLGLSLShader            gDeferredMaterialProgram[LLMaterial::SHADER_COUNT*2];
@@ -425,6 +427,8 @@ void LLViewerShaderMgr::finalizeShaderList()
     mShaderList.push_back(&gHazeProgram);
     mShaderList.push_back(&gHazeWaterProgram);
     mShaderList.push_back(&gDeferredSoftenProgram);
+    mShaderList.push_back(&gSSSDiffusionProgram);
+    mShaderList.push_back(&gSSSMaskProgram);
     mShaderList.push_back(&gDeferredAlphaProgram);
     mShaderList.push_back(&gHUDAlphaProgram);
     mShaderList.push_back(&gDeferredAlphaImpostorProgram);
@@ -555,6 +559,9 @@ void LLViewerShaderMgr::setShaders()
 // <AS:Chanayane> Include the Exact OIT shader revision in the cache key.
             hash_obj.update(FSExactOIT::shaderCacheRevision());
 // </AS:Chanayane>
+            // Program binary keys do not hash GLSL contents. Bump this revision
+            // when changing SSS shaders so existing installations recompile them.
+            hash_obj.update("boxxy-sss-3");
             current_cache_version = hash_obj.digest();
 
             old_cache_version = LLUUID(gSavedSettings.getString("RenderShaderCacheVersion"));
@@ -1175,6 +1182,8 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gNormalMapGenProgram.unload();
         gDeferredGenBrdfLutProgram.unload();
         gDeferredBufferVisualProgram.unload();
+        gSSSDiffusionProgram.unload();
+        gSSSMaskProgram.unload();
 
         for (U32 i = 0; i < LLMaterial::SHADER_COUNT*2; ++i)
         {
@@ -3019,6 +3028,32 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         add_common_permutations(&gDeferredBufferVisualProgram);
 
         success = gDeferredBufferVisualProgram.createShader();
+    }
+
+    if (success)
+    {
+        gSSSDiffusionProgram.mName = "Skin Diffusion";
+        gSSSDiffusionProgram.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/sssDiffusionF.glsl", GL_FRAGMENT_SHADER)};
+        gSSSDiffusionProgram.mFeatures.isDeferred = true;
+        gSSSDiffusionProgram.mFeatures.hasFullGBuffer = true;
+        gSSSDiffusionProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        add_common_permutations(&gSSSDiffusionProgram);
+        success = gSSSDiffusionProgram.createShader();
+    }
+
+    if (success)
+    {
+        gSSSMaskProgram.mName = "Skin Selection Overlay";
+        gSSSMaskProgram.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/sssMaskF.glsl", GL_FRAGMENT_SHADER)};
+        gSSSMaskProgram.mFeatures.isDeferred = true;
+        gSSSMaskProgram.mFeatures.hasFullGBuffer = true;
+        gSSSMaskProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        add_common_permutations(&gSSSMaskProgram);
+        success = gSSSMaskProgram.createShader();
     }
 
     success = FSExactOIT::loadShaders(success, mShaderLevel[SHADER_DEFERRED], use_sun_shadow,
