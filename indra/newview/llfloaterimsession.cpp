@@ -288,7 +288,7 @@ void LLFloaterIMSession::sendMsgFromInputEditor()
                         original_text.get()))
                 {
                     std::string language;
-                    if (mIsP2PChat && gSavedSettings.getBOOL("TranslateChat"))
+                    if (gSavedSettings.getBOOL("TranslateChat"))
                     {
                         language = utf8str_trim(
                             getChild<LLLineEditor>("translate_language")->getText());
@@ -384,9 +384,8 @@ void LLFloaterIMSession::initIMFloater()
 
     LLLineEditor* translate_editor = getChild<LLLineEditor>("translate_language");
     const LLSD translate_languages = gSavedPerAccountSettings.getLLSD("IMTranslateLanguages");
-    translate_editor->setText(translate_languages[mOtherParticipantUUID.asString()].asString());
-    translate_editor->setVisible(
-        mIsP2PChat && gSavedSettings.getBOOL("TranslateChat"));
+    translate_editor->setText(translate_languages[(mIsP2PChat ? mOtherParticipantUUID : mSessionID).asString()].asString());
+    translate_editor->setVisible(gSavedSettings.getBOOL("TranslateChat"));
 
     // Show control panel in torn off floaters only.
     mParticipantListPanel->setVisible(!getHost() && gSavedSettings.getBOOL("IMShowControlPanel"));
@@ -420,7 +419,7 @@ bool LLFloaterIMSession::postBuild()
         [this](LLUICtrl* ctrl, const LLSD&)
         {
             LLSD translate_languages = gSavedPerAccountSettings.getLLSD("IMTranslateLanguages");
-            translate_languages[mOtherParticipantUUID.asString()] = ctrl->getValue().asString();
+            translate_languages[(mIsP2PChat ? mOtherParticipantUUID : mSessionID).asString()] = ctrl->getValue().asString();
             gSavedPerAccountSettings.setLLSD("IMTranslateLanguages", translate_languages);
         });
 
@@ -1203,7 +1202,7 @@ void LLFloaterIMSession::draw()
     friend_button->setVisible(mIsP2PChat && !LLAvatarActions::isFriend(mOtherParticipantUUID));
     offer_button->setVisible(mIsP2PChat);
     request_button->setVisible(mIsP2PChat);
-    translate_editor->setVisible(mIsP2PChat && gSavedSettings.getBOOL("TranslateChat"));
+    translate_editor->setVisible(gSavedSettings.getBOOL("TranslateChat"));
 
     if (mIsP2PChat)
     {
@@ -1211,20 +1210,20 @@ void LLFloaterIMSession::draw()
         friend_button->setEnabled(enableGearMenuItem("can_add"));
         offer_button->setEnabled(enableGearMenuItem("can_offer_teleport"));
         request_button->setEnabled(enableGearMenuItem("can_offer_teleport"));
+    }
 
-        S32 left = mVoiceButton->getRect().mRight + 2;
-        LLView* controls[] = {
-            profile_button, friend_button, offer_button, request_button, translate_editor
-        };
-        for (LLView* control : controls)
+    S32 left = mVoiceButton->getRect().mRight + 2;
+    LLView* controls[] = {
+        profile_button, friend_button, offer_button, request_button, translate_editor
+    };
+    for (LLView* control : controls)
+    {
+        if (control->getVisible())
         {
-            if (control->getVisible())
-            {
-                LLRect rect = control->getRect();
-                rect.translate(left - rect.mLeft, 0);
-                control->setRect(rect);
-                left = rect.mRight + (control == request_button ? 4 : 1);
-            }
+            LLRect rect = control->getRect();
+            rect.translate(left - rect.mLeft, 0);
+            control->setRect(rect);
+            left = rect.mRight + (control == request_button ? 4 : 1);
         }
     }
 
