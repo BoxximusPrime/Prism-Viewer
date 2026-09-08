@@ -539,7 +539,10 @@ bool LLGLSLShader::createShader()
         // when indexed texture channels are used, enforce an upper limit of 16
         // this should act as a canary in the coal mine for adding textures
         // and breaking machines that are limited to 16 texture channels
-        llassert(mActiveTextureChannels <= 16);
+        // Projector receivers reserve additional samplers only on GPUs with
+        // at least 24 fragment texture units (see loadBasicShaders).
+        llassert(mActiveTextureChannels <=
+            (getUniformLocation(LLShaderMgr::ALPHA_PROJECTION0) >= 0 ? gGLManager.mNumTextureImageUnits : 16));
         unbind();
     }
 

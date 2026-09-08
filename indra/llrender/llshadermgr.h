@@ -226,6 +226,12 @@ public:
         DEFERRED_LIGHT,                     //  "lightMap"
         DEFERRED_BLOOM,                     //  "bloomMap"
         DEFERRED_PROJECTION,                //  "projectionMap"
+        ALPHA_PROJECTION0,                  //  "alphaProjectionMap0"
+        ALPHA_PROJECTION1,
+        ALPHA_PROJECTION2,
+        ALPHA_PROJECTION3,
+        ALPHA_PROJECTION4,
+        ALPHA_PROJECTION5,
         DEFERRED_NORM_MATRIX,               //  "norm_mat"
         SPECULAR_COLOR,                     //  "specular_color"
         ENVIRONMENT_INTENSITY,              //  "env_intensity"

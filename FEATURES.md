@@ -48,7 +48,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Group-chat ignore settings.
 - Group-invitation ignore setting.
 - Improved detached IM behavior, stable centered tear-off placement, and notification bubbles. (in progress)
-- Incoming-message window/taskbar flashing without typing-state flashes. (in progress)
+- Taskbar flashing for accepted incoming DMs and group/conference messages only, excluding typing, system events, self echoes, muted/ignored chats, and Do Not Disturb; Windows clears flashing on focus and ignores requests while foreground. (in progress; runtime verification pending)
 - New incoming DM bubbles have a subtle entrance animation. (in progress; runtime verification pending)
 - VIP and friend coloring in chat history.
 - Modernized incoming/outgoing IM bubbles with character-level selection across messages, readable theme selection colors, viewport-sized rows, independent row/caret positioning for stable resizing, compact mirrored speaker headers, live-previewable configurable colors, and subtle drop shadows. (in progress; selection and resize fixes awaiting runtime verification)
@@ -86,6 +86,7 @@ The committed feature list is based on the differences from the `upstream/develo
 ## Asset loading and reliability
 
 - Exact-OIT alpha rendering for correctly composited overlapping transparent surfaces, with bounded GPU memory and automatic vanilla-renderer fallback.
+- OIT and shared transparency shaders receive projected textures, beam clipping, projector focus/ambiance, and shadows at each transparent fragment's own depth, using the six nearby-light slots and the two existing projector shadow maps. Requires at least 24 fragment texture units; smaller GPUs retain the previous lighting. Shader cache revision forces recompilation of these and the preceding transparency-lighting fixes. (in progress; Release build, fresh viewer shader startup, 252 GPU lighting cases, and 14 shader syntax checks passed; in-world verification pending)
 - OIT surface lighting normalizes interpolated normals, removes the extra Classic-mode local-light boost, and matches the opaque PBR point-light intensity multiplier through its shared transparency shaders. (in progress; Release build, 36 GPU lighting cases, and 14 alpha shader syntax checks passed; in-world lighting verification pending)
 - Exact OIT uses GPU-selected sort passes and same-frame overflow fallback, delayed nonblocking statistics, GPU counter resets, and tiled maximum-depth reduction; synchronous validation and per-fragment maximum updates remain selectable for comparison. (in progress; direct GPU correctness checks pass; in-world visual and performance verification pending)
 - Particle rendering skips glow passes for batches with no glow, and Exact OIT skips zero-glow capture entries while preserving glowing ribbon endpoints. (in progress; awaiting in-world performance and visual verification)

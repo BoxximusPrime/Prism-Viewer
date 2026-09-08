@@ -99,7 +99,12 @@ uniform vec3 light_diffuse[8];
 float getAmbientClamp();
 void waterClip(vec3 pos);
 
-vec3 calcPointLightOrSpotLight(vec3 light_col, vec3 npos, vec3 diffuse, vec4 spec, vec3 v, vec3 n, vec4 lp, vec3 ln, float la, float fa, float is_pointlight, inout float glare, float ambiance)
+bool hasAlphaProjector(int light_index);
+vec3 calcAlphaProjectedLight(int light_index, vec3 pos, vec3 norm, vec3 center,
+    float radius, float falloff, vec3 light_color, vec3 diffuse, vec4 spec,
+    float env_intensity, inout float glare);
+
+vec3 calcPointLightOrSpotLight(int light_index, vec3 light_col, vec3 npos, vec3 diffuse, vec4 spec, vec3 v, vec3 n, vec4 lp, vec3 ln, float la, float fa, float is_pointlight, inout float glare, float ambiance, float env)
 {
     // SL-14895 inverted attenuation work-around
     // This routine is tweaked to match deferred lighting, but previously used an inverted la value. To reconstruct
@@ -108,6 +113,12 @@ vec3 calcPointLightOrSpotLight(vec3 light_col, vec3 npos, vec3 diffuse, vec4 spe
     float falloff_factor = (12.0 * fa) - 9.0;
     float inverted_la = falloff_factor / la;
     // Yes, it makes me want to cry as well. DJH
+
+    if (hasAlphaProjector(light_index))
+    {
+        return calcAlphaProjectedLight(light_index, v, n, lp.xyz, inverted_la,
+            fa - 1.0, light_col, diffuse, spec, env, glare);
+    }
 
     vec3 col = vec3(0);
 
@@ -411,7 +422,7 @@ void main()
     vec3 npos = normalize(-pos.xyz);
     vec3 light = vec3(0, 0, 0);
 
-#define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(light_diffuse[i].rgb, npos, diffuse.rgb, spec, pos.xyz, norm.xyz, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, glare, light_attenuation[i].w );
+#define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(i, light_diffuse[i].rgb, npos, diffuse.rgb, spec, pos.xyz, norm.xyz, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, glare, light_attenuation[i].w, env );
 
     LIGHT_LOOP(1)
         LIGHT_LOOP(2)

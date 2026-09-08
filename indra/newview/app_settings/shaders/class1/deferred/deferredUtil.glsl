@@ -190,38 +190,16 @@ float getDepth(vec2 pos_screen)
     return depth;
 }
 
+vec4 sampleProjectorAmbient(sampler2D projection, vec2 tc, float lod);
 vec4 getTexture2DLodAmbient(vec2 tc, float lod)
 {
-#ifndef FXAA_GLSL_120
-    vec4 ret = textureLod(projectionMap, tc, lod);
-#else
-    vec4 ret = texture(projectionMap, tc);
-#endif
-    ret.rgb = srgb_to_linear(ret.rgb);
-
-    vec2 dist = tc-vec2(0.5);
-    float d = dot(dist,dist);
-    ret *= min(clamp((0.25-d)/0.25, 0.0, 1.0), 1.0);
-
-    return ret;
+    return sampleProjectorAmbient(projectionMap, tc, lod);
 }
 
+vec4 sampleProjectorDiffuse(sampler2D projection, vec2 tc, float lod, float max_lod);
 vec4 getTexture2DLodDiffuse(vec2 tc, float lod)
 {
-#ifndef FXAA_GLSL_120
-    vec4 ret = textureLod(projectionMap, tc, lod);
-#else
-    vec4 ret = texture(projectionMap, tc);
-#endif
-    ret.rgb = srgb_to_linear(ret.rgb);
-
-    vec2 dist = vec2(0.5) - abs(tc-vec2(0.5));
-    float det = min(lod/(proj_lod*0.5), 1.0);
-    float d = min(dist.x, dist.y);
-    float edge = 0.25*det;
-    ret *= clamp(d/edge, 0.0, 1.0);
-
-    return ret;
+    return sampleProjectorDiffuse(projectionMap, tc, lod, proj_lod);
 }
 
 // lit     This is set by the caller: if (nl > 0.0) { lit = attenuation * nl * noise; }
@@ -253,23 +231,10 @@ vec3 getProjectedLightDiffuseColor(float light_distance, vec2 projected_uv)
     return color.rgb * plcol.rgb * plcol.a;
 }
 
+vec4 sampleProjectorSpecular(sampler2D projection, vec2 tc, float lod, float max_lod);
 vec4 texture2DLodSpecular(vec2 tc, float lod)
 {
-#ifndef FXAA_GLSL_120
-    vec4 ret = textureLod(projectionMap, tc, lod);
-#else
-    vec4 ret = texture(projectionMap, tc);
-#endif
-    ret.rgb = srgb_to_linear(ret.rgb);
-
-    vec2 dist = vec2(0.5) - abs(tc-vec2(0.5));
-    float det = min(lod/(proj_lod*0.5), 1.0);
-    float d = min(dist.x, dist.y);
-    d *= min(1, d * (proj_lod - lod)); // BUG? extra factor compared to diffuse causes N repeats
-    float edge = 0.25*det;
-    ret *= clamp(d/edge, 0.0, 1.0);
-
-    return ret;
+    return sampleProjectorSpecular(projectionMap, tc, lod, proj_lod);
 }
 
 // See: clipProjectedLightVars()
@@ -518,7 +483,12 @@ void pbrPunctual(vec3 diffuseColor, vec3 specularColor,
     spec = specContrib;
 }
 
-vec3 pbrCalcPointLightOrSpotLight(vec3 diffuseColor, vec3 specularColor,
+bool hasAlphaProjector(int light_index);
+vec3 calcAlphaPBRProjectedLight(int light_index, vec3 pos, vec3 norm, vec3 v, vec3 center,
+    float radius, float falloff, vec3 light_color, vec3 diffuse, vec3 specular,
+    float roughness, float metallic);
+
+vec3 pbrCalcPointLightOrSpotLight(int light_index, vec3 diffuseColor, vec3 specularColor,
                     float perceptualRoughness,
                     float metallic,
                     vec3 n, // normal
@@ -529,6 +499,11 @@ vec3 pbrCalcPointLightOrSpotLight(vec3 diffuseColor, vec3 specularColor,
                     vec3 lightColor,
                     float lightSize, float falloff, float is_pointlight, float ambiance)
 {
+    if (hasAlphaProjector(light_index))
+    {
+        return calcAlphaPBRProjectedLight(light_index, p, n, v, lp, lightSize,
+            falloff, lightColor, diffuseColor, specularColor, perceptualRoughness, metallic);
+    }
     vec3 color = vec3(0,0,0);
 
     vec3 lv = lp.xyz - p;
@@ -645,4 +620,3 @@ void waterClip(vec3 pos)
     }
 
 }
-

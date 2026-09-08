@@ -3456,6 +3456,8 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
         case WM_SETFOCUS:
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_SETFOCUS");
+            FLASHWINFO flash_info = { sizeof(FLASHWINFO), h_wnd, FLASHW_STOP, 0, 0 };
+            FlashWindowEx(&flash_info);
             WINDOW_IMP_POST(window_imp->mCallbacks->handleFocus(window_imp));
             return 0;
         }
@@ -3861,6 +3863,12 @@ void LLWindowWin32::flashIcon(F32 seconds)
 {
     mWindowThread->post([=]()
         {
+            // Check on the window thread so a queued request cannot restart
+            // flashing after the user has already returned to the viewer.
+            if (GetForegroundWindow() == mWindowHandle)
+            {
+                return;
+            }
             FLASHWINFO flash_info;
 
             flash_info.cbSize = sizeof(FLASHWINFO);

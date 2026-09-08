@@ -564,6 +564,8 @@ void LLViewerShaderMgr::setShaders()
             hash_obj.update("boxxy-sss-3");
             // Recompile shared alpha shaders after moving shadows past alpha rejection.
             hash_obj.update("boxxy-alpha-shadow-1");
+            // Includes the shared transparency lighting and projector receivers.
+            hash_obj.update("prism-alpha-projectors-1");
             current_cache_version = hash_obj.digest();
 
             old_cache_version = LLUUID(gSavedSettings.getString("RenderShaderCacheVersion"));
@@ -817,6 +819,12 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     shaders.push_back( make_pair( "objects/nonindexedTextureV.glsl",        1 ) );
 
     std::map<std::string, std::string> attribs;
+    // Six projector textures and two spot shadows in addition to the existing
+    // 16-unit budget. Keep the existing lighting on smaller texture-unit GPUs.
+    if (gGLManager.mNumTextureImageUnits >= 24)
+    {
+        attribs["ALPHA_PROJECTORS"] = "1";
+    }
     attribs["MAX_JOINTS_PER_MESH_OBJECT"] =
         std::to_string(LLSkinningUtil::getMaxJointCount());
 
@@ -907,6 +915,7 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     index_channels.push_back(-1);    shaders.push_back( make_pair( "environment/waterFogF.glsl",                mShaderLevel[SHADER_WATER] ) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "environment/srgbF.glsl",                    mShaderLevel[SHADER_ENVIRONMENT] ) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/deferredUtil.glsl",                    1) );
+    index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/projectorUtil.glsl",                   1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/gbufferUtil.glsl",                    1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/globalF.glsl",                          1));
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/shadowUtil.glsl",                      1) );

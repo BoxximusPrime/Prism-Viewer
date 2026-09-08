@@ -119,7 +119,7 @@ vec3 pbrBaseLight(vec3 diffuseColor,
                   vec3 additive,
                   vec3 atten);
 
-vec3 pbrCalcPointLightOrSpotLight(vec3 diffuseColor, vec3 specularColor,
+vec3 pbrCalcPointLightOrSpotLight(int light_index, vec3 diffuseColor, vec3 specularColor,
                     float perceptualRoughness,
                     float metallic,
                     vec3 n, // normal
@@ -206,7 +206,7 @@ void main()
     vec3 light = vec3(0);
 
     // Punctual lights
-#define LIGHT_LOOP(i) light += pbrCalcPointLightOrSpotLight(diffuseColor, specularColor, perceptualRoughness, metallic, norm.xyz, pos.xyz, v, light_position[i].xyz, light_direction[i].xyz, light_diffuse[i].rgb, light_deferred_attenuation[i].x, light_deferred_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
+#define LIGHT_LOOP(i) light += pbrCalcPointLightOrSpotLight(i, diffuseColor, specularColor, perceptualRoughness, metallic, norm.xyz, pos.xyz, v, light_position[i].xyz, light_direction[i].xyz, light_diffuse[i].rgb, light_deferred_attenuation[i].x, light_deferred_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
 
     LIGHT_LOOP(1)
     LIGHT_LOOP(2)
