@@ -240,3 +240,42 @@ float sampleSpotShadow(vec3 pos, vec3 norm, int index, vec2 pos_screen)
 #endif
 }
 
+float sampleSSSShadowPath(sampler2DShadow depthMap, mat4 lightMatrix, vec3 pos, vec3 lightDir);
+
+float sampleDirectionalSSSPath(vec3 pos)
+{
+#if defined(SUN_SHADOW)
+    if (pos.z <= -shadow_clip.w) return -1.0;
+    vec3 lightDir = normalize(sun_up_factor == 1 ? sun_dir : moon_dir);
+    vec4 nearSplit = -shadow_clip * 0.75;
+    vec4 farSplit = -shadow_clip * 1.25;
+    vec4 domain = nearSplit - farSplit;
+    // Match the ordinary shadow cascade overlaps, blending distances to avoid seams.
+    vec4 weights = vec4(
+        1.0 - max(nearSplit.x - pos.z, 0.0) / domain.x,
+        1.0 - max(pos.z - farSplit.x, 0.0) / domain.x - max(nearSplit.y - pos.z, 0.0) / domain.y,
+        1.0 - max(pos.z - farSplit.y, 0.0) / domain.y - max(nearSplit.z - pos.z, 0.0) / domain.z,
+        1.0 - max(pos.z - farSplit.z, 0.0) / domain.z);
+    weights = max(weights, vec4(0.0));
+    vec4 paths = vec4(-1.0);
+    if (weights.x > 0.0) paths.x = sampleSSSShadowPath(shadowMap0, shadow_matrix[0], pos, lightDir);
+    if (weights.y > 0.0) paths.y = sampleSSSShadowPath(shadowMap1, shadow_matrix[1], pos, lightDir);
+    if (weights.z > 0.0) paths.z = sampleSSSShadowPath(shadowMap2, shadow_matrix[2], pos, lightDir);
+    if (weights.w > 0.0) paths.w = sampleSSSShadowPath(shadowMap3, shadow_matrix[3], pos, lightDir);
+    weights *= step(vec4(0.0), paths);
+    float total = dot(weights, vec4(1.0));
+    return total > 0.0 ? dot(max(paths, vec4(0.0)), weights) / total : -1.0;
+#else
+    return -1.0;
+#endif
+}
+
+float sampleSpotSSSPath(vec3 pos, vec3 lightDir, int index)
+{
+#if defined(SPOT_SHADOW)
+    if (pos.z <= -shadow_clip.w) return -1.0;
+    if (index == 0) return sampleSSSShadowPath(shadowMap4, shadow_matrix[4], pos, lightDir);
+    if (index == 1) return sampleSSSShadowPath(shadowMap5, shadow_matrix[5], pos, lightDir);
+#endif
+    return -1.0;
+}

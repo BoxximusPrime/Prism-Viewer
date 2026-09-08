@@ -1280,6 +1280,13 @@ void LLFloaterPreference::refreshEnabledState()
     getChildView("BoxxySSSWrapAmount")->setEnabled(sss_combined);
     getChildView("BoxxySSSTransmission")->setEnabled(sss_combined);
     getChildView("BoxxySSSThickness")->setEnabled(sss_combined);
+    getChildView("BoxxySSSTransmissionSmoothing")->setEnabled(sss_combined);
+    getChildView("BoxxySSSShadowThickness")->setEnabled(sss_combined);
+    getChildView("BoxxySSSPenetration")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
+    getChildView("BoxxySSSMinimumThickness")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
+    getChildView("BoxxySSSMaximumThickness")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
+    getChildView("BoxxySSSClampKnee")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
+    getChildView("BoxxySSSPointDepth")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
 
     // Cannot have floater active until caps have been received
     getChild<LLButton>("default_creation_permissions")->setEnabled(LLStartUp::getStartupState() >= STATE_STARTED);
@@ -2633,6 +2640,8 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSAutoDetect")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWhitelist")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSShowMask")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSShowDepth")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSDebugLight")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSMode")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSStrength")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSDepth")->resetToDefault(true);
@@ -2640,7 +2649,14 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSMaxDistance")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWrapAmount")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSTransmission")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSPenetration")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSMinimumThickness")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSMaximumThickness")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSClampKnee")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSTransmissionSmoothing")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSThickness")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSShadowThickness")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSPointDepth")->resetToDefault(true);
     resetDirtyChilds();
 }
 

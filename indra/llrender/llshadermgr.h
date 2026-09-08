@@ -215,6 +215,9 @@ public:
         DEFERRED_SHADOW3,                   //  "shadowMap3"
         DEFERRED_SHADOW4,                   //  "shadowMap4"
         DEFERRED_SHADOW5,                   //  "shadowMap5"
+        SSS_DEPTH0,
+        SSS_DEPTH1,
+        SSS_DEPTH2,
         DEFERRED_POSITION,                  //  "positionMap"
         DEFERRED_DIFFUSE,                   //  "diffuseRect"
         DEFERRED_SPECULAR,                  //  "specularRect"

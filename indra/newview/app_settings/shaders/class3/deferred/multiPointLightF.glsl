@@ -27,6 +27,8 @@
 
 layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec4 sss_diffuse;
+layout(location = 2) out vec4 sss_transmitted;
+uniform int sss_transmission_smoothing;
 
 uniform sampler2D     lightFunc;
 
@@ -69,13 +71,25 @@ float getSSSStrength(float mask, vec3 positionEye);
 bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
-vec3 getSSSTransmission(float nl, float nv, float strength);
+uniform int sss_point_depth;
+bool useSSSShadowThickness(float nl, float strength);
+void prepareSSSDepth(vec3 pos);
+float sampleLocalSSSPath(vec3 pos, vec3 lightOrigin);
+vec3 getSSSTransmissionWithDepth(float nl, float nv, float strength, float path, float shadow);
+vec3 pointSSSTransmission(float nl, float nv, float strength, vec3 pos, vec3 origin)
+{
+    float path = -1.0;
+    if (sss_point_depth != 0 && useSSSShadowThickness(nl, strength))
+        path = sampleLocalSSSPath(pos, origin);
+    return getSSSTransmissionWithDepth(nl, nv, strength, path, 1.0);
+}
 
 void main()
 {
     vec3 final_color = vec3(0, 0, 0);
     vec2 tc          = getScreenCoord(vary_fragcoord);
     vec3 pos         = getPosition(tc).xyz;
+    prepareSSSDepth(pos);
     if (pos.z < far_z)
     {
         discard;
@@ -85,6 +99,7 @@ void main()
     float sssStrength = getSSSStrength(gb.sss, pos);
     float wrapStrength = useSSSWrappedDiffuse(sssStrength) ? sssStrength : 0.0;
     vec3 diffuseLighting = vec3(0.0);
+    vec3 transmissionLighting = vec3(0.0);
 
     vec3 n = gb.normal;
 
@@ -131,8 +146,9 @@ void main()
                 pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, lv, nl, diff, specPunc);
                 float diffuseNl = wrapStrength > 0.0 ? dot(n, lv) : nl;
                 vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
-                vec3 transmitted = getSSSTransmission(diffuseNl, dot(n, v), wrapStrength) * diffuseColor / 3.14159265;
+                vec3 transmitted = pointSSSTransmission(diffuseNl, dot(n, v), wrapStrength, pos, light[light_idx].xyz) * diffuseColor / 3.14159265;
                 vec3 lightDiffuse = intensity * clamp(diffuseFactor * diff + transmitted, vec3(0), vec3(10));
+                transmissionLighting += lightDiffuse - intensity * clamp(diffuseFactor * diff, vec3(0), vec3(10));
                 diffuseLighting += lightDiffuse;
                 if (wrapStrength > 0.0)
                 {
@@ -170,10 +186,11 @@ void main()
 
                     float diffuseNl = wrapStrength > 0.0 ? rawNl : nl;
                     vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
-                    diffuseFactor += getSSSTransmission(diffuseNl, dot(n, v), wrapStrength);
+                    diffuseFactor += pointSSSTransmission(diffuseNl, dot(n, v), wrapStrength, pos, light[i].xyz);
                     float lit = max(nl, 0.0) * dist_atten;
 
                     vec3 lightDiffuse = light_col[i].rgb * diffuseFactor * dist_atten * diffuse;
+                    transmissionLighting += lightDiffuse - light_col[i].rgb * getSSSDiffuseFactor(diffuseNl, wrapStrength) * dist_atten * diffuse;
                     vec3 col = lightDiffuse;
                     diffuseLighting += lightDiffuse;
 
@@ -203,9 +220,15 @@ void main()
     frag_color.rgb = max(final_color * final_scale, vec3(0));
     frag_color.a   = 0.0;
     sss_diffuse = vec4(0.0);
+    sss_transmitted = vec4(0.0);
     if (useSSSScreenDiffusion(sssStrength))
     {
         sss_diffuse.rgb = diffuseLighting * final_scale;
+        if (sss_transmission_smoothing != 0)
+        {
+            sss_transmitted.rgb = min(max(transmissionLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_diffuse.rgb -= sss_transmitted.rgb;
+        }
     }
 
 #ifdef IS_AMD_CARD

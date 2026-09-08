@@ -67,7 +67,8 @@ public:
 private:
     void            updateHoverView();
 
-    void            drag( S32 x, S32 y );
+    void            drag( S32 x, S32 y, MASK mask );
+    bool            aimAtCursor(S32 x, S32 y);
     LLVector3       projectToSphere( F32 x, F32 y, bool* on_sphere );
 
     void            renderSnapGuides();
@@ -92,6 +93,9 @@ private:
 //  S32                 mLastHoverMouseX;       // used to suppress hover if mouse doesn't move
 //  S32                 mLastHoverMouseY;
     LLQuaternion        mRotation;
+    bool                mAimMode = false;
+    bool                mAimHit = false;
+    LLVector3d          mAimPoint;
 
     LLVector3           mMouseDown;
     LLVector3           mMouseCur;

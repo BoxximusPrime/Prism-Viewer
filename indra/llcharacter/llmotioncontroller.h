@@ -148,6 +148,7 @@ public:
     void pauseAllMotions();
     void unpauseAllMotions();
     bool isPaused() const { return mPaused; }
+    void setFrozen(bool frozen) { mFrozen = frozen; }
     S32 getPausedFrame() const { return mPausedFrame; }
 
     void setTimeStep(F32 step);
@@ -223,6 +224,7 @@ protected:
     F32                 mLastTime;
     bool                mHasRunOnce;
     bool                mPaused;
+    bool                mFrozen = false;
     S32                 mPausedFrame;
     F32                 mTimeStep;
     S32                 mTimeStepCount;

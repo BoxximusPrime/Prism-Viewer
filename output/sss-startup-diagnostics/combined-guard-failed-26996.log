@@ -1,0 +1,1488 @@
+2026-09-08T20:06:22Z INFO # newview/llappviewer.cpp(2449) LLAppViewer::initLoggingAndGetLastDuration : Started logging to C:\Users\Trevor\AppData\Roaming\Prism\logs\SecondLife.log
+2026-09-08T20:06:22Z INFO #MarkerFile# newview/llappviewer.cpp(4211) LLAppViewer::processMarkerFiles : Checking exec marker file for lock...Exec marker file existed but was not locked; rewritten.
+2026-09-08T20:06:22Z INFO #MarkerFile# newview/llappviewer.cpp(4220) LLAppViewer::processMarkerFiles : Exec marker 'C:\Users\Trevor\AppData\Roaming\Prism\logs\SecondLife.exec_marker' found; last exec crashed or froze
+2026-09-08T20:06:22Z INFO #LLOSInfo# llcommon/llsys.cpp(449) LLOSInfo::LLOSInfo : OS bitness: 64
+2026-09-08T20:06:22Z INFO # newview/llappviewerwin32.cpp(662) LLAppViewerWin32::disableWinErrorReporting : WerAddExcludedApplication() succeeded for secondlife-bin.exe
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location Default
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings.xml
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location Default
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2539) LLAppViewer::loadSettingsFromDirectory : Cannot load E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings_install.xml - No settings found.
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group PerAccount - from location Default
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings_per_account.xml
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group CrashSettings - from location Default
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings_crash_behavior.xml
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Warnings - from location Default
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\ignorable_dialogs.xml
+2026-09-08T20:06:22Z INFO #AppInit# newview/llappviewerwin32.cpp(1006) LLAppViewerWin32::initParseCommandLine : Language: en
+2026-09-08T20:06:22Z INFO #AppInit# newview/llappviewerwin32.cpp(1007) LLAppViewerWin32::initParseCommandLine : Location: US
+2026-09-08T20:06:22Z INFO #AppInit# newview/llappviewerwin32.cpp(1008) LLAppViewerWin32::initParseCommandLine : Variant: ISO_8859-1
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location User
+2026-09-08T20:06:22Z INFO #LLControlGroup# llxml/llcontrol.cpp(1120) LLControlGroup::loadFromFile : preserving unrecognized Global settings variable PoolSizeExpCache
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings.xml
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group CrashSettings - from location User
+2026-09-08T20:06:22Z WARNING #Settings# llxml/llcontrol.cpp(1017) LLControlGroup::loadFromFile : Cannot find file C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings_crash_behavior.xml to load.
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2539) LLAppViewer::loadSettingsFromDirectory : Cannot load C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings_crash_behavior.xml - No settings found.
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Warnings - from location User
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file C:\Users\Trevor\AppData\Roaming\Prism\user_settings\ignorable_dialogs.xml
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location Session
+2026-09-08T20:06:22Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location UserSession
+2026-09-08T20:06:22Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.AutoLogin to false
+2026-09-08T20:06:22Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.BoxxySSSEnabled to true
+2026-09-08T20:06:22Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.BoxxySSSShadowThickness to true
+2026-09-08T20:06:22Z INFO #GridManager# newview/llviewernetwork.cpp(215) LLGridManager::initialize : Using last grid: util.agni.lindenlab.com
+2026-09-08T20:06:22Z INFO #GridManager# newview/llviewernetwork.cpp(407) LLGridManager::setGridChoice : setting util.agni.lindenlab.com
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(802) LLAppViewer::init : Configuration initialized.
+2026-09-08T20:06:22Z INFO #Init# newview/llappcorehttp.cpp(283) LLAppCoreHttp::init : HTTP Pipelining enabled!
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(824) LLAppViewer::init : LLCore::Http initialized.
+2026-09-08T20:06:22Z INFO #AppInit# newview/llmachineid.cpp(318) LLWMIMethods::getGenericSerialNumber :  Serial Number : 00330-80000-00000-AA514
+2026-09-08T20:06:22Z INFO #AppInit# newview/llmachineid.cpp(318) LLWMIMethods::getGenericSerialNumber :  Serial Number : A919CAB1-F0AB-1C4D-98CB-04421AEAFEA0
+2026-09-08T20:06:22Z INFO #AppInit# newview/llmachineid.cpp(477) LLMachineID::init : UniqueID: 0x6745417c5b64
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(836) LLAppViewer::init : Threads initialized.
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(864) LLAppViewer::init : UI initialized.
+2026-09-08T20:06:22Z INFO #Notifications# llui/llnotifications.cpp(1586) LLNotifications::loadTemplates : Reading notifications template
+2026-09-08T20:06:22Z INFO #Notifications# llui/llnotifications.cpp(1664) LLNotifications::loadTemplates : ...done
+2026-09-08T20:06:22Z INFO #Notifications# llui/llnotifications.cpp(1442) LLNotifications::createDefaultChannels : Generating default notification channels
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(882) LLAppViewer::init : Notifications initialized.
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(894) LLAppViewer::init : J2C Engine is: OpenJPEG runtime: 2.5.4
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(895) LLAppViewer::init : libcurl version is: libcurl/7.54.1 OpenSSL/1.1.1w zlib/1.3.1.zlib-ng nghttp2/1.64.0
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(920) LLAppViewer::init : UI initialization is done.
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(983) LLAppViewer::init : Hardware test initialization done.
+2026-09-08T20:06:22Z INFO #TextureCache# newview/lltexturecache.cpp(1004) LLTextureCache::initCache : Headers: 919227 Textures size: 2555 MB
+2026-09-08T20:06:22Z INFO # newview/lltexturecache.cpp(1758) LLTextureCache::purgeTextures : TEXTURE CACHE: Purging.
+2026-09-08T20:06:22Z INFO #TextureCache# newview/lltexturecache.cpp(1852) LLTextureCache::purgeTextures : TEXTURE CACHE: PURGED: 0 ENTRIES: 1669 CACHE SIZE: 322 MB
+2026-09-08T20:06:22Z INFO # newview/llvocache.cpp(1216) LLVOCache::initCache : Viewer Object Cache Versions - expected: 17 found: 17
+2026-09-08T20:06:22Z INFO #InitInfo# newview/llappviewer.cpp(1002) LLAppViewer::init : Cache initialization is done.
+2026-09-08T20:06:22Z INFO #AppInit# newview/llappviewer.cpp(3325) LLAppViewer::initWindow : Initializing window...
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(5050) LLWindowWin32::requestHighPerformanceGPU : Adapter 0: NVIDIA GeForce RTX 5090, Dedicated VRAM: 32187 MB, Vendor: 0x10de, Flags: 0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 0: \\.\DISPLAY1, NVIDIA GeForce RTX 5090
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 1: \\.\DISPLAY2, NVIDIA GeForce RTX 5090
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 2: \\.\DISPLAY3, NVIDIA GeForce RTX 5090
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 3: \\.\DISPLAY4, NVIDIA GeForce RTX 5090
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(896) LLWindowWin32::LLWindowWin32 : Total Display Devices: 4
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1393) LLWindowWin32::switchContext : window is created.
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1431) LLWindowWin32::switchContext : Device context retrieved.
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1453) LLWindowWin32::switchContext : Pixel format chosen.
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1465) LLWindowWin32::switchContext : --- begin pixel format dump ---
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1466) LLWindowWin32::switchContext : pixel_format is 12
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1467) LLWindowWin32::switchContext : pfd.nSize:            40
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1468) LLWindowWin32::switchContext : pfd.nVersion:         1
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1469) LLWindowWin32::switchContext : pfd.dwFlags:          0x8225
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1470) LLWindowWin32::switchContext : pfd.iPixelType:       0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1471) LLWindowWin32::switchContext : pfd.cColorBits:       32
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1472) LLWindowWin32::switchContext : pfd.cRedBits:         8
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1473) LLWindowWin32::switchContext : pfd.cRedShift:        16
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1474) LLWindowWin32::switchContext : pfd.cGreenBits:       8
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1475) LLWindowWin32::switchContext : pfd.cGreenShift:      8
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1476) LLWindowWin32::switchContext : pfd.cBlueBits:        8
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1477) LLWindowWin32::switchContext : pfd.cBlueShift:       0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1478) LLWindowWin32::switchContext : pfd.cAlphaBits:       8
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1479) LLWindowWin32::switchContext : pfd.cAlphaShift:      24
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1480) LLWindowWin32::switchContext : pfd.cAccumBits:       64
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1481) LLWindowWin32::switchContext : pfd.cAccumRedBits:    16
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1482) LLWindowWin32::switchContext : pfd.cAccumGreenBits:  16
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1483) LLWindowWin32::switchContext : pfd.cAccumBlueBits:   16
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1484) LLWindowWin32::switchContext : pfd.cAccumAlphaBits:  16
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1485) LLWindowWin32::switchContext : pfd.cDepthBits:       24
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1486) LLWindowWin32::switchContext : pfd.cStencilBits:     8
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1487) LLWindowWin32::switchContext : pfd.cAuxBuffers:      4
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1488) LLWindowWin32::switchContext : pfd.iLayerType:       0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1489) LLWindowWin32::switchContext : pfd.bReserved:        0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1490) LLWindowWin32::switchContext : pfd.dwLayerMask:      0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1491) LLWindowWin32::switchContext : pfd.dwVisibleMask:    0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1492) LLWindowWin32::switchContext : pfd.dwDamageMask:     0
+2026-09-08T20:06:22Z INFO #Window# llwindow/llwindowwin32.cpp(1493) LLWindowWin32::switchContext : --- end pixel format dump ---
+2026-09-08T20:06:23Z INFO #Window# llwindow/llwindowwin32.cpp(1517) LLWindowWin32::switchContext : Drawing context is created.
+2026-09-08T20:06:23Z INFO #Window# llwindow/llwindowwin32.cpp(1655) LLWindowWin32::switchContext : pixel formats done.
+2026-09-08T20:06:23Z INFO #Window# llwindow/llwindowwin32.cpp(1708) LLWindowWin32::switchContext : recreate window done.
+2026-09-08T20:06:23Z INFO #Window# llwindow/llwindowwin32.cpp(1771) LLWindowWin32::switchContext : GL buffer: Color Bits 32 Alpha Bits 0 Depth Bits 24
+2026-09-08T20:06:23Z INFO # llwindow/llwindowwin32.cpp(1996) LLWindowWin32::createSharedContext : Created OpenGL 4.6 core context.
+2026-09-08T20:06:23Z INFO # llrender/llgl.cpp(2616) parse_gl_version : GL: 4.6.0 NVIDIA 616.56
+2026-09-08T20:06:23Z INFO #RenderInit# llrender/llgl.cpp(1293) LLGLManager::initGL : VRAM Detected (NVXGpuMemoryInfo):32607
+2026-09-08T20:06:23Z INFO #Window# llwindow/llwindowwin32.cpp(2035) LLWindowWin32::toggleVSync : Enabling vertical sync
+2026-09-08T20:06:23Z INFO #Window# llwindow/llwindowwin32.cpp(5799) LLWindowWin32::updateWindowTheme : Viewer window theme is set to dark mode
+2026-09-08T20:06:23Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 0
+2026-09-08T20:06:23Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:23Z WARNING #Font# llrender/llfontfreetype.cpp(1061) LLFontFreetype::setVariationAxis : ONCE: Axis 'opsz' not found in font: 
+2026-09-08T20:06:23Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font meiryo.TTC
+2026-09-08T20:06:23Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font gulim.ttc
+2026-09-08T20:06:23Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font simhei.ttf
+2026-09-08T20:06:23Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font ArialUni.ttf
+2026-09-08T20:06:23Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 0
+2026-09-08T20:06:23Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:23Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 0
+2026-09-08T20:06:23Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:23Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Medium style 1
+2026-09-08T20:06:23Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:23Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Monospace size Monospace style 0
+2026-09-08T20:06:23Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:23Z WARNING #Font# llrender/llfontfreetype.cpp(1061) LLFontFreetype::setVariationAxis : ONCE (10th time seen): Axis 'opsz' not found in font: 
+2026-09-08T20:06:23Z INFO # llrender/llvertexbuffer.cpp(954) LLVertexBuffer::initClass : VBO Pooling Enabled
+2026-09-08T20:06:23Z INFO #RenderInit# newview/llviewerwindow.cpp(2132) LLViewerWindow::LLViewerWindow : LLVertexBuffer initialization done.
+2026-09-08T20:06:23Z INFO #RenderInit# newview/llfeaturemanager.cpp(283) LLFeatureManager::parseFeatureTable : Attempting to parse feature table from E:\BoxxyViewer\build-vc170-64\newview\Release\featuretable.txt
+2026-09-08T20:06:23Z INFO #RenderInit# newview/llfeaturemanager.cpp(308) LLFeatureManager::parseFeatureTable : Found feature table version 74
+2026-09-08T20:06:23Z INFO #LLProcess# llcommon/llprocess.cpp(112) `anonymous-namespace'::InitializeJobObject : Job object created - child processes will terminate with parent
+2026-09-08T20:06:23Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched GPU benchmark (PID: 22244)
+2026-09-08T20:06:24Z INFO #LLProcess# llcommon/llprocess.cpp(976) LLProcess::handleExit : mIOContext was stopped on exit, restarting
+2026-09-08T20:06:24Z INFO #LLProcess# llcommon/llprocess.cpp(984) LLProcess::handleExit : GPU benchmark: exited with code 0
+2026-09-08T20:06:24Z INFO #RenderInit# newview/llfeaturemanager.cpp(431) subprocess_gpu_benchmark : subprocess_gpu_benchmark: result = 1601.79 GB/sec
+2026-09-08T20:06:24Z INFO #RenderInit# newview/llfeaturemanager.cpp(793) LLFeatureManager::applyBaseMasks : Setting GPU Class to Class5
+2026-09-08T20:06:24Z INFO #RenderInit# newview/llfeaturemanager.cpp(253) LLFeatureManager::maskFeatures : Applying GPU Feature list: VRAMGT512
+2026-09-08T20:06:24Z INFO # llwindow/llwindowwin32.cpp(1996) LLWindowWin32::createSharedContext : Created OpenGL 4.6 core context.
+2026-09-08T20:06:24Z WARNING #Texture# newview/llviewertexturelist.cpp(1137) LLViewerTextureList::updateImagesCreateTextures : ONCE: Texture will be downscaled immediately after loading.
+2026-09-08T20:06:25Z INFO #AppInit# newview/llappviewer.cpp(3357) LLAppViewer::initWindow : gViewerwindow created.
+2026-09-08T20:06:25Z INFO #AppInit# newview/llappviewer.cpp(3372) LLAppViewer::initWindow : watchdog NOT enabled (setting = 0)
+2026-09-08T20:06:25Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Emoji size Small style 0
+2026-09-08T20:06:25Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:25Z INFO #Settings# llxml/llcontrol.cpp(998) LLControlGroup::saveToFile : Saved to C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings.xml
+2026-09-08T20:06:25Z INFO #DPInvisible# newview/lldrawpoolwaterexclusion.cpp(39) LLDrawPoolWaterExclusion::LLDrawPoolWaterExclusion : Creating water exclusion draw pool
+2026-09-08T20:06:26Z INFO #ShaderMgr# llrender/llshadermgr.cpp(1030) LLShaderMgr::initShaderCache : Initializing shader cache
+2026-09-08T20:06:26Z INFO #ShaderMgr# llrender/llshadermgr.cpp(1049) LLShaderMgr::initShaderCache : Loading shader cache metadata
+2026-09-08T20:06:26Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-08T20:06:26Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-08T20:06:26Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-08T20:06:26Z INFO #Shader# newview/llviewershadermgr.cpp(695) LLViewerShaderMgr::setShaders : Loaded basic shaders.
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Water Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Underwater Shader
+2026-09-08T20:06:26Z INFO # newview/llviewershadermgr.cpp(718) LLViewerShaderMgr::setShaders : Loaded water shaders.
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Glow Shader (Post)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Glow Extract Shader (Post) (+Noise)
+2026-09-08T20:06:26Z INFO # newview/llviewershadermgr.cpp(731) LLViewerShaderMgr::setShaders : Loaded effects shaders.
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Highlight Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Highlight Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Highlight Normals Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Highlight Spec Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: UI Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Pathfinding Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: PathfindingNoNormals Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Glow Combine Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Glow CombineFXAA Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Two Texture Compare Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: One Texture Filter Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Solid Color Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Occlusion Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Occlusion Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Occlusion Cube Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Debug Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Debug Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Normal Debug Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Normal Debug Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Normal Debug Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Normal Debug Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Clip Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Benchmark Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Reflection Probe Display Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Copy Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Copy Depth Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Draw Color Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Reflection Mip Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Reflection Mip Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Radiance Gen Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Hero Radiance Gen Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Irradiance Gen Shader
+2026-09-08T20:06:26Z INFO # newview/llviewershadermgr.cpp(745) LLViewerShaderMgr::setShaders : Loaded interface shaders.
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Bump Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Bump Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: No color alpha mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Impostor Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Object Preview Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Object Preview Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Preview Physics Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Avatar Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Highlight Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Diffuse Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Diffuse Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Diffuse Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Diffuse Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Diffuse Non-Indexed Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Diffuse Non-Indexed Alpha Mask No Color Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Bump Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Bump Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 0
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 1
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 2
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 3
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 4
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 5
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 6
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 7
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 8
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 9
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 10
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 11
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 12
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 13
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 14
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Shader 15
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 16
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 17
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 18
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 19
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 20
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 21
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 22
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 23
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 24
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 25
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 26
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 27
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 28
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 29
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 30
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Material Shader 31
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred PBR Opaque Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred PBR Opaque Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned  PBR Glow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader:  PBR Glow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: HUD PBR Opaque Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred PBR Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred PBR Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: HUD PBR Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred PBR Terrain Shader 0 heightmap-with-noise triplanar
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred PBR Terrain Shader 0 paintmap triplanar
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Tree Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Tree Shadow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Skinned Tree Shadow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Impostor Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Light Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 0
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 1
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 2
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 3
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 4
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 5
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 6
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 7
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 8
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 9
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 10
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 11
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 12
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 13
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 14
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiLight Shader 15
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred SpotLight Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred MultiSpotLight Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Sun Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Sun Probe Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Blur Light Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: HUD Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Alpha Impostor Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Alpha Impostor Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Avatar Eyes Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Fullbright Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Fullbright Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: HUD Fullbright Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Fullbright Alpha Masking Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Fullbright Alpha Masking Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: HUD Fullbright Alpha Masking Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Fullbright Alpha Masking Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Fullbright Alpha Masking Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: HUD Fullbright Alpha Masking Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred FullbrightShiny Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred FullbrightShiny Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: HUD FullbrightShiny Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Emissive Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Emissive Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Soften Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Haze Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Water Haze Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Shadow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Skinned Shadow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Shadow Cube Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Shadow Fullbright Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Shadow Fullbright Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Shadow Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Shadow Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred GLTF Shadow Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred GLTF Shadow Alpha Mask Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred GLTF Shadow Alpha Blend Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred GLTF Shadow Alpha Blend Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Avatar Shadow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Avatar Alpha Shadow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Avatar Alpha Mask Shadow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Terrain Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Avatar Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Avatar Alpha Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exposure
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exposure (no fade)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Luminance
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Gamma Correction Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Legacy Gamma Correction Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Tonemap Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: No Post Tonemap Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Tonemap Gamma Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: No Post Tonemap Gamma Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Tonemap Legacy Gamma Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: No Post Tonemap Legacy Gamma Post Process
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: FXAA Shader (Low)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: FXAA Shader (Medium)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: FXAA Shader (High)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: FXAA Shader (Ultra)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Edge Detection (Low)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Blending Weights (Low)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Neighborhood Blending (Low)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Edge Detection (Medium)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Blending Weights (Medium)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Neighborhood Blending (Medium)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Edge Detection (High)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Blending Weights (High)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Neighborhood Blending (High)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Edge Detection (Ultra)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Blending Weights (Ultra)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: SMAA Neighborhood Blending (Ultra)
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Contrast Adaptive Sharpening Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Contrast Adaptive Sharpening Legacy Gamma Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Post Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred CoF Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred DoFCombine Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Post NoDoF Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Post NoDoF Noise Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Environment Map Program
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Windlight Sky Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Windlight Cloud Program
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Windlight Sun Program
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Windlight Moon Program
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Star Program
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Normal Map Generation Program
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Brdf Gen Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Screen Space Reflection Post
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Buffer Visualization Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skin Diffusion
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skin Selection Overlay
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Exact OIT PBR Glow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT PBR Glow Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Alpha Exact OIT Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Alpha Exact OIT Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred PBR Alpha Exact OIT Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred PBR Alpha Exact OIT Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Deferred Fullbright Alpha Exact OIT Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Deferred Fullbright Alpha Exact OIT Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 1
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 5
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 9
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 13
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 17
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 21
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 25
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Material Exact OIT Shader 29
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Skinned Exact OIT Emissive Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT Emissive Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT Composite Shader
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT Control
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT Overflow Predicate
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT Compute Classifier
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT Compute Block Sort
+2026-09-08T20:06:26Z INFO # llrender/llshadermgr.cpp(1225) LLShaderMgr::loadCachedProgramBinary : Loaded cached binary for shader: Exact OIT Compute Merge
+2026-09-08T20:06:26Z INFO #ShaderMgr# llrender/llshadermgr.cpp(1122) LLShaderMgr::persistShaderCacheMetadata : Persisting shader 232 cache metadata entries to disk
+2026-09-08T20:06:26Z INFO #ShaderMgr# llrender/llshadermgr.cpp(1183) LLShaderMgr::persistShaderCacheMetadata : Persisted 232 entries. Removed 0 entries.
+2026-09-08T20:06:26Z INFO #AppInit# newview/llappviewer.cpp(3456) LLAppViewer::initWindow : gPipeline Initialized
+2026-09-08T20:06:26Z INFO #Settings# llxml/llcontrol.cpp(998) LLControlGroup::saveToFile : Saved to C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings.xml
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 1
+2026-09-08T20:06:26Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 1
+2026-09-08T20:06:26Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 1
+2026-09-08T20:06:26Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Monospace size Medium style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:26Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font meiryo.TTC
+2026-09-08T20:06:26Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font gulim.ttc
+2026-09-08T20:06:26Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font simhei.ttf
+2026-09-08T20:06:26Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font ArialUni.ttf
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Huge style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Large style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Small style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 1
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Small style 1
+2026-09-08T20:06:26Z INFO # newview/llmediactrl.cpp(500) LLMediaCtrl::onVisibilityChange : visibility changed to false
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Emoji size Small style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: Emoji size Small style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size ChatMedium style 0
+2026-09-08T20:06:26Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:26Z WARNING # llui/llview.h(711) LLView::getChild : Found child named "music_volume" but of wrong type class LLSliderCtrl, expecting class LLSlider * __ptr64
+2026-09-08T20:06:26Z WARNING # llui/llview.h(725) LLView::getChild : Making dummy class LLSlider named "music_volume" in boxxy_now_playing
+2026-09-08T20:06:26Z INFO #AppInit# newview/llappviewer.cpp(3496) LLAppViewer::initWindow : Window initialization done.
+2026-09-08T20:06:26Z INFO #InitInfo# newview/llappviewer.cpp(1013) LLAppViewer::init : Window is initialized.
+2026-09-08T20:06:26Z INFO #SystemInfo# newview/llappviewer.cpp(3944) LLAppViewer::writeSystemInfo : Application: The Prism Viewer
+2026-09-08T20:06:26Z INFO #SystemInfo# newview/llappviewer.cpp(3945) LLAppViewer::writeSystemInfo : Version: Prism Release 26.4.0.54483
+2026-09-08T20:06:26Z INFO #SystemInfo# newview/llappviewer.cpp(3952) LLAppViewer::writeSystemInfo : Local time: 2026-09-08T14:06:26 Mountain Daylight Time
+2026-09-08T20:06:26Z INFO #SystemInfo# newview/llappviewer.cpp(3955) LLAppViewer::writeSystemInfo : CPU info:
+
+
+// CPU General Information
+//////////////////////////
+Processor Name:   13th Gen Intel(R) Core(TM) i9-13900K
+Frequency:        2995.2 MHz
+Vendor:           GenuineIntel
+Family:           Intel Pentium Pro/2/3, Core (i6)
+Extended family:  i0
+Model:            i7
+Extended model:   i11
+Type:             i0
+Brand ID:         i0
+
+// CPU Configuration
+//////////////////////////
+APIC Physical ID = i32
+CLFLUSH cache line size = i64
+Cache Line Size = i64
+Cache Size = i2048
+L2 Associativity = i7
+Max Supported CPUID level = i32
+Max Supported Ext. CPUID level = i0
+
+// CPU Extensions
+//////////////////////////
+  APIC On Chip
+  AVX Instructions
+  AVX2 Instructions
+  CFLUSH Extension
+  CMPXCHG8B Instruction
+  Conditional Move/Compare Instruction
+  Debugging Extensions
+  FXSAVE/FXRSTOR
+  Hyper-threading Technology
+  MMX Technology
+  MONITOR/MWAIT
+  Machine Check Architecture
+  Machine Check Exception
+  Memory Type Range Registers
+  PTE Global Bit
+  Page Attribute Table
+  Page Size Extension
+  Page Size Extensions
+  Pend. Brk. EN.
+  Physical Address Extensions
+  RDMSR and WRMSR Support
+  SSE Extensions
+  SSE2 Extensions
+  SSE3 New Instructions
+  SSE3S Instructions
+  SSE4.1 Instructions
+  SSE4.2 Instructions
+  SYSENTER and SYSEXIT
+  Self Snoop
+  Thermal Monitor
+  Thermal Monitor 2
+  Thermal Monitor and Clock Ctrl
+  Time Stamp Counter
+  Virtual-8086 Mode Enhancement
+  x87 FPU On Chip
+->mHasSSE:     1
+->mHasSSE2:    1
+->mHasSSE3:    1
+->mHasSSE3S:    1
+->mHasSSE41:    1
+->mHasSSE42:    1
+->mHasSSE4a:    0
+->mHasAltivec: 0
+->mCPUMHz:     2995.2
+->mCPUString:  13th Gen Intel(R) Core(TM) i9-13900K (2995.2 MHz)
+
+2026-09-08T20:06:26Z INFO #SystemInfo# newview/llappviewer.cpp(3956) LLAppViewer::writeSystemInfo : Memory info:
+2026-09-08T20:06:26Z <mem>             Avail Physical KB:     53710908
+2026-09-08T20:06:26Z <mem>              Avail Virtual MB:    134213320
+2026-09-08T20:06:26Z <mem>                 Avail page KB:     75343060
+2026-09-08T20:06:26Z <mem>              Page Fault Count:         7492
+2026-09-08T20:06:26Z <mem>              PagefileUsage KB:       108844
+2026-09-08T20:06:26Z <mem>          PeakPagefileUsage KB:       108844
+2026-09-08T20:06:26Z <mem>         PeakWorkingSetSize KB:        28976
+2026-09-08T20:06:26Z <mem>            Percent Memory use:           19
+2026-09-08T20:06:26Z <mem>               PrivateUsage KB:       108844
+2026-09-08T20:06:26Z <mem>     QuotaNonPagedPoolUsage KB:           19
+2026-09-08T20:06:26Z <mem>        QuotaPagedPoolUsage KB:          330
+2026-09-08T20:06:26Z <mem> QuotaPeakNonPagedPoolUsage KB:           19
+2026-09-08T20:06:26Z <mem>    QuotaPeakPagedPoolUsage KB:          330
+2026-09-08T20:06:26Z <mem>             Total Physical KB:     66843408
+2026-09-08T20:06:26Z <mem>              Total Virtual MB:    134217727
+2026-09-08T20:06:26Z <mem>                 Total page KB:     90960656
+2026-09-08T20:06:26Z <mem>             WorkingSetSize KB:        28976
+2026-09-08T20:06:26Z <mem>                     timestamp: 2026-09-08T20:06:22.05Z
+
+2026-09-08T20:06:26Z INFO #SystemInfo# newview/llappviewer.cpp(3957) LLAppViewer::writeSystemInfo : OS: Microsoft Windows 11 64-bit
+2026-09-08T20:06:26Z INFO #SystemInfo# newview/llappviewer.cpp(3958) LLAppViewer::writeSystemInfo : OS info: Microsoft Windows 11 64-bit (Build 26200.9278)
+2026-09-08T20:06:26Z INFO # newview/llappviewer.cpp(3518) LLAppViewer::writeDebugInfo : Writing debug file C:\Users\Trevor\AppData\Roaming\Prism\logs\dump-43646ade-5aed-f37f-8ea4-5e2fbdd0347e\static_debug_info.log
+2026-09-08T20:06:26Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLAgentWearables::initClass()
+2026-09-08T20:06:26Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLIMWellWindow::initClass()
+2026-09-08T20:06:26Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLEmojiDictionary::initClass()
+2026-09-08T20:06:26Z INFO #RenderInit# llrender/llgl.cpp(1404) LLGLManager::printGLInfoString : GL_VENDOR:     NVIDIA Corporation
+2026-09-08T20:06:26Z INFO #RenderInit# llrender/llgl.cpp(1405) LLGLManager::printGLInfoString : GL_RENDERER:   NVIDIA GeForce RTX 5090/PCIe/SSE2
+2026-09-08T20:06:26Z INFO #RenderInit# llrender/llgl.cpp(1406) LLGLManager::printGLInfoString : GL_VERSION:    4.6.0 NVIDIA 616.56
+2026-09-08T20:06:26Z INFO #RenderInit# llrender/llgl.cpp(1416) LLGLManager::printGLInfoString : GL_EXTENSIONS:
+GL_AMD_multi_draw_indirect
+GL_AMD_seamless_cubemap_per_texture
+GL_AMD_vertex_shader_layer
+GL_AMD_vertex_shader_viewport_index
+GL_ARB_ES2_compatibility
+GL_ARB_ES3_1_compatibility
+GL_ARB_ES3_2_compatibility
+GL_ARB_ES3_compatibility
+GL_ARB_arrays_of_arrays
+GL_ARB_base_instance
+GL_ARB_bindless_texture
+GL_ARB_blend_func_extended
+GL_ARB_buffer_storage
+GL_ARB_clear_buffer_object
+GL_ARB_clear_texture
+GL_ARB_clip_control
+GL_ARB_color_buffer_float
+GL_ARB_compressed_texture_pixel_storage
+GL_ARB_compute_shader
+GL_ARB_compute_variable_group_size
+GL_ARB_conditional_render_inverted
+GL_ARB_conservative_depth
+GL_ARB_copy_buffer
+GL_ARB_copy_image
+GL_ARB_cull_distance
+GL_ARB_debug_output
+GL_ARB_depth_buffer_float
+GL_ARB_depth_clamp
+GL_ARB_depth_texture
+GL_ARB_derivative_control
+GL_ARB_direct_state_access
+GL_ARB_draw_buffers
+GL_ARB_draw_buffers_blend
+GL_ARB_draw_elements_base_vertex
+GL_ARB_draw_indirect
+GL_ARB_draw_instanced
+GL_ARB_enhanced_layouts
+GL_ARB_explicit_attrib_location
+GL_ARB_explicit_uniform_location
+GL_ARB_fragment_coord_conventions
+GL_ARB_fragment_layer_viewport
+GL_ARB_fragment_program
+GL_ARB_fragment_program_shadow
+GL_ARB_fragment_shader
+GL_ARB_fragment_shader_interlock
+GL_ARB_framebuffer_no_attachments
+GL_ARB_framebuffer_object
+GL_ARB_framebuffer_sRGB
+GL_ARB_geometry_shader4
+GL_ARB_get_program_binary
+GL_ARB_get_texture_sub_image
+GL_ARB_gl_spirv
+GL_ARB_gpu_shader5
+GL_ARB_gpu_shader_fp64
+GL_ARB_gpu_shader_int64
+GL_ARB_half_float_pixel
+GL_ARB_half_float_vertex
+GL_ARB_imaging
+GL_ARB_indirect_parameters
+GL_ARB_instanced_arrays
+GL_ARB_internalformat_query
+GL_ARB_internalformat_query2
+GL_ARB_invalidate_subdata
+GL_ARB_map_buffer_alignment
+GL_ARB_map_buffer_range
+GL_ARB_multi_bind
+GL_ARB_multi_draw_indirect
+GL_ARB_multisample
+GL_ARB_multitexture
+GL_ARB_occlusion_query
+GL_ARB_occlusion_query2
+GL_ARB_parallel_shader_compile
+GL_ARB_pipeline_statistics_query
+GL_ARB_pixel_buffer_object
+GL_ARB_point_parameters
+GL_ARB_point_sprite
+GL_ARB_polygon_offset_clamp
+GL_ARB_post_depth_coverage
+GL_ARB_program_interface_query
+GL_ARB_provoking_vertex
+GL_ARB_query_buffer_object
+GL_ARB_robust_buffer_access_behavior
+GL_ARB_robustness
+GL_ARB_sample_locations
+GL_ARB_sample_shading
+GL_ARB_sampler_objects
+GL_ARB_seamless_cube_map
+GL_ARB_seamless_cubemap_per_texture
+GL_ARB_separate_shader_objects
+GL_ARB_shader_atomic_counter_ops
+GL_ARB_shader_atomic_counters
+GL_ARB_shader_ballot
+GL_ARB_shader_bit_encoding
+GL_ARB_shader_clock
+GL_ARB_shader_draw_parameters
+GL_ARB_shader_group_vote
+GL_ARB_shader_image_load_store
+GL_ARB_shader_image_size
+GL_ARB_shader_objects
+GL_ARB_shader_precision
+GL_ARB_shader_storage_buffer_object
+GL_ARB_shader_subroutine
+GL_ARB_shader_texture_image_samples
+GL_ARB_shader_texture_lod
+GL_ARB_shader_viewport_layer_array
+GL_ARB_shading_language_100
+GL_ARB_shading_language_420pack
+GL_ARB_shading_language_include
+GL_ARB_shading_language_packing
+GL_ARB_shadow
+GL_ARB_sparse_buffer
+GL_ARB_sparse_texture
+GL_ARB_sparse_texture2
+GL_ARB_sparse_texture_clamp
+GL_ARB_spirv_extensions
+GL_ARB_stencil_texturing
+GL_ARB_sync
+GL_ARB_tessellation_shader
+GL_ARB_texture_barrier
+GL_ARB_texture_border_clamp
+GL_ARB_texture_buffer_object
+GL_ARB_texture_buffer_object_rgb32
+GL_ARB_texture_buffer_range
+GL_ARB_texture_compression
+GL_ARB_texture_compression_bptc
+GL_ARB_texture_compression_rgtc
+GL_ARB_texture_cube_map
+GL_ARB_texture_cube_map_array
+GL_ARB_texture_env_add
+GL_ARB_texture_env_combine
+GL_ARB_texture_env_crossbar
+GL_ARB_texture_env_dot3
+GL_ARB_texture_filter_anisotropic
+GL_ARB_texture_filter_minmax
+GL_ARB_texture_float
+GL_ARB_texture_gather
+GL_ARB_texture_mirror_clamp_to_edge
+GL_ARB_texture_mirrored_repeat
+GL_ARB_texture_multisample
+GL_ARB_texture_non_power_of_two
+GL_ARB_texture_query_levels
+GL_ARB_texture_query_lod
+GL_ARB_texture_rectangle
+GL_ARB_texture_rg
+GL_ARB_texture_rgb10_a2ui
+GL_ARB_texture_stencil8
+GL_ARB_texture_storage
+GL_ARB_texture_storage_multisample
+GL_ARB_texture_swizzle
+GL_ARB_texture_view
+GL_ARB_timer_query
+GL_ARB_transform_feedback2
+GL_ARB_transform_feedback3
+GL_ARB_transform_feedback_instanced
+GL_ARB_transform_feedback_overflow_query
+GL_ARB_transpose_matrix
+GL_ARB_uniform_buffer_object
+GL_ARB_vertex_array_bgra
+GL_ARB_vertex_array_object
+GL_ARB_vertex_attrib_64bit
+GL_ARB_vertex_attrib_binding
+GL_ARB_vertex_buffer_object
+GL_ARB_vertex_program
+GL_ARB_vertex_shader
+GL_ARB_vertex_type_10f_11f_11f_rev
+GL_ARB_vertex_type_2_10_10_10_rev
+GL_ARB_viewport_array
+GL_ARB_window_pos
+GL_ATI_draw_buffers
+GL_ATI_texture_float
+GL_ATI_texture_mirror_once
+GL_EXTX_framebuffer_mixed_formats
+GL_EXT_Cg_shader
+GL_EXT_abgr
+GL_EXT_bgra
+GL_EXT_bindable_uniform
+GL_EXT_blend_color
+GL_EXT_blend_equation_separate
+GL_EXT_blend_func_separate
+GL_EXT_blend_minmax
+GL_EXT_blend_subtract
+GL_EXT_compiled_vertex_array
+GL_EXT_depth_bounds_test
+GL_EXT_direct_state_access
+GL_EXT_draw_buffers2
+GL_EXT_draw_instanced
+GL_EXT_draw_range_elements
+GL_EXT_fog_coord
+GL_EXT_framebuffer_blit
+GL_EXT_framebuffer_multisample
+GL_EXT_framebuffer_multisample_blit_scaled
+GL_EXT_framebuffer_object
+GL_EXT_framebuffer_sRGB
+GL_EXT_geometry_shader4
+GL_EXT_gpu_program_parameters
+GL_EXT_gpu_shader4
+GL_EXT_import_sync_object
+GL_EXT_memory_object
+GL_EXT_memory_object_win32
+GL_EXT_multi_draw_arrays
+GL_EXT_multiview_texture_multisample
+GL_EXT_multiview_timer_query
+GL_EXT_packed_depth_stencil
+GL_EXT_packed_float
+GL_EXT_packed_pixels
+GL_EXT_pixel_buffer_object
+GL_EXT_point_parameters
+GL_EXT_polygon_offset_clamp
+GL_EXT_post_depth_coverage
+GL_EXT_provoking_vertex
+GL_EXT_raster_multisample
+GL_EXT_rescale_normal
+GL_EXT_secondary_color
+GL_EXT_semaphore
+GL_EXT_semaphore_win32
+GL_EXT_separate_shader_objects
+GL_EXT_separate_specular_color
+GL_EXT_shader_image_load_formatted
+GL_EXT_shader_image_load_store
+GL_EXT_shader_integer_mix
+GL_EXT_shader_realtime_clock
+GL_EXT_shadow_funcs
+GL_EXT_sparse_texture2
+GL_EXT_stencil_two_side
+GL_EXT_stencil_wrap
+GL_EXT_texture3D
+GL_EXT_texture_array
+GL_EXT_texture_buffer_object
+GL_EXT_texture_compression_dxt1
+GL_EXT_texture_compression_latc
+GL_EXT_texture_compression_rgtc
+GL_EXT_texture_compression_s3tc
+GL_EXT_texture_cube_map
+GL_EXT_texture_edge_clamp
+GL_EXT_texture_env_add
+GL_EXT_texture_env_combine
+GL_EXT_texture_env_dot3
+GL_EXT_texture_filter_anisotropic
+GL_EXT_texture_filter_minmax
+GL_EXT_texture_integer
+GL_EXT_texture_lod
+GL_EXT_texture_lod_bias
+GL_EXT_texture_mirror_clamp
+GL_EXT_texture_object
+GL_EXT_texture_sRGB
+GL_EXT_texture_sRGB_R8
+GL_EXT_texture_sRGB_decode
+GL_EXT_texture_shadow_lod
+GL_EXT_texture_shared_exponent
+GL_EXT_texture_storage
+GL_EXT_texture_swizzle
+GL_EXT_timer_query
+GL_EXT_transform_feedback2
+GL_EXT_vertex_array
+GL_EXT_vertex_array_bgra
+GL_EXT_vertex_attrib_64bit
+GL_EXT_win32_keyed_mutex
+GL_EXT_window_rectangles
+GL_IBM_rasterpos_clip
+GL_IBM_texture_mirrored_repeat
+GL_KHR_blend_equation_advanced
+GL_KHR_blend_equation_advanced_coherent
+GL_KHR_context_flush_control
+GL_KHR_debug
+GL_KHR_no_error
+GL_KHR_parallel_shader_compile
+GL_KHR_robust_buffer_access_behavior
+GL_KHR_robustness
+GL_KHR_shader_subgroup
+GL_KTX_buffer_region
+GL_NVX_blend_equation_advanced_multi_draw_buffers
+GL_NVX_conditional_render
+GL_NVX_gpu_memory_info
+GL_NVX_gpu_multicast2
+GL_NVX_linked_gpu_multicast
+GL_NVX_multigpu_info
+GL_NVX_nvenc_interop
+GL_NVX_progress_fence
+GL_NV_ES1_1_compatibility
+GL_NV_ES3_1_compatibility
+GL_NV_alpha_to_coverage_dither_control
+GL_NV_bindless_multi_draw_indirect
+GL_NV_bindless_multi_draw_indirect_count
+GL_NV_bindless_texture
+GL_NV_blend_equation_advanced
+GL_NV_blend_equation_advanced_coherent
+GL_NV_blend_minmax_factor
+GL_NV_blend_square
+GL_NV_clip_space_w_scaling
+GL_NV_command_list
+GL_NV_compute_program5
+GL_NV_compute_shader_derivatives
+GL_NV_conditional_render
+GL_NV_conservative_raster
+GL_NV_conservative_raster_dilate
+GL_NV_conservative_raster_pre_snap
+GL_NV_conservative_raster_pre_snap_triangles
+GL_NV_conservative_raster_underestimation
+GL_NV_copy_depth_to_color
+GL_NV_copy_image
+GL_NV_depth_buffer_float
+GL_NV_depth_clamp
+GL_NV_draw_texture
+GL_NV_draw_vulkan_image
+GL_NV_explicit_multisample
+GL_NV_feature_query
+GL_NV_fence
+GL_NV_fill_rectangle
+GL_NV_float_buffer
+GL_NV_fog_distance
+GL_NV_fragment_coverage_to_color
+GL_NV_fragment_program
+GL_NV_fragment_program2
+GL_NV_fragment_program_option
+GL_NV_fragment_shader_barycentric
+GL_NV_fragment_shader_interlock
+GL_NV_framebuffer_mixed_samples
+GL_NV_framebuffer_multisample_coverage
+GL_NV_geometry_shader4
+GL_NV_geometry_shader_passthrough
+GL_NV_gpu_multicast
+GL_NV_gpu_program4
+GL_NV_gpu_program4_1
+GL_NV_gpu_program5
+GL_NV_gpu_program5_mem_extended
+GL_NV_gpu_program_fp64
+GL_NV_gpu_program_multiview
+GL_NV_gpu_shader5
+GL_NV_half_float
+GL_NV_internalformat_sample_query
+GL_NV_light_max_exponent
+GL_NV_memory_attachment
+GL_NV_memory_object_sparse
+GL_NV_mesh_shader
+GL_NV_multisample_coverage
+GL_NV_multisample_filter_hint
+GL_NV_occlusion_query
+GL_NV_packed_depth_stencil
+GL_NV_parameter_buffer_object
+GL_NV_parameter_buffer_object2
+GL_NV_path_rendering
+GL_NV_path_rendering_shared_edge
+GL_NV_pixel_data_range
+GL_NV_point_sprite
+GL_NV_primitive_restart
+GL_NV_primitive_shading_rate
+GL_NV_query_resource
+GL_NV_query_resource_tag
+GL_NV_register_combiners
+GL_NV_register_combiners2
+GL_NV_representative_fragment_test
+GL_NV_sample_locations
+GL_NV_sample_mask_override_coverage
+GL_NV_scissor_exclusive
+GL_NV_shader_atomic_counters
+GL_NV_shader_atomic_float
+GL_NV_shader_atomic_float64
+GL_NV_shader_atomic_fp16_vector
+GL_NV_shader_atomic_int64
+GL_NV_shader_buffer_load
+GL_NV_shader_storage_buffer_object
+GL_NV_shader_subgroup_partitioned
+GL_NV_shader_texture_footprint
+GL_NV_shader_thread_group
+GL_NV_shader_thread_shuffle
+GL_NV_shading_rate_image
+GL_NV_stereo_view_rendering
+GL_NV_texgen_reflection
+GL_NV_texture_barrier
+GL_NV_texture_compression_vtc
+GL_NV_texture_dirty_tile_map
+GL_NV_texture_env_combine4
+GL_NV_texture_multisample
+GL_NV_texture_rectangle
+GL_NV_texture_rectangle_compressed
+GL_NV_texture_shader
+GL_NV_texture_shader2
+GL_NV_texture_shader3
+GL_NV_timeline_semaphore
+GL_NV_transform_feedback
+GL_NV_transform_feedback2
+GL_NV_uniform_buffer_std430_layout
+GL_NV_uniform_buffer_unified_memory
+GL_NV_vertex_array_range
+GL_NV_vertex_array_range2
+GL_NV_vertex_attrib_integer_64bit
+GL_NV_vertex_buffer_unified_memory
+GL_NV_vertex_program
+GL_NV_vertex_program1_1
+GL_NV_vertex_program2
+GL_NV_vertex_program2_option
+GL_NV_vertex_program3
+GL_NV_viewport_array2
+GL_NV_viewport_swizzle
+GL_OVR_multiview
+GL_OVR_multiview2
+GL_S3_s3tc
+GL_SGIS_generate_mipmap
+GL_SGIS_texture_lod
+GL_SGIX_depth_texture
+GL_SGIX_shadow
+GL_SUN_slice_accum
+GL_WIN_swap_hint
+WGL_ARB_buffer_region
+WGL_ARB_context_flush_control
+WGL_ARB_create_context
+WGL_ARB_create_context_no_error
+WGL_ARB_create_context_profile
+WGL_ARB_create_context_robustness
+WGL_ARB_extensions_string
+WGL_ARB_make_current_read
+WGL_ARB_multisample
+WGL_ARB_pbuffer
+WGL_ARB_pixel_format
+WGL_ARB_pixel_format_float
+WGL_ARB_render_texture
+WGL_ATI_pixel_format_float
+WGL_EXT_colorspace
+WGL_EXT_create_context_es2_profile
+WGL_EXT_create_context_es_profile
+WGL_EXT_extensions_string
+WGL_EXT_framebuffer_sRGB
+WGL_EXT_pixel_format_packed_float
+WGL_EXT_swap_control
+WGL_EXT_swap_control_tear
+WGL_NVX_DX_interop
+WGL_NV_DX_interop
+WGL_NV_DX_interop2
+WGL_NV_copy_image
+WGL_NV_delay_before_swap
+WGL_NV_float_buffer
+WGL_NV_multigpu_context
+WGL_NV_multisample_coverage
+WGL_NV_render_depth_texture
+WGL_NV_render_texture_rectangle
+
+2026-09-08T20:06:26Z INFO #SECAPI# newview/llsechandler_basic.cpp(1286) LLSecAPIBasicHandler::init : Loading user certificate store from C:\Users\Trevor\AppData\Roaming\Prism\user_settings\CA.pem
+2026-09-08T20:06:26Z INFO #SECAPI# newview/llsechandler_basic.cpp(639) LLBasicCertificateStore::load_from_file : Certificate store not found at C:\Users\Trevor\AppData\Roaming\Prism\user_settings\CA.pem
+2026-09-08T20:06:26Z INFO #SECAPI# newview/llsechandler_basic.cpp(1292) LLSecAPIBasicHandler::init : Loading application certificate store from E:\BoxxyViewer\build-vc170-64\newview\Release\ca-bundle.crt
+2026-09-08T20:06:26Z WARNING #SECAPI# newview/llsecapi.cpp(168) LLCertException::LLCertException : Certificate Error: CertExpired
+2026-09-08T20:06:26Z WARNING #SECAPI# newview/llsecapi.cpp(168) LLCertException::LLCertException : Certificate Error: CertExpired
+2026-09-08T20:06:26Z WARNING #SECAPI# newview/llsecapi.cpp(168) LLCertException::LLCertException : Certificate Error: CertExpired
+2026-09-08T20:06:26Z INFO #SECAPI# newview/llsechandler_basic.cpp(629) LLBasicCertificateStore::load_from_file : loaded 145 good certificates (rejected 3) from E:\BoxxyViewer\build-vc170-64\newview\Release\ca-bundle.crt
+2026-09-08T20:06:26Z INFO #InitInfo# newview/llappviewer.cpp(1162) LLAppViewer::init : Prism automatic updates are not configured.
+2026-09-08T20:06:26Z INFO #CoprocedureManager# llmessage/llcoproceduremanager.cpp(180) LLCoprocedureManager::initializePool : Initializing pool Upload
+2026-09-08T20:06:26Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(382) LLCoprocedurePool::LLCoprocedurePool : Created coprocedure pool named "Upload" with 1 items, queue max 2048
+2026-09-08T20:06:26Z INFO #CoprocedureManager# llmessage/llcoproceduremanager.cpp(180) LLCoprocedureManager::initializePool : Initializing pool AIS
+2026-09-08T20:06:26Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(382) LLCoprocedurePool::LLCoprocedurePool : Created coprocedure pool named "AIS" with 20 items, queue max 524288
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:883): updateDevices, playout count: 3; capture count: 5
+
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:883): updateDevices, playout count: 3; capture count: 5
+
+2026-09-08T20:06:26Z INFO # newview/llappviewerwin32.cpp(357) ll_nvapi_init : Creating application for secondlife-bin.exe for NVIDIA application profile
+2026-09-08T20:06:26Z WARNING # newview/llappviewerwin32.cpp(273) nvapi_error : NVAPI_EXECUTABLE_ALREADY_IN_USE
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(898) LLWebRTCVoiceClient::addRenderDevice : Voice Render Device: 'SONY AVSYSTEM (NVIDIA High Definition Audio)' ({0.0.0.00000000}.{8aa55278-2d94-4a69-b611-dfd248346494})
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(898) LLWebRTCVoiceClient::addRenderDevice : Voice Render Device: 'SPDIF Interface (Realtek USB2.0 Audio)' ({0.0.0.00000000}.{e36c9f66-7bfd-496c-a59b-e63cf5f22669})
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(898) LLWebRTCVoiceClient::addRenderDevice : Voice Render Device: 'Headphones (Elgato Wave:XLR)' ({0.0.0.00000000}.{e8a3cabb-8f5e-4b8b-a276-235b00e63c03})
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Wave Link Stream (Elgato Wave:XLR)' ({0.0.1.00000000}.{044818d0-e932-48fc-8d35-7533d6736381})
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Wave Link MicrophoneFX (Elgato Wave:XLR)' ({0.0.1.00000000}.{2f58858b-d054-49e7-acc5-13228a4e64b3})
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: '2nd Compute (2- USB SPDIF Receiver)' ({0.0.1.00000000}.{9c63afc8-a0de-4c1b-b82b-606c4d68225b})
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Mic In (Elgato Wave:XLR)' ({0.0.1.00000000}.{b9fd4d52-1bc7-490c-8f12-0273c64c1f84})
+2026-09-08T20:06:26Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Wave Link Monitor (Elgato Wave:XLR)' ({0.0.1.00000000}.{c4fa9e1a-aad5-4b14-8b86-5d3ce0828afb})
+2026-09-08T20:06:26Z INFO # llmessage/llmessagetemplateparser.cpp(386) LLTemplateParser::LLTemplateParser : ### Message template version 2  ###
+2026-09-08T20:06:26Z INFO #Messaging# llmessage/message.cpp(328) LLMessageSystem::loadTemplateFile : Read 478 messages from E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\message_template.msg
+2026-09-08T20:06:26Z INFO #AppInit# llmessage/net.cpp(264) start_net : connected on port 55992
+2026-09-08T20:06:26Z INFO # llcommon/lllivefile.cpp(130) LLLiveFile::Impl::check : detected file change 'E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\/message.xml'
+2026-09-08T20:06:26Z INFO #CoprocedureManager# llmessage/llcoproceduremanager.cpp(180) LLCoprocedureManager::initializePool : Initializing pool AssetStorage
+2026-09-08T20:06:26Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(382) LLCoprocedurePool::LLCoprocedurePool : Created coprocedure pool named "AssetStorage" with 12 items, queue max 524288
+2026-09-08T20:06:26Z INFO #AppInit# newview/llstartup.cpp(790) idle_startup : Message System Initialized.
+2026-09-08T20:06:26Z INFO #AudioEngine# llaudio/llaudioengine.cpp(114) LLAudioEngine::init : LLAudioEngine::init() AudioEngine successfully initialized
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(73) LLAudioEngine_OpenAL::init : LLAudioEngine_OpenAL::init() OpenAL successfully initialized
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(75) LLAudioEngine_OpenAL::init : OpenAL version: 1.1 ALSOFT 1.24.2
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(77) LLAudioEngine_OpenAL::init : OpenAL vendor: OpenAL Community
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(79) LLAudioEngine_OpenAL::init : OpenAL renderer: OpenAL Soft
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(84) LLAudioEngine_OpenAL::init : ALUT version: 1.1
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(90) LLAudioEngine_OpenAL::init : ALC version: 1.1
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(92) LLAudioEngine_OpenAL::init : ALC default device: OpenAL Soft
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(105) LLAudioEngine_OpenAL::init : ALC_SOFT_reopen_device supported
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(114) LLAudioEngine_OpenAL::init : ALC_SOFT_system_events supported
+2026-09-08T20:06:26Z INFO # llaudio/llaudioengine_openal.cpp(121) LLAudioEngine_OpenAL::init : Registered for ALC default-device-change notifications
+2026-09-08T20:06:26Z INFO #AppInit# newview/llstartup.cpp(822) idle_startup : Using media plugins to render streaming audio
+2026-09-08T20:06:26Z INFO #AppInit# newview/llstartup.cpp(836) idle_startup : Audio Engine Initialized.
+2026-09-08T20:06:26Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_FIRST --> STATE_BROWSER_INIT
+2026-09-08T20:06:26Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_BROWSER_INIT --> STATE_LOGIN_SHOW
+2026-09-08T20:06:26Z INFO #AppInit# newview/llstartup.cpp(2653) login_show : Initializing Login Screen
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 1
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Huge style 1
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 1
+2026-09-08T20:06:26Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Large style 1
+2026-09-08T20:06:26Z WARNING # llui/llview.h(725) LLView::getChild : Making dummy class LLTextBox named "grid_text" in panel_login
+2026-09-08T20:06:26Z INFO #Credentials# newview/llpanellogin.cpp(630) LLPanelLogin::setFields : Setting login fields to util.agni.lindenlab.com:Danny Nolan
+2026-09-08T20:06:26Z INFO #Credentials# newview/llpanellogin.cpp(665) LLPanelLogin::setFields : Setting authenticator field hash
+2026-09-08T20:06:26Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_LOGIN_SHOW --> STATE_LOGIN_WAIT
+2026-09-08T20:06:42Z INFO #GridManager# newview/llviewernetwork.cpp(407) LLGridManager::setGridChoice : setting util.agni.lindenlab.com
+2026-09-08T20:06:42Z INFO #Credentials#Authentication# newview/llpanellogin.cpp(705) LLPanelLogin::getFields : retrieving username:Danny Nolan
+2026-09-08T20:06:42Z INFO #Credentials#Authentication# newview/llpanellogin.cpp(729) LLPanelLogin::getFields : agent: Danny Nolan
+2026-09-08T20:06:42Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_LOGIN_WAIT --> STATE_LOGIN_CLEANUP
+2026-09-08T20:06:42Z INFO #Credentials#Authentication# newview/llpanellogin.cpp(705) LLPanelLogin::getFields : retrieving username:Danny Nolan
+2026-09-08T20:06:42Z INFO #Credentials#Authentication# newview/llpanellogin.cpp(729) LLPanelLogin::getFields : agent: Danny Nolan
+2026-09-08T20:06:42Z INFO #AppInit# newview/llstartup.cpp(1068) idle_startup : Attempting login as: danny_nolan
+2026-09-08T20:06:42Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group PerAccount - from location Account
+2026-09-08T20:06:42Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file C:\Users\Trevor\AppData\Roaming\Prism\danny_nolan\settings_per_account.xml
+2026-09-08T20:06:42Z INFO # newview/llurlhistory.cpp(59) LLURLHistory::loadFile : Loaded history file at C:\Users\Trevor\AppData\Roaming\Prism\danny_nolan\url_history.xml
+2026-09-08T20:06:42Z INFO # newview/lllocationhistory.cpp(147) LLLocationHistory::load : Loading location history.
+2026-09-08T20:06:42Z INFO # newview/llavatariconctrl.cpp(75) LLAvatarIconIDCache::load : Loading avatar icon id cache.
+2026-09-08T20:06:42Z WARNING # newview/llmutelist.cpp(1115) LLRenderMuteList::loadFromFile : Couldn't open render mute list file: C:\Users\Trevor\AppData\Roaming\Prism\danny_nolan\render_mute_settings.txt
+2026-09-08T20:06:42Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_LOGIN_CLEANUP --> STATE_LOGIN_AUTH_INIT
+2026-09-08T20:06:42Z INFO #AppInit# newview/llhasheduniqueid.cpp(45) llHashedUniqueID : ONCE: System ID 31ad9197cdb4c84e5355922087f2d909
+2026-09-08T20:06:42Z INFO #LLXMLRPCListener# newview/llxmlrpclistener.cpp(253) Poller::Poller : login_to_simulator request sent to https://login.agni.lindenlab.com/cgi-bin/login.cgi
+2026-09-08T20:06:42Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_LOGIN_AUTH_INIT --> STATE_LOGIN_CURL_UNSTUCK
+2026-09-08T20:06:43Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_LOGIN_CURL_UNSTUCK --> STATE_LOGIN_PROCESS_RESPONSE
+2026-09-08T20:06:45Z INFO # newview/llxmlrpctransaction.cpp(319) LLXMLRPCTransaction::Impl::process : XMLRPC response parsed successfully; request URI: https://login.agni.lindenlab.com/cgi-bin/login.cgi
+2026-09-08T20:06:45Z INFO #AppInit# newview/llxmlrpctransaction.cpp(495) LLXMLRPCTransaction::transferRate : Buffer size:   2448350 B
+2026-09-08T20:06:45Z INFO #AppInit# newview/llxmlrpctransaction.cpp(498) LLXMLRPCTransaction::transferRate : Transfer rate: 0 Kb/s
+2026-09-08T20:06:45Z INFO #LLXMLRPCListener# newview/llxmlrpclistener.cpp(298) Poller::poll : login_to_simulator result from https://login.agni.lindenlab.com/cgi-bin/login.cgi: status Complete, errorcode OK ((done))
+2026-09-08T20:06:45Z INFO #LLLogin# newview/lllogininstance.cpp(448) LLLoginInstance::handleLoginSuccess : LLLoginInstance::handleLoginSuccess
+2026-09-08T20:06:45Z INFO # llmessage/llmessagetemplate.cpp(184) LLMessageTemplate::banUdp : Setting EnableSimulator to UDPBlackListed was UDPDeprecated
+2026-09-08T20:06:45Z INFO # llmessage/llmessagetemplate.cpp(184) LLMessageTemplate::banUdp : Setting TeleportFinish to UDPBlackListed was UDPDeprecated
+2026-09-08T20:06:45Z INFO # llmessage/llmessagetemplate.cpp(184) LLMessageTemplate::banUdp : Setting CrossedRegion to UDPBlackListed was UDPDeprecated
+2026-09-08T20:06:45Z INFO # llmessage/llmessagetemplate.cpp(184) LLMessageTemplate::banUdp : Setting OpenCircuit to UDPBlackListed was UDPDeprecated
+2026-09-08T20:06:45Z INFO # llmessage/llcircuit.cpp(447) LLCircuit::addCircuitData : LLCircuit::addCircuitData for 35.95.110.40:12035
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(3962) process_login_success_response : Server SLT timestamp: September 08 2026 12:06:46. Server-viewer time offset before correction: 1s
+2026-09-08T20:06:45Z INFO #LLStartUp# newview/llstartup.cpp(4051) process_login_success_response : map-server-url : we got an answer from the grid : https://secondlife-maps-cdn.akamaized.net/
+2026-09-08T20:06:45Z INFO # newview/llappviewer.cpp(3518) LLAppViewer::writeDebugInfo : Writing debug file C:\Users\Trevor\AppData\Roaming\Prism\logs\dump-43646ade-5aed-f37f-8ea4-5e2fbdd0347e\static_debug_info.log
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_LOGIN_PROCESS_RESPONSE --> STATE_WORLD_INIT
+2026-09-08T20:06:45Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 0
+2026-09-08T20:06:45Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Large style 0
+2026-09-08T20:06:45Z INFO #Settings# llxml/llcontrol.cpp(998) LLControlGroup::saveToFile : Saved to C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings.xml
+2026-09-08T20:06:45Z INFO # newview/llviewerobject.cpp(608) LLViewerObject::initVOClasses : Viewer Object size: 984
+2026-09-08T20:06:45Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont DejaVu size Small style 0
+2026-09-08T20:06:45Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:45Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont DejaVu size LSmall style 0
+2026-09-08T20:06:45Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:45Z INFO #Media# newview/llviewermedia.cpp(2612) LLViewerMediaImpl::navigateInternal : media id= ec58332e-2030-b944-0ad4-2a048bbd6b70 url=about:blank, mime_type=
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(1966) LLViewerMediaImpl::loadURI : Asking media source to load URI: about:blank
+2026-09-08T20:06:45Z INFO #AppInit# newview/llpresetsmanager.cpp(148) LLPresetsManager::loadPresetNamesFromDir : Loading list of preset names from C:\Users\Trevor\AppData\Roaming\Prism\danny_nolan\presets\camera
+2026-09-08T20:06:45Z INFO #AppInit# newview/llpresetsmanager.cpp(148) LLPresetsManager::loadPresetNamesFromDir : Loading list of preset names from C:\Users\Trevor\AppData\Roaming\Prism\danny_nolan\presets\graphic
+2026-09-08T20:06:45Z INFO # newview/llmoveview.cpp(677) LLPanelStandStopFlying::getStandStopFlyingPanel : Build LLPanelStandStopFlying panel
+2026-09-08T20:06:45Z INFO # newview/llfloaterworldmap.cpp(1920) LLPanelHideBeacon::getPanelHideBeacon : Build LLPanelHideBeacon panel
+2026-09-08T20:06:45Z INFO # newview/llviewerwindow.cpp(2460) LLViewerWindow::initWorldUI : Preloading cef instances
+2026-09-08T20:06:45Z INFO #Media# newview/llviewermedia.cpp(2612) LLViewerMediaImpl::navigateInternal : media id= 9a6775f3-ebf5-a6ee-a8ed-22558abf831e url=https://lecs-viewer-web-components.s3.amazonaws.com/v3.0/agni/guide.html, mime_type=text/html
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(1966) LLViewerMediaImpl::loadURI : Asking media source to load URI: https://lecs-viewer-web-components.s3.amazonaws.com/v3.0/agni/guide.html
+2026-09-08T20:06:45Z INFO #Media# newview/llviewermedia.cpp(2612) LLViewerMediaImpl::navigateInternal : media id= 1a558547-4981-84bf-6400-4a0fbe998be3 url=https://lecs-viewer-web-components.s3.amazonaws.com/v3.0/agni/vawp/index.html, mime_type=text/html
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(1966) LLViewerMediaImpl::loadURI : Asking media source to load URI: https://lecs-viewer-web-components.s3.amazonaws.com/v3.0/agni/vawp/index.html
+2026-09-08T20:06:45Z INFO #Media# newview/llviewermedia.cpp(2612) LLViewerMediaImpl::navigateInternal : media id= f46288b1-3c79-7e6d-70c0-66d395718e88 url=https://search.secondlife.com/viewer/, mime_type=text/html
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(1966) LLViewerMediaImpl::loadURI : Asking media source to load URI: https://search.secondlife.com/viewer/
+2026-09-08T20:06:45Z INFO #Media# newview/llviewermedia.cpp(2612) LLViewerMediaImpl::navigateInternal : media id= fe45f39a-bde2-392f-03ad-f384b2aa4b1d url=https://marketplace.secondlife.com/, mime_type=text/html
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(1966) LLViewerMediaImpl::loadURI : Asking media source to load URI: https://marketplace.secondlife.com/
+2026-09-08T20:06:45Z INFO # newview/llworld.cpp(146) LLWorld::addRegion : Add region with handle: 1242448139665408 on host 35.95.110.40:12035
+2026-09-08T20:06:45Z INFO # newview/llworld.cpp(180) LLWorld::addRegion : Region does not exist, creating new one
+2026-09-08T20:06:45Z INFO # newview/llworld.cpp(188) LLWorld::addRegion : Adding new region (1130:1088) on host: 35.95.110.40:12035
+2026-09-08T20:06:45Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(427) LLCoprocedurePool::enqueueCoprocedure : Coprocedure(LLViewerAssetStorage::assetRequestCoro) enqueuing with id=64e07e6e-2e80-7d29-318f-7518040dbaed in pool "AssetStorage" at 0
+2026-09-08T20:06:45Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(427) LLCoprocedurePool::enqueueCoprocedure : Coprocedure(LLViewerAssetStorage::assetRequestCoro) enqueuing with id=95bb8e1b-0fbe-99fa-b53b-739a2041e01d in pool "AssetStorage" at 1
+2026-09-08T20:06:45Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(427) LLCoprocedurePool::enqueueCoprocedure : Coprocedure(LLViewerAssetStorage::assetRequestCoro) enqueuing with id=4a525cfe-ccc9-1ae4-d173-27bed824c284 in pool "AssetStorage" at 2
+2026-09-08T20:06:45Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(427) LLCoprocedurePool::enqueueCoprocedure : Coprocedure(LLViewerAssetStorage::assetRequestCoro) enqueuing with id=90836ebe-7691-d373-25e7-8d16ed0dc4f6 in pool "AssetStorage" at 3
+2026-09-08T20:06:45Z INFO #MAPURL# newview/llworldmipmap.cpp(194) LLWorldMipmap::loadObjectsTile : fetching map tile from https://secondlife-maps-cdn.akamaized.net/map-1-1130-1088-objects.jpg
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(1487) idle_startup : Adding initial simulator { 289280, 278528, 0 }
+2026-09-08T20:06:45Z INFO #LLViewerRegion# newview/llviewerregion.cpp(116) `anonymous-namespace'::newRegionEntry : Entering region []
+2026-09-08T20:06:45Z INFO # newview/llappviewer.cpp(3518) LLAppViewer::writeDebugInfo : Writing debug file C:\Users\Trevor\AppData\Roaming\Prism\logs\dump-43646ade-5aed-f37f-8ea4-5e2fbdd0347e\static_debug_info.log
+2026-09-08T20:06:45Z INFO #AppInit#Capabilities# newview/llviewerregion.cpp(309) LLViewerRegionImpl::requestBaseCapabilitiesCoro : Requesting seed from https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/dac7294a-d087-8f43-74d9-a15949987234 region name  region id 00000000-0000-0000-0000-000000000000 handle 1242448139665408 (attempt #1)
+2026-09-08T20:06:45Z INFO #ViewerAsset# newview/llviewerassetstorage.cpp(452) LLViewerAssetStorage::assetRequestCoro : ONCE: Waiting for agent region to be set
+2026-09-08T20:06:45Z INFO #AppInit#Capabilities# newview/llviewerregion.cpp(3437) LLViewerRegion::setSeedCapability : Launching LLViewerRegionImpl::requestBaseCapabilitiesCoro requesting seed capabilities from https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/dac7294a-d087-8f43-74d9-a15949987234 for region 00000000-0000-0000-0000-000000000000
+2026-09-08T20:06:45Z INFO #AgentLocation#Teleport# newview/llagent.cpp(1013) LLAgent::setRegion : Moving agent into region: handle 1242448139665408 id 00000000-0000-0000-0000-000000000000 name  previous region 00000000-0000-0000-0000-000000000000
+2026-09-08T20:06:45Z INFO #ExperienceCache# llmessage/llexperiencecache.cpp(106) LLExperienceCache::initSingleton : Loading C:\Users\Trevor\AppData\Local\SecondLife\experience_cache.xml
+2026-09-08T20:06:45Z INFO #CoprocedureManager# llmessage/llcoproceduremanager.cpp(180) LLCoprocedureManager::initializePool : Initializing pool ExpCache
+2026-09-08T20:06:45Z INFO #ViewerAsset# newview/llviewerassetstorage.cpp(500) LLViewerAssetStorage::assetRequestCoro : ONCE: Waiting for capabilities
+2026-09-08T20:06:45Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(382) LLCoprocedurePool::LLCoprocedurePool : Created coprocedure pool named "ExpCache" with 5 items, queue max 2048
+2026-09-08T20:06:45Z INFO #ExperienceCache# llmessage/llexperiencecache.cpp(410) LLExperienceCache::idleCoro : Launching Experience cache idle coro.
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_WORLD_INIT --> STATE_MULTIMEDIA_INIT
+2026-09-08T20:06:45Z INFO # newview/llviewermedia.cpp(436) LLViewerMedia::getCurrentUserAgent : SecondLife/26.4.0.54483 (Prism Release; default skin)
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_MULTIMEDIA_INIT --> STATE_FONT_INIT
+2026-09-08T20:06:45Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched SLPlugin.exe (PID: 24768)
+2026-09-08T20:06:45Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched SLPlugin.exe (PID: 18396)
+2026-09-08T20:06:45Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched SLPlugin.exe (PID: 23940)
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_FONT_INIT --> STATE_SEED_GRANTED_WAIT
+2026-09-08T20:06:45Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched SLPlugin.exe (PID: 7216)
+2026-09-08T20:06:45Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched SLPlugin.exe (PID: 21744)
+2026-09-08T20:06:45Z INFO #LLEventPollImpl# newview/lleventpoll.cpp(127) LLEventPolling::Details::LLEventPollImpl::start : LLEventPollImpl::eventPollCoro with  url 'https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/70bba8f7-df6a-f154-f9fd-26a32834e3e5
+2026-09-08T20:06:45Z WARNING # newview/llviewerregion.cpp(3527) LLViewerRegion::getCapability : getCapability called before caps received for SimulatorFeatures
+2026-09-08T20:06:45Z INFO #AppInit#SimulatorFeatures# newview/llviewerregion.cpp(2419) LLViewerRegion::requestSimulatorFeatures : Launching LLViewerRegionImpl::requestSimulatorFeatureCoro requesting simulator features from https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/f6cf603a-b75f-b5f3-c744-8781b9b323c3 for region 00000000-0000-0000-0000-000000000000
+2026-09-08T20:06:45Z INFO #ViewerAsset# newview/llviewerassetstorage.cpp(544) LLViewerAssetStorage::assetRequestCoro : ONCE: Capability/region event received while waiting for ViewerAsset
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_SEED_GRANTED_WAIT --> STATE_SEED_CAP_GRANTED
+2026-09-08T20:06:45Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-08T20:06:45Z INFO # newview/lldrawpoolbump.cpp(111) LLStandardBumpmap::addstandard : Adding standard bumpmaps.
+2026-09-08T20:06:45Z INFO #AppInit# newview/llstartup.cpp(1649) idle_startup : Initializing communications...
+2026-09-08T20:06:45Z INFO #AvNameCache# newview/llappviewer.cpp(5119) LLAppViewer::loadNameCache : C:\Users\Trevor\AppData\Local\SecondLife\avatar_name_cache.xml
+2026-09-08T20:06:45Z INFO #AvNameCache# llmessage/llavatarnamecache.cpp(488) LLAvatarNameCache::importFile : LLAvatarNameCache loaded 2522
+2026-09-08T20:06:45Z INFO # llmessage/llcachename.cpp(341) LLCacheName::importFile : LLCacheName loaded 0 agent names
+2026-09-08T20:06:45Z INFO # llmessage/llcachename.cpp(362) LLCacheName::importFile : LLCacheName loaded 2 group names
+2026-09-08T20:06:45Z INFO #Voice# newview/llvoicewebrtc.cpp(1708) LLWebRTCVoiceClient::setMuteMic : ( true )
+2026-09-08T20:06:45Z INFO #Voice# newview/llvoicewebrtc.cpp(1779) LLWebRTCVoiceClient::setVoiceEnabled : ( enabled ), coro: inactive
+2026-09-08T20:06:45Z INFO #Voice# newview/llvoicewebrtc.cpp(480) LLWebRTCVoiceClient::updateSettings : Input device: "{0.0.1.00000000}.{2f58858b-d054-49e7-acc5-13228a4e64b3}", output device: "Default"
+2026-09-08T20:06:45Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 0
+2026-09-08T20:06:45Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Small style 0
+2026-09-08T20:06:45Z WARNING #CoreHttp# llcorehttp/_httppolicy.cpp(403) LLCore::HttpPolicy::stageAfterCompletion : HTTP request 0000024CF0C88F40 failed after 0 retries.  Reason:  Forbidden (Http_403)
+2026-09-08T20:06:45Z WARNING #CoreHttp# llcorehttp/_httppolicy.cpp(403) LLCore::HttpPolicy::stageAfterCompletion : HTTP request 0000024CF0C87BE0 failed after 0 retries.  Reason:  Not Found (Http_404)
+2026-09-08T20:06:45Z WARNING #CoreHttp# llcorehttp/_httppolicy.cpp(403) LLCore::HttpPolicy::stageAfterCompletion : HTTP request 0000024CF0C89130 failed after 0 retries.  Reason:  Forbidden (Http_403)
+2026-09-08T20:06:46Z WARNING #CoreHttp# llcorehttp/_httppolicy.cpp(403) LLCore::HttpPolicy::stageAfterCompletion : HTTP request 0000024CF0C88D50 failed after 0 retries.  Reason:  Forbidden (Http_403)
+2026-09-08T20:06:46Z WARNING #CoreHttp# llcorehttp/_httppolicy.cpp(403) LLCore::HttpPolicy::stageAfterCompletion : HTTP request 0000024CF0C88B60 failed after 0 retries.  Reason:  Forbidden (Http_403)
+2026-09-08T20:06:46Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_SEED_CAP_GRANTED --> STATE_WORLD_WAIT
+2026-09-08T20:06:46Z INFO #AppInit# newview/llstartup.cpp(1788) idle_startup : viewer: UserLoginLocationReply() Enabling 35.95.110.40:12035 with code 706315885
+2026-09-08T20:06:46Z INFO # llmessage/llcorehttputil.cpp(278) LLCoreHttpUtil::HttpCoroHandler::onCompleted : Possible failure [Http_404] cannot POST url 'https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/a59eec2d-6086-f74f-8b0b-ab7a8f3c394e' because Not Found
+2026-09-08T20:06:46Z INFO # llcommon/llsdserialize.cpp(725) LLSDNotationParser::doParse : Unrecognized character while parsing: int(78)
+2026-09-08T20:06:46Z INFO # llmessage/llcorehttputil.cpp(278) LLCoreHttpUtil::HttpCoroHandler::onCompleted : Possible failure [Http_403] cannot GET url 'http://asset-cdn.glb.agni.lindenlab.com/?material_id=0bc58228-74a0-7e83-89bc-5c23464bcec5' because Forbidden
+2026-09-08T20:06:46Z INFO # llmessage/llcorehttputil.cpp(278) LLCoreHttpUtil::HttpCoroHandler::onCompleted : Possible failure [Http_403] cannot GET url 'http://asset-cdn.glb.agni.lindenlab.com/?material_id=63338ede-0037-c4fd-855b-015d77112fc8' because Forbidden
+2026-09-08T20:06:46Z INFO # llmessage/llcorehttputil.cpp(278) LLCoreHttpUtil::HttpCoroHandler::onCompleted : Possible failure [Http_403] cannot GET url 'http://asset-cdn.glb.agni.lindenlab.com/?material_id=303cd381-8560-7579-23f1-f0a880799740' because Forbidden
+2026-09-08T20:06:46Z INFO # llmessage/llcorehttputil.cpp(278) LLCoreHttpUtil::HttpCoroHandler::onCompleted : Possible failure [Http_403] cannot GET url 'http://asset-cdn.glb.agni.lindenlab.com/?material_id=53a2f406-4895-1d13-d541-d2e3b86bc19c' because Forbidden
+2026-09-08T20:06:46Z WARNING #GLTF# newview/llgltfmateriallist.cpp(528) LLGLTFMaterialList::onAssetLoadComplete : Error getting material asset data: Asset request: failed (-1) for asset 0bc58228-74a0-7e83-89bc-5c23464bcec5
+2026-09-08T20:06:46Z WARNING #GLTF# newview/llgltfmateriallist.cpp(528) LLGLTFMaterialList::onAssetLoadComplete : Error getting material asset data: Asset request: failed (-1) for asset 63338ede-0037-c4fd-855b-015d77112fc8
+2026-09-08T20:06:46Z WARNING #GLTF# newview/llgltfmateriallist.cpp(528) LLGLTFMaterialList::onAssetLoadComplete : Error getting material asset data: Asset request: failed (-1) for asset 303cd381-8560-7579-23f1-f0a880799740
+2026-09-08T20:06:46Z WARNING #GLTF# newview/llgltfmateriallist.cpp(528) LLGLTFMaterialList::onAssetLoadComplete : Error getting material asset data: Asset request: failed (-1) for asset 53a2f406-4895-1d13-d541-d2e3b86bc19c
+2026-09-08T20:06:46Z INFO #ENVIRONMENT# newview/llenvironment.cpp(1763) LLEnvironment::recordEnvironment : Requested environmend region id: a14ba253-7321-4ac6-b00b-48e277b1b43c agent is on: 00000000-0000-0000-0000-000000000000
+2026-09-08T20:06:46Z INFO #FavoritesBar# newview/llfavoritesbar.cpp(1868) LLFavoritesOrderStorage::load : loaded favorites from 'C:\Users\Trevor\AppData\Roaming\Prism\user_settings\stored_favorites_util.agni.lindenlab.com.xml' successfully
+2026-09-08T20:06:46Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_WORLD_WAIT --> STATE_AGENT_SEND
+2026-09-08T20:06:46Z INFO # newview/llstartup.cpp(1886) idle_startup :  AvatarTracker
+2026-09-08T20:06:46Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_AGENT_SEND --> STATE_AGENT_WAIT
+2026-09-08T20:06:46Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 1
+2026-09-08T20:06:46Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Huge style 1
+2026-09-08T20:06:46Z INFO #GrpMgr# newview/llgroupmgr.cpp(1668) LLGroupMgr::sendGroupRoleMembersRequest :  Pending: N, MemberDataComplete: N, RoleDataComplete: N
+2026-09-08T20:06:46Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 0
+2026-09-08T20:06:46Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Large style 0
+2026-09-08T20:06:46Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Monospace size Small style 0
+2026-09-08T20:06:46Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:46Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(427) LLCoprocedurePool::enqueueCoprocedure : Coprocedure(LLViewerAssetStorage::assetRequestCoro) enqueuing with id=676862c4-bff4-c26f-2be4-926dbc54cb6e in pool "AssetStorage" at 0
+2026-09-08T20:06:46Z INFO #Teleport#Messaging# newview/llviewermessage.cpp(2987) process_agent_movement_complete : Received ProcessAgentMovementComplete
+2026-09-08T20:06:46Z WARNING #Teleport#Messaging# newview/llviewermessage.cpp(3021) process_agent_movement_complete : agent_movement_complete() with NULL avatarp.
+2026-09-08T20:06:46Z INFO #Teleport#Messaging# newview/llviewermessage.cpp(3045) process_agent_movement_complete : Changing home region to region id a14ba253-7321-4ac6-b00b-48e277b1b43c handle 1242448139665408 == x,y 289280,278528
+2026-09-08T20:06:46Z INFO #Teleport# newview/llviewermessage.cpp(3087) process_agent_movement_complete : State is not TELEPORT_MOVING, so this is initial log-in or region crossing. Setting state to TELEPORT_NONE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(728) LLAvatarTracker::processNotify : Received online notification for unknown buddy: 1aaa8747-d7fa-4591-b636-b47cbe60aaaa is ONLINE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(730) LLAvatarTracker::processNotify : Adding buddy to buddy queue.
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(728) LLAvatarTracker::processNotify : Received online notification for unknown buddy: 21e63ad4-6996-4817-9dae-e2cf1c2e91b9 is ONLINE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(730) LLAvatarTracker::processNotify : Adding buddy to buddy queue.
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(728) LLAvatarTracker::processNotify : Received online notification for unknown buddy: 28e1bfe9-af28-41e5-898c-24336f552a92 is ONLINE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(730) LLAvatarTracker::processNotify : Adding buddy to buddy queue.
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(728) LLAvatarTracker::processNotify : Received online notification for unknown buddy: 302a750b-d615-4f50-985f-50408abea8a6 is ONLINE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(730) LLAvatarTracker::processNotify : Adding buddy to buddy queue.
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(728) LLAvatarTracker::processNotify : Received online notification for unknown buddy: d4424a41-a3f1-416a-a922-8cbaa251da29 is ONLINE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(730) LLAvatarTracker::processNotify : Adding buddy to buddy queue.
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(728) LLAvatarTracker::processNotify : Received online notification for unknown buddy: d51a4cdd-e4d8-4430-be9b-fc8a6797b3e5 is ONLINE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(730) LLAvatarTracker::processNotify : Adding buddy to buddy queue.
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(728) LLAvatarTracker::processNotify : Received online notification for unknown buddy: d7039cd2-879b-45e7-93b0-6dc8b339d945 is ONLINE
+2026-09-08T20:06:46Z WARNING # newview/llcallingcard.cpp(730) LLAvatarTracker::processNotify : Adding buddy to buddy queue.
+2026-09-08T20:06:46Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_AGENT_WAIT --> STATE_INVENTORY_SEND
+2026-09-08T20:06:46Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 2
+2026-09-08T20:06:46Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-08T20:06:46Z INFO #Terrain# newview/llfloaterregioninfo.cpp(272) LLFloaterRegionInfo::postBuild : Building region terrain panel from panel_region_terrain.xml
+2026-09-08T20:06:46Z WARNING #CoreHttp# llcorehttp/_httppolicy.cpp(403) LLCore::HttpPolicy::stageAfterCompletion : HTTP request 0000024CEDC631F0 failed after 0 retries.  Reason:  Forbidden (Http_403)
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1112) LLPluginProcessParent::receiveMessage : plugin version string: CEF plugin 1.1.412
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: base -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media_browser -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1112) LLPluginProcessParent::receiveMessage : plugin version string: CEF plugin 1.1.412
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: base -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media_browser -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1112) LLPluginProcessParent::receiveMessage : plugin version string: CEF plugin 1.1.412
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: base -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media_browser -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1112) LLPluginProcessParent::receiveMessage : plugin version string: CEF plugin 1.1.412
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: base -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media_browser -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1112) LLPluginProcessParent::receiveMessage : plugin version string: CEF plugin 1.1.412
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: base -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media -> version: 1.0
+2026-09-08T20:06:46Z INFO #Plugin# llplugin/llpluginprocessparent.cpp(1121) LLPluginProcessParent::receiveMessage : message class: media_browser -> version: 1.0
+2026-09-08T20:06:46Z INFO # newview/llstartup.cpp(1960) idle_startup : Requesting Mute List
+2026-09-08T20:06:46Z INFO # newview/llstartup.cpp(1964) idle_startup : Requesting Money Balance
+2026-09-08T20:06:46Z INFO # newview/llvoavatarself.cpp(198) LLVOAvatarSelf::initInstance : Self avatar object created. Starting timer.
+2026-09-08T20:06:46Z INFO #Avatar# newview/llvoavatarself.cpp(251) LLVOAvatarSelf::setHoverIfRegionEnabled :  Avatar '00ba6be1-9560-485d-9b8f-964b78ca4b12' missing parts  region or simulator features not known, no change on hover
+2026-09-08T20:06:46Z INFO #Avatar# newview/llvoavatar.cpp(842) LLVOAvatar::debugAvatarRezTime : REZTIME: [ 0sec ] Avatar '00ba6be1-9560-485d-9b8f-964b78ca4b12' missing parts RuthTimer 0 Notification AvatarRezArrivedNotification : avatar arrived
+2026-09-08T20:06:46Z INFO #HttpCoroutineAdapter#genericPostCoro# llmessage/llcorehttputil.cpp(1344) LLCoreHttpUtil::HttpCoroutineAdapter::trivialPostCoro : Generic POST for https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/6169d7b8-f948-5fc9-f86b-a65b9ef5c751
+2026-09-08T20:06:46Z INFO #Avatar# newview/llvoavatar.cpp(10375) LLVOAvatar::processAvatarAppearance : Processing appearance message version 179909
+2026-09-08T20:06:46Z INFO # newview/llmutelist.cpp(903) LLMuteList::processMuteListUpdate : LLMuteList::processMuteListUpdate()
+2026-09-08T20:06:46Z INFO #Xfer# llmessage/llxfer_file.cpp(142) LLXfer_File::initializeRequest : Requesting xfer from 35.95.110.40:12035 for file: C:\Users\Trevor\AppData\Local\SecondLife\mute_00ba6be1-9560-485d-9b8f-964b78ca4b12.tmp
+2026-09-08T20:06:46Z INFO #Messaging# newview/llviewermessage.cpp(4536) process_money_balance_reply : L$, credit, committed: 470 0 0
+2026-09-08T20:06:46Z INFO #Money# newview/llviewermessage.cpp(4718) process_money_balance_reply_extended : MoneyBalanceReply source 00000000-0000-0000-0000-000000000000 dest 00000000-0000-0000-0000-000000000000 type 0 item 
+2026-09-08T20:06:46Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_INVENTORY_SEND --> STATE_INVENTORY_SKEL
+2026-09-08T20:06:46Z INFO #FrameWatcher# llcommon/llsys.cpp(1278) FrameWatcher::tick :  initial framerate 107.7
+2026-09-08T20:06:46Z <mem>             Avail Physical KB:     52382436
+2026-09-08T20:06:46Z <mem>              Avail Virtual MB:    134209001
+2026-09-08T20:06:46Z <mem>                 Avail page KB:     69480908
+2026-09-08T20:06:46Z <mem>              Page Fault Count:       628804
+2026-09-08T20:06:46Z <mem>              PagefileUsage KB:      2407916
+2026-09-08T20:06:46Z <mem>          PeakPagefileUsage KB:      2453668
+2026-09-08T20:06:46Z <mem>         PeakWorkingSetSize KB:      1012652
+2026-09-08T20:06:46Z <mem>            Percent Memory use:           21
+2026-09-08T20:06:46Z <mem>               PrivateUsage KB:      2407916
+2026-09-08T20:06:46Z <mem>     QuotaNonPagedPoolUsage KB:           87
+2026-09-08T20:06:46Z <mem>        QuotaPagedPoolUsage KB:          865
+2026-09-08T20:06:46Z <mem> QuotaPeakNonPagedPoolUsage KB:          126
+2026-09-08T20:06:46Z <mem>    QuotaPeakPagedPoolUsage KB:          909
+2026-09-08T20:06:46Z <mem>             Total Physical KB:     66843408
+2026-09-08T20:06:46Z <mem>              Total Virtual MB:    134217727
+2026-09-08T20:06:46Z <mem>                 Total page KB:     90960656
+2026-09-08T20:06:46Z <mem>             WorkingSetSize KB:       990312
+2026-09-08T20:06:46Z <mem>                     timestamp: 2026-09-08T20:06:46.33Z
+
+2026-09-08T20:06:46Z INFO # llmessage/llcorehttputil.cpp(278) LLCoreHttpUtil::HttpCoroHandler::onCompleted : Possible failure [Http_403] cannot GET url 'http://asset-cdn.glb.agni.lindenlab.com/?material_id=e4cb0581-da73-d2fe-534f-2e2634af3c5a' because Forbidden
+2026-09-08T20:06:46Z WARNING #GLTF# newview/llgltfmateriallist.cpp(528) LLGLTFMaterialList::onAssetLoadComplete : Error getting material asset data: Asset request: failed (-1) for asset e4cb0581-da73-d2fe-534f-2e2634af3c5a
+2026-09-08T20:06:46Z INFO #Inventory# newview/llinventorymodel.cpp(3517) LLInventoryModel::loadFromFile : loading inventory from: (C:\Users\Trevor\AppData\Local\SecondLife\ba2a564a-f0f1-4b82-9c61-b7520bfcd09f.inv.llsd)
+2026-09-08T20:06:46Z INFO #Inventory# newview/llinventorymodel.cpp(3100) LLInventoryModel::loadSkeleton : Successfully loaded 490 categories and 5585 items from cache after 0.0559767s seconds.
+2026-09-08T20:06:46Z INFO #Inventory# newview/llinventorymodel.cpp(3517) LLInventoryModel::loadFromFile : loading inventory from: (C:\Users\Trevor\AppData\Local\SecondLife\00ba6be1-9560-485d-9b8f-964b78ca4b12.inv.llsd)
+2026-09-08T20:06:47Z INFO #Inventory# newview/llinventorymodel.cpp(3100) LLInventoryModel::loadSkeleton : Successfully loaded 4308 categories and 57798 items from cache after 0.436526s seconds.
+2026-09-08T20:06:47Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_INVENTORY_SKEL --> STATE_INVENTORY_SEND2
+2026-09-08T20:06:47Z INFO # newview/llviewerregion.cpp(2458) LLViewerRegion::setSimulatorFeatures : region Brianconnais <llsd>
+    <map>
+    <key>AnimatedObjects</key>
+        <map>
+        <key>AnimatedObjectMaxTris</key>
+            <integer>100000</integer>
+        <key>MaxAgentAnimatedObjectAttachments</key>
+            <integer>1</integer>
+        </map>
+    <key>AvatarHoverHeightEnabled</key>
+        <boolean>1</boolean>
+    <key>BakesOnMeshEnabled</key>
+        <boolean>1</boolean>
+    <key>DeadReckoningDistance</key>
+        <real>20</real>
+    <key>DeadReckoningTime</key>
+        <real>1</real>
+    <key>DynamicPathfindingEnabled</key>
+        <boolean>1</boolean>
+    <key>GLTFEnabled</key>
+        <boolean>0</boolean>
+    <key>HostName</key>
+        <string>simhost-0a20599ad3114ee3d.agni.secondlife.io</string>
+    <key>LSLSyntaxId</key>
+        <uuid>c09de42b-c060-3955-f3dc-91c26397761f</uuid>
+    <key>LuaScriptsEnabled</key>
+        <boolean>0</boolean>
+    <key>MaxAgentAttachments</key>
+        <integer>38</integer>
+    <key>MaxAgentGroups</key>
+        <integer>50</integer>
+    <key>MaxAgentGroupsBasic</key>
+        <integer>42</integer>
+    <key>MaxAgentGroupsPremium</key>
+        <integer>70</integer>
+    <key>MaxEstateAccessIds</key>
+        <integer>750</integer>
+    <key>MaxEstateManagers</key>
+        <integer>20</integer>
+    <key>MaxMaterialsPerTransaction</key>
+        <integer>50</integer>
+    <key>MaxTextureResolution</key>
+        <integer>2048</integer>
+    <key>MeshRezEnabled</key>
+        <boolean>1</boolean>
+    <key>MeshUploadEnabled</key>
+        <boolean>1</boolean>
+    <key>MeshXferEnabled</key>
+        <boolean>1</boolean>
+    <key>MirrorsEnabled</key>
+        <boolean>1</boolean>
+    <key>NoModBypassSupport</key>
+        <boolean>1</boolean>
+    <key>PBRMaterialSwatchEnabled</key>
+        <boolean>1</boolean>
+    <key>PBRTerrainEnabled</key>
+        <boolean>1</boolean>
+    <key>PBRTerrainTransformsEnabled</key>
+        <boolean>0</boolean>
+    <key>PhysicsMaterialsEnabled</key>
+        <boolean>1</boolean>
+    <key>PhysicsShapeTypes</key>
+        <map>
+        <key>convex</key>
+            <boolean>1</boolean>
+        <key>none</key>
+            <boolean>1</boolean>
+        <key>prim</key>
+            <boolean>1</boolean>
+        </map>
+    <key>RenderMaterialsCapability</key>
+        <real>4</real>
+    <key>VoiceServerType</key>
+        <string>webrtc</string>
+    </map>
+</llsd>
+
+2026-09-08T20:06:47Z INFO #Voice# newview/llvoicewebrtc.cpp(480) LLWebRTCVoiceClient::updateSettings : Input device: "{0.0.1.00000000}.{2f58858b-d054-49e7-acc5-13228a4e64b3}", output device: "Default"
+2026-09-08T20:06:47Z INFO #Avatar# newview/llvoavatarself.cpp(935) LLVOAvatarSelf::onSimulatorFeaturesReceived : simulator features received, setting hover based on region props
+2026-09-08T20:06:47Z INFO #Avatar# newview/llvoavatarself.cpp(2847) LLVOAvatarSelf::setHoverOffset :  Avatar '00ba6be1-9560-485d-9b8f-964b78ca4b12' missing parts  sending hover due to change 0
+2026-09-08T20:06:47Z INFO #HttpCoroutineAdapter#genericPostCoro# llmessage/llcorehttputil.cpp(1344) LLCoreHttpUtil::HttpCoroutineAdapter::trivialPostCoro : Generic POST for https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/a59eec2d-6086-f74f-8b0b-ab7a8f3c394e
+2026-09-08T20:06:47Z INFO #Avatar# newview/llvoavatarself.cpp(241) LLVOAvatarSelf::setHoverIfRegionEnabled :  Avatar '00ba6be1-9560-485d-9b8f-964b78ca4b12' missing parts  set hover height from debug setting 0
+2026-09-08T20:06:47Z INFO #Teleport# newview/llagent.cpp(4177) LLAgent::handleTeleportFinished : Agent handling teleport finished.
+2026-09-08T20:06:47Z INFO #Voice# newview/llvoiceclient.cpp(293) LLVoiceClient::setHidden : ( false )
+2026-09-08T20:06:47Z INFO # newview/llteleporthistory.cpp(254) LLTeleportHistory::dump : Teleport history dump (1 items):
+2026-09-08T20:06:47Z INFO # newview/llteleporthistory.cpp(263) LLTeleportHistory::dump :  * 0: Home of Sir Danny and Merrc the Brave, Brianconnais REGION_ID: a14ba253-7321-4ac6-b00b-48e277b1b43c, pos: { 289296, 278766, 47.3985 }
+2026-09-08T20:06:47Z WARNING #Inventory# newview/llinventorymodel.cpp(885) LLInventoryModel::findCategoryUUIDForTypeInRoot : Tried to find folder, type 23 but category does not exist
+2026-09-08T20:06:47Z WARNING #Inventory# newview/llinventorymodel.cpp(885) LLInventoryModel::findCategoryUUIDForTypeInRoot : Tried to find folder, type 14 but category does not exist
+2026-09-08T20:06:47Z WARNING #Inventory# newview/llinventorymodel.cpp(885) LLInventoryModel::findCategoryUUIDForTypeInRoot : Tried to find folder, type 3 but category does not exist
+2026-09-08T20:06:47Z WARNING #Inventory# newview/llinventorymodel.cpp(885) LLInventoryModel::findCategoryUUIDForTypeInRoot : Tried to find folder, type 14 but category does not exist
+2026-09-08T20:06:47Z INFO #Inventory# newview/llinventorymodel.cpp(3123) LLInventoryModel::buildParentChildMap : LLInventoryModel::buildParentChildMap()
+2026-09-08T20:06:47Z INFO #Inventory# newview/llinventorymodel.cpp(5028) LLInventoryModel::validate : Validate done, fatal errors: 0, warnings: 0, valid: 1
+2026-09-08T20:06:47Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_INVENTORY_SEND2 --> STATE_INVENTORY_CALLBACKS
+2026-09-08T20:06:47Z INFO #Xfer# llmessage/llxfer.cpp(311) LLXfer::processEOF : xfer from 35.95.110.40:12035 complete: C:\Users\Trevor\AppData\Local\SecondLife\mute_00ba6be1-9560-485d-9b8f-964b78ca4b12.tmp
+2026-09-08T20:06:47Z INFO # newview/llmutelist.cpp(957) LLMuteList::onFileMuteList : Received mute list from server
+2026-09-08T20:06:47Z WARNING # newview/llmutelist.cpp(255) LLMuteList::clearCachedMutes : Cached mutes cleared
+2026-09-08T20:06:47Z INFO # newview/llmutelist.cpp(1030) LLMuteList::setLoaded : Mute list loaded from server
+2026-09-08T20:06:47Z INFO # newview/llmutelist.cpp(1033) LLMuteList::setLoaded : Mute list loaded from server, disconnecting region change callback
+2026-09-08T20:06:47Z INFO # llmessage/llcorehttputil.cpp(82) LLCoreHttpUtil::logMessageSuccess : HttpCoroutineAdapter Success 'Hover height sent to sim' for https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/a59eec2d-6086-f74f-8b0b-ab7a8f3c394e
+2026-09-08T20:06:47Z INFO # newview/llstartup.cpp(2189) idle_startup : Registering Callbacks
+2026-09-08T20:06:47Z INFO # newview/llstartup.cpp(2191) idle_startup :  Inventory
+2026-09-08T20:06:47Z INFO # newview/llstartup.cpp(2193) idle_startup :  Landmark
+2026-09-08T20:06:47Z INFO # newview/llstartup.cpp(2198) idle_startup : Requesting Agent Data
+2026-09-08T20:06:47Z INFO # newview/llstartup.cpp(2202) idle_startup : Creating Inventory Views
+2026-09-08T20:06:47Z INFO #Inventory# newview/llpanelmaininventory.cpp(236) LLPanelMainInventory::postBuild : LLPanelMainInventory::init: reading from C:\Users\Trevor\AppData\Roaming\Prism\danny_nolan\filters.xml
+2026-09-08T20:06:47Z WARNING #configuration# llui/lltrans.cpp(266) LLTrans::findString : ONCE: Missing String in strings.xml: [InvFolder #Emerald]
+2026-09-08T20:06:47Z INFO #Inventory# newview/llinventorypanel.cpp(376) LLInventoryPanel::initializeViewBuilding : Fully initialized inventory panel All Items with 68182 views in 0.170733s seconds.
+2026-09-08T20:06:47Z INFO #Inventory# newview/llinventorypanel.cpp(376) LLInventoryPanel::initializeViewBuilding : Fully initialized inventory panel Recent Items with 68182 views in 0.181684s seconds.
+2026-09-08T20:06:48Z INFO #Inventory# newview/llinventorypanel.cpp(376) LLInventoryPanel::initializeViewBuilding : Fully initialized inventory panel Worn Items with 68182 views in 0.175087s seconds.
+2026-09-08T20:06:48Z WARNING # newview/lllandmarklist.cpp(241) LLLandmarkList::onRegionHandle : Got region handle but the landmark abd1dfe2-660f-3175-55c6-ff67c85bc16d global position is still unknown.
+2026-09-08T20:06:48Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_INVENTORY_CALLBACKS --> STATE_MISC
+2026-09-08T20:06:48Z INFO #Messaging# newview/llimprocessing.cpp(1588) LLIMProcessing::requestOfflineMessagesCoro : No contents received for offline messages via capability https://simhost-0a20599ad3114ee3d.agni.secondlife.io:12043/cap/f2016015-e7c8-2d46-9c60-9e35fe77512c
+2026-09-08T20:06:48Z INFO # llmessage/llcircuit.cpp(447) LLCircuit::addCircuitData : LLCircuit::addCircuitData for 35.94.26.148:13019
+2026-09-08T20:06:48Z INFO # newview/llworld.cpp(146) LLWorld::addRegion : Add region with handle: 1242448139665664 on host 35.94.26.148:13019
+2026-09-08T20:06:48Z INFO # newview/llworld.cpp(180) LLWorld::addRegion : Region does not exist, creating new one
+2026-09-08T20:06:48Z INFO # newview/llworld.cpp(188) LLWorld::addRegion : Adding new region (1130:1089) on host: 35.94.26.148:13019
+2026-09-08T20:06:48Z INFO #MAPURL# newview/llworldmipmap.cpp(194) LLWorldMipmap::loadObjectsTile : fetching map tile from https://secondlife-maps-cdn.akamaized.net/map-1-1130-1089-objects.jpg
+2026-09-08T20:06:48Z INFO # newview/llworld.cpp(1137) process_enable_simulator : simulator_enable() Enabling 35.94.26.148:13019 with code 706315885
+2026-09-08T20:06:48Z INFO #Inventory# newview/llinventorymodelbackgroundfetch.cpp(540) LLInventoryModelBackgroundFetch::setAllFoldersFetched : Inventory background fetch completed after: 0.745009
+2026-09-08T20:06:48Z WARNING #Voice# newview/llvoicewebrtc.cpp(408) LLWebRTCVoiceClient::LogMessage : (adm_helpers.cc:64): Unable to set recording device.
+
+2026-09-08T20:06:48Z WARNING #Voice# newview/llvoicewebrtc.cpp(408) LLWebRTCVoiceClient::LogMessage : (audio_device_core_win.cc:3483): Attempt to set Windows AEC with recording already initialized
+
+2026-09-08T20:06:48Z WARNING #Voice# newview/llvoicewebrtc.cpp(408) LLWebRTCVoiceClient::LogMessage : (rtp_sender.cc:352): Failed to set parameters since getParameters() has never been called on this sender (INVALID_STATE)
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1705): v=0
+o=- 6293638594321935018 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0 1
+a=extmap-allow-mixed
+a=msid-semantic: WMS SLStream
+m=audio 9 UDP/TLS/RTP/SAVPF 111 63 9 0 8 13 110 126
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:gezW
+a=ice-pwd:/Ky/e2H5sUxOeM6PSwns5jyy
+a=ice-options:trickle
+a=fingerprint:sha-256 47:9C:29:AF:30:52:03:26:10:D7:88:69:0A:20:8E:AE:22:51:50:14:97:C7:F7:86:E6:63:DB:B3:3D:19:21:11
+a=setup:actpass
+a=mid:0
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=sendrecv
+a=msid:SLStream SLAudio
+a=rtcp-mux
+a=rtcp-rsize
+a=rtpmap:111 opus/48000/2
+a=rtcp-fb:111 transport-cc
+a=fmtp:111 minptime=10;useinbandfec=1
+a=rtpmap:63 red/48000/2
+a=fmtp:63 111/111
+a=rtpmap:9 G722/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:13 CN/8000
+a=rtpmap:110 telephone-event/48000
+a=rtpmap:126 telephone-event/8000
+a=ssrc:1641032525 cname:+NKFAF5n7RNoJ74r
+a=ssrc:1641032525 msid:SLStream SLAudio
+m=application 9 UDP/DTLS/SCTP webrtc-datachannel
+c=IN IP4 0.0.0.0
+a=ice-ufrag:gezW
+a=ice-pwd:/Ky/e2H5sUxOeM6PSwns5jyy
+a=ice-options:trickle
+a=fingerprint:sha-256 47:9C:29:AF:30:52:03:26:10:D7:88:69:0A:20:8E:AE:22:51:50:14:97:C7:F7:86:E6:63:DB:B3:3D:19:21:11
+a=setup:actpass
+a=mid:1
+a=sctp-port:5000
+a=max-message-size:262144
+
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1734): llwebrtc::LLWebRTCPeerConnectionImpl::OnSuccess Local SDP: v=0
+o=- 6293638594321935018 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0 1
+a=extmap-allow-mixed
+a=msid-semantic: WMS SLStream
+m=audio 9 UDP/TLS/RTP/SAVPF 111 63 9 0 8 13 110 126
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:gezW
+a=ice-pwd:/Ky/e2H5sUxOeM6PSwns5jyy
+a=ice-options:trickle
+a=fingerprint:sha-256 47:9C:29:AF:30:52:03:26:10:D7:88:69:0A:20:8E:AE:22:51:50:14:97:C7:F7:86:E6:63:DB:B3:3D:19:21:11
+a=setup:actpass
+a=mid:0
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=sendrecv
+a=msid:SLStream SLAudio
+a=rtcp-mux
+a=rtcp-rsize
+a=rtpmap:111 opus/48000/2
+a=rtcp-fb:111 transport-cc
+a=fmtp:111 minptime=10;useinbandfec=1a=fmtp:111 minptime=10;useinbandfec=1;stereo=1;sprop-stereo=1;maxplaybackrate=48000;sprop-maxplaybackrate=48000;sprop-maxcapturerate=48000
+a=rtpmap:63 red/48000/2
+a=fmtp:63 111/111
+a=rtpmap:9 G722/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:13 CN/8000
+a=rtpmap:110 telephone-event/48000
+a=rtpmap:126 telephone-event/8000
+a=ssrc:1641032525 cname:+NKFAF5n7RNoJ74r
+a=ssrc:1641032525 msid:SLStream SLAudio
+m=application 9 UDP/DTLS/SCTP webrtc-datachannel
+c=IN IP4 0.0.0.0
+a=ice-ufrag:gezW
+a=ice-pwd:/Ky/e2H5sUxOeM6PSwns5jyy
+a=ice-options:trickle
+a=fingerprint:sha-256 47:9C:29:AF:30:52:03:26:10:D7:88:69:0A:20:8E:AE:22:51:50:14:97:C7:F7:86:E6:63:DB:B3:3D:19:21:11
+a=setup:actpass
+a=mid:1
+a=sctp-port:5000
+a=max-message-size:262144
+
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 0
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 0
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 0
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 1
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 1
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 1
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 0
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 1
+
+2026-09-08T20:06:48Z INFO # newview/llstartup.cpp(2350) idle_startup : gAgentStartLocation : last
+2026-09-08T20:06:48Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_MISC --> STATE_PRECACHE
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 0
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 0
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 0
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 1
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 1
+
+2026-09-08T20:06:48Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:1668): llwebrtc::LLWebRTCPeerConnectionImpl::OnIceCandidate 1
+
+2026-09-08T20:06:48Z INFO #ExactOIT# newview/fsexactoit.cpp(1511) FSExactOIT::composite : Compute sort requested 0, available 1, used this frame 0, GPU sort capacity bound 10271384
+2026-09-08T20:06:48Z INFO # newview/llviewerdisplay.cpp(247) display_stats : FPS: 0.10 SESSION JITTER: nan PERIOD JITTER: nan

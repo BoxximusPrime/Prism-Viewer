@@ -227,6 +227,12 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
         }
     }
 
+    if (features->hasFullGBuffer || features->hasShadows ||
+        (features->hasReflectionProbes && gGLManager.mNumTextureImageUnits >= 24))
+    {
+        if (!shader->attachFragmentObject("deferred/sssDepthUtil.glsl")) return false;
+    }
+
     if (features->hasFullGBuffer)
     {
         if (!shader->attachFragmentObject("deferred/gbufferUtil.glsl"))
@@ -1025,9 +1031,12 @@ void LLShaderMgr::initShaderCache(bool enabled, const LLUUID& old_cache_version,
 
     mShaderCacheEnabled = gGLManager.mGLVersion >= 4.09 && enabled;
 
-    if(!mShaderCacheEnabled || mShaderCacheVersion.notNull())
+    if (!mShaderCacheEnabled || mShaderCacheVersion == current_cache_version)
         return;
 
+    // A shader reload may discover changed sources without restarting the viewer.
+    // Do not keep binaries from the previous source version in memory.
+    mShaderBinaryCache.clear();
     mShaderCacheVersion = current_cache_version;
 
     mShaderCacheDir = gDirUtilp->getExpandedFilename(LL_PATH_CACHE, "shader_cache");
@@ -1496,6 +1505,9 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("shadowMap5");
 
     llassert(mReservedUniforms.size() == LLShaderMgr::DEFERRED_SHADOW5+1);
+    mReservedUniforms.push_back("sssDepthMap0");
+    mReservedUniforms.push_back("sssDepthMap1");
+    mReservedUniforms.push_back("sssDepthMap2");
 
     mReservedUniforms.push_back("positionMap");
     mReservedUniforms.push_back("diffuseRect");
