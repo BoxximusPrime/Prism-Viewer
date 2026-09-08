@@ -36,6 +36,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Inline outgoing translation language selector, shared by the bottom chat bar and Conversations nearby chat. (in progress)
 - Offer notifications no longer skip the next participant DM when no duplicate notification log is present. (in progress)
 - Per-person persistent DM translation targets and chiclet-reopened hidden DM windows. (in progress)
+- Outgoing translation language field in group and conference DMs, with a separate saved target for each conversation and the original outgoing text shown locally in parentheses after its translation. (in progress; runtime verification pending)
 - Saved DM translation targets are used only while automatic translation is enabled; explicit `/tr` commands remain available. (in progress; runtime verification pending)
 - Automatic translation of nearby chat and IMs.
 - Multiple translation providers, including an OpenAI-compatible translation handler.
@@ -85,6 +86,7 @@ The committed feature list is based on the differences from the `upstream/develo
 ## Asset loading and reliability
 
 - Exact-OIT alpha rendering for correctly composited overlapping transparent surfaces, with bounded GPU memory and automatic vanilla-renderer fallback.
+- OIT surface lighting normalizes interpolated normals, removes the extra Classic-mode local-light boost, and matches the opaque PBR point-light intensity multiplier through its shared transparency shaders. (in progress; Release build, 36 GPU lighting cases, and 14 alpha shader syntax checks passed; in-world lighting verification pending)
 - Exact OIT uses GPU-selected sort passes and same-frame overflow fallback, delayed nonblocking statistics, GPU counter resets, and tiled maximum-depth reduction; synchronous validation and per-fragment maximum updates remain selectable for comparison. (in progress; direct GPU correctness checks pass; in-world visual and performance verification pending)
 - Particle rendering skips glow passes for batches with no glow, and Exact OIT skips zero-glow capture entries while preserving glowing ribbon endpoints. (in progress; awaiting in-world performance and visual verification)
 - Legacy alpha-blended surfaces reject transparent texels before filtered shadow sampling in both ordinary and Exact OIT rendering, retaining the existing alpha cutoff and shadow quality. (in progress; awaiting dense-foliage performance and visual verification)
@@ -109,7 +111,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Custom fonts and font configuration.
 - Customized modal, floater, toast, scrollbar, button, tab, themed single- and multiline text fields, unified green accent states, and chat styling (multiline refresh in progress; tab and accent refresh in progress).
 - Subtle hover gradient on floater backgrounds (in progress).
-- Separated top-center DM chiclets and top-right notification controls (in progress).
+- Separated top-center DM chiclets and top-right notification controls; notification popup anchors beneath the relocated top-right control (in progress; runtime verification pending).
 - Custom colors for VIP, friend, blocked, and radar states.
 - Volume and audio UI adjustments.
 - Themed Now Playing card with a top-right visibility toggle, copyable stream URL and track title, pause-aware listening time, decorative playback bars, and parcel-music volume control, positioned clear of the right-side notifications. (in progress)

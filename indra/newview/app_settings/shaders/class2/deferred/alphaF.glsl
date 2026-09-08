@@ -179,6 +179,12 @@ void main()
 {
     mirrorClip(vary_position);
 
+    float final_scale = 1.0;
+#ifndef IS_HUD
+    if (classic_mode > 0)
+        final_scale = 1.1;
+#endif
+
     vec2 frag = vary_fragcoord.xy/vary_fragcoord.z*0.5+0.5;
 
     vec4 pos = vec4(vary_position, 1.0);
@@ -186,7 +192,7 @@ void main()
     // clip against water plane unless this is a legacy avatar skin
     waterClip(pos.xyz);
 #endif
-    vec3 norm = vary_norm;
+    vec3 norm = normalize(vary_norm);
 
 #ifdef USE_DIFFUSE_TEX
     vec4 diffuse_tap = texture(diffuseMap,vary_texcoord0.xy);
@@ -307,18 +313,15 @@ void main()
     LIGHT_LOOP(6)
     LIGHT_LOOP(7)
 
-    // sum local light contrib in linear colorspace
-    color.rgb += light.rgb;
+    // The final Classic boost belongs to environment lighting; opaque local
+    // lights are added after that boost. Match them before fog and OIT capture.
+    color.rgb += light.rgb / final_scale;
 
     color.rgb = applySkyAndWaterFog(pos.xyz, additive, atten, color).rgb;
 
 #endif // #else // FOR_IMPOSTOR
-    float final_scale = 1;
-    if (classic_mode > 0)
-        final_scale = 1.1;
 #ifdef IS_HUD
     color.rgb = linear_to_srgb(color.rgb);
-    final_scale = 1;
 #endif
 
     color.rgb *= final_scale;

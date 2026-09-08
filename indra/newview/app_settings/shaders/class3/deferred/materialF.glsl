@@ -421,16 +421,17 @@ void main()
         LIGHT_LOOP(6)
         LIGHT_LOOP(7)
 
-    color += light;
+    float final_scale = 1.0;
+    if (classic_mode > 0)
+        final_scale = 1.1;
+    // Opaque local lights are added after the Classic environment boost.
+    color += light / final_scale;
 
     color.rgb = applySkyAndWaterFog(pos.xyz, additive, atten, vec4(color, 1.0)).rgb;
 
     glare *= 1.0-emissive;
     glare = min(glare, 1.0);
     float al = max(diffcol.a, glare) * vertex_color.a;
-    float final_scale = 1;
-    if (classic_mode > 0)
-        final_scale = 1.1;
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color * final_scale, al), vec4(0));
 #ifdef EXACT_OIT

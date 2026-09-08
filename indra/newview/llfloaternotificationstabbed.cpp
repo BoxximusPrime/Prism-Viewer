@@ -27,7 +27,6 @@
 #include "llfloaternotificationstabbed.h"
 
 #include "llchiclet.h"
-#include "llchicletbar.h"
 #include "llflatlistview.h"
 #include "llfloaterreg.h"
 #include "llnotificationmanager.h"
@@ -180,7 +179,7 @@ void LLFloaterNotificationsTabbed::setVisible(bool visible)
         if (NULL == getDockControl() && getDockTongue().notNull())
         {
             setDockControl(new LLDockControl(
-                LLChicletBar::getInstance()->getChild<LLView>(getAnchorViewName()), this,
+                LLUI::getInstance()->getRootView()->getChild<LLView>(getAnchorViewName()), this,
                 getDockTongue(), LLDockControl::BOTTOM));
         }
     }

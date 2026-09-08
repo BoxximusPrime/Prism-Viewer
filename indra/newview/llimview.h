@@ -142,6 +142,9 @@ public:
 
         chat_message_list_t mMsgs;
 
+        // Display text for translated messages awaiting their group/conference server echo.
+        std::multimap<std::string, std::string> mPendingLocalEchoes;
+
         LLVoiceChannel* mVoiceChannel;
         LLIMSpeakerMgr* mSpeakers;
         bool            mP2PAsAdhocCall;

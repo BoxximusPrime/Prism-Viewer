@@ -1727,6 +1727,22 @@ void LLIMModel::proccessOnlineOfflineNotification(
 void LLIMModel::addMessage(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
                            const std::string& utf8_text, bool log2file /* = true */, bool is_region_msg, /* = false */ U32 time_stamp /* = 0 */)
 {
+    if (from_id == gAgentID)
+    {
+        LLIMSession* session = findIMSession(session_id);
+        if (session)
+        {
+            auto echo = session->mPendingLocalEchoes.find(utf8_text);
+            if (echo != session->mPendingLocalEchoes.end())
+            {
+                const std::string echo_text = echo->second;
+                session->mPendingLocalEchoes.erase(echo);
+                processAddingMessage(session_id, from, from_id, echo_text, log2file, is_region_msg, time_stamp);
+                return;
+            }
+        }
+    }
+
     if (gSavedSettings.getBOOL("TranslateChat")
         && from != SYSTEM_FROM
         && from_id != gAgentID)
@@ -2054,6 +2070,10 @@ void LLIMModel::sendMessage(const std::string& utf8_text,
     if(session)
     {
         is_group_chat = session->isGroupSessionType();
+        if (dialog != IM_NOTHING_SPECIAL && !local_echo_text.empty())
+        {
+            session->mPendingLocalEchoes.emplace(utf8_text, local_echo_text);
+        }
     }
 
     // If there is a mute list and this is not a group chat...
