@@ -106,6 +106,7 @@ private:
     static bool loadPBRGlowShaders(S32 shader_level);
     static bool loadEmissiveShaders(S32 shader_level);
     static bool loadCompositeShader(S32 shader_level);
+    static void loadControlShaders(S32 shader_level);
     static bool loadAlphaShaders(S32 shader_level, bool use_sun_shadow);
     static bool loadPBRAlphaShaders(S32 shader_level, bool use_sun_shadow);
     static bool loadFullbrightAlphaShaders(S32 shader_level);
@@ -126,25 +127,47 @@ private:
     static LLGLSLShader* pbrGlowShader();
     static ValidationResult validateCapture(bool cube_snapshot, bool impostor_render,
                                             bool mouselook, U32& maximum_list);
-    static void composite(LLRenderTarget& screen, LLVertexBuffer& screen_triangle, U32 maximum_list);
+    static void composite(LLRenderTarget& screen, LLVertexBuffer& screen_triangle, U32 maximum_list,
+                          bool indirect = false);
+    static void prepareControl();
+    static void collectStats();
+    static void queueStats(bool mouselook);
+    static void renderFallback(LLPipeline& pipeline);
+    static void finishFrameAsync(LLPipeline& pipeline, LLRenderTarget& screen,
+                                 LLVertexBuffer& screen_triangle, bool mouselook);
     static bool sortWithCompute(U32 width, U32 height, U32 maximum_list);
     static void releaseResources(bool preserve_node_pool);
     struct Resources
     {
+        struct Readback
+        {
+            GLuint buffer = 0;
+            GLsync fence = nullptr;
+            bool mouselook = false;
+        };
         GLuint heads = 0;
         GLuint counts = 0;
         GLuint headFBO = 0;
         GLuint nodes = 0;
         GLuint control = 0;
+        GLuint commands = 0;
+        GLuint overflowQuery = 0;
+        Readback readbacks[3];
+        U32 readbackRead = 0;
+        U32 readbackWrite = 0;
+        U32 readbackPending = 0;
         GLuint sortQueues[2] = {};
         U32 capacity = 0;
         U32 sortQueueCapacity = 0;
         U32 peakNodes = 0;
         U32 overflowCount = 0;
         bool computeSortAvailable = false;
+        bool controlAvailable = false;
+        bool reduceMaximum = false;
         bool available = false;
     };
     static bool captureOverflowed(U32 required_nodes, U32 overflow_flag);
+    static void growNodePool(U32 required_nodes);
     static void recordCaptureStats(U32 nodes, U32 maximum_list, bool mouselook);
     static void bindCompositeResources();
     static void copyOpaqueScene(LLRenderTarget& screen);

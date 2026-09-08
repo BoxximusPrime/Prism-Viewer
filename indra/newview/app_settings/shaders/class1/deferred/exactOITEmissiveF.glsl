@@ -9,6 +9,7 @@ struct OITNode { vec4 color; float glow; float depth; uint next; uint blend; };
 // </AS:Chanayane>
 layout(std430, binding = 0) buffer OITNodes { OITNode oitNodes[]; };
 layout(std430, binding = 1) buffer OITControl { uint oitNodeCount; uint oitNodeCapacity; uint oitOverflow; uint oitPad; };
+uniform int oitReduceMaximum;
 void exact_oit_store_glow(float glow)
 {
     // Zero additive glow cannot change the composite; do not allocate a node.
@@ -22,7 +23,7 @@ void exact_oit_store_glow(float glow)
     oitNodes[index].next = imageAtomicExchange(oitHeadPointers, ivec2(gl_FragCoord.xy), index);
     // <AS:Chanayane> Glow nodes participate in the same exact ordered list count.
     uint pixel_count = imageAtomicAdd(oitListCounts, ivec2(gl_FragCoord.xy), 1u) + 1u;
-    atomicMax(oitPad, pixel_count);
+    if (oitReduceMaximum == 0) atomicMax(oitPad, pixel_count);
     // </AS:Chanayane>
 }
 

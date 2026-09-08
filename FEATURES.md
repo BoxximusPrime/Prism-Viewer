@@ -85,6 +85,7 @@ The committed feature list is based on the differences from the `upstream/develo
 ## Asset loading and reliability
 
 - Exact-OIT alpha rendering for correctly composited overlapping transparent surfaces, with bounded GPU memory and automatic vanilla-renderer fallback.
+- Exact OIT uses GPU-selected sort passes and same-frame overflow fallback, delayed nonblocking statistics, GPU counter resets, and tiled maximum-depth reduction; synchronous validation and per-fragment maximum updates remain selectable for comparison. (in progress; direct GPU correctness checks pass; in-world visual and performance verification pending)
 - Particle rendering skips glow passes for batches with no glow, and Exact OIT skips zero-glow capture entries while preserving glowing ribbon endpoints. (in progress; awaiting in-world performance and visual verification)
 - Legacy alpha-blended surfaces reject transparent texels before filtered shadow sampling in both ordinary and Exact OIT rendering, retaining the existing alpha cutoff and shadow quality. (in progress; awaiting dense-foliage performance and visual verification)
 - Shadow casting skips unused forward-alpha list construction and skin-scattering uniform setup, and reuses alpha-caster shader setup across consecutive batches. (in progress; awaiting in-world CPU timing and shadow verification)

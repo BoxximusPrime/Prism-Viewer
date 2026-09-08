@@ -31,6 +31,7 @@ layout(std430, binding = 1) buffer OITControl
 uniform uint oitBlendFactors;
 uniform float oitGlow;
 uniform int oitDiscardNoOp;
+uniform int oitReduceMaximum;
 
 void exact_oit_store(vec4 color)
 {
@@ -59,5 +60,5 @@ void exact_oit_store(vec4 color)
     oitNodes[index].next = imageAtomicExchange(oitHeadPointers, ivec2(gl_FragCoord.xy), index);
 
     uint pixel_count = imageAtomicAdd(oitListCounts, ivec2(gl_FragCoord.xy), 1u) + 1u;
-    atomicMax(oitPad, pixel_count);
+    if (oitReduceMaximum == 0) atomicMax(oitPad, pixel_count);
 }
