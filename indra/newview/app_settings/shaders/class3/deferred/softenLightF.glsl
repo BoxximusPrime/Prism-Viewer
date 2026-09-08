@@ -29,6 +29,8 @@
 
 layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec4 sss_diffuse;
+layout(location = 2) out vec4 sss_transmitted;
+uniform int sss_transmission_smoothing;
 
 const float M_PI = 3.14159265;
 
@@ -114,6 +116,11 @@ bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
 vec3 getSSSTransmission(float nl, float nv, float strength);
+bool useSSSShadowThickness(float nl, float strength);
+float sampleDirectionalSSSPath(vec3 pos);
+void prepareSSSDepth(vec3 pos);
+float sampleFocusedSunSSSPath(vec3 pos, vec3 lightDir);
+vec3 getSSSTransmissionWithDepth(float nl, float nv, float strength, float path, float shadow);
 
 GBufferInfo getGBuffer(vec2 screenpos);
 vec3 clampHDRRange(vec3 color);
@@ -121,7 +128,7 @@ vec3 clampHDRRange(vec3 color);
 vec3 pbrBaseLightSSS(vec3 diffuseColor, vec3 specularColor, float metallic, vec3 v, vec3 norm,
                      float perceptualRoughness, vec3 light_dir, vec3 sunlit, float scol,
                      vec3 radiance, vec3 irradiance, vec3 colorEmissive, float ao,
-                     float sssStrength, out vec3 diffuseLighting)
+                     float sssStrength, float sssPath, out vec3 diffuseLighting, out vec3 transmissionLighting)
 {
     float nv = clamp(abs(dot(norm, v)), 0.001, 1.0);
     vec3 iblDiffuse = vec3(0.0);
@@ -137,7 +144,7 @@ vec3 pbrBaseLightSSS(vec3 diffuseColor, vec3 specularColor, float metallic, vec3
 
     float diffuseNl = sssStrength > 0.0 ? dot(norm, normalize(light_dir)) : nl;
     vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, sssStrength);
-    vec3 transmission = getSSSTransmission(diffuseNl, nv, sssStrength);
+    vec3 transmission = getSSSTransmissionWithDepth(diffuseNl, nv, sssStrength, sssPath, 1.0);
     vec3 result;
     if (classic_mode > 0)
     {
@@ -151,21 +158,32 @@ vec3 pbrBaseLightSSS(vec3 diffuseColor, vec3 specularColor, float metallic, vec3
         vec3 sunDiffuse = clamp(sunContrib * directDiffuse * scol, vec3(0.0), vec3(10.0));
         vec3 combinedSun = clamp((sunContrib * directDiffuse + specSunContrib * directSpecular) * scol,
                                  vec3(0.0), vec3(10.0));
-        vec3 transmitted = srgb_to_linear(linear_to_srgb(transmission) * sunlit * 0.7) * diffuseColor * scol;
+        vec3 transmitted = srgb_to_linear(linear_to_srgb(transmission) * sunlit * 0.7) * diffuseColor;
+        if (sssPath < 0.0) transmitted *= scol;
         sunDiffuse += transmitted;
         combinedSun += transmitted;
 
         result = srgb_to_linear(linear_to_srgb(ambient) + linear_to_srgb(combinedSun) * 1.1);
         diffuseLighting = ambient + srgb_to_linear(linear_to_srgb(sunDiffuse) * 1.1);
+        transmissionLighting = diffuseLighting - (ambient +
+            srgb_to_linear(linear_to_srgb(max(sunDiffuse - transmitted, vec3(0.0))) * 1.1));
     }
     else
     {
         vec3 transmitted = transmission * diffuseColor / 3.14159265;
+        // Measured entry depth already accounts for occlusion. Ordinary surface
+        // shadowing must not black out the light that travelled through the skin.
+        vec3 throughSkin = sssPath >= 0.0 ? transmitted * sunlit * 3.0 : vec3(0.0);
+        if (sssPath >= 0.0) transmitted = vec3(0.0);
         vec3 sunDiffuse = clamp(diffuseFactor * directDiffuse + transmitted, vec3(0.0), vec3(10.0)) * sunlit * 3.0 * scol;
         vec3 combinedSun = clamp(diffuseFactor * directDiffuse + transmitted + nl * directSpecular,
                                  vec3(0.0), vec3(10.0)) * sunlit * 3.0 * scol;
+        sunDiffuse += throughSkin;
+        combinedSun += throughSkin;
         result = iblDiffuse + combinedSun;
         diffuseLighting = iblDiffuse + sunDiffuse;
+        transmissionLighting = sunDiffuse - clamp(diffuseFactor * directDiffuse,
+            vec3(0.0), vec3(10.0)) * sunlit * 3.0 * scol;
     }
 
     return result + iblSpecular + colorEmissive;
@@ -186,15 +204,25 @@ void main()
     vec2  tc           = vary_fragcoord.xy;
     float depth        = getDepth(tc.xy);
     vec4  pos          = getPositionWithDepth(tc, depth);
+    prepareSSSDepth(pos.xyz);
 
     GBufferInfo gb = getGBuffer(tc);
     float sssStrength = getSSSStrength(gb.sss, pos.xyz);
     float wrapStrength = useSSSWrappedDiffuse(sssStrength) ? sssStrength : 0.0;
     vec3 sssDiffuseLighting = vec3(0.0);
+    vec3 sssTransmissionLighting = vec3(0.0);
 
     vec3 colorEmissive = gb.emissive.rgb;
     float envIntensity = gb.envIntensity;
     vec3  light_dir   = (sun_up_factor == 1) ? sun_dir : moon_dir;
+    float sssPath = -1.0;
+    if (useSSSShadowThickness(dot(gb.normal, normalize(light_dir)), wrapStrength))
+    {
+        sssPath = sampleFocusedSunSSSPath(pos.xyz, normalize(light_dir));
+#if defined(HAS_SUN_SHADOW)
+        if (sssPath < 0.0) sssPath = sampleDirectionalSSSPath(pos.xyz);
+#endif
+    }
 
     vec4 baseColor     = gb.albedo;
     vec4 spec        = gb.specular; // NOTE: PBR linear Emissive
@@ -257,7 +285,7 @@ void main()
         {
             color = pbrBaseLightSSS(diffuseColor, specularColor, metallic, v, gb.normal,
                                     perceptualRoughness, light_dir, sunlit_linear, scol, radiance,
-                                    irradiance, colorEmissive, ao, wrapStrength, sssDiffuseLighting);
+                                    irradiance, colorEmissive, ao, wrapStrength, sssPath, sssDiffuseLighting, sssTransmissionLighting);
         }
         else
         {
@@ -270,7 +298,7 @@ void main()
             {
                 pbrBaseLightSSS(diffuseColor, specularColor, metallic, v, gb.normal,
                                 perceptualRoughness, light_dir, sunlit_linear, scol, radiance,
-                                irradiance, colorEmissive, ao, 0.0, sssDiffuseLighting);
+                                irradiance, colorEmissive, ao, 0.0, -1.0, sssDiffuseLighting, sssTransmissionLighting);
             }
         }
     }
@@ -311,25 +339,36 @@ void main()
         // apply lambertian IBL only (see pbrIbl)
         color.rgb = irradiance;
 
+        vec3 transmission = getSSSTransmissionWithDepth(raw_da, dot(gb.normal, -normalize(pos.xyz)),
+                                                       wrapStrength, sssPath, 1.0);
         if (classic_mode > 0)
         {
             vec3 diffuse_factor = getSSSDiffuseFactor(raw_da, wrapStrength);
-            diffuse_factor += getSSSTransmission(raw_da, dot(gb.normal, -normalize(pos.xyz)), wrapStrength);
+            if (sssPath < 0.0) diffuse_factor += transmission;
             vec3 sun_contrib = min(pow(diffuse_factor, vec3(1.2)), vec3(scol));
+            if (sssPath >= 0.0) sun_contrib += transmission;
 
+            vec3 plainSun = min(pow(getSSSDiffuseFactor(raw_da, wrapStrength), vec3(1.2)), vec3(scol));
+            vec3 withoutTransmission = srgb_to_linear(color.rgb * 0.9 +
+                linear_to_srgb(plainSun) * sunlit_linear * 0.7);
             color.rgb = srgb_to_linear(color.rgb * 0.9 + (linear_to_srgb(sun_contrib) * sunlit_linear * 0.7));
+            sssTransmissionLighting = color.rgb - withoutTransmission;
             sunlit_linear = srgb_to_linear(sunlit_linear);
         }
         else
         {
             vec3 diffuse_factor = getSSSDiffuseFactor(raw_da, wrapStrength);
-            diffuse_factor += getSSSTransmission(raw_da, dot(gb.normal, -normalize(pos.xyz)), wrapStrength);
+            if (sssPath < 0.0) diffuse_factor += transmission;
             vec3 sun_contrib = min(diffuse_factor, vec3(scol)) * sunlit_linear;
+            if (sssPath >= 0.0) sun_contrib += transmission * sunlit_linear;
             color.rgb += sun_contrib;
+            sssTransmissionLighting = sun_contrib -
+                min(getSSSDiffuseFactor(raw_da, wrapStrength), vec3(scol)) * sunlit_linear;
         }
 
         color.rgb *= baseColor.rgb;
         sssDiffuseLighting = color.rgb;
+        sssTransmissionLighting *= baseColor.rgb;
 
         vec3 refnormpersp = reflect(pos.xyz, gb.normal);
 
@@ -361,6 +400,7 @@ void main()
 
         color.rgb = mix(color.rgb, baseColor.rgb, baseColor.a);
         sssDiffuseLighting *= 1.0 - baseColor.a;
+        sssTransmissionLighting *= 1.0 - baseColor.a;
 
         if (envIntensity > 0.0)
         {  // add environment map
@@ -376,8 +416,14 @@ void main()
     frag_color.rgb = clampHDRRange(color.rgb * final_scale); //output linear since local lights will be added to this shader's results
     frag_color.a = 0.0;
     sss_diffuse = vec4(0.0);
+    sss_transmitted = vec4(0.0);
     if (useSSSScreenDiffusion(sssStrength))
     {
         sss_diffuse.rgb = clampHDRRange(sssDiffuseLighting * final_scale);
+        if (sss_transmission_smoothing != 0)
+        {
+            sss_transmitted.rgb = min(max(sssTransmissionLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_diffuse.rgb -= sss_transmitted.rgb;
+        }
     }
 }

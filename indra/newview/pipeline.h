@@ -352,6 +352,10 @@ public:
     void postDeferredGammaCorrect(LLRenderTarget* screen_target);
 
     void generateSunShadow(LLCamera& camera);
+    void pushShadowRenderTypeMask();
+    void generateSSSDepth(LLCamera& camera);
+    void updateSSSDepthFocus(LLCamera& camera);
+    void bindSSSDepth(LLGLSLShader& shader);
     LLRenderTarget* getSunShadowTarget(U32 i);
     LLRenderTarget* getSpotShadowTarget(U32 i);
 
@@ -726,9 +730,18 @@ public:
 
     LLRenderTarget          mSpotShadow[2];
     bool                    mHasSSSGeometry = false;
+    LLRenderTarget          mSSSDepth[3];
+    glm::dmat4              mSSSDepthMatrix[3] = { glm::dmat4(1), glm::dmat4(1), glm::dmat4(1) };
+    glm::vec3               mSSSDepthOrigin[2] = {};
+    glm::vec3               mSSSDepthValid = glm::vec3(0);
+    LLVector3               mSSSDepthFocus;
+    glm::vec3               mSSSDepthRenderedFocus = glm::vec3(0);
+    bool                    mSSSDepthFocusValid = false;
+    LLRenderTarget          mSSSTransmission;
+    bool                    mSSSTransmissionSmoothing = false;
     LLRenderTarget          mSSSDiffuse;
     LLRenderTarget          mSSSScratch;
-    void renderSSSDiffusion();
+    void renderSSSDiffusion(bool transmission = false);
 
     LLRenderTarget          mPbrBrdfLut;
     LLRenderTarget          mWaterExclusionMask;

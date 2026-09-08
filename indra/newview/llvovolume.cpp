@@ -3788,7 +3788,7 @@ bool LLVOVolume::isSSSEnabled() const
     if (!own_description_available || !root_description_available || (detect_name && !root_name_available))
     {
         static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
-        static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 44.f);
+        static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 36.0f);
         const bool request_relevant = sss_enabled && isVisible() &&
             (LLViewerCamera::instance().getOrigin() - getRenderPosition()).magVec() <=
                 llmax(F32(sss_max_distance), 1.f);
@@ -4645,7 +4645,7 @@ void LLVOVolume::preUpdateGeom()
     sNumLODChanges = 0;
 
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
-    static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 44.f);
+    static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 36.0f);
     const F64 now = LLFrameTimer::getElapsedSeconds();
     // Release simulator-only selections after their full properties arrive, or
     // on timeout. Always clean up, including after the user disables SSS.

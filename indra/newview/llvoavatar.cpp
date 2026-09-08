@@ -5130,6 +5130,9 @@ bool LLVOAvatar::computeNeedsUpdate()
 //------------------------------------------------------------------------
 bool LLVOAvatar::updateCharacter(LLAgent &agent)
 {
+    static LLCachedControl<bool> freeze_animations(gSavedSettings, "BoxxyFreezeAvatarAnimations", false);
+    mMotionController.setFrozen(freeze_animations);
+
     updateDebugText();
 
     if (!mIsBuilt)

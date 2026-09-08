@@ -28,6 +28,9 @@
 #include "llviewerprecompiledheaders.h"
 
 #include <boost/lexical_cast.hpp>
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
 
 #include "llfeaturemanager.h"
 // <AS:Chanayane> Exact OIT
@@ -528,6 +531,51 @@ S32 LLViewerShaderMgr::getShaderLevel(S32 type)
 //============================================================================
 // Shader Management
 
+// Hash the installed sources, including shared helpers and shader-class fallbacks.
+// Program binary keys include filenames/permutations, but not file contents.
+static bool hashShaderSources(HBXXH128& hash_obj, const std::filesystem::path& root)
+{
+    namespace fs = std::filesystem;
+    std::vector<fs::path> files;
+    std::error_code error;
+    for (fs::recursive_directory_iterator it(root, error), end;
+         !error && it != end; it.increment(error))
+    {
+        if (it->is_regular_file(error) && it->path().extension() == ".glsl")
+            files.push_back(it->path());
+        if (error) break;
+    }
+    if (error || files.empty())
+    {
+        LL_WARNS("ShaderLoading") << "Cannot enumerate shader sources; bypassing binary cache." << LL_ENDL;
+        return false;
+    }
+    std::sort(files.begin(), files.end());
+    for (const auto& file : files)
+    {
+        const auto relative = file.lexically_relative(root).generic_u8string();
+        const std::string name(relative.begin(), relative.end());
+        std::ifstream source(file, std::ios::binary);
+        if (!source.is_open())
+        {
+            LL_WARNS("ShaderLoading") << "Cannot read shader source: " << name << LL_ENDL;
+            return false;
+        }
+        HBXXH128 contents(source);
+        if (source.bad())
+        {
+            LL_WARNS("ShaderLoading") << "Error reading shader source: " << name << LL_ENDL;
+            return false;
+        }
+        // Relative names keep cache identity independent of the installation path.
+        hash_obj.update(name);
+        hash_obj.update("\0", 1);
+        hash_obj.update(contents.digest().asString());
+    }
+    LL_INFOS("ShaderLoading") << "Hashed " << files.size() << " GLSL source files." << LL_ENDL;
+    return true;
+}
+
 void LLViewerShaderMgr::setShaders()
 {
     LL_PROFILE_ZONE_SCOPED;
@@ -550,30 +598,24 @@ void LLViewerShaderMgr::setShaders()
 
     {
         static LLCachedControl<bool> shader_cache_enabled(gSavedSettings, "RenderShaderCacheEnabled", true);
-        static LLUUID old_cache_version;
-        static LLUUID current_cache_version;
-        if (current_cache_version.isNull())
-        {
-            HBXXH128 hash_obj;
-            hash_obj.update(LLVersionInfo::instance().getVersion());
+        HBXXH128 hash_obj;
+        hash_obj.update(LLVersionInfo::instance().getVersion());
 // <AS:Chanayane> Include the Exact OIT shader revision in the cache key.
-            hash_obj.update(FSExactOIT::shaderCacheRevision());
+        hash_obj.update(FSExactOIT::shaderCacheRevision());
 // </AS:Chanayane>
-            // Program binary keys do not hash GLSL contents. Bump this revision
-            // when changing SSS shaders so existing installations recompile them.
-            hash_obj.update("boxxy-sss-3");
-            // Recompile shared alpha shaders after moving shadows past alpha rejection.
-            hash_obj.update("boxxy-alpha-shadow-1");
-            // Includes the shared transparency lighting and projector receivers.
-            hash_obj.update("prism-alpha-projectors-1");
-            current_cache_version = hash_obj.digest();
-
-            old_cache_version = LLUUID(gSavedSettings.getString("RenderShaderCacheVersion"));
+        // Recheck on every load, including in-session shader reloads. No manual
+        // revision bump is needed when a GLSL file changes, appears, or disappears.
+        const bool sources_hashed = hashShaderSources(hash_obj,
+            fsyspath(gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "shaders")));
+        const LLUUID current_cache_version = hash_obj.digest();
+        const LLUUID old_cache_version(gSavedSettings.getString("RenderShaderCacheVersion"));
+        if (sources_hashed)
+        {
             gSavedSettings.setString("RenderShaderCacheVersion", current_cache_version.asString());
         }
 
         initShaderCache(
-            shader_cache_enabled,
+            shader_cache_enabled && sources_hashed,
             old_cache_version,
             current_cache_version,
             LLAppViewer::instance()->isSecondInstance());
@@ -918,6 +960,7 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/projectorUtil.glsl",                   1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/gbufferUtil.glsl",                    1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/globalF.glsl",                          1));
+    index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/sssDepthUtil.glsl",                      1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/shadowUtil.glsl",                      1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/aoUtil.glsl",                          1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/pbrterrainUtilF.glsl",                 1) );

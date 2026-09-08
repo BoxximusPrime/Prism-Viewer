@@ -917,6 +917,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
 
     if (!gCubeSnapshot) // hack to not re-allocate various targets for cube snapshots
     {
+        mSSSTransmission.release();
         mSSSDiffuse.release();
         mSSSScratch.release();
         if (gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getS32("BoxxySSSMode") >= 1)
@@ -1244,9 +1245,15 @@ void LLPipeline::releaseGLBuffers()
     mWaterExclusionMask.release();
 
     mPostPingMap.release();
+    mSSSTransmission.release();
+    mSSSTransmissionSmoothing = false;
     mSSSDiffuse.release();
     mSSSScratch.release();
+    for (auto& target : mSSSDepth) target.release();
+    mSSSDepthValid = glm::vec3(0);
+    mSSSDepthFocusValid = false;
     mPostPongMap.release();
+
 
     mFXAAMap.release();
 
@@ -3043,6 +3050,8 @@ void LLPipeline::markShift(LLDrawable *drawablep)
 
 void LLPipeline::shiftObjects(const LLVector3 &offset)
 {
+    mSSSDepthFocusValid = false;
+    mSSSDepthValid = glm::vec3(0);
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     assertInitialized();
 
@@ -4179,6 +4188,9 @@ void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+    if (!gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
+        updateSSSDepthFocus(camera);
+
 }
 
 // Render all of our geometry that's required after our deferred pass.
@@ -8291,6 +8303,7 @@ void LLPipeline::bindDeferredShaderFast(LLGLSLShader& shader)
         shader.bind();
         bindLightFunc(shader);
         bindShadowMaps(shader);
+        bindSSSDepth(shader);
         bindReflectionProbes(shader);
         bindAlphaProjectors(shader, false);
     }
@@ -8310,20 +8323,39 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     shader.bind();
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<S32> sss_mode(gSavedSettings, "BoxxySSSMode", 2);
-    static LLCachedControl<F32> sss_strength(gSavedSettings, "BoxxySSSStrength", 0.90f);
-    static LLCachedControl<F32> sss_warmth(gSavedSettings, "BoxxySSSWarmth", 0.75f);
-    static LLCachedControl<F32> sss_distance(gSavedSettings, "BoxxySSSMaxDistance", 44.f);
+    static LLCachedControl<F32> sss_strength(gSavedSettings, "BoxxySSSStrength", 1.0f);
+    static LLCachedControl<F32> sss_warmth(gSavedSettings, "BoxxySSSWarmth", 0.45f);
+    static LLCachedControl<F32> sss_distance(gSavedSettings, "BoxxySSSMaxDistance", 36.0f);
     static const LLStaticHashedString sss_params("sss_params");
     shader.uniform4f(sss_params,
         sss_enabled && !gCubeSnapshot && !sImpostorRender ? llclamp(F32(sss_strength), 0.f, 1.f) : 0.f,
         sss_mode == 1 && !mSSSDiffuse.isComplete() ? 0.f : F32(sss_mode),
         llclamp(F32(sss_warmth), 0.f, 1.f), llmax(F32(sss_distance), 1.f));
-    static LLCachedControl<F32> sss_wrap(gSavedSettings, "BoxxySSSWrapAmount", 0.65f);
-    static LLCachedControl<F32> sss_transmission(gSavedSettings, "BoxxySSSTransmission", 0.40f);
-    static LLCachedControl<F32> sss_thickness(gSavedSettings, "BoxxySSSThickness", 8.5f);
+    static LLCachedControl<F32> sss_wrap(gSavedSettings, "BoxxySSSWrapAmount", 0.25f);
+    static LLCachedControl<F32> sss_transmission(gSavedSettings, "BoxxySSSTransmission", 0.85f);
+    static LLCachedControl<F32> sss_thickness(gSavedSettings, "BoxxySSSThickness", 4.0f);
     static const LLStaticHashedString sss_lighting("sss_lighting");
     shader.uniform3f(sss_lighting, llclamp(F32(sss_wrap), 0.f, 1.f),
-        llclamp(F32(sss_transmission), 0.f, 1.f), llclamp(F32(sss_thickness), 0.5f, 20.f));
+        llclamp(F32(sss_transmission), 0.f, 4.f), llclamp(F32(sss_thickness), 0.5f, 20.f));
+    static LLCachedControl<F32> sss_penetration(gSavedSettings, "BoxxySSSPenetration", 29.0f);
+    static const LLStaticHashedString sss_penetration_name("sss_penetration");
+    shader.uniform1f(sss_penetration_name, llclamp(F32(sss_penetration), 5.f, 80.f) * 0.001f);
+    static LLCachedControl<F32> sss_minimum_thickness(gSavedSettings, "BoxxySSSMinimumThickness", 0.0f);
+    static const LLStaticHashedString sss_minimum_thickness_name("sss_minimum_thickness");
+    shader.uniform1f(sss_minimum_thickness_name, llclamp(F32(sss_minimum_thickness), 0.f, 20.f) * 0.001f);
+    static LLCachedControl<F32> sss_maximum_thickness(gSavedSettings, "BoxxySSSMaximumThickness", 0.0f);
+    static LLCachedControl<F32> sss_clamp_knee(gSavedSettings, "BoxxySSSClampKnee", 4.0f);
+    static const LLStaticHashedString sss_maximum_thickness_name("sss_maximum_thickness"),
+        sss_clamp_knee_name("sss_clamp_knee");
+    shader.uniform1f(sss_maximum_thickness_name, llclamp(F32(sss_maximum_thickness), 0.f, 80.f) * 0.001f);
+    shader.uniform1f(sss_clamp_knee_name, llclamp(F32(sss_clamp_knee), 0.f, 20.f) * 0.001f);
+    static LLCachedControl<bool> sss_shadow_thickness(gSavedSettings, "BoxxySSSShadowThickness", true);
+    static const LLStaticHashedString sss_shadow_thickness_name("sss_shadow_thickness");
+    shader.uniform1i(sss_shadow_thickness_name, sss_shadow_thickness ? 1 : 0);
+    bindSSSDepth(shader);
+    static const LLStaticHashedString transmission_smoothing("sss_transmission_smoothing");
+    shader.uniform1i(transmission_smoothing, mSSSTransmissionSmoothing && !gCubeSnapshot &&
+        !sImpostorRender && mRT == &mMainRT ? 1 : 0);
 
     S32 channel = 0;
     channel = shader.enableTexture(LLShaderMgr::DEFERRED_DIFFUSE, deferred_target->getUsage());
@@ -8573,6 +8605,15 @@ void LLPipeline::renderDeferredLighting()
     const bool sss_diffusion = mHasSSSGeometry && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
         gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getS32("BoxxySSSMode") >= 1 &&
         gSavedSettings.getF32("BoxxySSSStrength") > 0.f && mSSSDiffuse.isComplete();
+    const bool sss_debug_combined = gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
+        gSavedSettings.getS32("BoxxySSSDebugLight") == 3;
+    const bool sss_transmission_blur = gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") > 0.f;
+    mSSSTransmissionSmoothing = sss_diffusion && gSavedSettings.getS32("BoxxySSSMode") == 2 &&
+        (sss_transmission_blur || sss_debug_combined) &&
+        gSavedSettings.getF32("BoxxySSSTransmission") > 0.f;
+    if (mSSSTransmissionSmoothing && !mSSSTransmission.isComplete())
+        mSSSTransmissionSmoothing = mSSSTransmission.allocate(mSSSDiffuse.getWidth(), mSSSDiffuse.getHeight(), GL_RGBA16F);
+
 
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("deferred");
@@ -8699,8 +8740,10 @@ void LLPipeline::renderDeferredLighting()
         {
             // Capture diffuse illumination alongside scene color, only during opaque lighting.
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mSSSDiffuse.getTexture(), 0);
-            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-            glDrawBuffers(2, buffers);
+            if (mSSSTransmissionSmoothing)
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, mSSSTransmission.getTexture(), 0);
+            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+            glDrawBuffers(mSSSTransmissionSmoothing ? 3 : 2, buffers);
         }
         // clear color buffer here - zeroing alpha (glow) is important or it will accumulate against sky
         glClearColor(0, 0, 0, 0);
@@ -9003,23 +9046,43 @@ void LLPipeline::renderDeferredLighting()
         gGL.flush();
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
+        if (mSSSTransmissionSmoothing)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, 0, 0);
         renderSSSDiffusion();
+        if (mSSSTransmissionSmoothing && sss_transmission_blur && !sss_debug_combined) renderSSSDiffusion(true);
     }
 
     if (mHasSSSGeometry && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
-        gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getBOOL("BoxxySSSShowMask"))
+        gSavedSettings.getBOOL("BoxxySSSEnabled") &&
+        (gSavedSettings.getBOOL("BoxxySSSShowMask") || gSavedSettings.getBOOL("BoxxySSSShowDepth")))
     {
         LLGLDepthTest depth(GL_FALSE, GL_FALSE);
         LLGLDisable cull(GL_CULL_FACE);
         LLGLEnable blend(GL_BLEND);
         bindDeferredShader(gSSSMaskProgram);
+        static const LLStaticHashedString debugDepth("sss_debug_depth"),
+            debugLight("sss_debug_light"), debugSun("sss_debug_sun"),
+            debugCaptured("sss_debug_captured");
+        gSSSMaskProgram.uniform1i(debugDepth, gSavedSettings.getBOOL("BoxxySSSShowDepth") ? 1 : 0);
+        gSSSMaskProgram.uniform1i(debugLight, llclamp(gSavedSettings.getS32("BoxxySSSDebugLight"), 0, 3));
+        const glm::vec3 sun = glm::mat3(get_current_modelview()) *
+            glm::vec3(LLEnvironment::instance().getIsSunUp() ? mSunDir : mMoonDir);
+        gSSSMaskProgram.uniform3fv(debugSun, 1, glm::value_ptr(sun));
+        gSSSMaskProgram.uniform1i(debugCaptured, mSSSTransmissionSmoothing ? 1 : 0);
+        if (sss_debug_combined && mSSSTransmissionSmoothing)
+            gSSSMaskProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSTransmission, false, LLTexUnit::TFO_POINT);
         gGL.setSceneBlendType(LLRender::BT_ALPHA);
         gGL.setColorMask(true, false);
         mScreenTriangleVB->setBuffer();
         mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
         gGL.setColorMask(true, true);
+        gSSSMaskProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
         unbindDeferredShader(gSSSMaskProgram);
     }
+    // Apply the same blur correction to the isolated sum as to normal lighting.
+    if (sss_debug_combined && mSSSTransmissionSmoothing && sss_transmission_blur)
+        renderSSSDiffusion(true);
+    mSSSTransmissionSmoothing = false;
 
     {  // render non-deferred geometry (alpha, fullbright, glow)
         LLGLDisable blend(GL_BLEND);
@@ -9083,7 +9146,7 @@ void LLPipeline::renderDeferredLighting()
     gGL.setColorMask(true, true);
 }
 
-void LLPipeline::renderSSSDiffusion()
+void LLPipeline::renderSSSDiffusion(bool transmission)
 {
     LL_PROFILE_GPU_ZONE("Skin diffusion");
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
@@ -9093,11 +9156,16 @@ void LLPipeline::renderSSSDiffusion()
     bindDeferredShader(shader);
     static const LLStaticHashedString depth_name("sss_depth");
     static const LLStaticHashedString pass_name("sss_pass");
-    shader.uniform1f(depth_name, llclamp(gSavedSettings.getF32("BoxxySSSDepth"), 0.001f, 0.03f));
-    shader.bindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP, &mSSSDiffuse, false, LLTexUnit::TFO_POINT);
+    static const LLStaticHashedString smoothing_name("sss_smoothing_pass");
+    const F32 radius = transmission ? gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") * 0.001f :
+        gSavedSettings.getF32("BoxxySSSDepth");
+    shader.uniform1f(depth_name, llclamp(radius, 0.001f, 0.1f));
+    shader.uniform1i(smoothing_name, transmission ? 1 : 0);
+    LLRenderTarget* source = transmission ? &mSSSTransmission : &mSSSDiffuse;
+    shader.bindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
 
     mSSSScratch.bindTarget();
-    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSDiffuse, false, LLTexUnit::TFO_POINT);
+    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
     shader.uniform1i(pass_name, 0);
     mScreenTriangleVB->setBuffer();
     mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
@@ -9282,7 +9350,7 @@ namespace
 struct ProjectorParams
 {
     glm::mat4 matrix;
-    glm::vec3 plane, normal, origin;
+    glm::vec3 plane, normal, origin, agentOrigin;
     F32 nearClip, range, focus, ambiance;
 };
 
@@ -9350,7 +9418,7 @@ ProjectorParams getProjectorParams(LLDrawable* drawablep)
     F32 proj_range = far_clip - near_clip;
     glm::mat4 light_proj = glm::perspective(fovy, aspect, near_clip, far_clip);
     screen_to_light = trans * light_proj * screen_to_light;
-    return { screen_to_light, p1, n, screen_origin, near_clip, proj_range, focus, params.mV[2] };
+    return { screen_to_light, p1, n, screen_origin, glm::vec3(origin), near_clip, proj_range, focus, params.mV[2] };
 }
 }
 
@@ -9555,6 +9623,7 @@ void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
         }
     }
 
+    for (U32 i = 0; i < 3; ++i) shader.disableTexture(LLShaderMgr::SSS_DEPTH0 + i);
     shader.disableTexture(LLShaderMgr::DEFERRED_NOISE);
     shader.disableTexture(LLShaderMgr::DEFERRED_LIGHTFUNC);
 
@@ -10165,32 +10234,8 @@ public:
     }
 };
 
-void LLPipeline::generateSunShadow(LLCamera& camera)
+void LLPipeline::pushShadowRenderTypeMask()
 {
-    if (!sRenderDeferred || RenderShadowDetail <= 0)
-    {
-        return;
-    }
-
-    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE; //LL_RECORD_BLOCK_TIME(FTM_GEN_SUN_SHADOW);
-    LL_PROFILE_GPU_ZONE("generateSunShadow");
-
-    LLDisableOcclusionCulling no_occlusion;
-
-    bool skip_avatar_update = false;
-    if (!isAgentAvatarValid() || gAgentCamera.getCameraAnimating() || gAgentCamera.getCameraMode() != CAMERA_MODE_MOUSELOOK || !LLVOAvatar::sVisibleInFirstPerson)
-    {
-        skip_avatar_update = true;
-    }
-
-    if (!skip_avatar_update)
-    {
-        gAgentAvatarp->updateAttachmentVisibility(CAMERA_MODE_THIRD_PERSON);
-    }
-
-    glm::mat4 last_modelview = get_last_modelview();
-    glm::mat4 last_projection = get_last_projection();
-
     pushRenderTypeMask();
     andRenderTypeMask(LLPipeline::RENDER_TYPE_SIMPLE,
                     LLPipeline::RENDER_TYPE_ALPHA,
@@ -10260,6 +10305,243 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
                     LLPipeline::RENDER_TYPE_PASS_GLTF_PBR_ALPHA_MASK,
                     LLPipeline::RENDER_TYPE_PASS_GLTF_PBR_ALPHA_MASK_RIGGED,
                     END_RENDER_TYPES);
+
+}
+
+void LLPipeline::updateSSSDepthFocus(LLCamera& camera)
+{
+    mSSSDepthFocusValid = false;
+    if (!mHasSSSGeometry || !sCull || !gSavedSettings.getBOOL("BoxxySSSShadowThickness") ||
+        gSavedSettings.getS32("BoxxySSSMode") != 2 || gSavedSettings.getF32("BoxxySSSTransmission") <= 0.f) return;
+    F32 nearest = llmin(gSavedSettings.getF32("BoxxySSSMaxDistance"), 32.f);
+    nearest *= nearest;
+    auto consider = [&](const LLVector3& pos)
+    {
+        const F32 distance = (pos - camera.getOrigin()).lengthSquared();
+        if (distance < nearest)
+        {
+            nearest = distance;
+            mSSSDepthFocus = pos;
+            mSSSDepthFocusValid = true;
+        }
+    };
+    // Rigged draw batches identify their avatar even when attachments live in
+    // their own spatial bridges. Only batches actually submitted for SSS count.
+    for (U32 type = 0; type < LLRenderPass::NUM_RENDER_TYPES; ++type)
+    {
+        auto* end = endRenderMap(type);
+        for (auto* i = beginRenderMap(type); i != end; LLCullResult::increment_iterator(i, end))
+        {
+            LLDrawInfo* info = *i;
+            if (info->mSSS && info->mAvatar) consider(info->mAvatar->getRenderPosition());
+        }
+    }
+    auto considerDrawable = [&](LLDrawable* drawable)
+    {
+        if (!drawable || drawable->isDead()) return;
+        LLVOVolume* volume = drawable->getVOVolume();
+        if (volume && !volume->isAttachment() && volume->isSSSEnabled())
+            consider(drawable->getPositionAgent());
+    };
+    for (auto i = sCull->beginVisibleList(); i != sCull->endVisibleList(); ++i) considerDrawable(*i);
+    for (auto i = sCull->beginVisibleGroups(); i != sCull->endVisibleGroups(); ++i)
+    {
+        LLSpatialGroup* group = *i;
+        if (group->isDead()) continue;
+        for (auto j = group->getDataBegin(); j != group->getDataEnd(); ++j)
+            considerDrawable((LLDrawable*)(*j)->getDrawable());
+    }
+}
+
+void LLPipeline::bindSSSDepth(LLGLSLShader& shader)
+{
+    bool used = false;
+    // Keep valid depth textures bound even when the uniforms disable sampling.
+    for (U32 i = 0; i < 3; ++i)
+    {
+        const S32 channel = shader.enableTexture(LLShaderMgr::SSS_DEPTH0 + i);
+        if (channel < 0) continue;
+        used = true;
+        if (!mSSSDepth[i].isComplete()) mSSSDepth[i].allocate(1, 1, 0, true);
+        gGL.getTexUnit(channel)->bind(&mSSSDepth[i], true);
+        gGL.getTexUnit(channel)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
+        gGL.getTexUnit(channel)->setTextureAddressMode(LLTexUnit::TAM_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    }
+    if (!used) return;
+    static const LLStaticHashedString matrices("sss_depth_matrix"), valid("sss_depth_valid"),
+        focus("sss_depth_focus"), origins("sss_depth_origin"), points("sss_point_depth");
+    const glm::mat4 view = get_current_modelview();
+    const glm::dmat4 inverseView = glm::inverse(glm::dmat4(view));
+    glm::mat4 transforms[3];
+    // Cancel large agent coordinates before rounding to the shader's floats.
+    for (U32 i = 0; i < 3; ++i) transforms[i] = glm::mat4(mSSSDepthMatrix[i] * inverseView);
+    glm::vec3 lightOrigins[2];
+    for (U32 i = 0; i < 2; ++i) lightOrigins[i] = mul_mat4_vec3(view, mSSSDepthOrigin[i]);
+    const glm::vec3 center = mul_mat4_vec3(view, mSSSDepthRenderedFocus);
+    const glm::vec3 active = !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT ? mSSSDepthValid : glm::vec3(0);
+    shader.uniformMatrix4fv(matrices, 3, false, glm::value_ptr(transforms[0]));
+    shader.uniform3fv(valid, 1, glm::value_ptr(active));
+    shader.uniform3fv(origins, 2, glm::value_ptr(lightOrigins[0]));
+    shader.uniform4f(focus, center.x, center.y, center.z, 2.5f);
+    shader.uniform1i(points, gSavedSettings.getBOOL("BoxxySSSPointDepth") ? 1 : 0);
+}
+
+void LLPipeline::generateSSSDepth(LLCamera& camera)
+{
+    mSSSDepthValid = glm::vec3(0);
+    if (!sRenderDeferred || gCubeSnapshot || sImpostorRender || mRT != &mMainRT ||
+        !mSSSDepthFocusValid || !gSavedSettings.getBOOL("BoxxySSSEnabled") ||
+        !gSavedSettings.getBOOL("BoxxySSSShadowThickness") || gSavedSettings.getS32("BoxxySSSMode") != 2 ||
+        gSavedSettings.getF32("BoxxySSSStrength") <= 0.f || gSavedSettings.getF32("BoxxySSSTransmission") <= 0.f)
+        return;
+
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
+    LL_PROFILE_GPU_ZONE("SSS depth maps");
+    const glm::mat4 savedView = get_current_modelview(), savedProj = get_current_projection();
+    const glm::mat4 lastView = get_last_modelview(), lastProj = get_last_projection();
+    const auto cameraID = LLViewerCamera::sCurCameraID;
+    LLCullResult* savedCull = sCull;
+    const glm::vec3 center(mSSSDepthFocus);
+    mSSSDepthRenderedFocus = center;
+    const F32 radius = 2.5f;
+    const bool points = gSavedSettings.getBOOL("BoxxySSSPointDepth");
+    LLDrawable* lights[2] = {};
+    F32 scores[2] = {};
+    S32 count = 0;
+    for (const auto& light : mNearbyLights)
+    {
+        if (++count > gSavedSettings.getS32("RenderLocalLightCount")) break;
+        LLDrawable* drawable = light.drawable;
+        if (!drawable || drawable->isDead()) continue;
+        LLVOVolume* volume = drawable->getVOVolume();
+        if (!volume || (volume->isAttachment() && !sRenderAttachedLights)) continue;
+        const bool spot = volume->isLightSpotlight();
+        if (!spot && !points) continue;
+        const F32 distance = glm::distance(glm::vec3(drawable->getPositionAgent()), center);
+        if (distance > volume->getLightRadius() * 1.5f + radius) continue;
+        const F32 power = volume->getLightLinearColor().magVecSquared();
+        if (power < 0.001f) continue;
+        const F32 score = power / llmax(distance * distance, 0.25f);
+        if (score > scores[0])
+        {
+            scores[1] = scores[0]; lights[1] = lights[0];
+            scores[0] = score; lights[0] = drawable;
+        }
+        else if (score > scores[1]) { scores[1] = score; lights[1] = drawable; }
+    }
+    // Keep the depth projection in agent space. A camera-space round trip
+    // perturbs the entire map even when neither the light nor subject moves.
+    for (U32 i = 0; i < 2; ++i)
+    {
+        if (!lights[i]) continue;
+        mSSSDepthOrigin[i] = lights[i]->getVOVolume()->isLightSpotlight() ?
+            getProjectorParams(lights[i]).agentOrigin :
+            glm::vec3(lights[i]->getPositionAgent());
+    }
+    LLDisableOcclusionCulling no_occlusion;
+    pushShadowRenderTypeMask();
+    const bool firstPerson = isAgentAvatarValid() && gAgentCamera.getCameraMode() == CAMERA_MODE_MOUSELOOK &&
+        LLVOAvatar::sVisibleInFirstPerson;
+    if (firstPerson) gAgentAvatarp->updateAttachmentVisibility(CAMERA_MODE_THIRD_PERSON);
+    gGL.setColorMask(false, false);
+    static LLCullResult results[3];
+    const glm::mat4 bias = glm::translate(glm::mat4(1), glm::vec3(0.5f)) * glm::scale(glm::mat4(1), glm::vec3(0.5f));
+    for (U32 i = 0; i < 3; ++i)
+    {
+        // Transmission needs a subject-focused projection even when ordinary
+        // shadows are on: their cascades and projector slots follow the camera.
+        if (i > 0 && !lights[i - 1]) continue;
+        glm::vec3 origin;
+        glm::mat4 proj;
+        F32 farClip;
+        if (i == 0)
+        {
+            const glm::vec3 direction = glm::normalize(glm::vec3(LLEnvironment::instance().getIsSunUp() ? mSunDir : mMoonDir));
+            const F32 reach = llclamp(RenderFarClip, 32.f, 128.f);
+            origin = center + direction * reach;
+            farClip = reach + radius;
+            proj = glm::ortho(-radius, radius, -radius, radius, 0.01f, farClip);
+        }
+        else
+        {
+            origin = mSSSDepthOrigin[i - 1];
+            const F32 distance = glm::distance(origin, center);
+            if (distance < 0.05f) continue;
+            farClip = distance + radius;
+            const F32 fov = llmin(2.f * asinf(llmin(radius / distance, 0.99f)), 2.617994f);
+            proj = glm::perspective(llmax(fov, 0.05f), 1.f, 0.01f, farClip);
+        }
+        const glm::vec3 direction = glm::normalize(center - origin);
+        const glm::vec3 up = fabsf(direction.z) > 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
+        const glm::mat4 view = glm::lookAt(origin, center, up);
+        LLRenderTarget& target = mSSSDepth[i];
+        const U32 resolution = i == 0 ? 1024 : 512;
+        if (target.getWidth() != resolution || !target.isComplete())
+        {
+            target.release();
+            if (!target.allocate(resolution, resolution, 0, true)) continue;
+        }
+        set_current_modelview(view);
+        set_current_projection(proj);
+        set_last_modelview(view);
+        set_last_projection(proj);
+        LLCamera shadowCamera = camera;
+        shadowCamera.setOrigin(LLVector3(origin));
+        shadowCamera.setFar(farClip);
+        LLViewerCamera::updateFrustumPlanes(shadowCamera, false, false, true);
+        LLViewerCamera::sCurCameraID = i == 0 ? LLViewerCamera::CAMERA_SUN_SHADOW0 :
+            (LLViewerCamera::eCameraID)(LLViewerCamera::CAMERA_SPOT_SHADOW0 + i - 1);
+        target.bindTarget();
+        target.getViewport(gGLViewport);
+        target.clear();
+        RenderSpotLight = i == 0 ? nullptr : lights[i - 1];
+        renderShadow(view, proj, shadowCamera, results[i], i == 0);
+        RenderSpotLight = nullptr;
+        target.flush();
+        // At skybox altitudes a float projected matrix loses millimeter-scale
+        // depth before the camera translation can cancel it during binding.
+        mSSSDepthMatrix[i] = glm::dmat4(bias) * glm::dmat4(proj) * glm::dmat4(view);
+        mSSSDepthValid[i] = 1.f;
+    }
+    set_current_modelview(savedView);
+    set_current_projection(savedProj);
+    set_last_modelview(lastView);
+    set_last_projection(lastProj);
+    LLViewerCamera::sCurCameraID = cameraID;
+    if (savedCull) grabReferences(*savedCull);
+    gGL.setColorMask(true, true);
+    popRenderTypeMask();
+    if (firstPerson) gAgentAvatarp->updateAttachmentVisibility(gAgentCamera.getCameraMode());
+}
+
+void LLPipeline::generateSunShadow(LLCamera& camera)
+{
+    if (!sRenderDeferred || RenderShadowDetail <= 0)
+    {
+        return;
+    }
+
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE; //LL_RECORD_BLOCK_TIME(FTM_GEN_SUN_SHADOW);
+    LL_PROFILE_GPU_ZONE("generateSunShadow");
+
+    LLDisableOcclusionCulling no_occlusion;
+
+    bool skip_avatar_update = false;
+    if (!isAgentAvatarValid() || gAgentCamera.getCameraAnimating() || gAgentCamera.getCameraMode() != CAMERA_MODE_MOUSELOOK || !LLVOAvatar::sVisibleInFirstPerson)
+    {
+        skip_avatar_update = true;
+    }
+
+    if (!skip_avatar_update)
+    {
+        gAgentAvatarp->updateAttachmentVisibility(CAMERA_MODE_THIRD_PERSON);
+    }
+
+    glm::mat4 last_modelview = get_last_modelview();
+    glm::mat4 last_projection = get_last_projection();
+
+    pushShadowRenderTypeMask();
 
     gGL.setColorMask(false, false);
 

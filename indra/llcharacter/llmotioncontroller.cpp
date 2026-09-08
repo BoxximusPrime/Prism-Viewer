@@ -847,6 +847,12 @@ void LLMotionController::updateMotions(bool force_update)
     mPrevTimerElapsed = cur_time;
     mLastTime = mAnimTime;
 
+    // Consume wall time while preserving the exact pose, even for forced updates.
+    if (mFrozen)
+    {
+        return;
+    }
+
     // Always cap the number of loaded motions
     purgeExcessMotions();
 
@@ -933,6 +939,11 @@ void LLMotionController::updateMotionsMinimal(bool advance_time)
     F32 delta_time = cur_time - mPrevTimerElapsed;
     mPrevTimerElapsed = cur_time;
     mLastTime = mAnimTime;
+
+    if (mFrozen)
+    {
+        return;
+    }
 
     // BoxxyViewer animation syncing keeps the controller clock running for
     // hidden and impostored avatars, but deliberately skips pose evaluation.

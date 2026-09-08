@@ -184,6 +184,40 @@ def run(gl):
     gl.FramebufferTexture2D(FRAMEBUFFER, COLOR_ATTACHMENT, TEXTURE, output, 0)
     assert gl.CheckFramebufferStatus(FRAMEBUFFER) == 0x8CD5
 
+    # Empty startup captures leave node zero uninitialized (zero here, including
+    # its next pointer). Exercise pixels outside the list image explicitly, as
+    # edge helper lanes can otherwise turn an out-of-range image read into node
+    # zero and chase that self-link forever. Debug mode 9 detects the bad read
+    # without traversing it, so a missing guard fails before the normal draw.
+    for edge_width, edge_height in ((17, 19), (1987, 1190)):
+        out_width, out_height = edge_width + 1, edge_height + 1
+        edge_pixels = edge_width * edge_height
+        out_pixels = out_width * out_height
+        upload(nodes, bytes(32))
+        upload(control, struct.pack("4I", 0, 1, 0, 0))
+        image(heads, edge_width, edge_height, struct.pack("I", NULL) * edge_pixels)
+        image(counts, edge_width, edge_height, bytes(4 * edge_pixels))
+        image(background, out_width, out_height, opaque * out_pixels, False)
+        image(output, out_width, out_height, bytes(16 * out_pixels), False)
+        gl.Viewport(0, 0, out_width, out_height)
+        gl.UseProgram(composite_prog)
+        uniform(composite_prog, "oitPass", 2)
+        uniform(composite_prog, "diffuseRect", 0)
+        gl.BindTexture(TEXTURE, background)
+        for mode in (9, 0):
+            uniform(composite_prog, "oitDebugMode", mode)
+            gl.DrawArrays(4, 0, 3)
+            outside = (F * 4)()
+            gl.ReadPixels(edge_width, edge_height, 1, 1, RGBA, FLOAT, outside)
+            assert list(outside) == [0.0] * 4, ("out-of-image OIT access", mode, list(outside))
+            inside = (F * 4)()
+            gl.ReadPixels(edge_width - 1, edge_height - 1, 1, 1, RGBA, FLOAT, inside)
+            expected_empty = [0.15, 0.25, 0.35, 0.0 if mode else 0.1]
+            assert max(abs(a-b) for a, b in zip(inside, expected_empty)) < 2e-5
+    uniform(composite_prog, "oitDebugMode", 0)
+    image(background, width, height, opaque * pixels, False)
+    image(output, width, height, bytes(16 * pixels), False)
+
     def control_pass(mode, capacity=4096):
         gl.UseProgram(control_prog)
         uniform(control_prog, "oitControlPass", mode)
@@ -262,7 +296,7 @@ def run(gl):
         assert gl.GetError() == 0
 
     lengths = [0, 1, 2, 3, 4, 5, 7, 8, 9, 16, 17, 31, 32, 33, 64, 65, 127, 128, 129, 257, 513]
-    checks = 4
+    checks = 8 # Includes four empty-capture/image-edge cases above.
     for cutoff in (0, 1):
         rng = random.Random(731)
         records, starts, sizes, expected = [], [], [], []
@@ -355,7 +389,7 @@ def run(gl):
             gl.DeleteSync(fence)
             assert gl.GetError() == 0
             checks += 1
-    print(f"Passed {checks} GPU scenarios: capture A/B, reduction edges, deep/equal-depth lists, cutoff, exact blend/glow, overflow fallback, and staged statistics")
+    print(f"Passed {checks} GPU scenarios: empty captures/image edges, capture A/B, reduction edges, deep/equal-depth lists, cutoff, exact blend/glow, overflow fallback, and staged statistics")
 
 
 if __name__ == "__main__":

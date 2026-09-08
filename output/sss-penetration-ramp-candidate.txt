@@ -1,0 +1,33 @@
+    # A smooth thickness ramp must not acquire a late, steep brightness cliff.
+    # Normalize out absorption to measure only penetration's contrast gain;
+    # the former 62.5%-100% shoulder fails this bound (~4 versus 1.5).
+    ramp_source = """
+    uniform float test_path;
+    vec3 getSSSTransmissionWithDepth(float nl, float nv, float strength, float path, float shadow);
+    vec3 getSSSTransmissionForPath(float nl, float strength, float path);
+    float getSSSClampedPath(float path);
+    uniform vec3 sss_lighting;
+    out vec4 frag_color;
+    void main() {
+        float optical = max(getSSSClampedPath(test_path)*1000.0,0.5)*(sss_lighting.z/8.5);
+        frag_color = vec4(getSSSTransmissionWithDepth(-1,1,0.9,test_path,1).r,
+                         getSSSTransmissionForPath(-1,0.9,optical).r,0,1);
+    }
+    """
+    prog=program(ramp_source,flags)
+    for penetration in (0.02,0.042,0.08):
+        uniform(prog,"sss_penetration",penetration)
+        for absorption in (1.0,8.5):
+            uniform(prog,"sss_lighting",0,1.7,absorption)
+            for upper in (0.0,0.027):
+                uniform(prog,"sss_maximum_thickness",upper)
+                uniform(prog,"sss_clamp_knee",0.02)
+                values=[]
+                for i in range(101):
+                    uniform(prog,"test_path",penetration*i/100)
+                    value=pixel()
+                    values.append(value[0]/value[1])
+                assert abs(values[0]-1)<1e-6 and abs(values[-1])<1e-6
+                assert all(-1e-5 <= (a-b)*100 <= 1.501 for a,b in zip(values,values[1:])), (penetration,absorption,upper)
+                checks+=1
+    gl.DeleteProgram(prog)

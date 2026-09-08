@@ -216,6 +216,16 @@ uint natural_merge_pass(uint head, out uint output_run_count)
 void main()
 {
     ivec2 pixel = ivec2(gl_FragCoord.xy);
+    // Edge helper invocations can lie outside an odd-sized list image. An
+    // out-of-bounds imageLoad returns zero, not OIT_NULL; following node zero
+    // can then loop forever in an empty startup capture. No derivatives here
+    // require those invocations to participate in sorting or blending.
+    if (any(lessThan(pixel, ivec2(0))) ||
+        any(greaterThanEqual(pixel, imageSize(oitHeadPointers))))
+    {
+        frag_color = vec4(0.0);
+        return;
+    }
     uint head = imageLoad(oitHeadPointers, pixel).r;
 
     // <AS:Chanayane> The original pass 0 list traversal is replaced by exact

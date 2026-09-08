@@ -350,6 +350,26 @@ void LLManipRotate::render()
     gGL.popMatrix();
 
 
+    if (hasMouseCapture() && mAimMode && mAimHit && mManipPart == LL_ROT_GENERAL)
+    {
+        gDebugProgram.bind();
+        LLGLDepthTest depth(GL_FALSE);
+        gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+        gGL.color4f(1.f, 0.85f, 0.2f, 1.f);
+        const LLVector3 target = gAgent.getPosAgentFromGlobal(mAimPoint);
+        const LLVector3 span = target - center;
+        const S32 dots = llclamp(llceil(span.length() / llmax(mRadiusMeters * 0.06f, 0.01f)), 1, 512);
+        gGL.begin(LLRender::LINES);
+        for (S32 i = 0; i < dots; ++i)
+        {
+            gGL.vertex3fv((center + span * ((F32)i / dots)).mV);
+            gGL.vertex3fv((center + span * ((i + 0.3f) / dots)).mV);
+        }
+        gGL.end();
+        gGL.flush();
+        gUIProgram.bind();
+    }
+
     LLVector3 euler_angles;
     LLQuaternion object_rot = first_object->getRotationEdit();
     object_rot.getEulerAngles(&(euler_angles.mV[VX]), &(euler_angles.mV[VY]), &(euler_angles.mV[VZ]));
@@ -386,6 +406,8 @@ bool LLManipRotate::handleMouseDownOnPart( S32 x, S32 y, MASK mask )
         return false;
     }
 
+    mAimMode = false;
+    mAimHit = false;
     highlightManipulators(x, y);
     S32 hit_part = mHighlightedPart;
     // we just started a drag, so save initial object positions
@@ -507,7 +529,7 @@ bool LLManipRotate::handleHover(S32 x, S32 y, MASK mask)
         }
         else
         {
-            drag(x, y);
+            drag(x, y, mask);
         }
 
         LL_DEBUGS("UserInput") << "hover handled by LLManipRotate (active)" << LL_ENDL;
@@ -536,15 +558,89 @@ LLVector3 LLManipRotate::projectToSphere( F32 x, F32 y, bool* on_sphere )
     return LLVector3( x, y, z );
 }
 
+// Use the camera's perspective cursor ray, in agent coordinates, without HUD picks.
+bool LLManipRotate::aimAtCursor(S32 x, S32 y)
+{
+    LLSelectNode* node = mObjectSelection->getFirstMoveableNode(true);
+    if (!node) return false;
+
+    const LLVector3 origin = LLViewerCamera::getInstance()->getOrigin();
+    const LLVector3 direction = gViewerWindow->mouseDirectionGlobal(x, y);
+    const F32 range = 512.f;
+    LLVector3 start = origin + direction * LLViewerCamera::getInstance()->getNear();
+    LLVector4a ray_end;
+    ray_end.load3((origin + direction * range).mV);
+    LLVector3 target;
+    bool hit = false;
+    // ponytail: cap surface traversal for dense selected meshes; a pipeline exclusion
+    // filter can replace this if selections routinely exceed 256 crossed surfaces.
+    for (S32 i = 0; i < 256; ++i)
+    {
+        LLVector4a ray_start, intersection;
+        ray_start.load3(start.mV);
+        LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
+            ray_start, ray_end, false, true, true, false,
+            nullptr, nullptr, nullptr, &intersection);
+        if (!object) break;
+        target.set(intersection.getF32ptr());
+        if (!object->isSelected() && !object->getRootEdit()->isSelected())
+        {
+            hit = true;
+            break;
+        }
+        start = target + direction * 0.001f;
+        if ((start - origin) * direction >= range) break;
+    }
+    LLVector3d land;
+    if (gViewerWindow->mousePointOnLandGlobal(x, y, &land))
+    {
+        const LLVector3 land_agent = gAgent.getPosAgentFromGlobal(land);
+        if ((land_agent - origin).lengthSquared() <= range * range &&
+            (!hit || (land_agent - origin).lengthSquared() < (target - origin).lengthSquared()))
+        {
+            target = land_agent;
+            hit = true;
+        }
+    }
+    if (!hit) return false;
+    LLVector3 toward = target - gAgent.getPosAgentFromGlobal(mRotationCenter);
+    if (toward.normalize() < 0.001f) return false;
+    // Aim local -Z at the target using a world-space delta on the saved selection.
+    mRotation.shortestArc(-LLVector3::z_axis * node->mSavedRotation, toward);
+    mAimPoint = gAgent.getPosGlobalFromAgent(target);
+    mAimHit = true;
+    mSmoothRotate = false;
+    return true;
+}
+
 // Freeform rotation
-void LLManipRotate::drag( S32 x, S32 y )
+void LLManipRotate::drag( S32 x, S32 y, MASK mask )
 {
     if( !updateVisiblity() )
     {
         return;
     }
 
-    if( mManipPart == LL_ROT_GENERAL )
+    const bool aim = mManipPart == LL_ROT_GENERAL && (mask & MASK_SHIFT) &&
+        mObjectSelection->getSelectType() != SELECT_TYPE_HUD;
+    mAimHit = false;
+    if (aim != mAimMode)
+    {
+        // Rebase both modes so releasing Shift never restores the pre-aim rotation.
+        LLSelectMgr::getInstance()->saveSelectedObjectTransform(SELECT_ACTION_TYPE_ROTATE);
+        mMouseDown = intersectMouseWithSphere(x, y,
+            gAgent.getPosAgentFromGlobal(mRotationCenter), mRadiusMeters);
+        mRotation = LLQuaternion::DEFAULT;
+        mAimMode = aim;
+    }
+    if (aim)
+    {
+        if (!aimAtCursor(x, y))
+        {
+            return;
+        }
+    }
+    else if( mManipPart == LL_ROT_GENERAL )
     {
         mRotation = dragUnconstrained(x, y);
     }

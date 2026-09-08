@@ -2,6 +2,17 @@
 <llsd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="llsd.xsd">
 <map>
+  <key>BoxxyFreezeAvatarAnimations</key>
+  <map>
+    <key>Comment</key>
+    <string>Freeze all avatar animation clocks and poses locally until toggled off.</string>
+    <key>Persist</key>
+    <integer>0</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
   <key>BoxxyNameTagChatRangeColors</key>
   <map>
     <key>Comment</key>
@@ -44,7 +55,21 @@
     <key>Type</key>
     <string>String</string>
     <key>Value</key>
-    <string>body, head, hands, feet, ear, ears</string>
+    <string>body, head, hands, feet, ear, ears, perky, Noelle, eye, eyes</string>
+  </map>
+  <key>BoxxySSSShowDepth</key>
+  <map>
+    <key>Comment</key><string>Show measured transmission path: white is thin, black is 80 mm or blocked, magenta is unavailable.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>BoxxySSSDebugLight</key>
+  <map>
+    <key>Comment</key><string>Transmission depth debug source: 0 sun/moon, 1 first local depth map, 2 second local depth map, 3 combined final transmission.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>0</integer>
   </map>
   <key>BoxxySSSShowMask</key>
   <map>
@@ -77,7 +102,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.90</real>
+    <real>1.0</real>
   </map>
   <key>BoxxySSSDepth</key>
   <map>
@@ -88,7 +113,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.011</real>
+    <real>0.009</real>
   </map>
   <key>BoxxySSSWarmth</key>
   <map>
@@ -99,7 +124,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.75</real>
+    <real>0.45</real>
   </map>
   <key>BoxxySSSMaxDistance</key>
   <map>
@@ -110,7 +135,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>44.0</real>
+    <real>36.0</real>
   </map>
   <key>BoxxySSSWrapAmount</key>
   <map>
@@ -121,29 +146,85 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.65</real>
+    <real>0.25</real>
   </map>
   <key>BoxxySSSTransmission</key>
   <map>
     <key>Comment</key>
-    <string>Directional backlighting strength in Combined skin scattering mode.</string>
+    <string>Linear brightness multiplier for transmitted backlighting in Combined skin scattering mode. Does not change penetration distance.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.40</real>
+    <real>0.85</real>
   </map>
   <key>BoxxySSSThickness</key>
   <map>
     <key>Comment</key>
-    <string>Estimated optical skin thickness in millimeters, tapered toward silhouettes. An artistic fallback, not measured mesh thickness.</string>
+    <string>Fallback optical skin thickness in millimeters. Also scales absorption for shadow-derived thickness; 8.5 preserves the measured path length.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>8.5</real>
+    <real>4.0</real>
+  </map>
+  <key>BoxxySSSTransmissionSmoothing</key>
+  <map>
+    <key>Comment</key>
+    <string>Radius in millimeters for a separate depth-aware transmission blur in Combined mode. Zero disables the extra buffer and two filter passes. Does not blur skin textures or specular highlights.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
+  </map>
+  <key>BoxxySSSMinimumThickness</key>
+  <map>
+    <key>Comment</key><string>Soft minimum measured transmission thickness in millimeters. Zero disables it; the clamp knee controls the transition. Also shown in depth debug views.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
+  </map>
+  <key>BoxxySSSMaximumThickness</key>
+  <map>
+    <key>Comment</key><string>Soft maximum measured optical thickness in millimeters. Zero disables it. Does not bypass original measured penetration limits or blocked depth.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
+  </map>
+  <key>BoxxySSSClampKnee</key>
+  <map>
+    <key>Comment</key><string>Half-width in millimeters of the soft transition around measured thickness limits. Zero gives hard clamps; narrowed automatically to fit enabled bounds.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>4.0</real>
+  </map>
+  <key>BoxxySSSPenetration</key>
+  <map>
+    <key>Comment</key>
+    <string>Maximum measured light path through skin in millimeters. Transmission fades out over the final 37.5 percent of this distance, independently of brightness and absorption. Applies only with usable depth.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>29.0</real>
+  </map>
+  <key>BoxxySSSShadowThickness</key>
+  <map>
+    <key>Comment</key>
+    <string>Estimate Combined-mode skin transmission depth, including focused depth maps when ordinary shadows are disabled.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
+  <key>BoxxySSSPointDepth</key>
+  <map>
+    <key>Comment</key>
+    <string>Include point lights in the two-light focused SSS depth budget. Disable for performance comparison; point lights then use estimated thickness.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
   </map>
   <key>BoxxyShowNowPlaying</key>
   <map>
