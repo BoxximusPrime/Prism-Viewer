@@ -88,7 +88,12 @@ void mirrorClip(vec3 pos);
 void sampleReflectionProbesLegacy(inout vec3 ambenv, inout vec3 glossenv, inout vec3 legacyenv,
         vec2 tc, vec3 pos, vec3 norm, float glossiness, float envIntensity, bool transparent, vec3 amblit_linear);
 
-vec3 calcPointLightOrSpotLight(vec3 light_col, vec3 diffuse, vec3 v, vec3 n, vec4 lp, vec3 ln, float la, float fa, float is_pointlight, float ambiance)
+bool hasAlphaProjector(int light_index);
+vec3 calcAlphaProjectedLight(int light_index, vec3 pos, vec3 norm, vec3 center,
+    float radius, float falloff, vec3 light_color, vec3 diffuse, vec4 spec,
+    float env_intensity, inout float glare);
+
+vec3 calcPointLightOrSpotLight(int light_index, vec3 light_col, vec3 diffuse, vec3 v, vec3 n, vec4 lp, vec3 ln, float la, float fa, float is_pointlight, float ambiance)
 {
     // SL-14895 inverted attenuation work-around
     // This routine is tweaked to match deferred lighting, but previously used an inverted la value. To reconstruct
@@ -97,6 +102,13 @@ vec3 calcPointLightOrSpotLight(vec3 light_col, vec3 diffuse, vec3 v, vec3 n, vec
     float falloff_factor = (12.0 * fa) - 9.0;
     float inverted_la = falloff_factor / la;
     // Yes, it makes me want to cry as well. DJH
+
+    if (hasAlphaProjector(light_index))
+    {
+        float glare = 0.0;
+        return calcAlphaProjectedLight(light_index, v, n, lp.xyz, inverted_la,
+            fa - 1.0, light_col, diffuse, vec4(0.0), 0.0, glare);
+    }
 
     vec3 col = vec3(0);
 
@@ -303,7 +315,7 @@ void main()
 
     vec4 light = vec4(0,0,0,0);
 
-   #define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(light_diffuse[i].rgb, diffuse_linear.rgb, pos.xyz, norm, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
+   #define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(i, light_diffuse[i].rgb, diffuse_linear.rgb, pos.xyz, norm, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
 
     LIGHT_LOOP(1)
     LIGHT_LOOP(2)

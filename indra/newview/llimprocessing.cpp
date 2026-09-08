@@ -595,7 +595,9 @@ void LLIMProcessing::processNewMessage(LLUUID from_id,
                     if (!gIMMgr->isNonFriendSessionNotified(session_id))
                     {
                         std::string message = LLTrans::getString("IM_unblock_only_groups_friends");
-                        gIMMgr->addMessage(session_id, from_id, name, message, IM_OFFLINE == offline);
+                        gIMMgr->addMessage(session_id, from_id, name, message, IM_OFFLINE == offline,
+                            LLStringUtil::null, dialog, parent_estate_id, region_id, position,
+                            false, timestamp, LLUUID::null, SYSTEM_FROM);
                         gIMMgr->addNotifiedNonFriendSessionID(session_id);
                     }
 
@@ -1204,7 +1206,7 @@ void LLIMProcessing::processNewMessage(LLUUID from_id,
             }
             else
             {
-                gIMMgr->addMessage(session_id, from_id, name, message);
+                gIMMgr->addMessage(session_id, from_id, name, message, false, LLStringUtil::null, dialog);
             }
             break;
 
@@ -1523,11 +1525,6 @@ void LLIMProcessing::processNewMessage(LLUUID from_id,
             break;
     }
 
-    LLWindow* viewer_window = gViewerWindow->getWindow();
-    if (viewer_window && dialog != IM_TYPING_START && dialog != IM_TYPING_STOP)
-    {
-        viewer_window->flashIcon(5.f);
-    }
 }
 
 void LLIMProcessing::requestOfflineMessages()

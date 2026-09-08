@@ -58,6 +58,7 @@
 #include "llrecentpeople.h"
 #include "llviewermessage.h"
 #include "llviewerwindow.h"
+#include "llwindow.h"
 #include "llnotifications.h"
 #include "llnotificationsutil.h"
 #include "llfloaterimnearbychat.h"
@@ -3388,6 +3389,17 @@ void LLIMMgr::addMessage(
     if (!LLMuteList::getInstance()->isMuted(other_participant_id, LLMute::flagTextChat) && !skip_message)
     {
         LLIMModel::instance().addMessage(new_session_id, message_display_name, display_id, msg, true, is_region_msg, timestamp);
+
+        // Only accepted resident chat requests attention, including the first
+        // message delivered with a group/conference session invitation.
+        if ((dialog == IM_NOTHING_SPECIAL || dialog == IM_SESSION_INVITE || dialog == IM_SESSION_SEND)
+            && display_id.notNull() && display_id != gAgentID
+            && message_display_name != SYSTEM_FROM && !is_region_msg
+            && !msg.empty() && !gAgent.isDoNotDisturb()
+            && hasSession(new_session_id) && gViewerWindow && gViewerWindow->getWindow())
+        {
+            gViewerWindow->getWindow()->flashIcon(5.f);
+        }
     }
 
     // Open conversation floater if offline messages are present

@@ -221,6 +221,10 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
         {
             return false;
         }
+        if (!shader->attachFragmentObject("deferred/projectorUtil.glsl"))
+        {
+            return false;
+        }
     }
 
     if (features->hasFullGBuffer)
@@ -239,7 +243,9 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
         }
     }
 
-    if (features->hasShadows)
+    // Alpha projector helpers also need the spot-shadow entry point when a
+    // shader falls back to a level without directional-shadow receivers.
+    if (features->hasShadows || (features->hasReflectionProbes && gGLManager.mNumTextureImageUnits >= 24))
     {
         if (!shader->attachFragmentObject("deferred/shadowUtil.glsl"))
         {
@@ -1502,6 +1508,12 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("lightMap");
     mReservedUniforms.push_back("bloomMap");
     mReservedUniforms.push_back("projectionMap");
+    mReservedUniforms.push_back("alphaProjectionMap0");
+    mReservedUniforms.push_back("alphaProjectionMap1");
+    mReservedUniforms.push_back("alphaProjectionMap2");
+    mReservedUniforms.push_back("alphaProjectionMap3");
+    mReservedUniforms.push_back("alphaProjectionMap4");
+    mReservedUniforms.push_back("alphaProjectionMap5");
     mReservedUniforms.push_back("norm_mat");
 
     mReservedUniforms.push_back("specular_color");

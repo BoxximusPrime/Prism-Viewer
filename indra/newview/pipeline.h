@@ -325,6 +325,7 @@ public:
     void bindDeferredShaderFast(LLGLSLShader& shader);
     void bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_target = nullptr, LLRenderTarget* depth_target = nullptr);
     void setupSpotLight(LLGLSLShader& shader, LLDrawable* drawablep);
+    void bindAlphaProjectors(LLGLSLShader& shader, bool update_uniforms);
 
     void unbindDeferredShader(LLGLSLShader& shader);
 
@@ -872,6 +873,7 @@ protected:
     LLDrawable::ordered_drawable_set_t  mLights;
     light_set_t                     mNearbyLights; // lights near camera
     LLColor4                        mHWLightColors[8];
+    LLPointer<LLDrawable>           mHWLightDrawable[8]; // Same slots as light_position/light_diffuse.
 
     /////////////////////////////////////////////
     //

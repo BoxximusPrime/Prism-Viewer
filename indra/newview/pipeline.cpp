@@ -652,6 +652,10 @@ LLPipeline::~LLPipeline()
 
 void LLPipeline::cleanup()
 {
+    for (auto& light : mHWLightDrawable)
+    {
+        light = nullptr;
+    }
     assertInitialized();
 
     mGroupQ1.clear() ;
@@ -5795,6 +5799,11 @@ void LLPipeline::setupHWLights()
         return;
     }
 
+    for (auto& light : mHWLightDrawable)
+    {
+        light = nullptr;
+    }
+
     F32 light_scale = 1.f;
 
     if (gCubeSnapshot)
@@ -5943,6 +5952,7 @@ void LLPipeline::setupHWLights()
             F32 linatten = x / adjusted_radius;                         // % of brightness at radius
 
             mHWLightColors[cur_light] = light_color;
+            mHWLightDrawable[cur_light] = drawable;
             LLLightState* light_state = gGL.getLight(cur_light);
 
             light_state->setPosition(light_pos_gl);
@@ -8282,6 +8292,7 @@ void LLPipeline::bindDeferredShaderFast(LLGLSLShader& shader)
         bindLightFunc(shader);
         bindShadowMaps(shader);
         bindReflectionProbes(shader);
+        bindAlphaProjectors(shader, false);
     }
     else
     { //wasn't previously bound, use slow path
@@ -8518,6 +8529,7 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     shader.uniform3fv(LLShaderMgr::MOONLIGHT_COLOR, 1, mMoonDiffuse.mV);
 
     shader.uniform1f(LLShaderMgr::REFLECTION_PROBE_MAX_LOD, mReflectionMapManager.mMaxProbeLOD);
+    bindAlphaProjectors(shader, true);
 }
 
 
@@ -9265,7 +9277,18 @@ void LLPipeline::doWaterExclusionMask()
     glClearColor(0, 0, 0, 0);
 }
 
-void LLPipeline::setupSpotLight(LLGLSLShader& shader, LLDrawable* drawablep)
+namespace
+{
+struct ProjectorParams
+{
+    glm::mat4 matrix;
+    glm::vec3 plane, normal, origin;
+    F32 nearClip, range, focus, ambiance;
+};
+
+// Both deferred lighting and transparent receivers use the same eye-space
+// frustum, including the origin offset imposed by the prim's size and FOV.
+ProjectorParams getProjectorParams(LLDrawable* drawablep)
 {
     //construct frustum
     LLVOVolume* volume = drawablep->getVOVolume();
@@ -9327,13 +9350,21 @@ void LLPipeline::setupSpotLight(LLGLSLShader& shader, LLDrawable* drawablep)
     F32 proj_range = far_clip - near_clip;
     glm::mat4 light_proj = glm::perspective(fovy, aspect, near_clip, far_clip);
     screen_to_light = trans * light_proj * screen_to_light;
-    shader.uniformMatrix4fv(LLShaderMgr::PROJECTOR_MATRIX, 1, false, glm::value_ptr(screen_to_light));
-    shader.uniform1f(LLShaderMgr::PROJECTOR_NEAR, near_clip);
-    shader.uniform3fv(LLShaderMgr::PROJECTOR_P, 1, glm::value_ptr(p1));
-    shader.uniform3fv(LLShaderMgr::PROJECTOR_N, 1, glm::value_ptr(n));
-    shader.uniform3fv(LLShaderMgr::PROJECTOR_ORIGIN, 1, glm::value_ptr(screen_origin));
-    shader.uniform1f(LLShaderMgr::PROJECTOR_RANGE, proj_range);
-    shader.uniform1f(LLShaderMgr::PROJECTOR_AMBIANCE, params.mV[2]);
+    return { screen_to_light, p1, n, screen_origin, near_clip, proj_range, focus, params.mV[2] };
+}
+}
+
+void LLPipeline::setupSpotLight(LLGLSLShader& shader, LLDrawable* drawablep)
+{
+    LLVOVolume* volume = drawablep->getVOVolume();
+    const ProjectorParams projection = getProjectorParams(drawablep);
+    shader.uniformMatrix4fv(LLShaderMgr::PROJECTOR_MATRIX, 1, false, glm::value_ptr(projection.matrix));
+    shader.uniform1f(LLShaderMgr::PROJECTOR_NEAR, projection.nearClip);
+    shader.uniform3fv(LLShaderMgr::PROJECTOR_P, 1, glm::value_ptr(projection.plane));
+    shader.uniform3fv(LLShaderMgr::PROJECTOR_N, 1, glm::value_ptr(projection.normal));
+    shader.uniform3fv(LLShaderMgr::PROJECTOR_ORIGIN, 1, glm::value_ptr(projection.origin));
+    shader.uniform1f(LLShaderMgr::PROJECTOR_RANGE, projection.range);
+    shader.uniform1f(LLShaderMgr::PROJECTOR_AMBIANCE, projection.ambiance);
     S32 s_idx = -1;
 
     for (U32 i = 0; i < 2; i++)
@@ -9403,12 +9434,88 @@ void LLPipeline::setupSpotLight(LLGLSLShader& shader, LLDrawable* drawablep)
 
             F32 lod_range = logf((F32)img->getWidth())/logf(2.f);
 
-            shader.uniform1f(LLShaderMgr::PROJECTOR_FOCUS, focus);
+            shader.uniform1f(LLShaderMgr::PROJECTOR_FOCUS, projection.focus);
             shader.uniform1f(LLShaderMgr::PROJECTOR_LOD, lod_range);
-            shader.uniform1f(LLShaderMgr::PROJECTOR_AMBIENT_LOD, llclamp((proj_range-focus)/proj_range*lod_range, 0.f, 1.f));
+            shader.uniform1f(LLShaderMgr::PROJECTOR_AMBIENT_LOD, llclamp((projection.range-projection.focus)/projection.range*lod_range, 0.f, 1.f));
         }
     }
 
+}
+
+void LLPipeline::bindAlphaProjectors(LLGLSLShader& shader, bool update_uniforms)
+{
+    static const LLStaticHashedString mask_uniform("alpha_projector_mask");
+    if (shader.getUniformLocation(mask_uniform) < 0)
+    {
+        return;
+    }
+
+    glm::mat4 matrices[6];
+    // GLM vec3 is 16-byte aligned in this build; uniform3fv needs packed triples.
+    LLVector3 planes[6], normals[6], origins[6];
+    glm::vec4 params[6]; // focus, maximum LOD, range, ambiance
+    glm::vec2 shadows[6]; // shadow map index, fade
+    S32 mask = 0;
+    for (U32 i = 0; i < 6; ++i)
+    {
+        LLDrawable* drawable = mHWLightDrawable[i + 2];
+        LLVOVolume* volume = drawable && !drawable->isDead() ? drawable->getVOVolume() : nullptr;
+        const bool projector = !sRenderingHUDs && !sImpostorRender && volume && volume->isLightSpotlight();
+        LLViewerTexture* image = projector ? volume->getLightTexture() : nullptr;
+        if (!image)
+        {
+            image = LLViewerFetchedTexture::sWhiteImagep;
+        }
+        S32 channel = shader.enableTexture(LLShaderMgr::ALPHA_PROJECTION0 + i);
+        if (channel >= 0)
+        {
+            gGL.getTexUnit(channel)->bind(image);
+        }
+
+        if (!update_uniforms)
+        {
+            continue;
+        }
+        matrices[i] = glm::mat4(1.f);
+        planes[i] = normals[i] = origins[i] = LLVector3::zero;
+        params[i] = glm::vec4(0.f);
+        shadows[i] = glm::vec2(-1.f, 1.f);
+        if (projector)
+        {
+            const ProjectorParams projection = getProjectorParams(drawable);
+            matrices[i] = projection.matrix;
+            planes[i].setVec(glm::value_ptr(projection.plane));
+            normals[i].setVec(glm::value_ptr(projection.normal));
+            origins[i].setVec(glm::value_ptr(projection.origin));
+            params[i] = glm::vec4(projection.focus, log2f(F32(llmax(image->getWidth(), 1))),
+                                  projection.range, projection.ambiance);
+            for (U32 j = 0; j < 2; ++j)
+            {
+                if (!gCubeSnapshot && mShadowSpotLight[j] == drawable)
+                {
+                    shadows[i] = glm::vec2(F32(j), 1.f - mSpotLightFade[j]);
+                }
+            }
+            mask |= 1 << i;
+        }
+    }
+
+    if (update_uniforms)
+    {
+        static const LLStaticHashedString matrix_uniform("alpha_projector_matrix");
+        static const LLStaticHashedString plane_uniform("alpha_projector_plane");
+        static const LLStaticHashedString normal_uniform("alpha_projector_normal");
+        static const LLStaticHashedString origin_uniform("alpha_projector_origin");
+        static const LLStaticHashedString params_uniform("alpha_projector_params");
+        static const LLStaticHashedString shadows_uniform("alpha_projector_shadow");
+        shader.uniform1i(mask_uniform, mask);
+        shader.uniformMatrix4fv(matrix_uniform, 6, false, glm::value_ptr(matrices[0]));
+        shader.uniform3fv(plane_uniform, 6, planes[0].mV);
+        shader.uniform3fv(normal_uniform, 6, normals[0].mV);
+        shader.uniform3fv(origin_uniform, 6, origins[0].mV);
+        shader.uniform4fv(params_uniform, 6, glm::value_ptr(params[0]));
+        shader.uniform2fv(shadows_uniform, 6, glm::value_ptr(shadows[0]));
+    }
 }
 
 void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
@@ -9427,6 +9534,10 @@ void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
     shader.disableTexture(LLShaderMgr::DEFERRED_LIGHT, deferred_light_target->getUsage());
     shader.disableTexture(LLShaderMgr::DIFFUSE_MAP);
     shader.disableTexture(LLShaderMgr::DEFERRED_BLOOM);
+    for (U32 i = 0; i < 6; ++i)
+    {
+        shader.disableTexture(LLShaderMgr::ALPHA_PROJECTION0 + i);
+    }
 
     for (U32 i = 0; i < 4; i++)
     {
