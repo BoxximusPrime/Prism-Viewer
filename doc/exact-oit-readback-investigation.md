@@ -1,6 +1,30 @@
 # Exact OIT readback investigation
 
-Status: investigation complete; proposed optimization is not implemented or benchmarked.
+Status: GPU scheduling and tiled depth reduction implemented; direct OpenGL
+correctness checks pass. In-world visual and performance verification is pending.
+
+Implementation controls (both enabled by default): `RenderExactOITAsync` selects
+GPU scheduling; `RenderExactOITReduceMaximum` selects tiled reduction. Disable
+both for the synchronous/per-fragment-atomic comparison. The optional compute
+sorter retains synchronous validation. GPU scheduling shader/allocation failures
+also retain synchronous validation.
+
+Run `.venv/Scripts/python.exe scripts/tests/test_exact_oit_gpu.py` on Windows
+with the bundled SDL3 runtime and an OpenGL 4.3 GPU. The test creates a hidden
+context and runs the actual capture, control, overflow, and composite shaders.
+It checks small-pool allocation overflow, deep lists and equal-depth ordering,
+glow/blending, opaque cutoff, reduction tile edges, all indirect-pass boundaries
+through the maximum pool capacity, and copied statistics surviving counter reset.
+`scripts/tests/test_exact_oit_readback.py` exercises the production C++ ring
+methods with controlled fences, including busy/full rings, FIFO camera identity,
+historical capacity, wraparound, and failed fences.
+
+An optional `--benchmark` runs an isolated 256x256x64-fragment capture with the
+same actual capture shader and alternates the maximum-depth implementations.
+On the RTX 5090 / NVIDIA 616.56, an initial run measured 2.36 ms versus 0.237 ms
+median GPU time (eight samples each after warmup) for global per-fragment maximum
+versus tiled reduction. This is a synthetic capture-plus-maximum measurement,
+not a viewer frame-rate prediction or a benchmark of conditional fallback.
 
 ## Evidence
 

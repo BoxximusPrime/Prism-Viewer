@@ -8413,6 +8413,24 @@
     <key>Backup</key>
     <integer>0</integer>
   </map>
+  <key>RenderExactOITAsync</key>
+  <map>
+    <key>Comment</key>
+    <string>Use GPU-selected exact transparency sorting and same-frame overflow fallback, with nonblocking delayed statistics. Disable for synchronous validation comparison.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+    <key>Backup</key><integer>0</integer>
+  </map>
+  <key>RenderExactOITReduceMaximum</key>
+  <map>
+    <key>Comment</key>
+    <string>Reduce exact transparency pixel counts after capture instead of updating one global maximum for every fragment. Disable to compare capture performance.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+    <key>Backup</key><integer>0</integer>
+  </map>
   <key>RenderExactOITDebugMode</key>
   <map>
     <key>Comment</key>

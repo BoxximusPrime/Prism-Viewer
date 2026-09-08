@@ -80,7 +80,9 @@ Instead of writing color into the framebuffer, a capture shader:
 3. Uses `imageAtomicExchange` to make the new node the pixel's list head while
    preserving the previous head as the node's `next` index.
 4. Atomically increments the pixel's exact list count.
-5. Updates the maximum observed list length.
+5. Optionally updates the maximum observed list length. By default, a tiled
+   reduction of the completed count image supplies the exact maximum afterward,
+   avoiding a global maximum atomic for every captured fragment.
 
 All capture fragment shaders declare `layout(early_fragment_tests) in`. The
 opaque depth buffer therefore rejects transparent fragments hidden by solid
@@ -92,14 +94,24 @@ the overflow flag and does not write outside the buffer.
 
 ### Synchronization and validation
 
-After all capture draws, the renderer issues shader-storage and image-access
-memory barriers. It then performs one synchronous read of the control buffer.
-This provides the exact allocation count, overflow state, and maximum list
-length needed to choose between exact compositing and complete fallback.
+After capture, shader-storage and image barriers make the lists visible to the
+following GPU passes. By default, a compute pass reduces the count image and
+generates indirect sort/composite commands from this frame's control data.
+Overflow produces zero-count exact draws. A one-pixel occlusion query tests the
+same overflow predicate; conditional rendering executes the submitted vanilla
+transparency draws only when fallback is required. The CPU does not need to read
+the predicate or list depth before submitting the rest of the frame.
 
-The readback is currently mandatory because the CPU must not submit an Exact
-OIT composite for an incomplete capture. The same read supplies diagnostics,
-so diagnostics do not add another synchronization point.
+Control data is copied into a three-slot staging ring. Only fenced, completed
+copies are read for statistics and future buffer growth; a busy ring skips a
+sample instead of waiting. Historical results cannot invalidate a newer capture.
+Counter reset is GPU-ordered to avoid introducing a CPU overwrite stall at the
+start of the next capture. Framebuffer, buffer-update, image, storage, and
+indirect-command barriers cover their respective consumers.
+
+`RenderExactOITAsync=false`, optional compute sorting, or unavailable GPU-control
+resources retain synchronous validation. `RenderExactOITReduceMaximum=false`
+restores the per-fragment maximum atomic for independent performance comparison.
 
 ### Exact per-pixel sorting
 
@@ -118,9 +130,11 @@ renderer uses exact natural linked-list merge sort:
 
 Splitting the sort across draws bounds the work done by one shader invocation
 and avoids the GPU watchdog risk of sorting a very deep list in one invocation.
-The renderer submits at most
-`ceil(log2(maximum per-pixel list length))` sort draws, which is sufficient even
-for a list whose every fragment begins as a separate run.
+The GPU activates `ceil(log2(maximum per-pixel list length))` sort draws, which
+is sufficient even for a list whose every fragment begins as a separate run.
+The CPU submits indirect commands up to the pool-capacity bound (at most 26);
+unneeded passes have zero vertices. The synchronous path submits only the
+number of draws calculated from its readback.
 
 Particle and sprite batches commonly arrive mostly depth sorted. When the
 camera is stationary, a pixel may contain one monotonic run and finish after
@@ -151,8 +165,10 @@ which separate objects and draw batches reached the capture shaders.
 
 If capture reports overflow, the linked-list result is discarded completely.
 The renderer reruns the entire standard transparency path over the untouched
-opaque scene during the same frame. It may then grow the node buffer within the
-VRAM limit for later frames. Growth reserves at least 25 percent more than the
+opaque scene during the same frame. In GPU-scheduled mode, C++ submits these
+draws every frame, but the GPU executes them only on overflow. Completed delayed
+statistics can grow the node buffer within the VRAM limit before a later capture.
+Growth reserves at least 25 percent more than the
 observed demand and doubles the previous capacity when the safe budget permits,
 reducing repeated large reallocations during sudden transparency bursts.
 
