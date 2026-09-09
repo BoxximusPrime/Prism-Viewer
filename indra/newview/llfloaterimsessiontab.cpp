@@ -1245,8 +1245,10 @@ void LLFloaterIMSessionTab::onTearOffClicked()
             container->selectAdjacentConversation(false);
         }
         forceReshape();
-        setOpenPositioning(LLFloaterEnums::POSITIONING_CENTERED);
         center();
+        // Record the final popout position for subsequent relative layout updates.
+        // center() only translates the view, leaving the old hosted position cached.
+        handleReshape(getRect(), true);
     }
     //Upon re-docking the torn off floater, select the corresponding conversation line item
     else

@@ -48,5 +48,10 @@ Loading Screen** opens an animated local preview; **Back** or **Escape** closes
 it without connecting to a grid. The crystal stays through the login fade,
 while teleport progress leaves the live world visible behind the same frosted
 pane and solid green bar. Other progress screens retain their existing background.
+During teleporting, the progress view sits below floaters so conversation windows
+remain usable without losing keyboard focus. It still blocks clicks into the world,
+and the existing progress-visible check continues to block movement controls.
+Run `.venv/Scripts/python.exe scripts/tests/test_teleport_progress_ui.py` to check
+the XUI layers and production focus/routing methods without connecting to a grid.
 These assets and the login implementation are in progress until committed;
 platform verification is recorded in FEATURES.md.

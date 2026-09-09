@@ -16,6 +16,7 @@ The committed feature list is based on the differences from the `upstream/develo
 
 - Crystal world-loading screen with a centered frosted pane, solid emerald progress fill, rounded track and border, percentage, and scrollable server messages. Keeps startup status/cancel behavior and the fade into the world; includes a login Debug > UI Tests > Loading Screen preview. (in progress; Release build, wide/compact preview, and long-message scrolling verified; actual grid login pending)
 - Teleport progress leaves the live world visible as regions unload and load, with the same frosted pane and rounded emerald progress bar used for login. (in progress; Release build and 17 blur GPU checks passed; actual teleport verification pending)
+- Conversation windows stay above teleport progress, preserving the focused DM editor while world clicks and movement remain blocked. Login and other progress screens retain their modal behavior. (in progress; Release build and routing/focus regression checks passed; live DM/teleport verification pending)
 
 - Prism product branding, separate Prism settings/cache directories and Windows installer identity; uninstall preserves preferences. Existing Boxxy AO inventory folders and saved setting keys remain compatible. (in progress; Windows Release installer built for initial testing, install/uninstall verification pending)
 
@@ -42,6 +43,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Inline outgoing translation language selector, shared by the bottom chat bar and Conversations nearby chat. (in progress)
 - Offer notifications no longer skip the next participant DM when no duplicate notification log is present. (in progress)
 - Per-person persistent DM translation targets and chiclet-reopened hidden DM windows. (in progress)
+- Conversation popouts synchronize their remembered position after centering, preventing later layout updates from snapping them back to docked coordinates. (in progress; runtime verification pending)
 - Outgoing translation language field in group and conference DMs, with a separate saved target for each conversation and the original outgoing text shown locally in parentheses after its translation. (in progress; runtime verification pending)
 - Saved DM translation targets are used only while automatic translation is enabled; explicit `/tr` commands remain available. (in progress; runtime verification pending)
 - Automatic translation of nearby chat and IMs.
@@ -60,6 +62,8 @@ The committed feature list is based on the differences from the `upstream/develo
 - Modernized incoming/outgoing IM bubbles with character-level selection across messages, readable theme selection colors, viewport-sized rows, independent row/caret positioning for stable resizing, compact mirrored speaker headers, live-previewable configurable colors, and subtle drop shadows. (in progress; selection and resize fixes awaiting runtime verification)
 
 ## Avatar and world interaction
+
+- Hold V in Move mode to highlight a source vertex and temporarily place the move handles there; V-drag snaps it to another object's vertex, with a gold source marker and green snapped marker. Uses loaded prim/static-mesh vertices and existing movement permissions/limits; excludes HUDs, rigged meshes and glTF-node editing. (in progress; Release build and drag regression checks passed; in-world verification pending)
 
 - Shift-drag on the rotation sphere aims the selection's local -Z axis at the cursor's world hit, with a dotted guide from the pivot; skips selected objects, supports terrain, and resumes free rotation on Shift release. (in progress; in-world verification pending)
 

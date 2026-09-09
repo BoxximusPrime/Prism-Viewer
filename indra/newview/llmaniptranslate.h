@@ -62,6 +62,10 @@ public:
     virtual void    highlightManipulators(S32 x, S32 y);
     virtual bool    handleMouseDownOnPart(S32 x, S32 y, MASK mask);
     virtual bool    canAffectSelection();
+    virtual bool    handleKey(KEY key, MASK mask) override;
+    virtual void    onMouseCaptureLost() override;
+    static bool     vertexSnapHeld();
+
 
 protected:
     enum EHandleType {
@@ -83,6 +87,16 @@ protected:
     F32         getMinGridScale();
 
 private:
+    bool        findVertex(S32 x, S32 y, bool source, LLPointer<LLViewerObject>& object, LLVector3& local);
+    bool        vertexPoint(LLVector3d& point) const;
+    void        renderVertexMarker(const LLVector3d& point, const LLColor4& color);
+    void        applyTranslation(const LLVector3d& clamped_relative_move);
+    LLPointer<LLViewerObject> mVertexObject;
+    LLVector3   mVertexLocal;
+    LLVector3d  mVertexStart;
+    LLVector3d  mVertexDestination;
+    bool        mVertexDrag = false;
+    bool        mVertexTarget = false;
     S32         mLastHoverMouseX;
     S32         mLastHoverMouseY;
     bool        mMouseOutsideSlop;      // true after mouse goes outside slop region

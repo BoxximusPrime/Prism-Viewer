@@ -83,6 +83,10 @@
                   height="500"
                   name="DebugView"
                   width="1024"/>
+      <!-- Teleport progress blocks world clicks but stays below conversations. -->
+      <panel name="teleport_progress_holder" follows="all" layout="topleft"
+             left="0" top="0" width="1024" height="500"
+             mouse_opaque="false" tab_stop="false" />
       <floater_view follows="all"
                     height="500"
                     left="0"
@@ -144,15 +148,19 @@
         name="hint_holder"
         mouse_opaque="false"
         follows="all"/>
-  <panel top="0"
-         follows="all"
-         height="768"
-         mouse_opaque="true"
-         name="progress_view"
-         filename="panel_progress.xml"
-         class="progress_view"
-         width="1024"
-         visible="false"/>
+  <panel name="modal_progress_holder" follows="all" layout="topleft"
+         left="0" top="0" width="1024" height="768"
+         mouse_opaque="false" tab_stop="false">
+    <panel top="0"
+           follows="all"
+           height="768"
+           mouse_opaque="true"
+           name="progress_view"
+           filename="panel_progress.xml"
+           class="progress_view"
+           width="1024"
+           visible="false"/>
+  </panel>
   <menu_holder top="0"
                follows="all"
                height="768"

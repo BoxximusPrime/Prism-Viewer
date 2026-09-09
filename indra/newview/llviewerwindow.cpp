@@ -5899,6 +5899,19 @@ void LLViewerWindow::setShowProgress(const bool show)
 {
     if (mProgressView)
     {
+        if (show)
+        {
+            // Keep floaters above teleport progress so chat remains usable.
+            // Login, logout and graphics recovery still use the modal layer.
+            const bool teleport = gTeleportDisplay && LLStartUp::getStartupState() == STATE_STARTED;
+            LLView* holder = mRootView->getChildView(teleport
+                ? "teleport_progress_holder" : "modal_progress_holder");
+            if (mProgressView->getParent() != holder)
+            {
+                holder->addChild(mProgressView);
+                mProgressView->setShape(holder->getLocalRect());
+            }
+        }
         mProgressView->setVisible(show);
     }
 }
