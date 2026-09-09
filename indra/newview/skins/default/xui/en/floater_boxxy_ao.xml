@@ -228,7 +228,6 @@
    word_wrap="true"
    text_color="LabelDisabledColor">
     Inventory: #Prism/#AO
-    (or your existing #Boxxy/#AO).
   </text>
   <panel name="transfer_panel" left="12" right="-12" bottom="-12" height="104"
    follows="left|right|bottom" layout="topleft" background_visible="true" bg_alpha_color="DkGray2">

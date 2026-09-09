@@ -94,7 +94,7 @@ void main() {
 
 
 def run(sdl, gl):
-    for name, args in {"Clear": [U], "Uniform3f": [I, F, F, F], "Uniform4f": [I, F, F, F, F],
+    for name, args in {"Clear": [U], "Enable": [U], "Disable": [U], "DepthFunc": [U], "Uniform3f": [I, F, F, F], "Uniform4f": [I, F, F, F, F],
                        "DeleteProgram": [U], "ActiveTexture": [U], "ReadBuffer": [U],
                        "DrawBuffers": [I, C.POINTER(U)],
                        "UniformMatrix4fv": [I, I, C.c_ubyte, C.POINTER(F)]}.items():
@@ -113,10 +113,12 @@ def run(sdl, gl):
         values = (F * 16)(*(rows[r][c] for c in range(4) for r in range(4)))
         gl.UniformMatrix4fv(gl.GetUniformLocation(prog, name.encode()), 1, 0, values)
 
-    def program(fragment, flags, spot=False):
+    def program(fragment, flags, spot=False, vertex_override=None):
         vertex = "out vec4 vary_fragcoord; out vec3 trans_center;" if spot else "out vec2 vary_fragcoord;"
         vertex += "void main() { vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3)); gl_Position=vec4(p[gl_VertexID],0,1);"
         vertex += "vary_fragcoord=vec4(0,0,0,1); trans_center=vec3(0); }" if spot else "vary_fragcoord=vec2(0.5); }"
+        if vertex_override is not None:
+            vertex = vertex_override
         result = gl.CreateProgram()
         for kind, source in [(0x8B31, vertex), (0x8B30, fragment), (0x8B30, STUBS)] + [
             (0x8B30, (SHADERS / f"class1/deferred/{name}.glsl").read_text())
@@ -146,7 +148,7 @@ def run(sdl, gl):
         uniform(result, "sss_params", 0.9, 2, 0.75, 44)
         uniform(result, "sss_lighting", 0, 0.4, 8.5)
         uniform(result, "sss_penetration", 0.08)
-        uniform(result, "sss_clamp_knee", 0.004)
+        uniform(result, "sss_point_transmission_boost", 1)
         uniform(result, "sss_shadow_thickness", 1, integer=True)
         uniform(result, "sun_dir", 0, 0, 1)
         uniform(result, "moon_dir", 0, 0, 1)
@@ -195,7 +197,11 @@ def run(sdl, gl):
             entry_z = z + t
             d = (rows[2][2]*entry_z + rows[2][3]) / (rows[3][2]*entry_z + rows[3][3])
             gl.ActiveTexture(0x84C0+4+i)
-            gl.TexImage2D(TEXTURE, 0, 0x8CAC, 1, 1, 0, 0x1902, FLOAT, (F*1)(d))
+            if i < 6:
+                gl.TexImage2D(TEXTURE, 0, 0x8CAC, 1, 1, 0, 0x1902, FLOAT, (F*1)(d))
+            else:
+                exit_depth = (rows[2][2]*z + rows[2][3]) / (rows[3][2]*z + rows[3][3])
+                gl.TexImage2D(TEXTURE, 0, 0x8814, 1, 1, 0, RGBA, FLOAT, (F*4)(d,1,exit_depth,1))
         uniform(prog, "test_pos", 0, 0, z)
 
     def pixel(attachment=0):
@@ -278,7 +284,12 @@ def run(sdl, gl):
                         gl.ActiveTexture(0x84C0+(8 if path_index==0 else 10))
                         gl.TexParameteri(TEXTURE,0x2801,filtering)
                         gl.TexParameteri(TEXTURE,0x2800,filtering)
-                        gl.TexImage2D(TEXTURE,0,0x81A6 if near<1 else 0x8CAC,2,2,0,0x1902,FLOAT,(F*4)(*depths))
+                        if path_index == 0:
+                            gl.TexImage2D(TEXTURE,0,0x81A6 if near<1 else 0x8CAC,2,2,0,0x1902,FLOAT,(F*4)(*depths))
+                        else:
+                            exit_depth = a-b/5 if perspective else 0.5
+                            packed=[c for d in depths for c in (d,1,d-depth+exit_depth,1)]
+                            gl.TexImage2D(TEXTURE,0,0x8814,2,2,0,RGBA,FLOAT,(F*16)(*packed))
                         result=pixel()
                         if thickness==0:
                             assert result[0]==0, ("sloping self-surface hotspot",perspective,filtering,u,result)
@@ -311,19 +322,19 @@ def run(sdl, gl):
     setup_depth(prog, 0, z=-4, slot_depths=[0.01,0.03,0.03,0.03,0.03,0.03])
     assert abs(pixel()[3]-0.02) < 0.00008
     checks += 1
-    # Off, missing spotlight slot, and disabled shadow permutations use the old response.
+    # Only an explicit opt-out uses estimated thickness; missing depth stays dark.
     expected = math.exp(-0.165*8.5)*0.9*0.4*0.3
     uniform(prog, "sss_shadow_thickness", 0, integer=True)
     assert abs(pixel()[0]-expected) < 1e-6
     uniform(prog, "sss_shadow_thickness", 1, integer=True)
     uniform(prog, "test_index", -1, integer=True)
-    assert abs(pixel()[0]-expected) < 1e-6
+    assert pixel()[0] == 0
     gl.DeleteProgram(prog)
     for defines in ("", "#define SUN_SHADOW 1\n"):
         prog = program(PROBE, defines)
         uniform(prog, "test_index", 0, integer=True)
         setup_depth(prog,0.005)
-        assert abs(pixel()[0]-expected) < 1e-6
+        assert pixel()[0] == 0
         gl.DeleteProgram(prog)
     checks += 4
 
@@ -342,7 +353,7 @@ def run(sdl, gl):
         for thickness in (0.004, 0.04, 0.08):
             setup_depth(prog, thickness)
             actual = pixel()
-            expected_gray = 1-thickness/0.08
+            expected_gray = 1-thickness/0.3
             assert all(abs(c-expected_gray)<0.0001 for c in actual[:3]), actual
             assert actual[3] == 1
             checks += 1
@@ -352,11 +363,6 @@ def run(sdl, gl):
         checks += 1
     uniform(prog, "sss_debug_light", 0, integer=True)
     uniform(prog, "sss_depth_valid", 1, 1, 1)
-    setup_depth(prog,0.004)
-    uniform(prog,"sss_minimum_thickness",0.008)
-    assert all(abs(c-(1-0.008/0.08))<1e-6 for c in pixel()[:3]), "Depth debug omits soft clamp"
-    uniform(prog,"sss_minimum_thickness",0)
-    checks+=1
     uniform(prog, "sss_debug_light", 3, integer=True)
     uniform(prog, "diffuseMap", 1, integer=True)
     color_texture(1, [0.23,0.07,0.012,0])
@@ -387,10 +393,7 @@ def run(sdl, gl):
                         assert abs(thin-pixel(1)[0]) < 1e-6, "Transmission missing from diffusion buffer"
                         setup_depth(prog,0.25)
                         thick = pixel()[0]
-                        if defines:
-                            assert thin > 0.01 and thick == 0, (name,multi,flag,classic,thin,thick)
-                        else:
-                            assert thin == thick, (name,thin,thick)
+                        assert thin == thick == 0, (name,"uncertified ordinary depth transmitted",thin,thick)
                         setup_depth(prog,0.005)
                         uniform(prog,"sss_shadow_thickness",0,integer=True)
                         old = pixel()[0]
@@ -408,7 +411,7 @@ def run(sdl, gl):
                             uniform(prog,"shadow_fade",1)
                             faded = pixel()
                             uniform(prog,"sss_shadow_thickness",0,integer=True)
-                            assert max(abs(a-b) for a,b in zip(pixel(),faded)) < 1e-6
+                            assert faded[0] == 0 and pixel()[0] > 0, "Shadow slot fade enabled an implicit estimate"
                             checks += 1
                 gl.DeleteProgram(prog)
     # A valid focused map must be independent of camera-driven ordinary cascade
@@ -451,6 +454,51 @@ def run(sdl, gl):
             assert pixel() == before, (name,"point response changed")
             checks += 1
         gl.DeleteProgram(prog)
+    # Boost every local-light path, including projectors and estimated mode;
+    # never change front lighting or resurrect a blocked measured path.
+    for name, defines in (("pointLightF", ""), ("multiPointLightF", ""),
+                          ("spotLightF", ""), ("spotLightF", "#define MULTI_SPOTLIGHT 1\n")):
+        prog = program((SHADERS / f"class3/deferred/{name}.glsl").read_text(),
+                       "#define LIGHT_COUNT 1\n" + defines, spot=True)
+        uniform(prog,"color",1,1,1)
+        uniform(prog,"size",10)
+        uniform(prog,"far_z",-100)
+        uniform(prog,"light[0]",0,0,0,10)
+        uniform(prog,"light_col[0]",1,1,1,0.5)
+        uniform(prog,"sss_depth_valid",1,1,1)
+        uniform(prog,"sss_depth_focus",0,0,-5,2.5)
+        uniform(prog,"sss_penetration",0.3)
+        uniform(prog,"proj_shadow_idx",-1,integer=True)
+        for flag in (0.46,0.79):
+            uniform(prog,"test_flag",flag)
+            for measured in (0,1):
+                uniform(prog,"sss_point_depth",measured,integer=True)
+                uniform(prog,"sss_shadow_thickness",measured,integer=True)
+                uniform(prog,"sss_point_transmission_boost",1)
+                setup_depth(prog,0.005,perspective=True)
+                normal=pixel()[0]
+                assert normal>0, (name,"boost test has no baseline transmission")
+                uniform(prog,"sss_point_transmission_boost",4)
+                assert abs(pixel()[0]-normal*4)<1e-5, (name,"boost scaling")
+                uniform(prog,"test_normal",0,0,1)
+                front=pixel()
+                uniform(prog,"sss_point_transmission_boost",0)
+                assert pixel()==front, (name,"boost affected front lighting")
+                uniform(prog,"test_normal",0,0,-1)
+                assert pixel()[0]==0, (name,"zero boost")
+                checks+=3
+            uniform(prog,"sss_point_depth",1,integer=True)
+            uniform(prog,"sss_shadow_thickness",1,integer=True)
+            uniform(prog,"sss_point_transmission_boost",16)
+            setup_depth(prog,0.2,perspective=True)
+            assert pixel()[0]>0, (name,"200 mm path still capped at 80 mm")
+            uniform(prog,"sss_penetration",0.08)
+            assert pixel()[0]==0, (name,"penetration limit ignored")
+            uniform(prog,"sss_penetration",0.3)
+            setup_depth(prog,0.4,perspective=True)
+            assert pixel()[0]==0, (name,"blocked path amplified")
+            checks+=3
+        gl.DeleteProgram(prog)
     # Independent maps: production shaders without any ordinary shadow defines.
     for name in ("softenLightF", "spotLightF", "pointLightF", "multiPointLightF"):
         prog = program((SHADERS / f"class3/deferred/{name}.glsl").read_text(),
@@ -477,10 +525,10 @@ def run(sdl, gl):
             fallback = pixel()
             uniform(prog,"sss_shadow_thickness",1,integer=True)
             uniform(prog,"sss_depth_valid",0,0,0)
-            assert pixel() == fallback, (name,"no map fallback")
+            assert pixel()[0] == 0, (name,"missing depth invented tissue")
             uniform(prog,"sss_depth_valid",1,1,1)
             uniform(prog,"sss_depth_focus",10,0,-5,2.5)
-            assert pixel() == fallback, (name,"outside focus fallback")
+            assert pixel()[0] == 0, (name,"outside focus invented tissue")
             uniform(prog,"sss_depth_focus",0,0,-5,2.5)
             if "Point" in name or name == "pointLightF":
                 uniform(prog,"sss_point_depth",0,integer=True)
@@ -519,7 +567,11 @@ def run(sdl, gl):
                            [[1,0,0,0.26],[0,1,0,0.3],[0,0,-1,-4.5],[0,0,0,1]])
                     depths=[0.5-thickness+0.02*(x-0.26)+0.03*(y-0.3) for y in (0.25,0.75) for x in (0.25,0.75)]
                     gl.ActiveTexture(0x84C0+4+i)
-                    gl.TexImage2D(TEXTURE,0,0x81A6,2,2,0,0x1902,FLOAT,(F*4)(*depths))
+                    if i < 6:
+                        gl.TexImage2D(TEXTURE,0,0x81A6,2,2,0,0x1902,FLOAT,(F*4)(*depths))
+                    else:
+                        packed=[c for d in depths for c in (d,1,d+thickness,1)]
+                        gl.TexImage2D(TEXTURE,0,0x8814,2,2,0,RGBA,FLOAT,(F*16)(*packed))
                 value=pixel()[0]
                 assert value==0, (name,"geometric front-face rejection",thickness,value)
                 checks+=1
@@ -638,10 +690,14 @@ def run(sdl, gl):
         coords=[(i+0.5)/100-0.02 for i in range(4)]
         depths=[0.5-(-20*x+0.6*max(abs(y)-0.001,0)) for y in coords for x in coords]
         gl.ActiveTexture(0x84C0+unit)
-        gl.TexImage2D(TEXTURE,0,0x81A6,4,4,0,0x1902,FLOAT,(F*16)(*depths))
+        if unit == 8:
+            gl.TexImage2D(TEXTURE,0,0x81A6,4,4,0,0x1902,FLOAT,(F*16)(*depths))
+        else:
+            packed=[c for d in depths for c in (d,1,0.5,1)]
+            gl.TexImage2D(TEXTURE,0,0x8814,4,4,0,RGBA,FLOAT,(F*64)(*packed))
         uniform(prog,"test_index",index,integer=True)
         value=pixel()
-        assert value[0] == 0 and abs(value[3]-0.08)<1e-6, ("faceted self-depth hotspot",index,value)
+        assert value[0] == 0 and abs(value[3]-(0.3 if index==-3 else 0.08))<1e-6, ("faceted self-depth hotspot",index,value)
         checks+=1
     gl.DeleteProgram(prog)
     # A sampled curved thickness profile must lose the sharp changes in slope
@@ -653,7 +709,11 @@ def run(sdl, gl):
     paths=[0.008+0.006*math.cos(i*math.pi/4) for i in range(16)]
     for unit in (8,10):
         gl.ActiveTexture(0x84C0+unit)
-        gl.TexImage2D(TEXTURE,0,0x81A6,16,1,0,0x1902,FLOAT,(F*16)(*(0.5-p for p in paths)))
+        if unit == 8:
+            gl.TexImage2D(TEXTURE,0,0x81A6,16,1,0,0x1902,FLOAT,(F*16)(*(0.5-p for p in paths)))
+        else:
+            packed=[c for p in paths for c in (0.5-p,1,0.5,1)]
+            gl.TexImage2D(TEXTURE,0,0x8814,16,1,0,RGBA,FLOAT,(F*64)(*packed))
     def curve(u,index):
         uniform(prog,"test_index",index,integer=True)
         rows=[[1,0,0,u],[0,1,0,0.5],[0,0,-1,-4.5],[0,0,0,1]]
@@ -670,10 +730,11 @@ def run(sdl, gl):
     assert min(values)>=min(paths)-1e-6 and max(values)<=max(paths)+1e-6
     # Filtering must remain conservative at an opaque silhouette.
     gl.ActiveTexture(0x84C0+10)
-    gl.TexImage2D(TEXTURE,0,0x81A6,16,1,0,0x1902,FLOAT,(F*16)(*([0.496]*8+[0.25]*8)))
+    packed=[c for d in [0.496]*8+[0.1]*8 for c in (d,1,0.5,1)]
+    gl.TexImage2D(TEXTURE,0,0x8814,16,1,0,RGBA,FLOAT,(F*64)(*packed))
     edge=[curve((i+0.5)/64,-3) for i in range(64)]
     assert all(b>=a-1e-7 for a,b in zip(edge,edge[1:])), edge
-    assert abs(edge[0]-0.004)<1e-6 and abs(edge[-1]-0.08)<1e-6
+    assert abs(edge[0]-0.004)<1e-6 and abs(edge[-1]-0.3)<1e-6
     checks+=4
     # Direct reconstruction must also handle the focused projector's short near
     # plane and D24 quantization, without turning thin tissue into opaque depth.
@@ -684,52 +745,11 @@ def run(sdl, gl):
         matrix(prog,"sss_depth_matrix[0]",[[1,0,-0.5,0],[0,1,-0.5,0],[0,0,-a,-b],[0,0,-1,0]])
         depth=a-b/(distance-0.004)
         gl.ActiveTexture(0x84C0+10)
-        gl.TexImage2D(TEXTURE,0,0x81A6,1,1,0,0x1902,FLOAT,(F*1)(depth))
+        # Quantize the captured entry and exit to the depth attachment's D24 precision.
+        q=lambda d: round(d*16777215)/16777215
+        gl.TexImage2D(TEXTURE,0,0x8814,1,1,0,RGBA,FLOAT,(F*4)(q(depth),1,q(a-b/distance),1))
         measured=pixel()[3]
         assert abs(measured-0.004)<tolerance, ("raw projector depth precision",distance,measured)
-        checks+=1
-    gl.DeleteProgram(prog)
-    # Soft floor is identity when off, continuous at its knee, monotonic, and
-    # never reduces thickness or changes the unavailable-depth sentinel.
-    floor_source = """
-    uniform float test_path;
-    float getSSSClampedPath(float path);
-    out vec4 frag_color;
-    void main() { frag_color = vec4(getSSSClampedPath(test_path)); }
-    """
-    prog=program(floor_source, "")
-    for minimum in (0.0,0.004,0.02):
-        uniform(prog,"sss_minimum_thickness",minimum)
-        for path in (-1.0,0.0,0.001,0.004,0.00799,0.008,0.00801,0.02,0.04,0.08):
-            uniform(prog,"test_path",path)
-            width=min(minimum,0.004)
-            expected=path if path<0 or minimum==0 or path>=minimum+width else minimum if path<=minimum-width else minimum+(path-minimum+width)**2/(4*width)
-            assert abs(pixel()[0]-expected)<1e-7, (minimum,path,pixel())
-            checks+=1
-    for lower,upper,knee in ((0,0.02,0),(0,0.02,0.004),(0.004,0.02,0.004),(0.01,0.012,0.02),(0.02,0.01,0.004)):
-        uniform(prog,"sss_minimum_thickness",lower)
-        uniform(prog,"sss_maximum_thickness",upper)
-        uniform(prog,"sss_clamp_knee",knee)
-        values=[]
-        for path in (0,0.001,0.005,0.01,0.015,0.02,0.03,0.07):
-            uniform(prog,"test_path",path)
-            value=pixel()[0]
-            assert lower-1e-7<=value<=max(lower,upper)+1e-7
-            values.append(value)
-        assert all(a<=b+1e-7 for a,b in zip(values,values[1:])), values
-        for sentinel in (-1,0.08):
-            uniform(prog,"test_path",sentinel)
-            assert abs(pixel()[0]-sentinel)<1e-7
-        checks+=3
-    # The upper knee joins the identity and plateau with matching slopes.
-    uniform(prog,"sss_minimum_thickness",0)
-    uniform(prog,"sss_maximum_thickness",0.02)
-    uniform(prog,"sss_clamp_knee",0.004)
-    for center,slope in ((0.016,1),(0.024,0)):
-        samples=[]
-        for path in (center-0.00001,center,center+0.00001):
-            uniform(prog,"test_path",path); samples.append(pixel()[0])
-        assert all(abs((b-a)/0.00001-slope)<0.003 for a,b in zip(samples,samples[1:])), samples
         checks+=1
     gl.DeleteProgram(prog)
     # Exercise the optical response in every production light path.
@@ -746,40 +766,209 @@ def run(sdl, gl):
         uniform(prog,"sss_depth_focus",0,0,-5,2.5)
         for flag in (0.46,0.79):
             uniform(prog,"test_flag",flag)
+            values=[]
             for thickness in (0.004,0.02):
                 setup_depth(prog,thickness)
-                uniform(prog,"sss_minimum_thickness",0)
-                original=pixel()[0]
-                uniform(prog,"sss_minimum_thickness",0.008)
-                limited=pixel()[0]
-                assert original>0 and (0<limited<original if thickness<0.016 else abs(limited-original)<1e-7), (name,original,limited)
-                checks+=1
-                if thickness==0.02:
-                    uniform(prog,"sss_minimum_thickness",0)
-                    uniform(prog,"sss_maximum_thickness",0.008)
-                    assert pixel()[0]>original, (name,"upper clamp did not limit absorption")
-                    uniform(prog,"sss_maximum_thickness",0)
-                    checks+=1
+                values.append(pixel()[0])
+            assert values[0]>values[1]>0, (name,flag,values)
+            checks+=1
         gl.DeleteProgram(prog)
-    prog=program(PROBE,flags)
-    uniform(prog,"test_index",-1,integer=True)
-    original=pixel()
-    uniform(prog,"sss_minimum_thickness",0.02)
-    assert pixel()==original, "Minimum thickness changed the artistic fallback"
-    checks+=1
-    gl.DeleteProgram(prog)
     prog=program(PROBE,flags)
     uniform(prog,"test_index",0,integer=True)
     uniform(prog,"sss_penetration",0.02)
-    uniform(prog,"sss_maximum_thickness",0.004)
-    uniform(prog,"sss_clamp_knee",0.001)
     for thickness in (0.03,0.25):
         setup_depth(prog,thickness)
-        assert pixel()[0]==0, "Maximum clamp bypassed measured penetration/opaque depth"
+        assert pixel()[0]==0, "Measured penetration/opaque depth transmitted"
         checks+=1
     gl.DeleteProgram(prog)
+    # A 100 mm faceted arm sampled by a 512-pixel, 5 m-wide map. Its curved
+    # exit differs from the receiver tangent plane over the filter footprint;
+    # that uncertainty must not be reported as hundreds of millimeters of skin.
+    prog=program(PROBE, "")
+    uniform(prog,"test_index",-3,integer=True)
+    uniform(prog,"sss_depth_valid",1,0,0)
+    uniform(prog,"sss_depth_focus",0,0,-5,2.5)
+    uniform(prog,"sss_penetration",0.3)
+    uniform(prog,"test_light",0,0,-1)
+    uniform(prog,"sss_lighting",0,1,0) # isolate matching confidence from absorption
+    radius, span, resolution = 0.05, 5.0, 512
+    vertices=[(radius*math.sin(i*math.pi/32),radius*math.cos(i*math.pi/32)) for i in range(-16,17)]
+    def arm_surface(x):
+        for (x0,z0),(x1,z1) in zip(vertices,vertices[1:]):
+            if x0<=x<=x1:
+                slope=(z1-z0)/(x1-x0)
+                return z0+slope*(x-x0),slope
+        return None
+    row=[]
+    for i in range(resolution):
+        surface=arm_surface(((i+0.5)/resolution-0.5)*span)
+        row.extend((0.5-surface[0],1,0.5+surface[0],1) if surface else (1,0,1,0))
+    gl.ActiveTexture(0x84C0+10)
+    gl.TexImage2D(TEXTURE,0,0x8814,resolution,resolution,0,RGBA,FLOAT,
+                  (F*(4*resolution*resolution))(*(row*resolution)))
+    matrix(prog,"sss_depth_matrix[0]",[[1/span,0,0,0.5],[0,1/span,0,0.5],[0,0,1,5.5],[0,0,0,1]])
+    arm_errors,arm_coverage=[],[]
+    for i in range(-40,41):
+        x=i*0.001
+        z,slope=arm_surface(x)
+        uniform(prog,"test_pos",x,0,-5+z)
+        uniform(prog,"test_surface_dx",0.0001,0,slope*0.0001)
+        uniform(prog,"test_surface_dy",0,0.0001,0)
+        value=pixel()
+        measured=value[3]
+        arm_errors.append(abs(measured-2*z))
+        assert abs(measured-2*z)<0.01, ("faceted arm became false thick tissue",x,2*z,measured)
+        t=measured/0.3
+        coverage=value[0]/(0.9*(1-t*t*(3-2*t)))
+        arm_coverage.append(coverage)
+        assert coverage>0.8, ("faceted arm lost transmission coverage",x,coverage)
+        checks+=1
+    uniform(prog,"test_pos",0,0,-5+radius+0.03)
+    uniform(prog,"test_surface_dx",0.0001,0,0)
+    assert pixel()[0]==0, "Footprint tolerance admitted a separate surface 30 mm behind the arm"
+    checks+=1
+    print(f"100 mm arm: maximum reconstruction error {max(arm_errors)*1000:.2f} mm; minimum coverage {min(arm_coverage):.3f}")
+    gl.DeleteProgram(prog)
+    # Certified depth must be one closed object, and the receiver its first exit.
+    prog=program(PROBE, "")
+    uniform(prog,"test_index",-3,integer=True)
+    uniform(prog,"sss_depth_valid",1,0,0)
+    uniform(prog,"sss_depth_focus",0,0,-5,2.5)
+    setup_depth(prog,0.004)
+    baseline=pixel()[0]
+    assert baseline > 0.01
+    for entry_id,exit_id,exit_depth in ((0,1,0.5),(1,0,0.5),(1,2,0.5),
+                                        (1,1,0.49),(1,1,0.51),(0,0,1)):
+        gl.ActiveTexture(0x84C0+10)
+        gl.TexImage2D(TEXTURE,0,0x8814,1,1,0,RGBA,FLOAT,(F*4)(0.496,entry_id,exit_depth,exit_id))
+        assert pixel()[0] == 0, ("opaque/mismatched/disconnected layer transmitted",entry_id,exit_id,exit_depth,pixel())
+        checks+=1
+    # Receiver-depth uncertainty must fade conservatively instead of creating a new hard edge.
+    exit_values=[]
+    for gap in (0.0009,0.0011,0.0015,0.0021):
+        gl.ActiveTexture(0x84C0+10)
+        gl.TexImage2D(TEXTURE,0,0x8814,1,1,0,RGBA,FLOAT,(F*4)(0.496,1,0.5-gap,1))
+        exit_values.append(pixel())
+    assert all(abs(v[3]-0.004)<1e-6 for v in exit_values[:-1]), exit_values
+    assert [v[0] for v in exit_values]==sorted((v[0] for v in exit_values),reverse=True)
+    assert exit_values[-1][0]==0 and abs(exit_values[-1][3]-0.3)<1e-6
+    checks+=1
+    setup_depth(prog,0.004)
+    # Both temporal confidence and spatial coverage continuously approach zero.
+    for confidence in (0,0.001,0.1,0.49,0.5,0.51,0.9,1):
+        uniform(prog,"sss_depth_valid",confidence,0,0)
+        assert abs(pixel()[0]-baseline*confidence)<1e-6, ("map confidence snapped",confidence,pixel())
+        checks+=1
+    for offset,weight in ((0,1),(1.999,1),(2,1),(2.25,0.5),(2.5,0),(2.501,0)):
+        uniform(prog,"sss_depth_focus",offset,0,-5,2.5)
+        assert abs(pixel()[0]-baseline*weight)<1e-6, ("focus edge snapped",offset,pixel())
+        checks+=1
+    uniform(prog,"sss_depth_focus",2.499,0,-5,2.5)
+    assert pixel()[0]<1e-5
+    uniform(prog,"sss_penetration",0.029)
+    setup_depth(prog,0.07)
+    for offset in (2.499,2.501):
+        uniform(prog,"sss_depth_focus",offset,0,-5,2.5)
+        assert pixel()[0]==0, "Leaving depth coverage made thick tissue glow"
+        checks+=1
+    gl.DeleteProgram(prog)
+
+    # Render the real capture fragments, with depth testing and the exact RG/BA
+    # color masks used by the viewer, including masked and double-sided geometry.
+    vertex = """
+    uniform float test_capture_z;
+    uniform int test_reverse;
+    out vec4 post_pos, vertex_color;
+    out float target_pos_x, pos_w;
+    out vec2 vary_texcoord0;
+    void main() {
+        vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));
+        int index=test_reverse!=0 ? 2-gl_VertexID:gl_VertexID;
+        gl_Position=vec4(p[index],test_capture_z*2.0-1.0,1);
+        post_pos=gl_Position; vertex_color=vec4(1); pos_w=1;
+        target_pos_x=1; vary_texcoord0=vec2(0.5);
+    }
+    """
+    gl.ActiveTexture(0x84C0+15)
+    capture_depth=obj(gl.GenTextures); gl.BindTexture(TEXTURE,capture_depth)
+    gl.TexImage2D(TEXTURE,0,0x81A6,1,1,0,0x1902,FLOAT,None)
+    gl.FramebufferTexture2D(FRAMEBUFFER,0x8D00,TEXTURE,capture_depth,0)
+    assert gl.CheckFramebufferStatus(FRAMEBUFFER)==0x8CD5
+    gl.Enable(0x0B71); gl.DepthFunc(0x0201)
+    color_texture(0,[1,1,1,1])
+    for name in ("shadowF","shadowAlphaMaskF","treeShadowF","pbrShadowAlphaMaskF",
+                 "pbrShadowAlphaBlendF","avatarShadowF","avatarAlphaShadowF","avatarAlphaMaskShadowF"):
+        fragment=(SHADERS/f"class1/deferred/{name}.glsl").read_text()
+        if name=="shadowAlphaMaskF":
+            fragment="uniform sampler2D diffuseRect; vec4 diffuseLookup(vec2 tc) { return texture(diffuseRect,tc); }\n"+fragment
+        prog=program(fragment,"",vertex_override=vertex)
+        uniform(prog,"minimum_alpha",0.5)
+        uniform(prog,"color",1,1,1,1)
+        for identity in (0,11):
+            gl.ColorMask(1,1,1,1); gl.Clear(0x4100)
+            uniform(prog,"sss_depth_pass",1,integer=True)
+            uniform(prog,"sss_depth_id",identity)
+            uniform(prog,"test_capture_z",0.3)
+            uniform(prog,"test_reverse",0,integer=True)
+            gl.ColorMask(1,1,0,0); gl.DrawArrays(0x0004,0,3)
+            gl.Clear(0x0100)
+            uniform(prog,"sss_depth_pass",2,integer=True)
+            uniform(prog,"test_reverse",1,integer=True)
+            gl.ColorMask(0,0,1,1)
+            # An enclosing room's backface can precede the skin's first entry.
+            # It must not replace the exit of the transmissive skin layer.
+            uniform(prog,"sss_depth_id",0)
+            uniform(prog,"test_capture_z",0.1)
+            gl.DrawArrays(0x0004,0,3)
+            uniform(prog,"sss_depth_id",11)
+            uniform(prog,"test_capture_z",0.6)
+            gl.DrawArrays(0x0004,0,3)
+            gl.ReadBuffer(COLOR_ATTACHMENT)
+            values=(F*4)(); gl.ReadPixels(0,0,1,1,RGBA,FLOAT,values)
+            assert max(abs(a-b) for a,b in zip(values,(0.3,identity,0.6,11)))<1e-6, (name,tuple(values))
+            checks+=1
+        gl.ColorMask(1,1,1,1)
+        uniform(prog,"test_reverse",0,integer=True)
+        gl.Clear(0x0100)
+        assert pixel()==(0,0,0,0), (name,"exit pass accepted front face")
+        uniform(prog,"sss_depth_pass",0,integer=True)
+        gl.Clear(0x0100)
+        assert pixel()==(1,1,1,1), (name,"ordinary shadow output changed")
+        checks+=2
+        uniform(prog,"sss_depth_pass",1,integer=True)
+        uniform(prog,"test_reverse",1,integer=True)
+        gl.Clear(0x0100)
+        assert pixel()==(0,0,0,0), (name,"entry pass accepted back face")
+        checks+=1
+        # A tighter focused near plane must not clip away an opaque light-side blocker.
+        gl.Enable(0x864F) # GL_DEPTH_CLAMP, as used for both focused passes
+        uniform(prog,"test_reverse",0,integer=True)
+        uniform(prog,"test_capture_z",-0.1)
+        uniform(prog,"sss_depth_id",0)
+        gl.Clear(0x0100)
+        blocker=pixel()
+        # gl_FragCoord.z is the unclamped value; the depth attachment is clamped.
+        assert max(abs(a-b) for a,b in zip(blocker,(-0.1,0,-0.1,0)))<1e-6, (name,blocker)
+        # Prove it wrote depth, rather than being clipped and leaving the clear depth.
+        uniform(prog,"test_capture_z",0.3)
+        uniform(prog,"sss_depth_id",11)
+        gl.DrawArrays(0x0004,0,3)
+        values=(F*4)(); gl.ReadPixels(0,0,1,1,RGBA,FLOAT,values)
+        assert tuple(values)==blocker, (name,"near blocker failed to occlude skin")
+        gl.Disable(0x864F)
+        checks+=1
+        if name not in ("shadowF","avatarShadowF"):
+            uniform(prog,"test_reverse",0,integer=True)
+            color_texture(0,[1,1,1,0])
+            gl.Clear(0x0100)
+            assert pixel()==(0,0,0,0), (name,"transparent texel wrote a skin boundary")
+            color_texture(0,[1,1,1,1])
+            checks+=1
+        gl.DeleteProgram(prog)
+    gl.Disable(0x0B71)
+    gl.FramebufferTexture2D(FRAMEBUFFER,0x8D00,TEXTURE,0,0)
     assert gl.GetError() == 0
-    print(f"Passed {checks} SSS GPU checks: paths, cascades, fallback, sun/spot/point PBR and legacy composition, independent maps and point toggle.")
+    print(f"Passed {checks} SSS GPU checks: paths, explicit estimates, sun/spot/point composition, matched layers, coverage fades and real shadow capture fragments.")
 
 
 if __name__ == "__main__":

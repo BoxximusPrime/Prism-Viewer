@@ -713,6 +713,9 @@ void GLTFSceneManager::render(Asset& asset, U8 variant)
                 }
 
 
+                // Untagged GLTF scene assets still occlude focused skin depth.
+                // Reset on ordinary draws as this program is also used by the main view.
+                gPipeline.setSSSDepthUniforms(*LLGLSLShader::sCurBoundShaderPtr);
                 if (!rigged)
                 {
                     glBindBufferBase(GL_UNIFORM_BUFFER, LLGLSLShader::UB_GLTF_NODES, asset.mNodesUBO);

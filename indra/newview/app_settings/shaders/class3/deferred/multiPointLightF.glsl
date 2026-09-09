@@ -72,16 +72,19 @@ bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
 uniform int sss_point_depth;
+uniform float sss_point_transmission_boost;
 bool useSSSShadowThickness(float nl, float strength);
 void prepareSSSDepth(vec3 pos);
 float sampleLocalSSSPath(vec3 pos, vec3 lightOrigin);
 vec3 getSSSTransmissionWithDepth(float nl, float nv, float strength, float path, float shadow);
+vec3 getSSSTransmission(float nl, float nv, float strength);
 vec3 pointSSSTransmission(float nl, float nv, float strength, vec3 pos, vec3 origin)
 {
+    if (sss_point_depth == 0) return getSSSTransmission(nl, nv, strength) * sss_point_transmission_boost;
     float path = -1.0;
     if (sss_point_depth != 0 && useSSSShadowThickness(nl, strength))
         path = sampleLocalSSSPath(pos, origin);
-    return getSSSTransmissionWithDepth(nl, nv, strength, path, 1.0);
+    return getSSSTransmissionWithDepth(nl, nv, strength, path, 1.0) * sss_point_transmission_boost;
 }
 
 void main()

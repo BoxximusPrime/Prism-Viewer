@@ -1,250 +1,95 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<panel
- follows="all"
- height="768"
- layout="topleft"
- name="panel_login"
- focus_root="true"
- background_visible="false"
- width="1024">
+<panel follows="all" height="768" layout="topleft" name="panel_login"
+ focus_root="true" background_visible="false" width="1024">
   <panel.string name="forgot_password_url">http://secondlife.com/account/request.php</panel.string>
   <panel.string name="sign_up_url">https://join.secondlife.com/</panel.string>
 
-  <layout_stack
-   follows="all"
-   layout="topleft"
-   orientation="horizontal"
-   border_size="0"
-   animate="false"
-   left="0"
-   top="0"
-   width="1024"
-   height="768">
-    <layout_panel auto_resize="true" user_resize="false" background_visible="false" min_width="0" width="1" />
-    <layout_panel
-     auto_resize="false"
-     user_resize="false"
-     background_visible="false"
-     width="400"
-     height="768">
-      <layout_stack
-       follows="all"
-       layout="topleft"
-       orientation="vertical"
-       border_size="0"
-       animate="false"
-       left="0"
-       top="0"
-       width="400"
-       height="768">
-        <layout_panel auto_resize="true" user_resize="false" background_visible="false" min_height="0" height="1" />
-        <layout_panel
-         auto_resize="false"
-         user_resize="false"
-         background_visible="false"
-         width="400"
-         height="290">
-          <icon
-           follows="left|top"
-           layout="topleft"
-           name="boxxy_login_brand"
-           image_name="Prism_Login_Logo"
-           mouse_opaque="false"
-           left="88"
-           top="8"
-           width="224"
-           height="205" />
-          <text name="prism_wordmark" left="0" top="228" width="400" height="30"
-           font="SansSerifHuge" font.style="BOLD" halign="center"
-           text_color="0.91 0.95 0.93 1" mouse_opaque="false">P R I S M</text>
-          <text name="prism_descriptor" left="0" top="262" width="400" height="16"
-           font="SansSerifSmall" halign="center"
-           text_color="0.46 0.60 0.54 1" mouse_opaque="false">VIEWER FOR SECOND LIFE</text>
-        </layout_panel>
-        <layout_panel
-         auto_resize="false"
-         user_resize="false"
-         background_visible="false"
-         width="400"
-         height="300">
-          <icon name="prism_card_shadow" left="-6" top="4" width="412" height="306"
-           image_name="Rounded_Square" color="0 0 0 0.20" mouse_opaque="false" />
-          <icon name="prism_card_border" left="0" top="0" width="400" height="300"
-           image_name="Rounded_Square" color="0.18 0.26 0.23 0.8" mouse_opaque="false" />
-          <icon name="prism_card_surface" left="1" top="1" width="398" height="298"
-           image_name="Rounded_Square" color="0.035 0.050 0.047 1" mouse_opaque="false" />
-          <icon name="username_combo_border" follows="all" left="30" top="30" width="340" height="38"
-           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
-          <icon name="username_combo_fill" follows="all" left="31" top="31" width="338" height="36"
-           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
-          <icon name="password_edit_border" follows="all" left="30" top="91" width="340" height="38"
-           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
-          <icon name="password_edit_fill" follows="all" left="31" top="92" width="338" height="36"
-           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
-          <combo_box
-           follows="left|top"
-           layout="topleft"
-           name="username_combo"
-           allow_text_entry="true"
-           label="Username"
-           tool_tip="Username"
-           combo_editor.font="SansSerifLarge"
-           combo_editor.commit_on_focus_lost="false"
-           combo_editor.prevalidator="ascii"
-           max_chars="128"
-           left="30"
-           top="30"
-           width="340"
-           height="38">
-            <combo_box.combo_button
-             image_overlay="ComboButton_Arrow"
-             image_overlay_right_delta="10"
-             image_unselected="ComboButton_Transparent"
-             hover_glow_amount="0"
-             image_selected="ComboButton_Transparent"
-             image_disabled="ComboButton_Transparent" />
-            <combo_box.combo_editor
-             background_image="TextField_Transparent"
-             background_image_disabled="TextField_Transparent"
-             background_image_focused="TextField_Transparent"
-             draw_focus_border="false"
-             text_pad_left="12"
-             bg_image_always_focused="false" />
-          </combo_box>
-          <line_editor
-           follows="left|top"
-           layout="topleft"
-           name="password_edit"
-           background_image="TextField_Transparent"
-           background_image_disabled="TextField_Transparent"
-           background_image_focused="TextField_Transparent"
-           label="Password"
-           left="30"
-           top="91"
-           width="340"
-           height="38"
-           max_length_chars="16"
-           text_pad_left="12"
-           bg_image_always_focused="false"
-           font="SansSerifLarge"
-           is_password="true"
-           select_on_focus="true"
-           draw_focus_border="false"
-           commit_on_focus_lost="false" />
-          <check_box
-           name="remember_name"
-           label="Remember username"
-           label_text.text_color="LtGray"
-           font="SansSerifSmall"
-           left="30"
-           top="139"
-           width="164"
-           height="24" />
-          <check_box
-           name="remember_password"
-           control_name="RememberPassword"
-           label="Remember password"
-           label_text.text_color="LtGray"
-           font="SansSerifSmall"
-           left="206"
-           top="139"
-           width="164"
-           height="24" />
-          <layout_stack
-           name="login_stack"
-           orientation="horizontal"
-           border_size="12"
-           animate="false"
-           left="30"
-           top="178"
-           width="340"
-           height="38">
-            <layout_panel name="location_panel" auto_resize="true" user_resize="false" min_width="164" width="164" height="38">
-          <icon name="start_location_combo_border" follows="all" left="0" top="0" width="164" height="38"
-           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
-          <icon name="start_location_combo_fill" follows="all" left="1" top="1" width="162" height="36"
-           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+  <!-- Artwork is drawn separately; these controls stay crisp at any aspect ratio. -->
+  <icon name="boxxy_login_brand" image_name="Prism_Login_Logo" mouse_opaque="false"
+   follows="left|top" left="60" top="40" width="64" height="64" />
+  <text name="prism_wordmark" left="140" top="57" width="220" height="32"
+   font="SansSerifHuge" text_color="0.91 0.95 0.93 1" mouse_opaque="false">P R I S M</text>
 
-              <combo_box
-               name="start_location_combo"
-               control_name="NextLoginLocation"
-               allow_text_entry="true"
-               label="Start location"
-               font="SansSerifLarge"
-               combo_editor.font="SansSerifLarge"
-               combo_editor.text_pad_left="12"
-               follows="all"
-               left="0"
-               top="0"
-               width="164"
-               height="38">
-                <combo_box.combo_button
-                 image_unselected="ComboButton_Transparent"
-                 image_selected="ComboButton_Transparent"
-                 image_disabled="ComboButton_Transparent"
-                 image_overlay="ComboButton_Arrow" />
-                <combo_box.combo_editor background_image="TextField_Transparent"
-                 background_image_disabled="TextField_Transparent" background_image_focused="TextField_Transparent"
-                 draw_focus_border="false" />
+  <panel name="prism_login_card" follows="left|top" left="544" top="144"
+   width="420" height="480" background_visible="false"
+   backdrop_blur="20" backdrop_corner_radius="6">
+    <icon name="prism_card_shadow" left="4" top="5" width="420" height="480"
+     image_name="Prism_Login_Surface" color="0 0 0 0.20" mouse_opaque="false" />
+    <icon name="prism_card_border" left="0" top="0" width="420" height="480"
+     image_name="Prism_Login_Surface" color="0.35 0.40 0.42 0.30" mouse_opaque="false" />
+    <icon name="prism_card_surface" left="1" top="1" width="418" height="478"
+     image_name="Prism_Login_Surface" color="0.045 0.060 0.067 0.50" mouse_opaque="false" />
+    <text name="welcome_text" left="32" top="30" width="356" height="38"
+     font="SansSerifHuge" text_color="White">Welcome back</text>
+    <text name="username_label" left="32" top="80" width="356" height="20"
+     font="SansSerifMedium" text_color="White">Username</text>
+    <text name="password_label" left="32" top="162" width="356" height="20"
+     font="SansSerifMedium" text_color="White">Password</text>
+    <text name="start_label" left="32" top="276" width="172" height="20"
+     font="SansSerifMedium" text_color="White">Start at</text>
+    <text name="grid_text" left="216" top="276" width="172" height="20"
+     font="SansSerifMedium" text_color="White">Grid</text>
+<icon name="username_combo_border" follows="left|top" left="32" top="104" width="356" height="40" image_name="Prism_Login_Surface" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+<icon name="username_combo_fill" follows="left|top" left="33" top="105" width="354" height="38" image_name="Prism_Login_Surface" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+<combo_box follows="left|top" layout="topleft" name="username_combo" allow_text_entry="true" label="Choose or enter a username" tool_tip="Select a saved account, or enter a username." combo_editor.font="SansSerifLarge" combo_editor.commit_on_focus_lost="false" combo_editor.prevalidator="ascii" max_chars="128" left="32" top="104" width="356" height="40">
+            <combo_box.combo_button image_overlay="ComboButton_Arrow" image_overlay_right_delta="10" image_unselected="ComboButton_Transparent" hover_glow_amount="0" image_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent" />
+            <combo_box.combo_editor background_image="TextField_Transparent" background_image_disabled="TextField_Transparent" background_image_focused="TextField_Transparent" draw_focus_border="false" text_pad_left="12" bg_image_always_focused="false" />
+          </combo_box>
+<icon name="password_edit_border" follows="left|top" left="32" top="186" width="356" height="40" image_name="Prism_Login_Surface" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+<icon name="password_edit_fill" follows="left|top" left="33" top="187" width="354" height="38" image_name="Prism_Login_Surface" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+<line_editor follows="left|top" layout="topleft" name="password_edit" background_image="TextField_Transparent" background_image_disabled="TextField_Transparent" background_image_focused="TextField_Transparent" label="Password" left="32" top="186" width="356" height="40" max_length_chars="16" text_pad_left="12" bg_image_always_focused="false" font="SansSerifLarge" is_password="true" select_on_focus="true" draw_focus_border="false" commit_on_focus_lost="false" />
+<check_box check_button.image_color="AccentColor" name="remember_name" label="Remember username" label_text.text_color="LtGray" font="SansSerifSmall" left="32" top="238" width="178" height="24" follows="left|top" />
+<check_box check_button.image_color="AccentColor" name="remember_password" control_name="RememberPassword" label="Remember password" label_text.text_color="LtGray" font="SansSerifSmall" left="214" top="238" width="174" height="24" follows="left|top" />
+<layout_stack name="login_stack" orientation="horizontal" border_size="12" animate="false" left="32" top="300" width="356" height="40" follows="left|top">
+            <layout_panel name="location_panel" auto_resize="true" user_resize="false" min_width="172" width="172" height="40">
+          <icon name="start_location_combo_border" follows="all" left="0" top="0" width="172" height="40" image_name="Prism_Login_Surface" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+          <icon name="start_location_combo_fill" follows="all" left="1" top="1" width="170" height="38" image_name="Prism_Login_Surface" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+
+              <combo_box name="start_location_combo" control_name="NextLoginLocation" allow_text_entry="true" label="Start location" font="SansSerifLarge" combo_editor.font="SansSerifLarge" combo_editor.text_pad_left="12" follows="all" left="0" top="0" width="172" height="40">
+                <combo_box.combo_button image_unselected="ComboButton_Transparent" image_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent" image_overlay="ComboButton_Arrow" />
+                <combo_box.combo_editor background_image="TextField_Transparent" background_image_disabled="TextField_Transparent" background_image_focused="TextField_Transparent" draw_focus_border="false" />
                 <combo_box.item label="My last location" name="MyLastLocation" value="last" />
                 <combo_box.item label="My home" name="MyHome" value="home" />
               </combo_box>
             </layout_panel>
-            <layout_panel name="grid_panel" auto_resize="false" user_resize="false" width="164" height="38">
-          <icon name="server_combo_border" follows="all" left="0" top="0" width="164" height="38"
-           image_name="Rounded_Square" color="0.16 0.21 0.19 1" mouse_opaque="false" />
-          <icon name="server_combo_fill" follows="all" left="1" top="1" width="162" height="36"
-           image_name="Rounded_Square" color="0.070 0.085 0.080 1" mouse_opaque="false" />
+            <layout_panel name="grid_panel" auto_resize="false" user_resize="false" width="172" height="40">
+          <icon name="server_combo_border" follows="all" left="0" top="0" width="172" height="40" image_name="Prism_Login_Surface" color="0.16 0.21 0.19 1" mouse_opaque="false" />
+          <icon name="server_combo_fill" follows="all" left="1" top="1" width="170" height="38" image_name="Prism_Login_Surface" color="0.070 0.085 0.080 1" mouse_opaque="false" />
 
-              <combo_box
-               name="server_combo"
-               allow_text_entry="false"
-               label="Grid"
-               font="SansSerifLarge"
-               drop_down_button.font="SansSerifLarge"
-               follows="all"
-               left="0"
-               top="0"
-               width="164"
-               height="38">
-                <combo_box.drop_down_button image_unselected="ComboButton_Transparent"
-                 image_selected="ComboButton_Transparent" image_pressed="ComboButton_Transparent"
-                 image_pressed_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent"
-                 image_overlay="ComboButton_Arrow" image_overlay_alignment="right" image_overlay_right_delta="10" />
+              <combo_box name="server_combo" allow_text_entry="false" label="Grid" font="SansSerifLarge" drop_down_button.font="SansSerifLarge" follows="all" left="0" top="0" width="172" height="40">
+                <combo_box.drop_down_button image_unselected="ComboButton_Transparent" image_selected="ComboButton_Transparent" image_pressed="ComboButton_Transparent" image_pressed_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent" image_overlay="ComboButton_Arrow" image_overlay_alignment="right" image_overlay_right_delta="10" />
               </combo_box>
             </layout_panel>
           </layout_stack>
-          <button
-           follows="left|top"
-           image_unselected="Rounded_Square"
-           image_selected="Rounded_Square"
-           image_pressed="Rounded_Square"
-           image_hover_unselected="Rounded_Square"
-           image_color="AccentColor"
-           label="Log in"
-           label_color="Black"
-           label_color_disabled="0.51 0.66 0.57 1"
-           image_disabled="Rounded_Square"
-           image_color_disabled="0.10 0.23 0.16 1"
-           font="SansSerifLarge"
-           font.style="BOLD"
-           name="connect_btn"
-           draw_focus_border="false"
-           hover_hand_cursor="true"
-           enabled="true"
-           left="30"
-           top="233"
-           width="340"
-           height="38"
-           pad_bottom="1" />
-        </layout_panel>
-        <layout_panel auto_resize="true" user_resize="false" background_visible="false" min_height="0" height="1" />
-      </layout_stack>
-    </layout_panel>
-    <layout_panel auto_resize="true" user_resize="false" background_visible="false" min_width="0" width="1" />
-  </layout_stack>
-
-  <!-- Recovery and signup remain available elsewhere, but stay off this minimal screen. -->
-  <text name="forgot_password_text" visible="false">Forgot password</text>
-  <button name="sign_btn" visible="false" />
+<button follows="left|top" name="connect_btn" label="Log in"
+ image_unselected="Prism_Login_Button" image_selected="Prism_Login_Button"
+ image_hover_unselected="Prism_Login_Button_Hover" image_hover_selected="Prism_Login_Button_Hover"
+ image_pressed="Prism_Login_Button_Pressed" image_pressed_selected="Prism_Login_Button_Pressed"
+ image_disabled="Prism_Login_Button" image_disabled_selected="Prism_Login_Button"
+ image_color="White" image_color_disabled="0.35 0.45 0.40 1"
+ label_color="0.025 0.13 0.085 1" label_color_selected="0.025 0.13 0.085 1"
+ label_color_disabled="0.51 0.66 0.57 1" font="SansSerifLarge" font.style="BOLD"
+ draw_focus_border="true" hover_glow_amount="0" hover_hand_cursor="true" enabled="true"
+ left="32" top="370" width="356" height="44" pad_bottom="1" />
+    <button name="sign_btn" label="Create an account" left="32" top="436" width="176" height="22"
+     image_unselected="ComboButton_Transparent" image_selected="ComboButton_Transparent" image_hover_unselected="ComboButton_Transparent" image_hover_selected="ComboButton_Transparent"
+     image_pressed="ComboButton_Transparent" image_pressed_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent" label_color="AccentColor"
+     label_color_selected="AccentColor" font="SansSerifSmall" halign="left" hover_hand_cursor="true" />
+    <text name="forgot_password_text" left="214" top="438" width="174" height="22"
+     font="SansSerifSmall" halign="right" text_color="AccentColor" mouse_opaque="true">Forgot password?</text>
+  </panel>
+  <text name="prism_grid_label" left="48" top="722" width="280" height="22"
+   text_color="0.72 0.78 0.76 1" font="SansSerifSmall" />
+  <panel name="prism_footer" follows="left|top" left="746" top="718" width="230" height="28"
+   background_visible="false">
+    <button name="preferences_btn" label="Preferences" left="0" top="0" width="142" height="28"
+     image_unselected="ComboButton_Transparent" image_selected="ComboButton_Transparent" image_hover_unselected="ComboButton_Transparent" image_hover_selected="ComboButton_Transparent"
+     image_pressed="ComboButton_Transparent" image_pressed_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent" label_color="LtGray"
+     font="SansSerifSmall" hover_hand_cursor="true" />
+    <text name="footer_divider" left="150" top="5" width="8" height="18" text_color="Gray">|</text>
+    <button name="help_btn" label="Help" left="164" top="0" width="66" height="28"
+     image_unselected="ComboButton_Transparent" image_selected="ComboButton_Transparent" image_hover_unselected="ComboButton_Transparent" image_hover_selected="ComboButton_Transparent"
+     image_pressed="ComboButton_Transparent" image_pressed_selected="ComboButton_Transparent" image_disabled="ComboButton_Transparent" label_color="LtGray"
+     font="SansSerifSmall" hover_hand_cursor="true" />
+  </panel>
 </panel>

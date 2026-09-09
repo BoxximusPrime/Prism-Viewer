@@ -26,9 +26,18 @@
 /*[EXTRA_CODE_HERE]*/
 
 out vec4 frag_color;
+// Ordinary shadows keep their existing output. Focused SSS maps pack the first
+// entry (RG) and first exit (BA), selected by the render pass color mask.
+uniform int sss_depth_pass;
+uniform float sss_depth_id;
 
 void main()
 {
-    frag_color = vec4(1,1,1,1);
+    // Opaque objects block at entry; their backfaces must not replace a skin exit.
+    // Also enforce facing when a double-sided material disables hardware culling.
+    if ((sss_depth_pass == 1 && !gl_FrontFacing) ||
+        (sss_depth_pass == 2 && (gl_FrontFacing || sss_depth_id == 0.0))) discard;
+    frag_color = sss_depth_pass == 0 ? vec4(1.0) :
+        vec4(gl_FragCoord.z, sss_depth_id, gl_FragCoord.z, sss_depth_id);
 }
 

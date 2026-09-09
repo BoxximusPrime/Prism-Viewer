@@ -179,6 +179,8 @@ out vec4 frag_data[4];
 // ==================================
 
 
+uniform int sss_depth_pass;
+
 void main()
 {
     unpackMaterial();
@@ -204,6 +206,21 @@ void main()
     {
         discard;
     }
+
+#ifndef ALPHA_BLEND
+    if (sss_depth_pass != 0)
+    {
+        if ((sss_depth_pass == 1 && !gl_FrontFacing) ||
+            sss_depth_pass == 2) discard;
+        // GLTF scene assets have no skin tag: block at entry, never claim a skin exit.
+#ifdef UNLIT
+        frag_color = vec4(gl_FragCoord.z, 0.0, gl_FragCoord.z, 0.0);
+#else
+        frag_data[0] = vec4(gl_FragCoord.z, 0.0, gl_FragCoord.z, 0.0);
+#endif
+        return;
+    }
+#endif
 
     vec3 emissive = emissiveColor;
     emissive *= srgb_to_linear(texture(emissiveMap, emissive_uv.xy).rgb);

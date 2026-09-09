@@ -188,6 +188,9 @@
        label="UI Tests"
        name="UI Tests"
        tear_off="true">
+        <menu_item_call label="Loading Screen" name="Loading Screen">
+          <menu_item_call.on_click function="Advanced.PreviewLoading" />
+        </menu_item_call>
         <menu_item_call
          label="Textbox"
          name="Textbox"

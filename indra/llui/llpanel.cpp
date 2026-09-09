@@ -51,6 +51,8 @@
 
 static LLDefaultChildRegistry::Register<LLPanel> r1("panel", &LLPanel::fromXML);
 LLPanel::factory_stack_t    LLPanel::sFactoryStack;
+std::set<LLPanel*> LLPanel::sBackdropBlurPanels;
+std::function<void(const LLRect&, F32, F32, F32)> LLPanel::sDrawBackdropBlur;
 
 
 // Compiler optimization, generate extern template
@@ -72,6 +74,8 @@ LLPanel::Params::Params()
     border(""),
     background_visible("background_visible", false),
     background_opaque("background_opaque", false),
+    backdrop_blur("backdrop_blur", 0.f),
+    backdrop_corner_radius("backdrop_corner_radius", 0.f),
     bg_opaque_color("bg_opaque_color"),
     bg_alpha_color("bg_alpha_color"),
     bg_opaque_image_overlay("bg_opaque_image_overlay"),
@@ -115,6 +119,7 @@ LLPanel::LLPanel(const LLPanel::Params& p)
     // *NOTE: Be sure to also change LLPanel::initFromParams().  We have too
     // many classes derived from LLPanel to retrofit them all to pass in params.
 {
+    setBackdropBlur(p.backdrop_blur, p.backdrop_corner_radius);
     if (p.has_border)
     {
         addBorder(p.border);
@@ -123,6 +128,7 @@ LLPanel::LLPanel(const LLPanel::Params& p)
 
 LLPanel::~LLPanel()
 {
+    sBackdropBlurPanels.erase(this);
     delete mVisibleSignal;
 }
 
@@ -202,6 +208,12 @@ void LLPanel::draw()
 {
     F32 alpha = getDrawContext().mAlpha;
 
+    if (mBackdropBlur > 0.f && sDrawBackdropBlur)
+    {
+        sDrawBackdropBlur(getLocalRect(), mBackdropBlur, mBackdropCornerRadius,
+                          getCurrentTransparency());
+    }
+
     // draw background
     if( mBgVisible )
     {
@@ -242,6 +254,23 @@ void LLPanel::draw()
 
 void LLPanel::updateDefaultBtn()
 {
+}
+
+void LLPanel::setBackdropBlur(F32 blur, F32 corner_radius)
+{
+    mBackdropBlur = llclamp(blur, 0.f, 64.f);
+    mBackdropCornerRadius = llmax(0.f, corner_radius);
+    if (mBackdropBlur > 0.f) sBackdropBlurPanels.insert(this);
+    else sBackdropBlurPanels.erase(this);
+}
+
+bool LLPanel::hasVisibleBackdropBlur()
+{
+    for (const LLPanel* panel : sBackdropBlurPanels)
+    {
+        if (panel->isInVisibleChain()) return true;
+    }
+    return false;
 }
 
 void LLPanel::refresh()
@@ -467,6 +496,7 @@ void LLPanel::initFromParams(const LLPanel::Params& p)
     setMouseOpaque(p.mouse_opaque);
 
     setBackgroundVisible(p.background_visible);
+    setBackdropBlur(p.backdrop_blur, p.backdrop_corner_radius);
     setBackgroundOpaque(p.background_opaque);
     setBackgroundColor(p.bg_opaque_color);
     setTransparentColor(p.bg_alpha_color);

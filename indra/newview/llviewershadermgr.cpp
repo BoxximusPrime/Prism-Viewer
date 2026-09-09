@@ -89,6 +89,8 @@ LLGLSLShader    gOcclusionCubeProgram;
 LLGLSLShader    gGlowCombineProgram;
 LLGLSLShader    gReflectionMipProgram;
 LLGLSLShader    gGaussianProgram;
+LLGLSLShader    gUIBlurProgram;
+LLGLSLShader    gUIBackdropProgram;
 LLGLSLShader    gRadianceGenProgram;
 LLGLSLShader    gHeroRadianceGenProgram;
 LLGLSLShader    gIrradianceGenProgram;
@@ -3292,6 +3294,27 @@ bool LLViewerShaderMgr::loadShadersInterface()
         gUIProgram.mShaderFiles.push_back(make_pair("interface/uiF.glsl", GL_FRAGMENT_SHADER));
         gUIProgram.mShaderLevel = mShaderLevel[SHADER_INTERFACE];
         success = gUIProgram.createShader();
+    }
+
+    // Optional effect: retain ordinary panel tint if either shader is unavailable.
+    if (success)
+    {
+        gUIBlurProgram.mName = "UI Backdrop Blur";
+        gUIBlurProgram.mShaderFiles = {
+            {"deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER},
+            {"interface/uiBlurF.glsl", GL_FRAGMENT_SHADER}};
+        gUIBlurProgram.mShaderLevel = mShaderLevel[SHADER_INTERFACE];
+        gUIBackdropProgram.mName = "UI Backdrop Composite";
+        gUIBackdropProgram.mShaderFiles = {
+            {"interface/uiV.glsl", GL_VERTEX_SHADER},
+            {"interface/uiBackdropF.glsl", GL_FRAGMENT_SHADER}};
+        gUIBackdropProgram.mShaderLevel = mShaderLevel[SHADER_INTERFACE];
+        if (!gUIBlurProgram.createShader() || !gUIBackdropProgram.createShader())
+        {
+            gUIBlurProgram.unload();
+            gUIBackdropProgram.unload();
+            LL_WARNS() << "Backdrop blur unavailable; using panel tint only." << LL_ENDL;
+        }
     }
 
     if (success)

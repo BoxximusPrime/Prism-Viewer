@@ -11,7 +11,6 @@ uniform vec3 sss_debug_sun;
 uniform vec3 sss_depth_origin[2];
 uniform vec3 sss_depth_valid;
 void prepareSSSDepth(vec3 pos);
-float getSSSClampedPath(float path);
 float sampleFocusedSunSSSPath(vec3 pos, vec3 lightDir);
 float sampleLocalSSSPath(vec3 pos, vec3 lightOrigin);
 void main()
@@ -29,9 +28,8 @@ void main()
         }
         float path = sss_debug_light == 0 ? sampleFocusedSunSSSPath(pos, normalize(sss_debug_sun)) :
             sampleLocalSSSPath(pos, sss_depth_origin[clamp(sss_debug_light - 1, 0, 1)]);
-        if (sss_depth_valid[clamp(sss_debug_light, 0, 2)] < 0.5) path = -1.0;
-        path = getSSSClampedPath(path);
-        vec3 color = path < 0.0 ? vec3(1.0, 0.0, 1.0) : vec3(1.0 - clamp(path / 0.08, 0.0, 1.0));
+        if (sss_depth_valid[clamp(sss_debug_light, 0, 2)] <= 0.0) path = -1.0;
+        vec3 color = path < 0.0 ? vec3(1.0, 0.0, 1.0) : vec3(1.0 - clamp(path / 0.3, 0.0, 1.0));
         frag_color = vec4(color, 1.0);
         return;
     }

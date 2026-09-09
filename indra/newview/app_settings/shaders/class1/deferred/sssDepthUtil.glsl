@@ -27,8 +27,11 @@
 // They describe the receiver's geometry, independently of its normal map.
 vec3 sssSurfaceDx = vec3(0.0);
 vec3 sssSurfaceDy = vec3(0.0);
+float sssDepthCoverage = 1.0;
+float getSSSDepthCoverage() { return sssDepthCoverage; }
 void prepareSSSDepth(vec3 pos)
 {
+    sssDepthCoverage = 1.0;
     sssSurfaceDx = dFdx(pos);
     sssSurfaceDy = dFdy(pos);
 }
@@ -122,8 +125,6 @@ float sampleSSSShadowPath(sampler2DShadow depthMap, mat4 lightMatrix, vec3 pos, 
         receiver.z += dot(receiverSlope, uv - tc.xy) * start.w;
         path += weights[i] * sampleSSSTexelPath(depthMap, uv, receiver, step);
     }
-    // ponytail: first-entry depth includes gaps and opaque clothing; distinguishing
-    // those from tissue would require a separate skin-identity depth pass.
     return path;
 }
 
@@ -136,20 +137,42 @@ vec4 sssCubicWeights(float f)
                 -3.0*f*f*f + 3.0*f*f + 3.0*f + 1.0, f*f*f) / 6.0;
 }
 
+// World-space width of a light-map texel at the receiver. Project away the
+// light direction so a grazing tangent does not create an unbounded tolerance.
+float sssReceiverTexelSize(mat4 lightMatrix, vec4 start, vec3 lightDir, vec2 size)
+{
+    vec3 tc = start.xyz / start.w;
+    vec4 sx = lightMatrix * vec4(sssSurfaceDx, 0.0);
+    vec4 sy = lightMatrix * vec4(sssSurfaceDy, 0.0);
+    vec2 dx = (sx.xy - tc.xy * sx.w) / start.w;
+    vec2 dy = (sy.xy - tc.xy * sy.w) / start.w;
+    float det = dx.x * dy.y - dx.y * dy.x;
+    if (abs(det) <= 1e-5 * max(length(dx) * length(dy), 1e-20)) return 0.0;
+    vec3 tx = (sssSurfaceDx * dy.y - sssSurfaceDy * dx.y) / (det * size.x);
+    vec3 ty = (sssSurfaceDy * dx.x - sssSurfaceDx * dy.x) / (det * size.y);
+    return max(length(cross(lightDir, tx)), length(cross(lightDir, ty)));
+}
+
 float sampleFilteredSSSPath(sampler2D depthMap, mat4 lightMatrix, vec3 pos, vec3 lightDir)
 {
     vec4 start = lightMatrix * vec4(pos, 1.0);
     if (start.w <= 0.0) return -1.0;
     vec3 tc = start.xyz / start.w;
     if (any(lessThanEqual(tc, vec3(0.0))) || any(greaterThanEqual(tc, vec3(1.0)))) return -1.0;
-    if (sssIsEntrySurface(pos, lightDir)) return 0.08;
+    if (sssIsEntrySurface(pos, lightDir)) return 0.3;
     vec4 step = lightMatrix * vec4(lightDir, 0.0);
     vec2 slope = sssReceiverSlope(lightMatrix, start);
     ivec2 size = textureSize(depthMap, 0);
+    float footprintTolerance = 0.5 * sssReceiverTexelSize(lightMatrix, start, lightDir, vec2(size));
+    // Fade the last four texels as well as the subject boundary. A projection
+    // becoming unavailable must meet zero transmission continuously.
+    vec2 border = min(tc.xy, vec2(1.0) - tc.xy) * vec2(size);
+    sssDepthCoverage *= smoothstep(0.0, min(4.0, float(min(size.x, size.y)) * 0.25), min(border.x, border.y));
     vec2 grid = tc.xy * vec2(size) - 0.5;
     ivec2 base = ivec2(floor(grid)) - 1;
     vec4 wx = sssCubicWeights(fract(grid.x)), wy = sssCubicWeights(fract(grid.y));
     float result = 0.0;
+    float trustedWeight = 0.0;
     for (int y = 0; y < 4; ++y)
     for (int x = 0; x < 4; ++x)
     {
@@ -157,22 +180,37 @@ float sampleFilteredSSSPath(sampler2D depthMap, mat4 lightMatrix, vec3 pos, vec3
         vec2 uv = (vec2(texel) + 0.5) / vec2(size);
         vec4 receiver = start;
         receiver.z += dot(slope, uv - tc.xy) * start.w;
-        float depth = texelFetch(depthMap, texel, 0).r;
-        float path = 0.08;
+        // RG: first entry depth/object ID. BA: first tagged skin exit depth/object ID.
+        // Identity zero includes clothing, alpha blend, terrain and the default avatar.
+        vec4 layer = texelFetch(depthMap, texel, 0);
+        float depth = layer.r;
         float denominator = step.z - depth * step.w;
-        if (denominator < -1e-10)
+        float exitDenominator = step.z - layer.b * step.w;
+        if (layer.g > 0.0 && layer.g == layer.a && layer.b > layer.r &&
+            denominator < -1e-10 && exitDenominator < -1e-10)
         {
             // Solve projected depth directly instead of binary-searching a
             // comparison sampler. Each of the 16 taps needs one depth fetch.
-            float measured = clamp((depth * receiver.w - receiver.z) / denominator, 0.0, 0.08);
+            float measured = clamp((depth * receiver.w - receiver.z) / denominator, 0.0, 0.3);
             // Reject self-depth uncertainty in distance units. An extra rounded
             // projected-depth comparison can erase real thin layers far away.
             float uncertainty = max(0.0005, receiver.w / (-denominator * 16777216.0));
-            path = mix(0.08, measured, smoothstep(uncertainty, uncertainty * 2.0, measured));
+            float exitDistance = (layer.b * receiver.w - receiver.z) / exitDenominator;
+            float exitUncertainty = max(max(0.001, footprintTolerance), receiver.w / (-exitDenominator * 8388608.0));
+            // The receiver must be the first exit of this same closed layer.
+            // A later finger/mesh behind a resolvable air gap is not part of its
+            // thickness. Account for the finite map footprint on curved meshes.
+            float exitTrust = 1.0 - smoothstep(exitUncertainty, exitUncertainty * 2.0, abs(exitDistance));
+            float weight = wx[x] * wy[y] * exitTrust * smoothstep(uncertainty, uncertainty * 2.0, measured);
+            result += measured * weight;
+            trustedWeight += weight;
         }
-        result += path * wx[x] * wy[y];
     }
-    return min(result, 0.08);
+    // Uncertain/occluded samples reduce coverage; they are not 300 mm of skin.
+    // Mixing that sentinel into thickness creates false thick stripes and makes
+    // the penetration slider control matching errors instead of tissue depth.
+    sssDepthCoverage *= trustedWeight;
+    return trustedWeight > 0.0 ? min(result / trustedWeight, 0.3) : 0.3;
 }
 
 // Focused maps are independent of ordinary visible shadows. Local maps cover
@@ -186,24 +224,34 @@ uniform vec4 sss_depth_focus;
 uniform vec3 sss_depth_origin[2];
 uniform int sss_point_depth;
 
-bool inSSSDepthFocus(vec3 pos)
+float sssFocusCoverage(vec3 pos)
 {
-    return distance(pos, sss_depth_focus.xyz) < sss_depth_focus.w;
+    return 1.0 - smoothstep(sss_depth_focus.w * 0.8, sss_depth_focus.w,
+                            distance(pos, sss_depth_focus.xyz));
 }
 
 float sampleFocusedSunSSSPath(vec3 pos, vec3 lightDir)
 {
-    if (sss_depth_valid.x < 0.5 || !inSSSDepthFocus(pos)) return -1.0;
+    sssDepthCoverage = sssFocusCoverage(pos) * sss_depth_valid.x;
+    if (sssDepthCoverage <= 0.0) return -1.0;
     return sampleFilteredSSSPath(sssDepthMap0, sss_depth_matrix[0], pos, lightDir);
 }
 
 float sampleLocalSSSPath(vec3 pos, vec3 lightOrigin)
 {
-    if (!inSSSDepthFocus(pos)) return -1.0;
+    sssDepthCoverage = sssFocusCoverage(pos);
+    if (sssDepthCoverage <= 0.0) return -1.0;
     vec3 lightDir = normalize(lightOrigin - pos);
-    if (sss_depth_valid.y > 0.5 && distance(lightOrigin, sss_depth_origin[0]) < 0.001)
+    if (sss_depth_valid.y > 0.0 && distance(lightOrigin, sss_depth_origin[0]) < 0.001)
+    {
+        sssDepthCoverage *= sss_depth_valid.y;
         return sampleFilteredSSSPath(sssDepthMap1, sss_depth_matrix[1], pos, lightDir);
-    if (sss_depth_valid.z > 0.5 && distance(lightOrigin, sss_depth_origin[1]) < 0.001)
+    }
+    if (sss_depth_valid.z > 0.0 && distance(lightOrigin, sss_depth_origin[1]) < 0.001)
+    {
+        sssDepthCoverage *= sss_depth_valid.z;
         return sampleFilteredSSSPath(sssDepthMap2, sss_depth_matrix[2], pos, lightDir);
+    }
+    sssDepthCoverage = 0.0;
     return -1.0;
 }

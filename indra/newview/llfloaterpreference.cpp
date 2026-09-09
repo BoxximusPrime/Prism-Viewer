@@ -1279,13 +1279,11 @@ void LLFloaterPreference::refreshEnabledState()
         gSavedSettings.getS32("BoxxySSSMode") == 2;
     getChildView("BoxxySSSWrapAmount")->setEnabled(sss_combined);
     getChildView("BoxxySSSTransmission")->setEnabled(sss_combined);
+    getChildView("BoxxySSSPointTransmissionBoost")->setEnabled(sss_combined);
     getChildView("BoxxySSSThickness")->setEnabled(sss_combined);
     getChildView("BoxxySSSTransmissionSmoothing")->setEnabled(sss_combined);
     getChildView("BoxxySSSShadowThickness")->setEnabled(sss_combined);
     getChildView("BoxxySSSPenetration")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
-    getChildView("BoxxySSSMinimumThickness")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
-    getChildView("BoxxySSSMaximumThickness")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
-    getChildView("BoxxySSSClampKnee")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
     getChildView("BoxxySSSPointDepth")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
 
     // Cannot have floater active until caps have been received
@@ -2649,10 +2647,8 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSMaxDistance")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWrapAmount")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSTransmission")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSPointTransmissionBoost")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSPenetration")->resetToDefault(true);
-    gSavedSettings.getControl("BoxxySSSMinimumThickness")->resetToDefault(true);
-    gSavedSettings.getControl("BoxxySSSMaximumThickness")->resetToDefault(true);
-    gSavedSettings.getControl("BoxxySSSClampKnee")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSTransmissionSmoothing")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSThickness")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSShadowThickness")->resetToDefault(true);

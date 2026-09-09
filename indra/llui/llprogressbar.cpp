@@ -46,7 +46,8 @@ LLProgressBar::Params::Params()
 :   image_bar("image_bar"),
     image_fill("image_fill"),
     color_bar("color_bar"),
-    color_bg("color_bg")
+    color_bg("color_bg"),
+    pulse("pulse", true)
 {}
 
 
@@ -56,7 +57,8 @@ LLProgressBar::LLProgressBar(const LLProgressBar::Params& p)
     mImageFill(p.image_fill),
     mColorBackground(p.color_bg()),
     mColorBar(p.color_bar()),
-    mPercentDone(0.f)
+    mPercentDone(0.f),
+    mPulse(p.pulse)
 {}
 
 LLProgressBar::~LLProgressBar()
@@ -76,9 +78,12 @@ void LLProgressBar::draw()
         mImageBar->draw(getLocalRect(), image_bar_color);
     }
 
-    if (mImageFill)
+    if (mImageFill && mPercentDone > 0.f)
     {
-        alpha *= 0.5f + 0.5f*0.5f*(1.f + (F32)sin(3.f*timer.getElapsedTimeF32()));
+        if (mPulse)
+        {
+            alpha *= 0.5f + 0.5f*0.5f*(1.f + (F32)sin(3.f*timer.getElapsedTimeF32()));
+        }
         LLColor4 bar_color = mColorBar.get();
         bar_color.mV[VALPHA] *= alpha; // modulate alpha
         LLRect progress_rect = getLocalRect();

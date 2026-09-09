@@ -1,169 +1,56 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<panel
- follows="left|bottom|right|top"
- height="768"
- layout="topleft"
- left="0"
- name="login_progress_panel"
- top="768"
- width="1024">
-    <layout_stack
-     follows="left|right|top|bottom"
-     height="768"
-     layout="topleft"
-     left="0"
-     name="horizontal_centering"
-     orientation="horizontal"
-     top="0"
-     width="1024">
-        <layout_panel
-         layout="topleft"
-         min_width="10"
-         name="left"
-         width="150" />
-        <layout_panel
-         height="768"
-         layout="topleft"
-         min_width="670"
-         name="center"
-         width="670">
-            <layout_stack
-             follows="left|right|top|bottom"
-             height="768"
-             layout="topleft"
-             left="0"
-             orientation="vertical" 
-             name="vertical_centering1"
-             top="0"
-             width="670">
-                <layout_panel
-                 height="200"
-                 layout="topleft"
-                 min_height="10"
-                 name="panel3"
-                 width="670" />
-                <layout_panel
-                 auto_resize="false"
-                 height="220"
-                 layout="topleft"
-                 min_height="220"
-                 name="panel4"
-                 width="670">
-                    <icon
-                     color="LoginProgressBoxCenterColor"
-                     follows="left|right|bottom|top"
-                     image_name="Rounded_Square"
-                     layout="topleft"
-                     left="0"
-                     top="0"
-                     height="220"
-                     width="670" />
-                    <layout_stack
-                     follows="left|right|top|bottom"
-                     height="220"
-                     layout="topleft"
-                     left="0"
-                     orientation="vertical"
-                     name="vertical_centering2"
-                     animate="false"
-                     top="0"
-                     width="670">
-                      <layout_panel
-                       auto_resize="false"
-                       height="100"
-                       layout="topleft"
-                       min_height="100"
-                       name="panel_login"
-                       width="670">
-                        <text
-                         follows="left|right|top"
-                         layout="topleft"
-                         font="SansSerifHuge"
-                         font_shadow="none"
-                         halign="left"
-                         height="20"
-                         left="47"
-                         top="32"
-                         right="-47"
-                         name="title_text"
-                         text_color="LoginProgressBoxTextColor"/>
-                        <text
-                         follows="left|right|top"
-                         layout="topleft"
-                         font="SansSerif"
-                         font_shadow="none"
-                         halign="left"
-                         height="20"
-                         top_pad="5"
-                         right="-47"
-                         left_delta="0"
-                         name="progress_text"
-                         text_color="LoginProgressBoxTextColor"
-                         word_wrap="true"/>
-                        <progress_bar
-                         color_bar="0 0.67 0.9 0.96"
-                         follows="left|right|top"
-                         layout="topleft"
-                         image_fill="ProgressBarSolid"
-                         height="16"
-                         left="45"
-                         top_pad="5"
-                         name="login_progress_bar"
-                         right="-45" />
-                      </layout_panel>
-                      <layout_panel
-                       auto_resize="false"
-                       height="90"
-                       layout="topleft"
-                       min_height="90"
-                       name="panel_motd"
-                       width="670">
-                        <text
-                         follows="left|right|top|bottom"
-                         font="SansSerifLarge"
-                         font_shadow="none"
-                         halign="left"
-                         valign="center"
-                         height="80"
-                         layout="topleft"
-                         left="45"
-                         line_spacing.pixels="2"
-                         name="message_text"
-                         text_color="LoginProgressBoxTextColor"
-                         top="7"
-                         right="-90"
-                         word_wrap="true"/>
-                      </layout_panel>
-                    </layout_stack>
-                </layout_panel>
-                <layout_panel
-                 height="200"
-                 layout="topleft"
-                 min_width="10"
-                 name="panel5"
-                 width="670" />
-            </layout_stack>
-        </layout_panel>
-        <layout_panel
-         layout="topleft"
-         min_width="10"
-         name="right"
-         width="150" />
-    </layout_stack>
-    <button
-     follows="right|bottom"
-     height="22"
-     layout="topleft"
-     left="-106"
-     name="cancel_btn"
-     top="700"
-     width="90" />
-  <web_browser
-   follows="all"
-   layout="topleft"
-   left="0"
-   name="login_media_panel"
-   width="1024"
-   height="768"
-   top="0"/>
+<panel follows="all" height="768" layout="topleft" left="0" top="0"
+ name="login_progress_panel" width="1024" background_visible="false">
+  <panel.string name="loading_title">Entering your world</panel.string>
+  <panel.string name="teleport_title">Traveling to your destination</panel.string>
+  <panel.string name="preview_status">Loading screen preview</panel.string>
+  <panel.string name="preview_message">Preview only. No connection is made.
+Press Escape or Back to return to the login screen.</panel.string>
+  <panel.string name="preview_close">Back</panel.string>
+
+  <!-- Resized and centered by LLProgressView, including long server messages. -->
+  <panel layout="topleft" name="stack1" left="192" top="228" width="640" height="312"
+   follows="left|top" background_visible="false"
+   backdrop_blur="20" backdrop_corner_radius="6">
+    <icon layout="topleft" name="progress_card_shadow" left="4" top="5" width="640" height="312"
+     follows="all" image_name="Prism_Login_Surface" color="0 0 0 0.20" mouse_opaque="false" />
+    <icon layout="topleft" name="progress_card_border" left="0" top="0" width="640" height="312"
+     follows="all" image_name="Prism_Login_Surface" color="0.35 0.40 0.42 0.30" mouse_opaque="false" />
+    <icon layout="topleft" name="progress_card_surface" left="1" top="1" width="638" height="310"
+     follows="all" image_name="Prism_Login_Surface" color="0.045 0.060 0.067 0.50" mouse_opaque="false" />
+    <icon layout="topleft" name="progress_brand" follows="left|top" left="30" top="26" width="40" height="40"
+     image_name="Prism_Login_Logo" mouse_opaque="false" />
+    <text layout="topleft" name="title_text" left="84" top="30" width="524" height="34"
+     follows="left|right|top" font="SansSerifHuge" text_color="White"
+     mouse_opaque="false">Entering your world</text>
+    <text layout="topleft" name="progress_text" left="32" top="92" width="488" height="40"
+     follows="left|right|top" font="SansSerifLarge" text_color="0.87 0.94 0.91 1"
+     word_wrap="true" mouse_opaque="false" />
+    <text layout="topleft" name="progress_percent" left="536" top="90" width="72" height="30"
+     follows="right|top" halign="right" font="SansSerifLarge" text_color="AccentColor"
+     mouse_opaque="false">0%</text>
+    <icon layout="topleft" name="progress_track_border" left="31" top="141" width="578" height="20"
+     follows="left|right|top" image_name="Prism_Login_Surface" color="0.25 0.43 0.34 0.80"
+     mouse_opaque="false" />
+    <progress_bar layout="topleft" name="login_progress_bar" left="32" top="142" width="576" height="18"
+     follows="left|right|top" image_bar="Prism_Login_Surface" image_fill="Prism_Login_Surface"
+     color_bg="0.025 0.050 0.041 1" color_bar="AccentColor" pulse="false" />
+    <scroll_container layout="topleft" name="message_scroll" left="32" top="178" width="576" height="66"
+     follows="left|right|top" opaque="false" border_visible="false">
+      <panel layout="topleft" name="message_content" left="0" top="0" width="552" height="66"
+       follows="left|top" background_visible="false">
+        <text layout="topleft" name="message_text" left="0" top="0" width="552" height="66"
+         follows="left|top" font="SansSerifMedium" text_color="0.70 0.79 0.75 1"
+         line_spacing.pixels="2" word_wrap="true" />
+      </panel>
+    </scroll_container>
+    <button layout="topleft" name="cancel_btn" left="504" top="260" width="104" height="28"
+     follows="right|bottom" font="SansSerifMedium" label_color="0.82 0.90 0.86 1"
+     image_unselected="Prism_Login_Surface" image_selected="Prism_Login_Surface"
+     image_hover_unselected="Prism_Login_Surface" image_pressed="Prism_Login_Surface"
+     image_color="0.10 0.17 0.14 1" hover_glow_amount="0.12" draw_focus_border="true"
+     hover_hand_cursor="true" />
+  </panel>
+  <web_browser follows="all" layout="topleft" left="0" top="0"
+   name="login_media_panel" width="1024" height="768" />
 </panel>

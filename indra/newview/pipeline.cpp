@@ -1252,12 +1252,18 @@ void LLPipeline::releaseGLBuffers()
     for (auto& target : mSSSDepth) target.release();
     mSSSDepthValid = glm::vec3(0);
     mSSSDepthFocusValid = false;
+    mSSSDepthFocusID.setNull();
+    mSSSDepthFocusFade = 0.f;
+    for (auto& light : mSSSDepthLights) light = nullptr;
+    mSSSDepthLightFade = glm::vec2(0);
+    mSSSDepthObjectIDs.clear();
     mPostPongMap.release();
 
 
     mFXAAMap.release();
 
     mUIScreen.release();
+    for (auto& target : mUIBackdrop) target.release();
 
     mDownResMap.release();
 
@@ -3051,6 +3057,8 @@ void LLPipeline::markShift(LLDrawable *drawablep)
 void LLPipeline::shiftObjects(const LLVector3 &offset)
 {
     mSSSDepthFocusValid = false;
+    mSSSDepthFocusID.setNull();
+    mSSSDepthFocusFade = 0.f;
     mSSSDepthValid = glm::vec3(0);
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     assertInitialized();
@@ -4054,6 +4062,7 @@ void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
     if (!gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
     {
         mHasSSSGeometry = false;
+        ++mSSSFrameTag;
     }
     LLAppViewer::instance()->pingMainloopTimeout("Pipeline:RenderGeomDeferred");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL; //LL_RECORD_BLOCK_TIME(FTM_RENDER_GEOMETRY);
@@ -4367,6 +4376,8 @@ void LLPipeline::renderGeomShadow(LLCamera& camera)
             {
                 LLVertexBuffer::unbind();
                 poolp->beginShadowPass(i);
+                if (LLGLSLShader::sCurBoundShaderPtr)
+                    setSSSDepthUniforms(*LLGLSLShader::sCurBoundShaderPtr);
                 for (iter2 = iter1; iter2 != mPools.end(); iter2++)
                 {
                     LLDrawPool *p = *iter2;
@@ -6946,6 +6957,8 @@ void LLPipeline::renderGLTFObjects(U32 type, bool texture, bool rigged)
 // Currently only used for shadows -Cosmic,2023-04-19
 void LLPipeline::renderAlphaObjects(bool rigged)
 {
+    const bool was_opaque = mSSSDepthOpaque;
+    mSSSDepthOpaque = false;
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     assertInitialized();
     gGL.loadMatrix(gGLModelView);
@@ -7024,6 +7037,7 @@ void LLPipeline::renderAlphaObjects(bool rigged)
 
     gGL.loadMatrix(gGLModelView);
     gGLLastMatrix = NULL;
+    mSSSDepthOpaque = was_opaque;
 }
 
 // Currently only used for shadows -Cosmic,2023-04-19
@@ -8337,18 +8351,12 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     static const LLStaticHashedString sss_lighting("sss_lighting");
     shader.uniform3f(sss_lighting, llclamp(F32(sss_wrap), 0.f, 1.f),
         llclamp(F32(sss_transmission), 0.f, 4.f), llclamp(F32(sss_thickness), 0.5f, 20.f));
+    static LLCachedControl<F32> sss_point_boost(gSavedSettings, "BoxxySSSPointTransmissionBoost", 1.f);
+    static const LLStaticHashedString sss_point_boost_name("sss_point_transmission_boost");
+    shader.uniform1f(sss_point_boost_name, llclamp(F32(sss_point_boost), 0.f, 16.f));
     static LLCachedControl<F32> sss_penetration(gSavedSettings, "BoxxySSSPenetration", 29.0f);
     static const LLStaticHashedString sss_penetration_name("sss_penetration");
-    shader.uniform1f(sss_penetration_name, llclamp(F32(sss_penetration), 5.f, 80.f) * 0.001f);
-    static LLCachedControl<F32> sss_minimum_thickness(gSavedSettings, "BoxxySSSMinimumThickness", 0.0f);
-    static const LLStaticHashedString sss_minimum_thickness_name("sss_minimum_thickness");
-    shader.uniform1f(sss_minimum_thickness_name, llclamp(F32(sss_minimum_thickness), 0.f, 20.f) * 0.001f);
-    static LLCachedControl<F32> sss_maximum_thickness(gSavedSettings, "BoxxySSSMaximumThickness", 0.0f);
-    static LLCachedControl<F32> sss_clamp_knee(gSavedSettings, "BoxxySSSClampKnee", 4.0f);
-    static const LLStaticHashedString sss_maximum_thickness_name("sss_maximum_thickness"),
-        sss_clamp_knee_name("sss_clamp_knee");
-    shader.uniform1f(sss_maximum_thickness_name, llclamp(F32(sss_maximum_thickness), 0.f, 80.f) * 0.001f);
-    shader.uniform1f(sss_clamp_knee_name, llclamp(F32(sss_clamp_knee), 0.f, 20.f) * 0.001f);
+    shader.uniform1f(sss_penetration_name, llclamp(F32(sss_penetration), 5.f, 300.f) * 0.001f);
     static LLCachedControl<bool> sss_shadow_thickness(gSavedSettings, "BoxxySSSShadowThickness", true);
     static const LLStaticHashedString sss_shadow_thickness_name("sss_shadow_thickness");
     shader.uniform1i(sss_shadow_thickness_name, sss_shadow_thickness ? 1 : 0);
@@ -9349,7 +9357,7 @@ namespace
 {
 struct ProjectorParams
 {
-    glm::mat4 matrix;
+    glm::mat4 matrix, agentMatrix;
     glm::vec3 plane, normal, origin, agentOrigin;
     F32 nearClip, range, focus, ambiance;
 };
@@ -9418,7 +9426,8 @@ ProjectorParams getProjectorParams(LLDrawable* drawablep)
     F32 proj_range = far_clip - near_clip;
     glm::mat4 light_proj = glm::perspective(fovy, aspect, near_clip, far_clip);
     screen_to_light = trans * light_proj * screen_to_light;
-    return { screen_to_light, p1, n, screen_origin, glm::vec3(origin), near_clip, proj_range, focus, params.mV[2] };
+    return { screen_to_light, trans * light_proj * glm::inverse(light_to_agent),
+             p1, n, screen_origin, glm::vec3(origin), near_clip, proj_range, focus, params.mV[2] };
 }
 }
 
@@ -9835,9 +9844,16 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
 
     LLGLDepthTest depth_test(GL_TRUE, GL_TRUE, GL_LESS);
 
-    updateCull(shadow_cam, result);
-
-    stateSort(shadow_cam, result);
+    if (mSSSDepthPass != 2)
+    {
+        updateCull(shadow_cam, result);
+        stateSort(shadow_cam, result);
+    }
+    else
+    {
+        // Entry and exit have the same frustum. Reuse its sorted geometry.
+        grabReferences(result);
+    }
 
     //generate shadow map
     gGL.matrixMode(LLRender::MM_PROJECTION);
@@ -9874,10 +9890,13 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
         S32 shadow_detail = RenderShadowDetail;
 
         // if not using VSM, disable color writes
-        if (shadow_detail <= 2)
+        if (shadow_detail <= 2 && mSSSDepthPass == 0)
         {
             gGL.setColorMask(false, false);
         }
+
+        if (mSSSDepthPass != 0)
+            gGL.setColorMask(mSSSDepthPass == 1, mSSSDepthPass == 1, mSSSDepthPass == 2, mSSSDepthPass == 2);
 
         LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("shadow simple"); //LL_RECORD_BLOCK_TIME(FTM_SHADOW_SIMPLE);
         LL_PROFILE_GPU_ZONE("shadow simple");
@@ -10308,49 +10327,99 @@ void LLPipeline::pushShadowRenderTypeMask()
 
 }
 
+namespace
+{
+// A 200 ms transition, with bounded progress after a stalled frame.
+F32 advanceSSSDepthFade(F32 fade, bool retained, F32 dt)
+{
+    return llclamp(fade + (retained ? 5.f : -5.f) * llclamp(dt, 0.f, 0.1f), 0.f, 1.f);
+}
+
+bool sssProjectorIntersectsSphere(const glm::mat4& projection, const glm::vec3& center, F32 radius)
+{
+    // Projector texture coordinates occupy [0,w], including the near/far planes.
+    const glm::mat4 rows = glm::transpose(projection);
+    for (U32 axis = 0; axis < 3; ++axis)
+    {
+        for (const glm::vec4& plane : { rows[axis], rows[3] - rows[axis] })
+        {
+            if (glm::dot(plane, glm::vec4(center, 1.f)) < -radius * glm::length(glm::vec3(plane)))
+                return false;
+        }
+    }
+    return true;
+}
+
+F32 sssLightScore(const LLColor3& color, F32 distance, F32 radius, F32 falloff)
+{
+    if (radius <= 0.001f) return 0.f;
+    // Match calcLegacyDistanceAttenuation; color is already linear and includes intensity.
+    const F32 attenuation = 1.f - llclamp((distance / radius + falloff) / (1.f + falloff), 0.f, 1.f);
+    const F32 luminance = color.mV[0] * 0.2126f + color.mV[1] * 0.7152f + color.mV[2] * 0.0722f;
+    return luminance * attenuation * attenuation * 2.f;
+}
+}
+
 void LLPipeline::updateSSSDepthFocus(LLCamera& camera)
 {
-    mSSSDepthFocusValid = false;
-    if (!mHasSSSGeometry || !sCull || !gSavedSettings.getBOOL("BoxxySSSShadowThickness") ||
-        gSavedSettings.getS32("BoxxySSSMode") != 2 || gSavedSettings.getF32("BoxxySSSTransmission") <= 0.f) return;
-    F32 nearest = llmin(gSavedSettings.getF32("BoxxySSSMaxDistance"), 32.f);
-    nearest *= nearest;
-    auto consider = [&](const LLVector3& pos)
+    LLUUID selected;
+    LLVector3 selected_position, retained_position = mSSSDepthFocus;
+    F32 nearest = F32_MAX;
+    const F32 range = llclamp(gSavedSettings.getF32("BoxxySSSMaxDistance"), 1.f, 32.f);
+    if (mHasSSSGeometry && sCull && gSavedSettings.getBOOL("BoxxySSSShadowThickness") &&
+        gSavedSettings.getS32("BoxxySSSMode") == 2 && gSavedSettings.getF32("BoxxySSSTransmission") > 0.f)
     {
-        const F32 distance = (pos - camera.getOrigin()).lengthSquared();
-        if (distance < nearest)
+        for (U32 type = 0; type < LLRenderPass::NUM_RENDER_TYPES; ++type)
         {
-            nearest = distance;
-            mSSSDepthFocus = pos;
-            mSSSDepthFocusValid = true;
-        }
-    };
-    // Rigged draw batches identify their avatar even when attachments live in
-    // their own spatial bridges. Only batches actually submitted for SSS count.
-    for (U32 type = 0; type < LLRenderPass::NUM_RENDER_TYPES; ++type)
-    {
-        auto* end = endRenderMap(type);
-        for (auto* i = beginRenderMap(type); i != end; LLCullResult::increment_iterator(i, end))
-        {
-            LLDrawInfo* info = *i;
-            if (info->mSSS && info->mAvatar) consider(info->mAvatar->getRenderPosition());
+            auto* end = endRenderMap(type);
+            for (auto* i = beginRenderMap(type); i != end; LLCullResult::increment_iterator(i, end))
+            {
+                const LLDrawInfo* info = *i;
+                const LLViewerObject* object = info->mSSSObject;
+                if (!object || object->isDead() || info->mFullbright || info->mSSSFrameTag != mSSSFrameTag) continue;
+                // Both rigged and unrigged attachments focus on their owning avatar.
+                // Standalone tagged objects use their own rendered position.
+                const LLVOAvatar* avatar = info->mAvatar.notNull() ? info->mAvatar.get() : object->getAvatar();
+                if (avatar) object = avatar;
+                const LLVector3 pos = object->getRenderPosition();
+                const F32 distance = (pos - camera.getOrigin()).lengthSquared();
+                const bool retained = object->getID() == mSSSDepthFocusID;
+                if (retained) retained_position = pos;
+                if (distance >= range * range) continue;
+                const F32 score = distance * (retained ? 0.8f : 1.f);
+                if (score < nearest)
+                {
+                    nearest = score;
+                    selected = object->getID();
+                    selected_position = pos;
+                }
+            }
         }
     }
-    auto considerDrawable = [&](LLDrawable* drawable)
+    const bool retained = selected.notNull() && selected == mSSSDepthFocusID;
+    mSSSDepthFocusFade = advanceSSSDepthFade(mSSSDepthFocusFade, retained, gFrameIntervalSeconds.value());
+    mSSSDepthFocus = retained ? selected_position : retained_position;
+    // Finish fading the old subject before changing the projection.
+    if (mSSSDepthFocusFade == 0.f)
     {
-        if (!drawable || drawable->isDead()) return;
-        LLVOVolume* volume = drawable->getVOVolume();
-        if (volume && !volume->isAttachment() && volume->isSSSEnabled())
-            consider(drawable->getPositionAgent());
-    };
-    for (auto i = sCull->beginVisibleList(); i != sCull->endVisibleList(); ++i) considerDrawable(*i);
-    for (auto i = sCull->beginVisibleGroups(); i != sCull->endVisibleGroups(); ++i)
-    {
-        LLSpatialGroup* group = *i;
-        if (group->isDead()) continue;
-        for (auto j = group->getDataBegin(); j != group->getDataEnd(); ++j)
-            considerDrawable((LLDrawable*)(*j)->getDrawable());
+        mSSSDepthFocusID = selected;
+        if (selected.notNull()) mSSSDepthFocus = selected_position;
     }
+    mSSSDepthFocusValid = mSSSDepthFocusID.notNull() && mSSSDepthFocusFade > 0.f;
+}
+
+void LLPipeline::setSSSDepthUniforms(LLGLSLShader& shader, const LLViewerObject* object)
+{
+    static const LLStaticHashedString pass("sss_depth_pass"), identity("sss_depth_id");
+    F32 id = 0.f; // Unclassified geometry always blocks transmission.
+    if (mSSSDepthPass != 0 && mSSSDepthOpaque && object)
+    {
+        // IDs are shared by entry/exit draws for this frame and exactly representable in RGBA32F.
+        const auto result = mSSSDepthObjectIDs.emplace(object, U32(mSSSDepthObjectIDs.size()) + 1);
+        if (result.first->second < 16777216) id = F32(result.first->second);
+    }
+    shader.uniform1i(pass, mSSSDepthPass);
+    shader.uniform1f(identity, id);
 }
 
 void LLPipeline::bindSSSDepth(LLGLSLShader& shader)
@@ -10362,8 +10431,14 @@ void LLPipeline::bindSSSDepth(LLGLSLShader& shader)
         const S32 channel = shader.enableTexture(LLShaderMgr::SSS_DEPTH0 + i);
         if (channel < 0) continue;
         used = true;
-        if (!mSSSDepth[i].isComplete()) mSSSDepth[i].allocate(1, 1, 0, true);
-        gGL.getTexUnit(channel)->bind(&mSSSDepth[i], true);
+        if (mSSSDepth[i].getNumTextures() == 0 && !mSSSDepth[i].allocate(1, 1, GL_RGBA32F))
+        {
+            mSSSDepth[i].release();
+            mSSSDepthValid[i] = 0.f;
+            gGL.getTexUnit(channel)->bind(LLViewerFetchedTexture::sBlackImagep);
+            continue;
+        }
+        gGL.getTexUnit(channel)->bind(&mSSSDepth[i], false);
         gGL.getTexUnit(channel)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
         gGL.getTexUnit(channel)->setTextureAddressMode(LLTexUnit::TAM_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
@@ -10406,7 +10481,7 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
     mSSSDepthRenderedFocus = center;
     const F32 radius = 2.5f;
     const bool points = gSavedSettings.getBOOL("BoxxySSSPointDepth");
-    LLDrawable* lights[2] = {};
+    LLDrawable* desired[2] = {};
     F32 scores[2] = {};
     S32 count = 0;
     for (const auto& light : mNearbyLights)
@@ -10418,18 +10493,46 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         if (!volume || (volume->isAttachment() && !sRenderAttachedLights)) continue;
         const bool spot = volume->isLightSpotlight();
         if (!spot && !points) continue;
+        if (spot && !sssProjectorIntersectsSphere(getProjectorParams(drawable).agentMatrix, center, radius))
+            continue;
         const F32 distance = glm::distance(glm::vec3(drawable->getPositionAgent()), center);
-        if (distance > volume->getLightRadius() * 1.5f + radius) continue;
-        const F32 power = volume->getLightLinearColor().magVecSquared();
-        if (power < 0.001f) continue;
-        const F32 score = power / llmax(distance * distance, 0.25f);
+        F32 score = sssLightScore(volume->getLightLinearColor(), llmax(distance - radius, 0.f),
+            volume->getLightRadius() * 1.5f, volume->getLightFalloff(DEFERRED_LIGHT_FALLOFF));
+        // Keep comparable lights in their slots instead of exchanging them every frame.
+        if (drawable == mSSSDepthLights[0] || drawable == mSSSDepthLights[1]) score *= 1.25f;
         if (score > scores[0])
         {
-            scores[1] = scores[0]; lights[1] = lights[0];
-            scores[0] = score; lights[0] = drawable;
+            scores[1] = scores[0]; desired[1] = desired[0];
+            scores[0] = score; desired[0] = drawable;
         }
-        else if (score > scores[1]) { scores[1] = score; lights[1] = drawable; }
+        else if (score > scores[1]) { scores[1] = score; desired[1] = drawable; }
     }
+    LLDrawable* lights[2] = {};
+    for (U32 i = 0; i < 2; ++i)
+    {
+        if (mSSSDepthLights[i].notNull() && mSSSDepthLights[i]->isDead())
+        {
+            mSSSDepthLights[i] = nullptr;
+            mSSSDepthLightFade[i] = 0.f;
+        }
+        const bool retained = mSSSDepthLights[i].notNull() &&
+            (mSSSDepthLights[i] == desired[0] || mSSSDepthLights[i] == desired[1]);
+        mSSSDepthLightFade[i] = advanceSSSDepthFade(mSSSDepthLightFade[i], retained, gFrameIntervalSeconds.value());
+        if (mSSSDepthLightFade[i] == 0.f && !retained)
+        {
+            mSSSDepthLights[i] = nullptr;
+            for (LLDrawable* candidate : desired)
+            {
+                if (candidate && candidate != mSSSDepthLights[1 - i])
+                {
+                    mSSSDepthLights[i] = candidate;
+                    break;
+                }
+            }
+        }
+        lights[i] = mSSSDepthLights[i];
+    }
+    mSSSDepthObjectIDs.clear();
     // Keep the depth projection in agent space. A camera-space round trip
     // perturbs the entire map even when neither the light nor subject moves.
     for (U32 i = 0; i < 2; ++i)
@@ -10444,14 +10547,17 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
     const bool firstPerson = isAgentAvatarValid() && gAgentCamera.getCameraMode() == CAMERA_MODE_MOUSELOOK &&
         LLVOAvatar::sVisibleInFirstPerson;
     if (firstPerson) gAgentAvatarp->updateAttachmentVisibility(CAMERA_MODE_THIRD_PERSON);
-    gGL.setColorMask(false, false);
+    LLGLDisable blend(GL_BLEND);
+    LLGLDepthTest depth(GL_TRUE, GL_TRUE, GL_LESS); // Depth clears must work even after a read-only pass.
+    GLint savedCullFace;
+    glGetIntegerv(GL_CULL_FACE_MODE, &savedCullFace);
     static LLCullResult results[3];
     const glm::mat4 bias = glm::translate(glm::mat4(1), glm::vec3(0.5f)) * glm::scale(glm::mat4(1), glm::vec3(0.5f));
     for (U32 i = 0; i < 3; ++i)
     {
         // Transmission needs a subject-focused projection even when ordinary
         // shadows are on: their cascades and projector slots follow the camera.
-        if (i > 0 && !lights[i - 1]) continue;
+        if (i > 0 && (!lights[i - 1] || mSSSDepthLightFade[i - 1] <= 0.f)) continue;
         glm::vec3 origin;
         glm::mat4 proj;
         F32 farClip;
@@ -10470,7 +10576,10 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
             if (distance < 0.05f) continue;
             farClip = distance + radius;
             const F32 fov = llmin(2.f * asinf(llmin(radius / distance, 0.99f)), 2.617994f);
-            proj = glm::perspective(llmax(fov, 0.05f), 1.f, 0.01f, farClip);
+            // Spend depth precision on the subject and the longest allowed tissue path.
+            // Depth clamping below preserves opaque blockers nearer to the light.
+            const F32 nearClip = llmax(0.01f, distance - radius - 0.3f);
+            proj = glm::perspective(llmax(fov, 0.05f), 1.f, nearClip, farClip);
         }
         const glm::vec3 direction = glm::normalize(center - origin);
         const glm::vec3 up = fabsf(direction.z) > 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
@@ -10480,7 +10589,11 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         if (target.getWidth() != resolution || !target.isComplete())
         {
             target.release();
-            if (!target.allocate(resolution, resolution, 0, true)) continue;
+            if (!target.allocate(resolution, resolution, GL_RGBA32F, true))
+            {
+                target.release();
+                continue;
+            }
         }
         set_current_modelview(view);
         set_current_projection(proj);
@@ -10490,20 +10603,34 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         shadowCamera.setOrigin(LLVector3(origin));
         shadowCamera.setFar(farClip);
         LLViewerCamera::updateFrustumPlanes(shadowCamera, false, false, true);
+        // CPU culling must retain the light-side blockers that GL_DEPTH_CLAMP preserves.
+        if (i > 0) shadowCamera.ignoreAgentFrustumPlane(LLCamera::AGENT_PLANE_NEAR);
         LLViewerCamera::sCurCameraID = i == 0 ? LLViewerCamera::CAMERA_SUN_SHADOW0 :
             (LLViewerCamera::eCameraID)(LLViewerCamera::CAMERA_SPOT_SHADOW0 + i - 1);
         target.bindTarget();
         target.getViewport(gGLViewport);
+        gGL.setColorMask(true, true);
+        glClearColor(1.f, 0.f, 1.f, 0.f); // Missing entry/exit: no skin identity.
         target.clear();
         RenderSpotLight = i == 0 ? nullptr : lights[i - 1];
-        renderShadow(view, proj, shadowCamera, results[i], i == 0);
+        for (S32 pass = 1; pass <= 2; ++pass)
+        {
+            mSSSDepthPass = pass;
+            glCullFace(pass == 1 ? GL_BACK : GL_FRONT);
+            gGL.setColorMask(pass == 1, pass == 1, pass == 2, pass == 2);
+            if (pass == 2) target.clear(GL_DEPTH_BUFFER_BIT);
+            renderShadow(view, proj, shadowCamera, results[i], true);
+        }
+        mSSSDepthPass = 0;
         RenderSpotLight = nullptr;
         target.flush();
         // At skybox altitudes a float projected matrix loses millimeter-scale
         // depth before the camera translation can cancel it during binding.
         mSSSDepthMatrix[i] = glm::dmat4(bias) * glm::dmat4(proj) * glm::dmat4(view);
-        mSSSDepthValid[i] = 1.f;
+        mSSSDepthValid[i] = mSSSDepthFocusFade * (i == 0 ? 1.f : mSSSDepthLightFade[i - 1]);
     }
+    glCullFace(savedCullFace);
+    glClearColor(0.f, 0.f, 0.f, 0.f);
     set_current_modelview(savedView);
     set_current_projection(savedProj);
     set_last_modelview(lastView);

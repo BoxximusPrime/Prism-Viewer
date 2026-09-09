@@ -467,7 +467,7 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
 
         if (pparams && pparams->mCount)
         {
-            if (!LLPipeline::sShadowRender ||
+            if (!LLPipeline::sShadowRender || gPipeline.mSSSDepthPass != 0 ||
                 LLGLSLShader::sCurBoundShaderPtr != &gDeferredShadowProgram || pparams->mAvatar)
             {
                 pushUntexturedBatch(*pparams);
@@ -657,6 +657,11 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
 void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
 {
+    if (LLPipeline::sShadowRender && LLGLSLShader::sCurBoundShaderPtr)
+    {
+        gPipeline.setSSSDepthUniforms(*LLGLSLShader::sCurBoundShaderPtr,
+            params.mFullbright ? nullptr : params.mSSSObject);
+    }
     // Shadow shaders do not write the G-buffer's skin-scattering marker.
     if (!LLPipeline::sShadowRender && LLGLSLShader::sCurBoundShaderPtr)
     {
@@ -664,9 +669,10 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
         static const LLStaticHashedString sss_object("sss_object");
         const bool skin = params.mSSS && sss_enabled && !gCubeSnapshot && !LLPipeline::sImpostorRender;
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(sss_object, skin ? 1.f : 0.f);
-        if (skin)
+        if (skin && LLGLSLShader::sCurBoundShaderPtr->getUniformLocation(sss_object) >= 0)
         {
             gPipeline.mHasSSSGeometry = true;
+            params.mSSSFrameTag = gPipeline.mSSSFrameTag;
         }
     }
     applyModelMatrix(params.mModelMatrix);

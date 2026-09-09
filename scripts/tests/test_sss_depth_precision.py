@@ -17,6 +17,8 @@ def main():
     header = (ROOT / 'indra/newview/pipeline.h').read_text()
     bind = source[source.index('void LLPipeline::bindSSSDepth('):source.index('void LLPipeline::generateSSSDepth(')]
     generate = source[source.index('void LLPipeline::generateSSSDepth('):source.index('void LLPipeline::generateSunShadow(')]
+    near = re.search(r'const F32 nearClip = [^;]+;', generate)[0]
+    projection = re.search(r'proj = glm::perspective\([^;]+;', generate)[0]
     storage = re.search(r'(glm::\w+)\s+mSSSDepthMatrix', header)[1]
     save = re.search(r'mSSSDepthMatrix\[i\] = [^;]+;', generate)[0]
     inverse = re.search(r'const glm::\w+ inverseView = [^;]+;', bind)[0]
@@ -28,6 +30,9 @@ def main():
 #include <cmath>
 #include <cstdio>
 #include <initializer_list>
+#include <algorithm>
+using F32 = float;
+float llmax(float a, float b) { return std::max(a,b); }
 // Same 24-bit comparison-depth/search operations used by the focused maps.
 float path(glm::mat4 m, glm::vec3 pos, glm::vec3 dir, float depth) {
     auto start=m*glm::vec4(pos,1), step=m*glm::vec4(dir,0);
@@ -42,7 +47,9 @@ float path(glm::mat4 m, glm::vec3 pos, glm::vec3 dir, float depth) {
 }
 int main() {
     auto bias=glm::translate(glm::mat4(1),glm::vec3(.5))*glm::scale(glm::mat4(1),glm::vec3(.5));
-    auto proj=glm::perspective(1.f,1.f,.01f,8.f);
+    const float distance=5, radius=2.5f, fov=1, farClip=distance+radius;
+    @NEAR@
+    auto @PROJECTION@
     for(float height:{15.f,1500.f,4000.f}) {
         glm::vec3 subject(128,128,height), origin=subject+glm::vec3(0,0,5);
         auto lightView=glm::lookAt(origin,subject,glm::vec3(0,1,0));
@@ -67,7 +74,7 @@ int main() {
     }
 }
 '''
-    for name, value in [('STORAGE', storage), ('SAVE', save), ('INVERSE', inverse), ('TRANSFORM', transform)]:
+    for name, value in [('NEAR', near), ('PROJECTION', projection), ('STORAGE', storage), ('SAVE', save), ('INVERSE', inverse), ('TRANSFORM', transform)]:
         cpp = cpp.replace('@' + name + '@', value)
     compiler = shutil.which('g++')
     assert compiler, 'g++ is required'

@@ -38,6 +38,7 @@
 #include "llbadgeholder.h"
 #include <list>
 #include <queue>
+#include <set>
 
 const S32 LLPANEL_BORDER_WIDTH = 1;
 const bool BORDER_YES = true;
@@ -71,6 +72,10 @@ public:
 
         Optional<bool>          background_visible,
                                 background_opaque;
+
+        // Gaussian sigma and corner radius in UI pixels; zero disables blur.
+        Optional<F32>           backdrop_blur,
+                                backdrop_corner_radius;
 
         Optional<LLUIColor>     bg_opaque_color,
                                 bg_alpha_color,
@@ -116,6 +121,8 @@ public:
     // LLView interface
     /*virtual*/ bool    isPanel() const;
     /*virtual*/ void    draw();
+    static std::function<void(const LLRect&, F32, F32, F32)> sDrawBackdropBlur;
+    static bool hasVisibleBackdropBlur();
     /*virtual*/ bool    handleKeyHere( KEY key, MASK mask );
     /*virtual*/ void    onVisibilityChange ( bool new_visibility );
 
@@ -238,6 +245,10 @@ protected:
     std::string     mXMLFilename;
 
 private:
+    void setBackdropBlur(F32 blur, F32 corner_radius);
+    static std::set<LLPanel*> sBackdropBlurPanels;
+    F32 mBackdropBlur = 0.f;
+    F32 mBackdropCornerRadius = 0.f;
     bool            mBgVisible;             // any background at all?
     bool            mBgOpaque;              // use opaque color or image
     LLUIColor       mBgOpaqueColor;

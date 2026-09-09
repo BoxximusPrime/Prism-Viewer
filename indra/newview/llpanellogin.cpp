@@ -28,6 +28,7 @@
 
 #include "llpanellogin.h"
 #include "lllayoutstack.h"
+#include "lllocalcliprect.h"
 
 #include "indra_constants.h"        // for key and mask constants
 #include "llfloaterreg.h"
@@ -222,6 +223,7 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
 
     buildFromFile( "panel_login.xml");
     reshape(rect.getWidth(), rect.getHeight());
+    sendChildToFront(getChildView("boxxy_login_brand"));
 
     LLLineEditor* password_edit(getChild<LLLineEditor>("password_edit"));
     password_edit->setKeystrokeCallback(onPassKey, this);
@@ -230,12 +232,17 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
 
     childSetAction("connect_btn", onClickConnect, this);
     childSetAction("sign_btn", onClickSignUp, this);
+    getChild<LLButton>("preferences_btn")->setCommitCallback([](LLUICtrl*, const LLSD&)
+    {
+        LLFloaterReg::showInstance("preferences");
+    });
+    getChild<LLButton>("help_btn")->setCommitCallback([](LLUICtrl*, const LLSD&)
+    {
+        LLViewerHelp::instance().showTopic(LLViewerHelp::instance().preLoginTopic());
+    });
 
     mLoginBtn = getChild<LLButton>("connect_btn");
     setDefaultBtn(mLoginBtn);
-
-    // change z sort of clickable text to be behind buttons
-    sendChildToBack(getChildView("forgot_password_text"));
 
     mLoginStack = getChild<LLLayoutStack>("login_stack");
     mGridPanel = getChild<LLLayoutPanel>("grid_panel");
@@ -328,6 +335,41 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
     mAlertListener = LLNotifications::instance().getChannel("Alerts")->connectChanged([this](const LLSD& notify){ return onUpdateNotification(notify); });
 }
 
+void LLPanelLogin::reshape(S32 width, S32 height, bool called_from_parent)
+{
+    LLPanel::reshape(width, height, called_from_parent);
+    LLPanel* card = findChild<LLPanel>("prism_login_card");
+    if (!card || !findChildView("prism_footer")) return; // XUI reshapes while building.
+
+    const S32 margin = width < 1000 ? 24 : 48;
+    const S32 stage_width = llmin(width - 2 * margin, 1440);
+    const S32 stage_left = (width - stage_width) / 2;
+    const bool compact = width < 1000;
+    const S32 card_left = compact ? (width - 420) / 2 : stage_left + stage_width - 420;
+    const S32 card_bottom = llmax(36, (height - 480) / 2 - (compact && height >= 650 ? 24 : 0));
+    card->setOrigin(card_left, card_bottom);
+
+    LLView* logo = getChildView("boxxy_login_brand");
+    LLView* wordmark = getChildView("prism_wordmark");
+    const bool small_brand = compact && height < 650;
+    LLRect logo_rect;
+    if (small_brand)
+    {
+        logo_rect.setOriginAndSize(card_left + 334, card_bottom + 410, 48, 48);
+    }
+    else
+    {
+        const S32 brand_left = compact ? (width - 290) / 2 : stage_left;
+        const S32 brand_bottom = compact ? card_bottom + 492 : height - 116;
+        logo_rect.setOriginAndSize(brand_left, brand_bottom, 64, 64);
+        wordmark->setOrigin(brand_left + 80, brand_bottom + 16);
+    }
+    logo->setShape(logo_rect);
+    wordmark->setVisible(!small_brand);
+    getChildView("prism_footer")->setOrigin(stage_left + stage_width - 230, 12);
+    getChildView("prism_grid_label")->setOrigin(stage_left, 16);
+}
+
 void LLPanelLogin::draw()
 {
     // Give the whole editable combo (including its arrow) a single focus ring.
@@ -339,58 +381,30 @@ void LLPanelLogin::draw()
             : LLUIColor(LLColor4(0.16f, 0.21f, 0.19f, 1.f)));
     }
 
-    const F32 width = static_cast<F32>(getRect().getWidth());
-    const F32 height = static_cast<F32>(getRect().getHeight());
+    drawBackground(getLocalRect());
 
-    // Screen-space light pools stay smooth at every window size. Keep the
-    // centre quiet for the login form and echo the crystal's facets at the edges.
-    gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
-    constexpr S32 columns = 48;
-    constexpr S32 rows = 32;
-    const F32 scale = llmax(1.f, height);
-    for (S32 row = 0; row < rows; ++row)
-    {
-        gGL.begin(LLRender::TRIANGLE_STRIP);
-        for (S32 column = 0; column <= columns; ++column)
-        {
-            for (S32 edge = 0; edge < 2; ++edge)
-            {
-                const F32 px = width * column / columns;
-                const F32 py = height * (row + edge) / rows;
-                const F32 x = (px - width * 0.5f) / scale;
-                const F32 y = py / scale;
-                const F32 halo = expf(-5.f * x * x - 12.f * (y - 0.65f) * (y - 0.65f));
-                const F32 sweep = y - 0.68f + 0.22f * x;
-                const F32 emerald = expf(-18.f * sweep * sweep - 0.9f * x * x);
-                const F32 mist = expf(-1.8f * (x + 0.85f) * (x + 0.85f)
-                    - 5.f * (y - 0.9f) * (y - 0.9f));
-                gGL.color4f(0.018f + 0.023f * halo + 0.016f * mist,
-                    0.026f + 0.048f * halo + 0.065f * emerald + 0.022f * mist,
-                    0.029f + 0.039f * halo + 0.038f * emerald + 0.025f * mist, 1.f);
-                gGL.vertex2f(px, py);
-            }
-        }
-        gGL.end();
-    }
-
-    // Broad, barely visible planes give the background depth without competing
-    // with the logo. Coordinates are proportional so ultrawide stays balanced.
-    gGL.begin(LLRender::TRIANGLES);
-    gGL.color4f(0.22f, 0.40f, 0.34f, 0.035f);
-    gGL.vertex2f(0.f, height * 0.14f);
-    gGL.color4f(0.22f, 0.40f, 0.34f, 0.f);
-    gGL.vertex2f(width * 0.37f, height * 0.44f);
-    gGL.color4f(0.22f, 0.40f, 0.34f, 0.025f);
-    gGL.vertex2f(0.f, height * 0.84f);
-    gGL.color4f(0.30f, 0.44f, 0.40f, 0.025f);
-    gGL.vertex2f(width, height * 0.18f);
-    gGL.color4f(0.30f, 0.44f, 0.40f, 0.f);
-    gGL.vertex2f(width * 0.64f, height * 0.56f);
-    gGL.color4f(0.30f, 0.44f, 0.40f, 0.035f);
-    gGL.vertex2f(width, height * 0.92f);
-    gGL.end();
-
+    getChild<LLTextBox>("prism_grid_label")->setText(
+        getShortGridLabel(LLGridManager::getInstance()->getGrid()));
     LLPanel::draw();
+}
+
+void LLPanelLogin::drawBackground(const LLRect& rect, F32 alpha)
+{
+    const S32 width = rect.getWidth();
+    const S32 height = rect.getHeight();
+    const LLColor4 charcoal(16.f / 255.f, 20.f / 255.f, 22.f / 255.f, 1.f);
+    gl_rect_2d(rect, charcoal % alpha);
+
+    // Fit to height without stretching. The prepared plate fades to this same
+    // charcoal at every edge, so wide windows need no repeated or enlarged art.
+    const S32 art_width = ll_round(height * (16.f / 9.f));
+    const S32 art_left = (width - art_width) / 2;
+    const LLColor4 tint(1.f, 1.f, 1.f, alpha * (width < 1000 ? 0.38f : 1.f));
+    const LLUIImagePtr background = LLUI::getUIImage("Prism_Login_Background");
+    {
+        LLLocalClipRect screen_clip(rect);
+        if (background) background->draw(art_left, 0, art_width, height, tint);
+    }
 }
 
 void LLPanelLogin::addFavoritesToStartLocation()
@@ -1174,9 +1188,7 @@ void LLPanelLogin::updateServer()
             // update the login panel links
             bool system_grid = LLGridManager::getInstance()->isSystemGrid();
 
-            // Want to vanish not only create_new_account_btn, but also the
-            // title text over it, so turn on/off the whole layout_panel element.
-            sInstance->getChild<LLLayoutPanel>("links")->setVisible(system_grid);
+            sInstance->getChildView("sign_btn")->setVisible(system_grid);
             sInstance->getChildView("forgot_password_text")->setVisible(system_grid);
 
         }

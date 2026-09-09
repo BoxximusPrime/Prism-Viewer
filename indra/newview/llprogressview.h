@@ -52,7 +52,9 @@ public:
     bool postBuild();
 
     /*virtual*/ void draw();
+    void reshape(S32 width, S32 height, bool called_from_parent = true) override;
     void drawStartTexture(F32 alpha);
+    void showPreview();
 
     /*virtual*/ bool handleHover(S32 x, S32 y, MASK mask);
     /*virtual*/ bool handleKeyHere(KEY key, MASK mask);
@@ -83,22 +85,17 @@ public:
     bool onAlertModal(const LLSD& sd);
 
 protected:
-    LLProgressBar* mProgressBar;
+    LLProgressBar* mProgressBar = nullptr;
     LLMediaCtrl* mMediaCtrl;
     LLTextBox* mProgressText = nullptr;
     LLTextBox* mMessageText = nullptr;
     F32 mPercentDone;
     std::string mMessage;
-    LLButton*   mCancelBtn;
+    LLButton*   mCancelBtn = nullptr;
     LLFrameTimer mFadeToWorldTimer;
     LLFrameTimer mFadeFromLoginTimer;
-    LLRect mOutlineRect;
-    LLView* mLayoutPanel4 = nullptr;
-    LLView* mLayoutMOTD = nullptr;
-    // Rects for resizing purposes
-    LLRect mMessageTextRectInitial;
-    LLRect mLayoutPanel4RectInitial;
-    LLRect mLayoutMOTDRectInitial;
+    bool mPreviewMode = false;
+    LLFrameTimer mPreviewTimer;
 
     bool mMouseDownInActiveArea;
     bool mStartupComplete;

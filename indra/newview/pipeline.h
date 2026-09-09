@@ -42,6 +42,7 @@
 #include "llheroprobemanager.h"
 
 #include <stack>
+#include <map>
 
 class LLViewerTexture;
 class LLFace;
@@ -356,6 +357,7 @@ public:
     void generateSSSDepth(LLCamera& camera);
     void updateSSSDepthFocus(LLCamera& camera);
     void bindSSSDepth(LLGLSLShader& shader);
+    void setSSSDepthUniforms(LLGLSLShader& shader, const LLViewerObject* object = nullptr);
     LLRenderTarget* getSunShadowTarget(U32 i);
     LLRenderTarget* getSpotShadowTarget(U32 i);
 
@@ -730,6 +732,7 @@ public:
 
     LLRenderTarget          mSpotShadow[2];
     bool                    mHasSSSGeometry = false;
+    U32                     mSSSFrameTag = 0;
     LLRenderTarget          mSSSDepth[3];
     glm::dmat4              mSSSDepthMatrix[3] = { glm::dmat4(1), glm::dmat4(1), glm::dmat4(1) };
     glm::vec3               mSSSDepthOrigin[2] = {};
@@ -737,6 +740,13 @@ public:
     LLVector3               mSSSDepthFocus;
     glm::vec3               mSSSDepthRenderedFocus = glm::vec3(0);
     bool                    mSSSDepthFocusValid = false;
+    LLUUID                  mSSSDepthFocusID;
+    F32                     mSSSDepthFocusFade = 0.f;
+    LLPointer<LLDrawable>    mSSSDepthLights[2];
+    glm::vec2               mSSSDepthLightFade = glm::vec2(0);
+    S32                     mSSSDepthPass = 0; // 0 ordinary shadows, 1 skin entry, 2 skin exit
+    bool                    mSSSDepthOpaque = true;
+    std::map<const LLViewerObject*, U32> mSSSDepthObjectIDs;
     LLRenderTarget          mSSSTransmission;
     bool                    mSSSTransmissionSmoothing = false;
     LLRenderTarget          mSSSDiffuse;
@@ -765,6 +775,7 @@ public:
 
     // render ui to buffer target
     LLRenderTarget          mUIScreen;
+    LLRenderTarget          mUIBackdrop[2]; // shared, lazily allocated blur scratch
 
     // downres scratch space for GPU downscaling of textures
     LLRenderTarget          mDownResMap;
