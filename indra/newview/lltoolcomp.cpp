@@ -268,6 +268,11 @@ bool LLToolCompTranslate::handleHover(S32 x, S32 y, MASK mask)
 bool LLToolCompTranslate::handleMouseDown(S32 x, S32 y, MASK mask)
 {
     mMouseDown = true;
+    if (LLManipTranslate::vertexSnapHeld() && mManip->getSelection()->getObjectCount())
+    {
+        setCurrentTool(mManip);
+        return mManip->handleMouseDown(x, y, mask);
+    }
     gViewerWindow->pickAsync(x, y, mask, pickCallback, /*bool pick_transparent*/ false, LLFloaterReg::instanceVisible("build"), false,
         gSavedSettings.getBOOL("SelectReflectionProbes"));;
     return true;

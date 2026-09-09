@@ -62,6 +62,10 @@
 #include "pipeline.h"
 #include "llviewershadermgr.h"
 #include "lltrans.h"
+#include "llkeyboard.h"
+#include "llfocusmgr.h"
+#include "llvovolume.h"
+#include <set>
 
 const S32 NUM_AXES = 3;
 const S32 MOUSE_DRAG_SLOP = 2;       // pixels
@@ -290,8 +294,163 @@ void LLManipTranslate::handleSelect()
     LLManip::handleSelect();
 }
 
+bool LLManipTranslate::vertexSnapHeld()
+{
+    return gKeyboard && gKeyboard->getKeyDown('V') && !gFocusMgr.getKeyboardFocus();
+}
+
+bool LLManipTranslate::handleKey(KEY key, MASK mask)
+{
+    if (key == 'V' && mask == MASK_NONE && mObjectSelection->getObjectCount()) return true;
+    return LLManip::handleKey(key, mask);
+}
+
+bool LLManipTranslate::vertexPoint(LLVector3d& point) const
+{
+    auto* volume = dynamic_cast<LLVOVolume*>(mVertexObject.get());
+    if (!volume || volume->isDead() || !volume->isSelected()) return false;
+    point = gAgent.getPosGlobalFromAgent(volume->volumePositionToAgent(mVertexLocal));
+    return true;
+}
+
+bool LLManipTranslate::findVertex(S32 x, S32 y, bool source,
+    LLPointer<LLViewerObject>& result, LLVector3& local)
+{
+    result = nullptr;
+    if (mObjectSelection->getSelectType() == SELECT_TYPE_HUD) return false;
+    std::set<LLViewerObject*> candidates;
+    for (auto iter = mObjectSelection->begin(); iter != mObjectSelection->end(); ++iter)
+    {
+        // glTF node geometry needs its own node transform, not the prim volume.
+        if ((*iter)->mSelectedGLTFNode != -1) return false;
+        if (source && (*iter)->getObject()) candidates.insert((*iter)->getObject());
+    }
+    if (!source)
+    {
+        // Probe around the cursor as well as under it, so silhouette corners are
+        // reachable. Reuse world picking instead of scanning every scene mesh.
+        const S32 offsets[][2] = {{0,0}, {-8,0}, {8,0}, {0,-8}, {0,8},
+                                 {-8,-8}, {-8,8}, {8,-8}, {8,8}};
+        const LLVector3 origin = LLViewerCamera::getInstance()->getOrigin();
+        for (const auto& offset : offsets)
+        {
+            const LLVector3 direction = gViewerWindow->mouseDirectionGlobal(x + offset[0], y + offset[1]);
+            LLVector3 start = origin + direction * LLViewerCamera::getInstance()->getNear();
+            LLVector4a end;
+            end.load3((origin + direction * 512.f).mV);
+            // ponytail: bounded traversal through selected surfaces; use a pipeline
+            // exclusion filter if dense selections routinely exhaust this limit.
+            for (S32 i = 0; i < 256; ++i)
+            {
+                LLVector4a begin, intersection;
+                begin.load3(start.mV);
+                LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
+                    begin, end, false, false, true, false,
+                    nullptr, nullptr, nullptr, &intersection);
+                if (!object) break;
+                if (!object->isSelected() && !object->getRootEdit()->isSelected())
+                {
+                    candidates.insert(object);
+                    break;
+                }
+                start = LLVector3(intersection.getF32ptr()) + direction * 0.001f;
+                if ((start - origin) * direction >= 512.f) break;
+            }
+        }
+    }
+    F32 best_distance = 16.f * 16.f;
+    F32 best_depth = F32_MAX;
+    for (LLViewerObject* object : candidates)
+    {
+        auto* volume = dynamic_cast<LLVOVolume*>(object);
+        if (!volume || volume->isDead() || volume->isHUDAttachment() ||
+            volume->isRiggedMesh() || !volume->getVolume() || volume->mDrawable.isNull()) continue;
+        const LLVolume* mesh = volume->getVolume();
+        for (S32 face = 0; face < mesh->getNumVolumeFaces(); ++face)
+        {
+            const LLVolumeFace& geometry = mesh->getVolumeFace(face);
+            for (S32 vertex = 0; vertex < geometry.mNumVertices; ++vertex)
+            {
+                const LLVector3 position(geometry.mPositions[vertex].getF32ptr());
+                const LLVector3 agent = volume->volumePositionToAgent(position);
+                LLCoordGL screen;
+                if (!LLViewerCamera::getInstance()->projectPosAgentToScreen(agent, screen)) continue;
+                const F32 dx = (F32)screen.mX - x, dy = (F32)screen.mY - y;
+                const F32 distance = dx * dx + dy * dy;
+                const F32 depth = (agent - LLViewerCamera::getInstance()->getOrigin()).lengthSquared();
+                if (distance < best_distance || (distance == best_distance && depth < best_depth))
+                {
+                    best_distance = distance;
+                    best_depth = depth;
+                    result = object;
+                    local = position;
+                }
+            }
+        }
+    }
+    return result.notNull();
+}
+
+void LLManipTranslate::renderVertexMarker(const LLVector3d& point, const LLColor4& color)
+{
+    const LLVector3 agent = gAgent.getPosAgentFromGlobal(point);
+    LLViewerCamera* camera = LLViewerCamera::getInstance();
+    const F32 depth = (agent - camera->getOrigin()) * camera->getAtAxis();
+    if (depth <= camera->getNear()) return;
+    const F32 size = depth * tanf(camera->getView() * 0.5f) * 12.f /
+        gViewerWindow->getWorldViewHeightScaled();
+    const LLVector3 right = camera->getLeftAxis() * size;
+    const LLVector3 up = camera->getUpAxis() * size;
+    LLGLDepthTest depth_test(GL_FALSE, GL_FALSE);
+    gDebugProgram.bind();
+    gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    gGL.color4fv(color.mV);
+    gGL.begin(LLRender::LINE_LOOP);
+    gGL.vertex3fv((agent + right + up).mV);
+    gGL.vertex3fv((agent - right + up).mV);
+    gGL.vertex3fv((agent - right - up).mV);
+    gGL.vertex3fv((agent + right - up).mV);
+    gGL.end();
+    gGL.begin(LLRender::LINES);
+    gGL.vertex3fv((agent - right * 0.4f).mV);
+    gGL.vertex3fv((agent + right * 0.4f).mV);
+    gGL.vertex3fv((agent - up * 0.4f).mV);
+    gGL.vertex3fv((agent + up * 0.4f).mV);
+    gGL.end();
+    gGL.flush();
+    gUIProgram.bind();
+}
+
+void LLManipTranslate::onMouseCaptureLost()
+{
+    if (mVertexDrag)
+    {
+        LLSelectMgr::getInstance()->sendMultipleUpdate(UPD_POSITION);
+        LLSelectMgr::getInstance()->enableSilhouette(true);
+        LLSelectMgr::getInstance()->saveSelectedObjectTransform(SELECT_ACTION_TYPE_PICK);
+    }
+    mVertexDrag = false;
+    mVertexTarget = false;
+    mVertexObject = nullptr;
+    LLManip::onMouseCaptureLost();
+}
+
 bool LLManipTranslate::handleMouseDown(S32 x, S32 y, MASK mask)
 {
+    if (vertexSnapHeld())
+    {
+        highlightManipulators(x, y);
+        if (!canAffectSelection() || !vertexPoint(mVertexStart)) return true;
+        LLSelectMgr::getInstance()->saveSelectedObjectTransform(SELECT_ACTION_TYPE_MOVE);
+        LLSelectMgr::getInstance()->enableSilhouette(false);
+        mVertexDrag = true;
+        mVertexTarget = false;
+        mManipPart = LL_NO_PART;
+        mInSnapRegime = false;
+        setMouseCapture(true);
+        return true;
+    }
+
     bool    handled = false;
 
     // didn't click in any UI object, so must have clicked in the world
@@ -405,6 +564,40 @@ bool LLManipTranslate::handleMouseDownOnPart( S32 x, S32 y, MASK mask )
 
 bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
 {
+    if (hasMouseCapture() && mVertexDrag)
+    {
+        mVertexTarget = false;
+        LLVector3d current;
+        if (vertexSnapHeld() && canAffectSelection() && vertexPoint(current))
+        {
+            LLPointer<LLViewerObject> target;
+            LLVector3 local;
+            const bool snapped = findVertex(x, y, false, target, local);
+            LLVector3d destination;
+            if (snapped)
+            {
+                auto* volume = dynamic_cast<LLVOVolume*>(target.get());
+                destination = gAgent.getPosGlobalFromAgent(volume->volumePositionToAgent(local));
+            }
+            else if (!getMousePointOnPlaneGlobal(destination, x, y, mVertexStart,
+                         LLViewerCamera::getInstance()->getAtAxis()))
+            {
+                return true;
+            }
+            const LLVector3d delta = destination - mVertexStart;
+            const F32 limit = gSavedSettings.getF32("MaxDragDistance");
+            if (!gSavedSettings.getBOOL("LimitDragDistance") || delta.lengthSquared() <= limit * limit)
+            {
+                applyTranslation(delta);
+                mVertexDestination = destination;
+                mVertexTarget = snapped && vertexPoint(current) &&
+                    (current - mVertexDestination).lengthSquared() < 0.000001;
+            }
+        }
+        gViewerWindow->setCursor(UI_CURSOR_TOOLTRANSLATE);
+        return true;
+    }
+
     // Translation tool only works if mouse button is down.
     // Bail out if mouse not down.
     if( !hasMouseCapture() )
@@ -653,8 +846,17 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
     }
 
     LLVector3d clamped_relative_move = axis_magnitude * axis_d; // scalar multiply
-    LLVector3 clamped_relative_move_f = (F32)axis_magnitude * axis_f; // scalar multiply
 
+    applyTranslation(clamped_relative_move);
+
+    LL_DEBUGS("UserInput") << "hover handled by LLManipTranslate (active)" << LL_ENDL;
+    gViewerWindow->setCursor(UI_CURSOR_TOOLTRANSLATE);
+    return true;
+}
+
+void LLManipTranslate::applyTranslation(const LLVector3d& clamped_relative_move)
+{
+    LLVector3 clamped_relative_move_f(clamped_relative_move);
     for (LLObjectSelection::iterator iter = mObjectSelection->begin();
         iter != mObjectSelection->end(); iter++)
     {
@@ -783,14 +985,22 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
     gAgentCamera.clearFocusObject();
     dialog_refresh_all();       // ??? is this necessary?
 
-    LL_DEBUGS("UserInput") << "hover handled by LLManipTranslate (active)" << LL_ENDL;
-    gViewerWindow->setCursor(UI_CURSOR_TOOLTRANSLATE);
-    return true;
 }
 
 void LLManipTranslate::highlightManipulators(S32 x, S32 y)
 {
     mHighlightedPart = LL_NO_PART;
+    if (!hasMouseCapture())
+    {
+        mVertexDrag = false;
+        mVertexTarget = false;
+        mVertexObject = nullptr;
+        if (vertexSnapHeld())
+        {
+            if (canAffectSelection()) findVertex(x, y, true, mVertexObject, mVertexLocal);
+            return;
+        }
+    }
 
     if (!mObjectSelection->getObjectCount())
     {
@@ -1056,6 +1266,9 @@ bool LLManipTranslate::handleMouseUp(S32 x, S32 y, MASK mask)
         //gAgent.setObjectTracking(gSavedSettings.getBOOL("TrackFocusObject"));
     }
 
+    mVertexDrag = false;
+    mVertexTarget = false;
+    mVertexObject = nullptr;
     return LLManip::handleMouseUp(x, y, mask);
 }
 
@@ -1071,12 +1284,19 @@ void LLManipTranslate::render()
     }
     {
         LLGLDepthTest gls_depth(GL_TRUE, GL_FALSE);
-        renderGuidelines();
+        if (!mVertexDrag && !(vertexSnapHeld() && mVertexObject)) renderGuidelines();
     }
     {
         //LLGLDisable gls_stencil(GL_STENCIL_TEST);
         renderTranslationHandles();
-        renderSnapGuides();
+        if (!mVertexDrag && !(vertexSnapHeld() && mVertexObject)) renderSnapGuides();
+        LLVector3d vertex;
+        if ((mVertexDrag || vertexSnapHeld()) && vertexPoint(vertex))
+        {
+            renderVertexMarker(vertex, LLColor4(1.f, 0.8f, 0.15f, 1.f));
+            if (mVertexTarget && vertexSnapHeld())
+                renderVertexMarker(mVertexDestination, LLColor4(0.2f, 1.f, 0.6f, 1.f));
+        }
     }
     gGL.popMatrix();
 
@@ -1827,6 +2047,9 @@ void LLManipTranslate::renderTranslationHandles()
     if (!first_object) return;
 
     LLVector3 selection_center = getPivotPoint();
+    LLVector3d vertex;
+    if ((mVertexDrag || vertexSnapHeld()) && vertexPoint(vertex))
+        selection_center = gAgent.getPosAgentFromGlobal(vertex);
 
     // Drag handles
     if (mObjectSelection->getSelectType() == SELECT_TYPE_HUD)

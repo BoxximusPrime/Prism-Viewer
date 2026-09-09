@@ -199,7 +199,11 @@ void LLProgressView::setVisible(bool visible)
         getChild<LLTextBox>("title_text")->setText(LLStartUp::getStartupState() < STATE_STARTED
             ? getString("loading_title") : gTeleportDisplay
             ? getString("teleport_title") : LLAppViewer::instance()->getSecondLifeTitle());
-        setFocus(true);
+        // Preserve the current conversation's editor and draft during travel.
+        if (!(gTeleportDisplay && LLStartUp::getStartupState() == STATE_STARTED))
+        {
+            setFocus(true);
+        }
         mFadeToWorldTimer.stop();
         LLPanel::setVisible(true);
     }
