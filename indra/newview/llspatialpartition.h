@@ -54,6 +54,7 @@ class LLSpatialPartition;
 class LLSpatialBridge;
 class LLSpatialGroup;
 class LLViewerRegion;
+class LLViewerObject;
 class LLReflectionMap;
 
 void pushVerts(LLFace* face);
@@ -101,6 +102,8 @@ public:
     const LLMatrix4* mNormalMapMatrix = nullptr;
     const LLMatrix4* mTextureMatrix = nullptr;
     const LLMatrix4* mModelMatrix = nullptr;
+    // Non-owning identity of the source geometry; never extends an object's lifetime.
+    const LLViewerObject* mSSSObject = nullptr;
 
     LLPointer<LLVOAvatar> mAvatar = nullptr;
     LLMeshSkinInfo* mSkinInfo = nullptr;
@@ -118,6 +121,7 @@ public:
     LLUUID mMaterialID; // id of LLGLTFMaterial or LLMaterial applied to this draw info
 
     U32 mShaderMask = 0;
+    mutable U32 mSSSFrameTag = 0; // Last main G-buffer submission, not a shadow draw.
     F32  mEnvIntensity = 0.f;
     F32  mAlphaMaskCutoff = 0.5f;
 

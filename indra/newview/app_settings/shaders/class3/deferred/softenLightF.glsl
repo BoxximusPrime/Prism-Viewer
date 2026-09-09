@@ -117,7 +117,6 @@ bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
 vec3 getSSSTransmission(float nl, float nv, float strength);
 bool useSSSShadowThickness(float nl, float strength);
-float sampleDirectionalSSSPath(vec3 pos);
 void prepareSSSDepth(vec3 pos);
 float sampleFocusedSunSSSPath(vec3 pos, vec3 lightDir);
 vec3 getSSSTransmissionWithDepth(float nl, float nv, float strength, float path, float shadow);
@@ -219,9 +218,6 @@ void main()
     if (useSSSShadowThickness(dot(gb.normal, normalize(light_dir)), wrapStrength))
     {
         sssPath = sampleFocusedSunSSSPath(pos.xyz, normalize(light_dir));
-#if defined(HAS_SUN_SHADOW)
-        if (sssPath < 0.0) sssPath = sampleDirectionalSSSPath(pos.xyz);
-#endif
     }
 
     vec4 baseColor     = gb.albedo;

@@ -5752,6 +5752,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         info->mModelMatrix == model_mat &&
         info->mShaderMask == shader_mask &&
         info->mSSS == sss &&
+        info->mSSSObject == (sss ? volume : nullptr) &&
         info->mAvatar == facep->mAvatar &&
         info->getSkinHash() == facep->getSkinHash())
     {
@@ -5799,6 +5800,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_info->mGLTFMaterial = gltf_mat;
         draw_info->mShaderMask = shader_mask;
         draw_info->mSSS = sss;
+        draw_info->mSSSObject = sss ? volume : nullptr;
         draw_info->mAvatar = facep->mAvatar;
         draw_info->mSkinInfo = facep->mSkinInfo;
 

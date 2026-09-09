@@ -113,18 +113,18 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.009</real>
+    <real>0.014</real>
   </map>
   <key>BoxxySSSWarmth</key>
   <map>
     <key>Comment</key>
-    <string>Warmth of the subsurface-scattering color response.</string>
+    <string>Shared skin tone response: adjusts wrapped-light tint, transmission absorption color, and diffusion color widths.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.45</real>
+    <real>1.0</real>
   </map>
   <key>BoxxySSSMaxDistance</key>
   <map>
@@ -135,7 +135,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>36.0</real>
+    <real>29.0</real>
   </map>
   <key>BoxxySSSWrapAmount</key>
   <map>
@@ -146,7 +146,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.25</real>
+    <real>0.40</real>
   </map>
   <key>BoxxySSSTransmission</key>
   <map>
@@ -157,18 +157,26 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.85</real>
+    <real>1.70</real>
+  </map>
+  <key>BoxxySSSPointTransmissionBoost</key>
+  <map>
+    <key>Comment</key>
+    <string>Additional 0-16x brightness multiplier for point-light and projector skin transmission in Combined mode. Applies to measured and estimated transmission without changing front lighting or sun/moon. 1 is neutral.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
   </map>
   <key>BoxxySSSThickness</key>
   <map>
     <key>Comment</key>
-    <string>Fallback optical skin thickness in millimeters. Also scales absorption for shadow-derived thickness; 8.5 preserves the measured path length.</string>
+    <string>Optical absorption for both measured and estimated transmission; 8.5 is neutral. Estimated mode uses a fixed rounded 8.5 mm reference layer. Lower values transmit more light.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>4.0</real>
+    <real>1.5</real>
   </map>
   <key>BoxxySSSTransmissionSmoothing</key>
   <map>
@@ -178,39 +186,18 @@
     <key>Type</key><string>F32</string>
     <key>Value</key><real>0.0</real>
   </map>
-  <key>BoxxySSSMinimumThickness</key>
-  <map>
-    <key>Comment</key><string>Soft minimum measured transmission thickness in millimeters. Zero disables it; the clamp knee controls the transition. Also shown in depth debug views.</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.0</real>
-  </map>
-  <key>BoxxySSSMaximumThickness</key>
-  <map>
-    <key>Comment</key><string>Soft maximum measured optical thickness in millimeters. Zero disables it. Does not bypass original measured penetration limits or blocked depth.</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.0</real>
-  </map>
-  <key>BoxxySSSClampKnee</key>
-  <map>
-    <key>Comment</key><string>Half-width in millimeters of the soft transition around measured thickness limits. Zero gives hard clamps; narrowed automatically to fit enabled bounds.</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>F32</string>
-    <key>Value</key><real>4.0</real>
-  </map>
   <key>BoxxySSSPenetration</key>
   <map>
     <key>Comment</key>
-    <string>Maximum measured light path through skin in millimeters. Transmission fades out over the final 37.5 percent of this distance, independently of brightness and absorption. Applies only with usable depth.</string>
+    <string>Maximum measured light path through skin in millimeters. Transmission fades across the full measured distance, independently of brightness and absorption. Requires a verified skin entry/exit pair.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>29.0</real>
+    <key>Value</key><real>109.0</real>
   </map>
   <key>BoxxySSSShadowThickness</key>
   <map>
     <key>Comment</key>
-    <string>Estimate Combined-mode skin transmission depth, including focused depth maps when ordinary shadows are disabled.</string>
+    <string>Measure Combined-mode transmission through matching skin entry/exit surfaces. Focused maps work independently of ordinary shadows; unavailable coverage fades out instead of using estimated thickness.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -224,7 +211,7 @@
     <string>Include point lights in the two-light focused SSS depth budget. Disable for performance comparison; point lights then use estimated thickness.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>0</integer>
+    <key>Value</key><integer>1</integer>
   </map>
   <key>BoxxyShowNowPlaying</key>
   <map>

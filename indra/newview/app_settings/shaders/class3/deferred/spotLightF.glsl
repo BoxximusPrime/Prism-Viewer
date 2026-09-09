@@ -29,6 +29,7 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec4 sss_diffuse;
 layout(location = 2) out vec4 sss_transmitted;
 uniform int sss_transmission_smoothing;
+uniform float sss_point_transmission_boost;
 
 uniform samplerCube environmentMap;
 uniform sampler2D lightMap;
@@ -99,7 +100,6 @@ vec3 getSSSDiffuseFactor(float nl, float strength);
 vec3 getSSSTransmission(float nl, float nv, float strength);
 bool useSSSShadowThickness(float nl, float strength);
 void prepareSSSDepth(vec3 pos);
-float sampleSpotSSSPath(vec3 pos, vec3 lightDir, int index);
 float sampleLocalSSSPath(vec3 pos, vec3 lightOrigin);
 vec3 getSSSTransmissionWithDepth(float nl, float nv, float strength, float path, float shadow);
 
@@ -155,25 +155,10 @@ void main()
     calcHalfVectors(lv, n, v, h, l, nh, nl, nv, vh, lightDist);
     float rawNl = dot(n, normalize(lv));
     float sssPath = -1.0;
-    bool ordinaryDepth = false;
     if (useSSSShadowThickness(rawNl, wrapStrength))
-    {
         sssPath = sampleLocalSSSPath(pos, proj_origin);
-        if (sssPath < 0.0 && proj_shadow_idx >= 0)
-        {
-            sssPath = sampleSpotSSSPath(pos, normalize(lv), proj_shadow_idx);
-            ordinaryDepth = sssPath >= 0.0;
-        }
-    }
-    vec3 transmission = vec3(0.0);
-    // Shadow slots fade when the selected projector changes. Crossfade to the
-    // existing estimate at the same rate instead of popping the thickness result.
-    if (sssPath >= 0.0)
-    {
-        transmission = getSSSTransmissionWithDepth(rawNl, dot(n, v), wrapStrength, sssPath, shadow);
-        transmission = mix(transmission, getSSSTransmission(rawNl, dot(n, v), wrapStrength) * shadow,
-                           ordinaryDepth ? clamp(shadow_fade, 0.0, 1.0) : 0.0);
-    }
+    vec3 transmission = getSSSTransmissionWithDepth(rawNl, dot(n, v), wrapStrength, sssPath, shadow)
+        * sss_point_transmission_boost;
 
     vec3 diffuse = gb.albedo.rgb;
     vec4 spec    = gb.specular;
@@ -224,11 +209,8 @@ void main()
 
                 float diffuseNl = wrapStrength > 0.0 ? geometricNl : punctualNl;
                 vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
-                vec3 transmitted = getSSSTransmission(diffuseNl, dot(n, v), wrapStrength) * diffuseColor / 3.14159265;
-                if (sssPath >= 0.0) transmitted = vec3(0.0);
-                vec3 lightDiffuse = intensity * clamp(diffuseFactor * diffPunc + transmitted, vec3(0), vec3(10));
-                if (sssPath >= 0.0)
-                    lightDiffuse += dist_atten * dlit * 3.25 * transmission * diffuseColor / 3.14159265;
+                vec3 lightDiffuse = intensity * clamp(diffuseFactor * diffPunc, vec3(0), vec3(10));
+                lightDiffuse += dist_atten * dlit * 3.25 * transmission * diffuseColor / 3.14159265;
                 transmissionLighting += lightDiffuse - intensity * clamp(diffuseFactor * diffPunc, vec3(0), vec3(10));
                 diffuseLighting += lightDiffuse;
                 if (wrapStrength > 0.0)
@@ -285,9 +267,8 @@ void main()
 
                 float diffuseNl = wrapStrength > 0.0 ? rawNl : nl;
                 vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
-                if (sssPath < 0.0) diffuseFactor += getSSSTransmission(diffuseNl, dot(n, v), wrapStrength);
                 vec3 lightDiffuse = dlit * diffuseFactor * dist_atten * diffuse * shadow;
-                if (sssPath >= 0.0) lightDiffuse += dlit * transmission * dist_atten * diffuse;
+                lightDiffuse += dlit * transmission * dist_atten * diffuse;
                 transmissionLighting += lightDiffuse - dlit * getSSSDiffuseFactor(diffuseNl, wrapStrength) * dist_atten * diffuse * shadow;
                 diffuseLighting += lightDiffuse;
                 final_color = lightDiffuse;

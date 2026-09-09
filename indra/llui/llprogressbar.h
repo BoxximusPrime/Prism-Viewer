@@ -42,6 +42,7 @@ public:
 
         Optional<LLUIColor>     color_bar,
                                 color_bg;
+        Optional<bool>          pulse;
 
         Params();
     };
@@ -54,6 +55,7 @@ public:
 
 private:
     F32 mPercentDone;
+    bool mPulse;
 
     LLPointer<LLUIImage>    mImageBar;
     LLUIColor   mColorBar;

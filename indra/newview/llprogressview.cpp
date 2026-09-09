@@ -46,6 +46,7 @@
 #include "llprogressbar.h"
 #include "llstartup.h"
 #include "llviewercontrol.h"
+#include "llviewerdisplay.h"
 #include "llviewertexturelist.h"
 #include "llviewerwindow.h"
 #include "llappviewer.h"
@@ -83,7 +84,6 @@ bool LLProgressView::postBuild()
 
     mProgressText = getChild<LLTextBox>("progress_text");
     mMessageText = getChild<LLTextBox>("message_text");
-    mMessageTextRectInitial = mMessageText->getRect(); // auto resizes, save initial size
 
     // media control that is used to play intro video
     mMediaCtrl = getChild<LLMediaCtrl>("login_media_panel");
@@ -95,15 +95,8 @@ bool LLProgressView::postBuild()
     mCancelBtn = getChild<LLButton>("cancel_btn");
     mCancelBtn->setClickedCallback(  LLProgressView::onCancelButtonClicked, NULL );
 
-    mLayoutPanel4 = getChild<LLView>("panel4");
-    mLayoutPanel4RectInitial = mLayoutPanel4->getRect();
-
-    mLayoutMOTD = getChild<LLView>("panel_motd");
-    mLayoutMOTDRectInitial = mLayoutMOTD->getRect();
-
-    getChild<LLTextBox>("title_text")->setText(LLStringExplicit(LLAppViewer::instance()->getSecondLifeTitle()));
-
     getChild<LLTextBox>("message_text")->setClickedCallback(onClickMessage, this);
+    reshape(getRect().getWidth(), getRect().getHeight());
 
     // hidden initially, until we need it
     setVisible(false);
@@ -137,6 +130,11 @@ bool LLProgressView::handleHover(S32 x, S32 y, MASK mask)
 
 bool LLProgressView::handleKeyHere(KEY key, MASK mask)
 {
+    if (mPreviewMode && key == KEY_ESCAPE)
+    {
+        onCancelButtonClicked(nullptr);
+        return true;
+    }
     // Suck up all keystokes except CTRL-Q.
     if( ('Q' == key) && (MASK_CONTROL == mask) )
     {
@@ -197,6 +195,10 @@ void LLProgressView::setVisible(bool visible)
     // showing progress view
     else if (visible && (!getVisible() || mFadeToWorldTimer.getStarted()))
     {
+        getChildView("stack1")->setVisible(!mMediaCtrl->getVisible());
+        getChild<LLTextBox>("title_text")->setText(LLStartUp::getStartupState() < STATE_STARTED
+            ? getString("loading_title") : gTeleportDisplay
+            ? getString("teleport_title") : LLAppViewer::instance()->getSecondLifeTitle());
         setFocus(true);
         mFadeToWorldTimer.stop();
         LLPanel::setVisible(true);
@@ -206,6 +208,16 @@ void LLProgressView::setVisible(bool visible)
 
 void LLProgressView::drawStartTexture(F32 alpha)
 {
+    // Keep the crystal throughout login and its final fade into the world.
+    if (LLStartUp::getStartupState() < STATE_STARTED || mFadeToWorldTimer.getStarted())
+    {
+        LLPanelLogin::drawBackground(getLocalRect(), alpha);
+        return;
+    }
+    // Teleports show the live world beneath the frosted progress pane, including
+    // the final arrival frame before the progress display is hidden.
+    if (gTeleportDisplay) return;
+
     gGL.pushMatrix();
     if (gStartTexture)
     {
@@ -241,7 +253,10 @@ void LLProgressView::drawStartTexture(F32 alpha)
 
 void LLProgressView::draw()
 {
-    static LLTimer timer;
+    if (mPreviewMode)
+    {
+        setPercent(fmodf(mPreviewTimer.getElapsedTimeF32(), 12.f) * (100.f / 12.f));
+    }
 
     if (mFadeFromLoginTimer.getStarted())
     {
@@ -309,25 +324,54 @@ void LLProgressView::setText(const std::string& text)
 
 void LLProgressView::setPercent(const F32 percent)
 {
-    mProgressBar->setValue(percent);
+    mPercentDone = llclamp(percent, 0.f, 100.f);
+    mProgressBar->setValue(mPercentDone);
+    getChild<LLTextBox>("progress_percent")->setText(llformat("%.0f%%", mPercentDone));
 }
 
 void LLProgressView::setMessage(const std::string& msg)
 {
+    if (mMessage == msg) return;
     mMessage = msg;
     mMessageText->setValue(mMessage);
-    S32 height = mMessageText->getTextPixelHeight();
-    S32 delta  = height - mMessageTextRectInitial.getHeight();
-    if (delta > 0)
-    {
-        mLayoutPanel4->reshape(mLayoutPanel4RectInitial.getWidth(), mLayoutPanel4RectInitial.getHeight() + delta);
-        mLayoutMOTD->reshape(mLayoutMOTDRectInitial.getWidth(), mLayoutMOTDRectInitial.getHeight() + delta);
-    }
-    else
-    {
-        mLayoutPanel4->reshape(mLayoutPanel4RectInitial.getWidth(), mLayoutPanel4RectInitial.getHeight());
-        mLayoutMOTD->reshape(mLayoutMOTDRectInitial.getWidth(), mLayoutMOTDRectInitial.getHeight());
-    }
+    reshape(getRect().getWidth(), getRect().getHeight());
+}
+
+void LLProgressView::reshape(S32 width, S32 height, bool called_from_parent)
+{
+    LLPanel::reshape(width, height, called_from_parent);
+    LLPanel* card = findChild<LLPanel>("stack1");
+    if (!card || !mMessageText || !mCancelBtn) return; // XUI is still building.
+
+    const S32 card_width = llmin(640, llmax(280, width - 48));
+    // Reserve scrollbar space so wrapping does not change when it appears.
+    const S32 text_width = card_width - 88;
+    mMessageText->reshape(text_width, mMessageText->getRect().getHeight());
+    const S32 text_height = mMessage.empty() ? 0 : mMessageText->getTextPixelHeight() + 4;
+    const S32 visible_height = llmin(text_height, llmax(40, height - 320));
+    const S32 card_height = 246 + visible_height;
+    card->reshape(card_width, card_height);
+    card->setOrigin((width - card_width) / 2, llmax(24, (height - card_height) / 2));
+    LLView* scroller = getChildView("message_scroll");
+    scroller->reshape(card_width - 64, visible_height);
+    scroller->setOrigin(32, card_height - 178 - visible_height);
+    scroller->setVisible(visible_height > 0);
+    getChildView("message_content")->reshape(text_width, text_height);
+    mMessageText->reshape(text_width, text_height);
+    mMessageText->setOrigin(0, 0);
+    mCancelBtn->setOrigin(card_width - 136, 24);
+}
+
+void LLProgressView::showPreview()
+{
+    if (LLStartUp::getStartupState() != STATE_LOGIN_WAIT) return;
+    setVisible(true);
+    mPreviewMode = true;
+    mPreviewTimer.start();
+    setText(getString("preview_status"));
+    setMessage(getString("preview_message"));
+    setPercent(0.f);
+    setCancelButtonVisible(true, getString("preview_close"));
 }
 
 void LLProgressView::initStartTexture(S32 location_id, bool is_in_production)
@@ -426,6 +470,13 @@ void LLProgressView::setCancelButtonVisible(bool b, const std::string& label)
 // static
 void LLProgressView::onCancelButtonClicked(void*)
 {
+    if (sInstance->mPreviewMode)
+    {
+        sInstance->mPreviewMode = false;
+        sInstance->setVisible(false);
+        gFocusMgr.releaseFocusIfNeeded(sInstance);
+        return;
+    }
     // Quitting viewer here should happen only when "Quit" button is pressed while starting up.
     // Check for startup state is used here instead of teleport state to avoid quitting when
     // cancel is pressed while teleporting inside region (EXT-4911)

@@ -93,6 +93,7 @@
 #include "llinventorydefines.h"
 #include "llinventoryfunctions.h"
 #include "llpanellogin.h"
+#include "llprogressview.h"
 #include "llpanelblockedlist.h"
 #include "llpanelmaininventory.h"
 #include "llmarketplacefunctions.h"
@@ -10178,6 +10179,10 @@ void initialize_menus()
     // Advanced > UI
     commit.add("Advanced.WebBrowserTest", boost::bind(&handle_web_browser_test, _2));   // sigh! this one opens the MEDIA browser
     commit.add("Advanced.WebContentTest", boost::bind(&handle_web_content_test, _2));   // this one opens the Web Content floater
+    commit.add("Advanced.PreviewLoading", [](LLUICtrl*, const LLSD&)
+    {
+        gViewerWindow->getProgressView()->showPreview();
+    });
     commit.add("Advanced.ShowURL", boost::bind(&handle_show_url, _2));
     commit.add("Advanced.ReportBug", boost::bind(&handle_report_bug, _2));
     view_listener_t::addMenu(new LLAdvancedBuyCurrencyTest(), "Advanced.BuyCurrencyTest");

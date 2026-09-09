@@ -135,6 +135,7 @@ void render_hud_attachments();
 void render_ui_3d();
 void render_ui_2d();
 void render_disconnected_background();
+static void draw_ui_backdrop(const LLRect& rect, F32 sigma, F32 corner, F32 alpha);
 
 void getProfileStatsContext(boost::json::object& stats);
 std::string getProfileStatsFilename();
@@ -184,6 +185,9 @@ void display_startup()
 
     if (gViewerWindow)
     gViewerWindow->setup2DRender();
+    LLPanel::sDrawBackdropBlur = draw_ui_backdrop;
+    // Startup draws directly to the window even when UI caching is enabled.
+    LLView::sDirtyRect = gViewerWindow->getWindowRectScaled();
     if (gViewerWindow)
     gViewerWindow->draw();
     gGL.flush();
@@ -590,7 +594,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
     //////////////////////////////////////////////////////////
     //
-    // Display start screen if we're teleporting, and skip render
+    // Update teleport progress while continuing to render the world behind it.
     //
 
     if (gTeleportDisplay)
@@ -1680,6 +1684,124 @@ void render_ui_3d()
     stop_glerror();
 }
 
+// Called in panel draw order, before tint/borders/children. The capture therefore
+// contains the scene and all earlier UI, including other glass panels.
+static void draw_ui_backdrop(const LLRect& rect, F32 sigma, F32 corner, F32 alpha)
+{
+    if (!gUIBlurProgram.isComplete() || !gUIBackdropProgram.isComplete() ||
+        rect.isEmpty() || alpha <= 0.f) return;
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_UI;
+    gGL.flush();
+
+    static const LLStaticHashedString blur_step("blur_step");
+    static const LLStaticHashedString blur_uv_scale("blur_uv_scale");
+    static const LLStaticHashedString capture_rect("capture_rect");
+    static const LLStaticHashedString panel_size("panel_size");
+    static const LLStaticHashedString corner_radius("corner_radius");
+
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    const LLVector3 offset = gGL.getUITranslation();
+    const LLVector3 scale = gGL.getUIScale();
+    const glm::mat4 mvp = gGL.getProjectionMatrix() * gGL.getModelviewMatrix();
+    auto screen_point = [&](F32 x, F32 y)
+    {
+        glm::vec4 p = mvp * glm::vec4((x + offset.mV[0]) * scale.mV[0],
+            (y + offset.mV[1]) * scale.mV[1], offset.mV[2] * scale.mV[2], 1.f);
+        return glm::vec2(viewport[0] + (p.x / p.w * 0.5f + 0.5f) * viewport[2],
+                         viewport[1] + (p.y / p.w * 0.5f + 0.5f) * viewport[3]);
+    };
+    const glm::vec2 lower = screen_point((F32)rect.mLeft, (F32)rect.mBottom);
+    const glm::vec2 upper = screen_point((F32)rect.mRight, (F32)rect.mTop);
+    const glm::vec2 pixel_sigma = sigma * (upper - lower) /
+        glm::vec2(rect.getWidth(), rect.getHeight());
+    if (pixel_sigma.x <= 0.f || pixel_sigma.y <= 0.f) return;
+    // Include the full kernel outside the card, clamping only at screen edges.
+    const S32 left = llmax(viewport[0], llfloor(lower.x - 3.f * pixel_sigma.x));
+    const S32 bottom = llmax(viewport[1], llfloor(lower.y - 3.f * pixel_sigma.y));
+    const S32 right = llmin(viewport[0] + viewport[2], llceil(upper.x + 3.f * pixel_sigma.x));
+    const S32 top = llmin(viewport[1] + viewport[3], llceil(upper.y + 3.f * pixel_sigma.y));
+    const S32 width = right - left, height = top - bottom;
+    if (width <= 0 || height <= 0) return;
+
+    // One pair is reused sequentially by every panel. Quarter resolution keeps
+    // both memory and sampling cost proportional to the small captured region.
+    const U32 blur_width = (width + 3) / 4, blur_height = (height + 3) / 4;
+    auto& targets = gPipeline.mUIBackdrop;
+    for (auto& target : targets)
+    {
+        if (target.getWidth() < blur_width || target.getHeight() < blur_height || !target.isComplete())
+        {
+            // Grow only: differently sized panels must not reallocate every frame.
+            if (!target.allocate(llmax(blur_width, target.getWidth()),
+                                 llmax(blur_height, target.getHeight()), GL_RGBA8)) return;
+        }
+    }
+    const F32 uv_x = (F32)blur_width / targets[0].getWidth();
+    const F32 uv_y = (F32)blur_height / targets[0].getHeight();
+
+    LLGLSLShader* previous_shader = LLGLSLShader::sCurBoundShaderPtr;
+    GLboolean color_mask[4];
+    glGetBooleanv(GL_COLOR_WRITEMASK, color_mask);
+    const U32 source_fbo = LLRenderTarget::sCurFBO;
+    {
+        LLGLDisable scissor(GL_SCISSOR_TEST);
+        LLGLDisable blend(GL_BLEND);
+        LLGLDisable depth(GL_DEPTH_TEST);
+        LLGLDisable cull(GL_CULL_FACE);
+        gGL.setColorMask(true, true);
+
+        targets[0].bindTarget();
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, source_fbo);
+        glBlitFramebuffer(left, bottom, right, top, 0, 0, blur_width, blur_height,
+                          GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        targets[0].flush();
+
+        gGL.pushUIMatrix();
+        gGL.loadUIIdentity();
+        gUIBlurProgram.bind();
+        gUIBlurProgram.uniform2f(blur_uv_scale, uv_x, uv_y);
+        for (S32 axis = 0; axis < 2; ++axis)
+        {
+            targets[1 - axis].bindTarget();
+            glViewport(0, 0, blur_width, blur_height);
+            targets[axis].bindTexture(0, 0);
+            gGL.getTexUnit(0)->setTextureAddressMode(LLTexUnit::TAM_CLAMP);
+            gUIBlurProgram.uniform2f(blur_step, axis == 0 ? uv_x * pixel_sigma.x / (4.f * width) : 0.f,
+                                               axis == 1 ? uv_y * pixel_sigma.y / (4.f * height) : 0.f);
+            gGL.begin(LLRender::TRIANGLES);
+            gGL.vertex2f(-1.f, -1.f);
+            gGL.vertex2f(3.f, -1.f);
+            gGL.vertex2f(-1.f, 3.f);
+            gGL.end();
+            targets[1 - axis].flush();
+        }
+        gGL.popUIMatrix();
+        gGL.setColorMask(color_mask[0], color_mask[1], color_mask[2], color_mask[3]);
+        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    }
+
+    // Parent scissor and UI transforms are restored for the rounded composite.
+    gUIBackdropProgram.bind();
+    targets[0].bindTexture(0, 0);
+    gUIBackdropProgram.uniform4f(capture_rect, (F32)left, (F32)bottom, (F32)width, (F32)height);
+    gUIBackdropProgram.uniform2f(blur_uv_scale, uv_x, uv_y);
+    gUIBackdropProgram.uniform2f(panel_size, (F32)rect.getWidth(), (F32)rect.getHeight());
+    gUIBackdropProgram.uniform1f(corner_radius, corner);
+    gGL.color4f(1.f, 1.f, 1.f, alpha);
+    gGL.begin(LLRender::TRIANGLE_STRIP);
+    gGL.texCoord2f(0.f, 0.f); gGL.vertex2i(rect.mLeft, rect.mBottom);
+    gGL.texCoord2f(1.f, 0.f); gGL.vertex2i(rect.mRight, rect.mBottom);
+    gGL.texCoord2f(0.f, 1.f); gGL.vertex2i(rect.mLeft, rect.mTop);
+    gGL.texCoord2f(1.f, 1.f); gGL.vertex2i(rect.mRight, rect.mTop);
+    gGL.end();
+    gGL.flush();
+    gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    if (previous_shader) previous_shader->bind();
+    else LLGLSLShader::unbind();
+    gGL.color4f(1.f, 1.f, 1.f, 1.f);
+}
+
 void render_ui_2d()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI;
@@ -1729,7 +1851,19 @@ void render_ui_2d()
     }
 
 
-    if (LLPipeline::RenderUIBuffer)
+    LLPanel::sDrawBackdropBlur = draw_ui_backdrop;
+    const bool live_backdrop = LLPanel::hasVisibleBackdropBlur();
+    // Cached UI has no world behind it and cannot track a changing backdrop.
+    // Resume with a full redraw when the last glass panel disappears.
+    static bool had_live_backdrop = false;
+    if (live_backdrop || had_live_backdrop)
+    {
+        LLView::sDirtyRect = gViewerWindow->getWindowRectScaled();
+        LLView::sIsRectDirty = true;
+    }
+    had_live_backdrop = live_backdrop;
+
+    if (LLPipeline::RenderUIBuffer && !live_backdrop)
     {
         if (LLView::sIsRectDirty)
         {

@@ -68,7 +68,7 @@ public:
     struct Animation
     {
         std::string name;
-        LLUUID inventory_id; // Link in #Boxxy/#AO.
+        LLUUID inventory_id; // Link in #Prism/#AO.
         LLUUID original_id;  // User's original inventory item.
         LLUUID asset_id;
         S32 sort_order = -1;

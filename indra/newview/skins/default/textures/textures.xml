@@ -666,6 +666,11 @@ with the same filename but different name
   <texture name="Snapshot_Inventory" file_name="toolbar_icons/inventory.png" preload="false" />
   <texture name="Snapshot_Profile" file_name="toolbar_icons/profile.png" preload="false" />
   <texture name="Prism_Login_Logo" file_name="windows/prism_login_logo.png" preload="true" />
+  <texture name="Prism_Login_Background" file_name="windows/prism_login_background.png" preload="true" />
+  <texture name="Prism_Login_Surface" file_name="windows/prism_login_surface.png" preload="true" scale.left="6" scale.top="26" scale.right="26" scale.bottom="6" />
+  <texture name="Prism_Login_Button" file_name="windows/prism_login_button_normal.png" preload="true" scale.left="12" scale.top="36" scale.right="344" scale.bottom="8" />
+  <texture name="Prism_Login_Button_Hover" file_name="windows/prism_login_button_hover.png" preload="true" scale.left="12" scale.top="36" scale.right="344" scale.bottom="8" />
+  <texture name="Prism_Login_Button_Pressed" file_name="windows/prism_login_button_pressed.png" preload="true" scale.left="12" scale.top="36" scale.right="344" scale.bottom="8" />
   <texture name="startup_logo"  file_name="windows/startup_logo.png" preload="true" />
   <texture name="boxxy_login_brand" file_name="windows/boxxy_login_brand.png" preload="true" />
 

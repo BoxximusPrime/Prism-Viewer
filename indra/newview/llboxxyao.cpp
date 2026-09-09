@@ -295,7 +295,7 @@ void LLBoxxyAO::ensureInventoryFolders()
             {
                 if (category->getName() == LEGACY_FOLDER_NAME)
                 {
-                    // Reuse existing sets without moving or duplicating inventory.
+                    // Preserve existing sets when migrating the legacy folder name.
                     mBoxxyFolder = category->getUUID();
                 }
                 if (category->getName() == BOXXY_FOLDER_NAME)
@@ -319,6 +319,8 @@ void LLBoxxyAO::ensureInventoryFolders()
             });
         return;
     }
+
+    rename_category(&gInventory, mBoxxyFolder, BOXXY_FOLDER_NAME);
 
     if (!gInventory.isCategoryComplete(mBoxxyFolder))
     {

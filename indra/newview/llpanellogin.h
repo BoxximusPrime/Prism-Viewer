@@ -48,6 +48,8 @@ public:
 
     virtual void setFocus( bool b );
     void draw() override;
+    void reshape(S32 width, S32 height, bool called_from_parent = true) override;
+    static void drawBackground(const LLRect& rect, F32 alpha = 1.f);
 
     static void show(const LLRect &rect,
         void (*callback)(S32 option, void* user_data),
