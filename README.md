@@ -3,7 +3,7 @@
 # The Prism Viewer
 
 Prism is a customized third-party viewer for [Second Life](https://secondlife.com/),
-built from the open-source Linden Lab viewer. It was previously named BoxxyViewer.
+built from the open-source Linden Lab viewer.
 
 Prism brings a refreshed interface, built-in avatar tools, and expanded chat,
 inventory, and rendering features to everyday Second Life use.
