@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <spinner text_enabled_color="LabelTextColor"
+         tool_tip="Scroll or use arrows to adjust. Alt: 10x step; Ctrl: 0.1x; Shift: 0.01x (limited to displayed precision)."
          text_disabled_color="LabelDisabledColor"
          font="SansSerifSmall" 
          decimal_digits="3"

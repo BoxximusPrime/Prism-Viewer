@@ -106,6 +106,7 @@ class LLChatHistory : public LLUICtrl
         ~LLChatHistory();
         LLSD getValue() const;
         void initFromParams(const Params&);
+        static void showLinkPreviewTest();
 
         /**
          * Appends a widget message.

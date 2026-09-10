@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='utf-8'?>
+<panel border="false" follows="all" height="620" label="Object" layout="topleft" left="0" mouse_opaque="false" help_topic="toolbox_object_tab" name="Object" top="0" width="536">
+    <scroll_container follows="all" height="620" layout="topleft" left="0" name="object_scroll" top="0" width="536">
+        <panel border="false" follows="top|left|right" height="620" layout="topleft" left="0" mouse_opaque="false" name="object_scroll_body" top="0" width="518">
+            <view_border bevel_style="in" follows="top|left|right" height="34" layout="topleft" left="12" name="object_flags_border" top="6" width="494" />
+            <check_box height="19" label="Locked" layout="topleft" left="24" name="checkbox locked" top="13" width="105" font="DejaVu" font.size="LSmall" tool_tip="Prevents object from being moved or deleted. Frequently useful during building to avoid unintended edits." />
+            <check_box height="19" label="Physical" layout="topleft" left="145" name="Physical Checkbox Ctrl" top="13" width="105" font="DejaVu" font.size="LSmall" tool_tip="Allows object to be pushed and affected by gravity" />
+            <check_box height="19" label="Temporary" layout="topleft" left="266" name="Temporary Checkbox Ctrl" top="13" width="105" font="DejaVu" font.size="LSmall" tool_tip="Causes object to be deleted 1 minute after creation" />
+            <check_box height="19" label="Phantom" layout="topleft" left="387" name="Phantom Checkbox Ctrl" top="13" width="105" font="DejaVu" font.size="LSmall" tool_tip="Causes object to not collide with other objects or avatars" />
+            <view_border bevel_style="in" follows="top|left|right" height="68" layout="topleft" left="12" name="position_border" top="52" width="494" />
+            <text follows="left|top" height="16" layout="topleft" left="24" name="label position" top="60" width="170" font="DejaVu" font.size="LSmall" font.style="BOLD" tool_tip="Position (meters)">Position (m)</text>
+            <button height="22" label="Copy" layout="topleft" left="336" name="copy_pos" top="58" width="52" font="DejaVu" font.size="LSmall" tool_tip="Copy all three position values">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="pos_copy" />
+            </button>
+            <button height="22" label="Paste" layout="topleft" left="394" name="paste_pos" top="58" width="52" font="DejaVu" font.size="LSmall" tool_tip="Apply the last copied position values">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="pos_paste" />
+            </button>
+            <menu_button menu_filename="menu_copy_paste_pos.xml" height="15" image_disabled="ClipboardMenu_Disabled" image_selected="ClipboardMenu_Press" image_unselected="ClipboardMenu_Off" layout="topleft" left="456" name="clipboard_pos_btn" top="61" width="22" tool_tip="Paste options" />
+            <spinner height="24" increment="0.01" initial_value="0" label="X" label_width="14" layout="topleft" left="24" max_val="512" min_val="-256" name="Pos X" top="86" width="147" font="DejaVu" font.size="LSmall" />
+            <spinner height="24" increment="0.01" initial_value="0" label="Y" label_width="14" layout="topleft" left="185" max_val="512" min_val="-256" name="Pos Y" top="86" width="147" font="DejaVu" font.size="LSmall" />
+            <spinner height="24" increment="0.01" initial_value="0" label="Z" label_width="14" layout="topleft" left="346" max_val="4096" min_val="-32" name="Pos Z" top="86" width="147" font="DejaVu" font.size="LSmall" />
+            <view_border bevel_style="in" follows="top|left|right" height="68" layout="topleft" left="12" name="size_border" top="132" width="494" />
+            <text follows="left|top" height="16" layout="topleft" left="24" name="label size" top="140" width="170" font="DejaVu" font.size="LSmall" font.style="BOLD" tool_tip="Size (meters)">Size (m)</text>
+            <button height="22" label="Copy" layout="topleft" left="336" name="copy_size" top="138" width="52" font="DejaVu" font.size="LSmall" tool_tip="Copy all three size values">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="size_copy" />
+            </button>
+            <button height="22" label="Paste" layout="topleft" left="394" name="paste_size" top="138" width="52" font="DejaVu" font.size="LSmall" tool_tip="Apply the last copied size values">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="size_paste" />
+            </button>
+            <menu_button menu_filename="menu_copy_paste_size.xml" height="15" image_disabled="ClipboardMenu_Disabled" image_selected="ClipboardMenu_Press" image_unselected="ClipboardMenu_Off" layout="topleft" left="456" name="clipboard_size_btn" top="141" width="22" tool_tip="Paste options" />
+            <spinner height="24" increment="0.01" initial_value="0" label="X" label_width="14" layout="topleft" left="24" max_val="64" min_val="0.01" name="Scale X" top="166" width="147" font="DejaVu" font.size="LSmall" />
+            <spinner height="24" increment="0.01" initial_value="0" label="Y" label_width="14" layout="topleft" left="185" max_val="64" min_val="0.01" name="Scale Y" top="166" width="147" font="DejaVu" font.size="LSmall" />
+            <spinner height="24" increment="0.01" initial_value="0" label="Z" label_width="14" layout="topleft" left="346" max_val="64" min_val="0.01" name="Scale Z" top="166" width="147" font="DejaVu" font.size="LSmall" />
+            <view_border bevel_style="in" follows="top|left|right" height="68" layout="topleft" left="12" name="rotation_border" top="212" width="494" />
+            <text follows="left|top" height="16" layout="topleft" left="24" name="label rotation" top="220" width="170" font="DejaVu" font.size="LSmall" font.style="BOLD" tool_tip="Rotation (degrees)">Rotation (°)</text>
+            <button height="22" label="Copy" layout="topleft" left="336" name="copy_rot" top="218" width="52" font="DejaVu" font.size="LSmall" tool_tip="Copy all three rotation values">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="rot_copy" />
+            </button>
+            <button height="22" label="Paste" layout="topleft" left="394" name="paste_rot" top="218" width="52" font="DejaVu" font.size="LSmall" tool_tip="Apply the last copied rotation values">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="rot_paste" />
+            </button>
+            <menu_button menu_filename="menu_copy_paste_rot.xml" height="15" image_disabled="ClipboardMenu_Disabled" image_selected="ClipboardMenu_Press" image_unselected="ClipboardMenu_Off" layout="topleft" left="456" name="clipboard_rot_btn" top="221" width="22" tool_tip="Paste options" />
+            <spinner decimal_digits="2" height="24" increment="1" initial_value="0" label="X" label_width="14" layout="topleft" left="24" max_val="9999" min_val="-9999" name="Rot X" top="246" width="147" font="DejaVu" font.size="LSmall" />
+            <spinner decimal_digits="2" height="24" increment="1" initial_value="0" label="Y" label_width="14" layout="topleft" left="185" max_val="9999" min_val="-9999" name="Rot Y" top="246" width="147" font="DejaVu" font.size="LSmall" />
+            <spinner decimal_digits="2" height="24" increment="1" initial_value="0" label="Z" label_width="14" layout="topleft" left="346" max_val="9999" min_val="-9999" name="Rot Z" top="246" width="147" font="DejaVu" font.size="LSmall" />
+            <view_border bevel_style="in" follows="top|left|right" height="316" layout="topleft" left="12" name="shape_border" top="292" width="494" />
+            <text height="16" layout="topleft" left="24" name="shape_heading" top="302" width="54" font="DejaVu" font.size="LSmall" font.style="BOLD">Shape</text>
+            <combo_box height="24" layout="topleft" left="86" name="comboBaseType" top="298" width="220" drop_down_button.font="DejaVu" drop_down_button.font.size="LSmall">
+                <combo_box.item label="Box" name="Box" value="Box" />
+                <combo_box.item label="Cylinder" name="Cylinder" value="Cylinder" />
+                <combo_box.item label="Prism" name="Prism" value="Prism" />
+                <combo_box.item label="Sphere" name="Sphere" value="Sphere" />
+                <combo_box.item label="Torus" name="Torus" value="Torus" />
+                <combo_box.item label="Tube" name="Tube" value="Tube" />
+                <combo_box.item label="Ring" name="Ring" value="Ring" />
+                <combo_box.item label="Sculpted" name="Sculpted" value="Sculpted" />
+            </combo_box>
+            <button name="copy_shape" label="Copy" left="336" top="298" width="52" height="24" layout="topleft" follows="left|top" font="DejaVu" font.size="LSmall" tool_tip="Copy shape parameters">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="params_copy" />
+            </button>
+            <button name="paste_shape" label="Paste" left="394" top="298" width="52" height="24" layout="topleft" follows="left|top" font="DejaVu" font.size="LSmall" tool_tip="Paste shape parameters">
+                <button.commit_callback function="PanelObject.menuDoToSelected" parameter="params_paste" />
+            </button>
+            <menu_button menu_filename="menu_copy_paste_object.xml" height="15" image_disabled="ClipboardMenu_Disabled" image_selected="ClipboardMenu_Press" image_unselected="ClipboardMenu_Off" layout="topleft" left="456" name="clipboard_obj_params_btn" top="302" width="22" tool_tip="Copy and paste shape parameters" />
+            <view_border bevel_style="none" follows="top|bottom" height="264" layout="topleft" left="259" name="shape_column_divider" top="332" width="1" />
+            <text height="14" layout="topleft" left="24" name="text cut" top="338" width="223" font="DejaVu" font.size="LSmall">Path Cut</text>
+            <spinner height="24" increment="0.025" initial_value="0" label="Begin" label_width="38" layout="topleft" left="24" max_val="0.98" name="cut begin" top="356" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner height="24" increment="0.025" initial_value="1" label="End" label_width="28" layout="topleft" left="139" min_val="0.02" name="cut end" top="356" width="108" font="DejaVu" font.size="LSmall" />
+            <text height="14" layout="topleft" left="24" name="text hollow" top="390" width="108" font="DejaVu" font.size="LSmall">Hollow</text>
+            <text height="14" layout="topleft" left="139" name="text skew" top="390" width="108" font="DejaVu" font.size="LSmall">Skew</text>
+            <spinner decimal_digits="1" height="24" increment="5" initial_value="0" layout="topleft" left="24" max_val="95" name="Scale 1" top="408" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner decimal_digits="2" height="24" increment="0.05" initial_value="0" layout="topleft" left="139" max_val="0.95" min_val="-0.95" name="Skew" top="408" width="108" font="DejaVu" font.size="LSmall" />
+            <text height="14" layout="topleft" left="24" name="Hollow Shape" top="442" width="223" font="DejaVu" font.size="LSmall">Hollow Shape</text>
+            <combo_box height="24" layout="topleft" left="24" name="hole" top="460" width="223" drop_down_button.font="DejaVu" drop_down_button.font.size="LSmall">
+                <combo_box.item label="Default" name="Default" value="Default" />
+                <combo_box.item label="Circle" name="Circle" value="Circle" />
+                <combo_box.item label="Square" name="Square" value="Square" />
+                <combo_box.item label="Triangle" name="Triangle" value="Triangle" />
+            </combo_box>
+            <text height="14" layout="topleft" left="24" name="text twist" top="494" width="223" font="DejaVu" font.size="LSmall">Twist</text>
+            <spinner decimal_digits="0" height="24" increment="9" initial_value="0" label="Begin" label_width="38" layout="topleft" left="24" max_val="180" min_val="-180" name="Twist Begin" top="512" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner decimal_digits="0" height="24" increment="9" initial_value="0" label="End" label_width="28" layout="topleft" left="139" max_val="180" min_val="-180" name="Twist End" top="512" width="108" font="DejaVu" font.size="LSmall" />
+            <text height="14" layout="topleft" left="271" name="scale_taper" top="338" width="223" font="DejaVu" font.size="LSmall">Taper</text>
+            <text visible="false" height="14" layout="topleft" left="271" name="scale_hole" top="338" width="223" font="DejaVu" font.size="LSmall">Hole Size</text>
+            <spinner decimal_digits="2" height="24" increment="0.05" initial_value="0" label="X" label_width="14" layout="topleft" left="271" min_val="-1" name="Taper Scale X" top="356" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner decimal_digits="2" height="24" increment="0.05" initial_value="0" label="Y" label_width="14" layout="topleft" left="386" min_val="-1" name="Taper Scale Y" top="356" width="108" font="DejaVu" font.size="LSmall" />
+            <text height="14" layout="topleft" left="271" name="text topshear" top="390" width="223" font="DejaVu" font.size="LSmall">Top Shear</text>
+            <spinner decimal_digits="2" height="24" increment="0.05" initial_value="0" label="X" label_width="14" layout="topleft" left="271" max_val="0.5" min_val="-0.5" name="Shear X" top="408" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner decimal_digits="2" height="24" increment="0.05" initial_value="0" label="Y" label_width="14" layout="topleft" left="386" max_val="0.5" min_val="-0.5" name="Shear Y" top="408" width="108" font="DejaVu" font.size="LSmall" />
+            <text visible="false" height="14" layout="topleft" left="271" name="advanced_cut" top="442" width="223" font="DejaVu" font.size="LSmall">Profile Cut</text>
+            <text visible="false" height="14" layout="topleft" left="271" name="advanced_dimple" top="442" width="223" font="DejaVu" font.size="LSmall">Dimple</text>
+            <text height="14" layout="topleft" left="271" name="advanced_slice" top="442" width="223" font="DejaVu" font.size="LSmall">Slice</text>
+            <spinner height="24" increment="0.02" initial_value="0" label="Begin" label_width="38" layout="topleft" left="271" max_val="0.98" name="Path Limit Begin" top="460" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner height="24" increment="0.02" initial_value="1" label="End" label_width="28" layout="topleft" left="386" min_val="0.02" name="Path Limit End" top="460" width="108" font="DejaVu" font.size="LSmall" />
+            <text visible="false" height="14" layout="topleft" left="271" name="text taper2" top="494" width="223" font="DejaVu" font.size="LSmall">Taper</text>
+            <spinner visible="false" decimal_digits="2" height="24" increment="0.05" initial_value="0" label="X" label_width="14" layout="topleft" left="271" min_val="-1" name="Taper X" top="512" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner visible="false" decimal_digits="2" height="24" increment="0.05" initial_value="0" label="Y" label_width="14" layout="topleft" left="386" min_val="-1" name="Taper Y" top="512" width="108" font="DejaVu" font.size="LSmall" />
+            <text visible="false" height="14" layout="topleft" left="271" name="text radius delta" top="546" width="108" font="DejaVu" font.size="LSmall">Radius</text>
+            <text visible="false" height="14" layout="topleft" left="386" name="text revolutions" top="546" width="108" font="DejaVu" font.size="LSmall">Revolutions</text>
+            <spinner visible="false" height="24" increment="0.05" initial_value="0" layout="topleft" left="271" min_val="-1" name="Radius Offset" top="564" width="108" font="DejaVu" font.size="LSmall" />
+            <spinner visible="false" decimal_digits="2" height="24" initial_value="1" layout="topleft" left="386" max_val="4" min_val="1" name="Revolutions" top="564" width="108" font="DejaVu" font.size="LSmall" />
+            <texture_picker can_apply_immediately="true" default_image_name="Default" height="141" label="Sculpt Texture" layout="topleft" left="24" name="sculpt texture control" top="338" visible="false" width="185" caption_text.font="DejaVu" caption_text.font.size="LSmall" tool_tip="Click to choose a picture" />
+            <check_box height="19" label="Mirror" layout="topleft" left="224" name="sculpt mirror control" top="352" visible="false" width="120" font="DejaVu" font.size="LSmall" tool_tip="Flips sculpted prim along the X axis" />
+            <check_box height="19" label="Inside-out" layout="topleft" left="224" name="sculpt invert control" top="382" visible="false" width="120" font="DejaVu" font.size="LSmall" tool_tip="Inverts the sculpted prims normals, making it appear inside-out" />
+            <text height="14" layout="topleft" left="224" name="label sculpt type" top="420" visible="false" width="180" font="DejaVu" font.size="LSmall">Stitching type</text>
+            <combo_box height="24" layout="topleft" left="224" name="sculpt type control" top="438" visible="false" width="200" drop_down_button.font="DejaVu" drop_down_button.font.size="LSmall">
+                <combo_box.item label="Sphere" name="Sphere" value="1" />
+                <combo_box.item label="Torus" name="Torus" value="2" />
+                <combo_box.item label="Plane" name="Plane" value="3" />
+                <combo_box.item label="Cylinder" name="Cylinder" value="4" />
+            </combo_box>
+        </panel>
+    </scroll_container>
+</panel>

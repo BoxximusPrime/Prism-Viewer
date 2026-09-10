@@ -2,7 +2,7 @@
 <panel
          border="false"
          follows="all"
-         height="500"
+         height="620"
          label="Texture"
          layout="topleft"
          left="0"
@@ -10,7 +10,7 @@
          help_topic="toolbox_texture_tab"
          name="Texture"
          top="0"
-         width="295">
+         width="536">
             <panel.string
              name="paste_error_face_selection_mismatch">
               When multiple faces are copied, the target object must have the same number of faces selected.
@@ -28,29 +28,179 @@
               Paste options
             </panel.string>
 
-            <menu_button
+            <scroll_container
+             follows="all"
+             height="620"
+             layout="topleft"
+             left="0"
+             name="texture_scroll"
+             reserve_scroll_corner="false"
+             top="0"
+             width="536">
+<panel
+             background_visible="false"
+             follows="left|top|right"
+             layout="topleft"
+             min_height="620"
+             name="texture_scroll_content"
+             left="0"
+             top="0"
+             width="516"
+             height="668">
+
+<panel
+             follows="top|left|right"
+             layout="topleft"
+             name="surface_group_border"
+             left="12"
+             top="0"
+             width="504"
+             height="164" border="false" background_visible="true" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
+                        <panel name="surface_group_border_fill" left="1" top="1" width="502" height="162" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
+                    </panel>
+            <text
+             follows="left|top"
+             font="DejaVu"
+             font.size="Small"
+             font.style="BOLD"
+             height="16"
+             layout="topleft"
+             left="24"
+             name="surface_group_label"
+             top="9"
+             width="120" text_color="EditSectionHeading">
+                Surface
+            </text>
+<panel
+             follows="top|left|right"
+             layout="topleft"
+             name="texture_group_border"
+             left="12"
+             top="176"
+             width="504"
+             height="216" border="false" background_visible="true" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
+                        <panel name="texture_group_border_fill" left="1" top="1" width="502" height="214" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
+                    </panel>
+            <text
+             follows="left|top"
+             font="DejaVu"
+             font.size="Small"
+             font.style="BOLD"
+             height="16"
+             layout="topleft"
+             left="24"
+             name="texture_group_label"
+             top="185"
+             width="220" text_color="EditSectionHeading">
+                Material / Texture / Media
+            </text>
+<panel
+             follows="top|left|right"
+             layout="topleft"
+             name="mapping_group_border"
+             left="12"
+             top="404"
+             width="504"
+             height="252" border="false" background_visible="true" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
+                        <panel name="mapping_group_border_fill" left="1" top="1" width="502" height="250" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
+                    </panel>
+            <text
+             follows="left|top"
+             font="DejaVu"
+             font.size="Small"
+             font.style="BOLD"
+             height="16"
+             layout="topleft"
+             left="24"
+             name="mapping_group_label"
+             top="413"
+             width="120" text_color="EditSectionHeading">
+                Mapping
+            </text>
+            <text
+             follows="left|top"
+             font="DejaVu"
+             font.size="LSmall"
+             height="16"
+             layout="topleft"
+             left="24"
+             name="mapping_scale_label"
+             top="477"
+             width="88">Scale</text>
+            <text
+             follows="left|top"
+             font="DejaVu"
+             font.size="LSmall"
+             height="16"
+             layout="topleft"
+             left="24"
+             name="mapping_offset_label"
+             top="511"
+             width="88">Offset</text>
+            <text
+             follows="left|top"
+             font="DejaVu"
+             font.size="LSmall"
+             height="16"
+             layout="topleft"
+             left="24"
+             name="mapping_rotation_label"
+             top="545"
+             width="88">Rotation</text>
+            <text
+             follows="left|top"
+             font="DejaVu"
+             font.size="LSmall"
+             height="16"
+             layout="topleft"
+             left="24"
+             name="mapping_repeats_label"
+             top="579"
+             width="100">Repeats per meter</text>
+
+<menu_button
              menu_filename="menu_copy_paste_color.xml"
              follows="top|left"
-             height="15"
-             image_disabled="ClipboardMenu_Disabled"
-             image_selected="ClipboardMenu_Press"
-             image_unselected="ClipboardMenu_Off"
              layout="topleft"
-             left="258"
-             top="8"
+             label="..."
              name="clipboard_color_params_btn"
-             tool_tip="Paste options"
-             width="22"/>
+             tool_tip="More copy and paste options"
+             left="480"
+             top="77"
+             width="24"
+             height="24"/>
+            <button
+             follows="top|left"
+             height="24"
+             label="Copy"
+             layout="topleft"
+             left="364"
+             name="copy_color_params_btn"
+             top="77"
+             width="54">
+                <button.commit_callback function="PanelFace.menuDoToSelected" parameter="color_copy" />
+            </button>
+            <button
+             follows="top|left"
+             height="24"
+             label="Paste"
+             layout="topleft"
+             left="422"
+             name="paste_color_params_btn"
+             top="77"
+             width="54">
+                <button.commit_callback function="PanelFace.menuDoToSelected" parameter="color_paste" />
+            </button>
             <text
              type="string"
              length="1"
              follows="left|top"
              height="10"
              layout="topleft"
-             left="10"
+             left="24"
              name="color label"
              text_readonly_color="LabelDisabledColor"
-             top="6"
+             top="32"
              width="64"
              font="DejaVu"
              font.size="LSmall" >
@@ -64,21 +214,21 @@
              label=""
              label_height="0"
              layout="topleft"
-             left="10"
+             left="24"
              name="colorswatch"
              tool_tip="Click to open color picker"
-             top="20"
-             width="54" />
+             top="48"
+             width="64" />
             <text
              type="string"
              length="1"
              follows="left|top"
              height="10"
              layout="topleft"
-             left_pad="15"
+             left="184"
              name="color trans"
              text_readonly_color="LabelDisabledColor"
-             top="6"
+             top="32"
              width="110"
              font="DejaVu"
              font.size="LSmall" >
@@ -91,11 +241,11 @@
              increment="2"
              initial_value="0"
              layout="topleft"
-             left_delta="0"
+             left="184"
              max_val="100"
              name="ColorTrans"
-             top_pad="4"
-             width="80"
+             top="48"
+             width="132"
              font="DejaVu"
              font.size="LSmall" />
             <text
@@ -104,10 +254,10 @@
              follows="left|top"
              height="10"
              layout="topleft"
-             left_pad="15"
+             left="24"
              name="glow label"
              text_readonly_color="LabelDisabledColor"
-             top="6"
+             top="82"
              width="80"
              font="DejaVu"
              font.size="LSmall" >
@@ -119,19 +269,19 @@
              height="19"
              initial_value="0"
              layout="topleft"
-             left_delta="0"
+             left="104"
              name="glow"
-             top_pad="4"
-             width="77"
+             top="77"
+             width="104"
              font="DejaVu"
              font.size="LSmall" />
             <check_box
              height="19"
              label="Full Bright"
              layout="topleft"
-             left="7"
+             left="238"
              name="checkbox fullbright"
-             top_pad="4"
+             top="79"
              width="81"
              font="DejaVu"
              font.size="LSmall" />
@@ -139,29 +289,20 @@
              height="19"
              label="Hide water"
              layout="topleft"
-             left="172"
-             top_delta="0"
+             left="238"
+             top="108"
              name="checkbox_hide_water"
              width="81"
              font="DejaVu"
              font.size="LSmall" />
-            <view_border
-             bevel_style="none"
-             follows="top|left"
-             height="0"
-             layout="topleft"
-             left="8"
-             name="object_horizontal"
-             top_pad="4"
-             width="278" />
             <text
              type="string"
              length="1"
              follows="left|top"
              height="10"
              layout="topleft"
-             left="12"
-             top_pad="12"
+             left="24"
+             top="135"
              name="label_matmedia"
              width="90"
              font="DejaVu"
@@ -171,10 +312,10 @@
             <combo_box
              height="23"
              layout="topleft"
-             left="10"
+             left="124"
              name="combobox matmedia"
-             top_pad="5"
-             width="90"
+             top="130"
+             width="230"
              drop_down_button.font="DejaVu"
              drop_down_button.font.size="LSmall" >
                 <combo_box.item
@@ -190,213 +331,277 @@
                  name="Media"
                  value="Media" />
             </combo_box>
-            <radio_group
-            height="84"
+<radio_group
             layout="topleft"
-            left_pad="5"
-            top_delta="-20"
-            width="150"
-            visible = "false"
             name="radio_material_type"
+            initial_value="0"
             font="DejaVu"
-            font.size="LSmall" >
+            font.size="LSmall"
+             left="104"
+             top="212"
+             width="400"
+             height="24"
+             visible="true">
                 <radio_item
-                label="Texture (diffuse)"
+                label="Diffuse"
                 name="Texture (diffuse)"
-                top="0" 
+                top="0"
                 layout="topleft"
-                height="16" 
-                value="0"/>
+                height="24"
+                width="133"
+                value="0">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="130" height="24" label="Diffuse" label_selected="Diffuse" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
                 <radio_item
-                label="Bumpiness (normal)"
+                label="Normal"
                 layout="topleft"
-                top_pad="1" 
-                height="16" 
+                left="133"
+                top="0"
+                height="24"
+                width="133"
                 name="Bumpiness (normal)"
-                value="1"/>
+                value="1">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="130" height="24" label="Normal" label_selected="Normal" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
                 <radio_item
-                label="Shininess (specular)"
+                label="Specular"
                 name="Shininess (specular)"
-                height="16"
+                height="24"
+                width="134"
                 layout="topleft"
-                top_pad="1"
-                value="2"/>
+                left="266"
+                top="0"
+                value="2">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="131" height="24" label="Specular" label_selected="Specular" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
             </radio_group>
-            <radio_group
-            height="84"
+<radio_group
             layout="topleft"
-            left_delta="0"
-            top_delta="0"
-            width="150"
-            visible = "false"
             name="radio_pbr_type"
+            initial_value="0"
             font="DejaVu"
-            font.size="LSmall" >
+            font.size="LSmall"
+             left="104"
+             top="212"
+             width="400"
+             height="50"
+             visible="false">
                 <radio_item
                 label="Complete material"
                 name="Complete material"
                 top="0"
                 layout="topleft"
-                height="16"
-                value="0"/>
+                height="24"
+                width="200"
+                value="0">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="197" height="24" label="Complete material" label_selected="Complete material" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
                 <radio_item
                 label="Base color"
                 name="Base color"
                 layout="topleft"
-                top_pad="1" 
-                height="16" 
-                value="1"/>
+                left="200"
+                top="0"
+                height="24"
+                width="200"
+                value="1">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="197" height="24" label="Base color" label_selected="Base color" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
                 <radio_item
                 label="Metallic/roughness"
                 name="Metallic/roughness"
-                height="16"
+                height="24"
+                width="133"
                 layout="topleft"
-                top_pad="1"
-                value="2"/>
+                left="0"
+                top="26"
+                value="2">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="130" height="24" label="Metallic/roughness" label_selected="Metallic/roughness" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
                 <radio_item
                 label="Emissive"
                 name="Emissive"
                 layout="topleft"
-                top_pad="1" 
-                height="16" 
-                value="3"/>
+                left="133"
+                top="26"
+                height="24"
+                width="133"
+                value="3">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="130" height="24" label="Emissive" label_selected="Emissive" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
                 <radio_item
                 label="Normal"
                 layout="topleft"
-                top_pad="1" 
-                height="16" 
+                left="266"
+                top="26"
+                height="24"
+                width="134"
                 name="Normal"
-                value="4"/>
+                value="4">
+                  <radio_item.label_text visible="false" left="0" bottom="0" width="1" height="1" />
+                  <radio_item.check_button left="0" bottom="0" width="131" height="24" label="Normal" label_selected="Normal" font="DejaVu" font.size="LSmall" scale_image="true" image_unselected="PushButton_Off" image_selected="PushButton_Selected" image_disabled="PushButton_Disabled" image_disabled_selected="PushButton_Selected_Disabled" image_pressed="PushButton_Selected" image_pressed_selected="PushButton_Selected_Press" />
+                </radio_item>
             </radio_group>
-            <menu_button
+<menu_button
                 menu_filename="menu_copy_paste_texture.xml"
                 follows="top|left"
-                height="15"
-                image_disabled="ClipboardMenu_Disabled"
-                image_selected="ClipboardMenu_Press"
-                image_unselected="ClipboardMenu_Off"
                 layout="topleft"
-                left="258"
-                top_delta="0"
+                label="..."
                 name="clipboard_texture_params_btn"
-                tool_tip="Paste options"
-                width="22"/>
-            <check_box
+                tool_tip="More copy and paste options"
+             left="480"
+             top="184"
+             width="24"
+             height="24"/>
+            <button
+             follows="top|left"
+             height="24"
+             label="Copy"
+             layout="topleft"
+             left="364"
+             name="copy_texture_params_btn"
+             top="184"
+             width="54">
+                <button.commit_callback function="PanelFace.menuDoToSelected" parameter="texture_copy" />
+            </button>
+            <button
+             follows="top|left"
+             height="24"
+             label="Paste"
+             layout="topleft"
+             left="422"
+             name="paste_texture_params_btn"
+             top="184"
+             width="54">
+                <button.commit_callback function="PanelFace.menuDoToSelected" parameter="texture_paste" />
+            </button>
+<check_box
              control_name="SyncMaterialSettings"
              follows="top|left"
-             height="47"
              initial_value="false"
              label="Lock repeat"
              layout="topleft"
-             left="8"
              name="checkbox_sync_settings"
              tool_tip="Adjust all maps repeats simultaneously"
-             top_pad="19"
-             width="160"
              font="DejaVu"
-             font.size="LSmall" />
-            <texture_picker
+             font.size="LSmall"
+             left="380"
+             top="436"
+             width="124"
+             height="20"/>
+<texture_picker
              can_apply_immediately="true"
              allow_no_texture="true"
              follows="left|top"
-             height="80"
              label="Material"
              layout="topleft"
-             left="10"
              name="pbr_control"
              tool_tip="Click to choose a pbr material"
-             top_pad="5"
-             width="64"
              caption_text.font="DejaVu"
-             caption_text.font.size="LSmall" />
-            <button
+             caption_text.font.size="LSmall"
+             left="24"
+             top="270"
+             width="112"
+             height="112"
+             visible="false"/>
+<button
              follows="left|top"
-             height="23"
              layout="topleft"
-             left_pad="10"
-             top_delta="0"
              name="pbr_from_inventory"
              label="Choose from inventory"
-             width="140"
              font="DejaVu"
-             font.size="LSmall" />
-            <text
-             visible="false"
+             font.size="LSmall"
+             left="156"
+             top="270"
+             width="348"
+             height="24"
+             visible="false"/>
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             top_pad="4"
-             left_delta="0"
              name="material_permissions_loading_label"
              text_readonly_color="LabelDisabledColor"
-             width="160"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="156"
+             top="302"
+             width="348"
+             height="16"
+             visible="false">
                 Loading contents...
             </text>
-            <button
+<button
              follows="left|top"
-             height="23"
              layout="topleft"
-             left_delta="0"
-             top_delta="0"
              name="edit_selected_pbr"
              label="Edit Selected"
-             width="140"
              font="DejaVu"
-             font.size="LSmall" />
-            <button
+             font.size="LSmall"
+             left="156"
+             top="302"
+             width="348"
+             height="24"
+             visible="false"/>
+<button
              follows="left|top"
-             height="23"
              layout="topleft"
-             left_delta="0"
-             top_pad="4"
              name="save_selected_pbr"
              label="Save to inventory"
-             width="140"
              font="DejaVu"
-             font.size="LSmall" />
-            <texture_picker
+             font.size="LSmall"
+             left="156"
+             top="334"
+             width="348"
+             height="24"
+             visible="false"/>
+<texture_picker
              can_apply_immediately="true"
              default_image_name="Default"
              fallback_image="materials_ui_x_24.png"
              follows="left|top"
-             height="80"
              label="Texture       "
              layout="topleft"
-             left="10"
              name="texture control"
              tool_tip="Click to choose a picture"
-             top_delta="-54"
-             width="64"
              caption_text.font="DejaVu"
-             caption_text.font.size="LSmall" />
-            <text
+             caption_text.font.size="LSmall"
+             left="24"
+             top="250"
+             width="112"
+             height="126"/>
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             left_pad="10"
              name="label alphamode"
              text_readonly_color="LabelDisabledColor"
-             top_delta="0"
-             width="90"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="156"
+             top="258"
+             width="100"
+             height="16">
                 Alpha mode
             </text>
-            <combo_box
-             height="23"
+<combo_box
              layout="topleft"
-             left_delta="0"
              name="combobox alphamode"
-             top_pad="4"
-             width="120"
              drop_down_button.font="DejaVu"
-             drop_down_button.font.size="LSmall">
+             drop_down_button.font.size="LSmall"
+             left="266"
+             top="254"
+             width="238"
+             height="24">
                 <combo_box.item
                  label="None"
                  name="None"
@@ -414,76 +619,81 @@
                  name="Emissive mask"
                  value="Emissive mask" />
             </combo_box>
-            <text
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             left_delta="0"
              name="label maskcutoff"
              text_readonly_color="LabelDisabledColor"
-             top_pad="4"
-             width="90"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="156"
+             top="298"
+             width="100"
+             height="16"
+             visible="false">
                 Mask cutoff
             </text>
-            <spinner
+<spinner
              decimal_digits="0"
              min_val="0"
              max_val="255"
              follows="left|top"
-             height="19"
              initial_value="55"
              layout="topleft"
-             top_pad="4"
-             left_delta="0"
              increment="1"
              name="maskcutoff"
-             width="80"
              font="DejaVu"
-             font.size="LSmall" />
-            <texture_picker
+             font.size="LSmall"
+             left="266"
+             top="293"
+             width="238"
+             height="24"
+             visible="false"/>
+<texture_picker
              allow_no_texture="true"
              can_apply_immediately="true"
              default_image_name="Default"
              fallback_image="materials_ui_x_24.png"
              follows="left|top"
-             height="80"
              label="Texture       "
              layout="topleft"
-             left="10"
              name="bumpytexture control"
              tool_tip="Click to choose a picture"
-             top_delta="-55"
-             width="64"
              caption_text.font="DejaVu"
-             caption_text.font.size="LSmall" />
-            <text
+             caption_text.font.size="LSmall"
+             left="24"
+             top="250"
+             width="112"
+             height="126"
+             visible="false"/>
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             left_pad="10"
              name="label bumpiness"
              text_readonly_color="LabelDisabledColor"
-             top_delta="0"
-             width="90"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="156"
+             top="258"
+             width="100"
+             height="16"
+             visible="false">
                 Bumpiness
             </text>
-            <combo_box
-             height="23"
+<combo_box
              layout="topleft"
-             left_delta="0"
              name="combobox bumpiness"
-             top_pad="4"
-             width="90"
              drop_down_button.font="DejaVu"
-             drop_down_button.font.size="LSmall" >
+             drop_down_button.font.size="LSmall"
+             left="266"
+             top="254"
+             width="238"
+             height="24"
+             visible="false">
                 <combo_box.item
                  label="None"
                  name="None"
@@ -564,46 +774,49 @@
                  value="Use texture" />
                  -->
             </combo_box>
-            <texture_picker
+<texture_picker
              allow_no_texture="true"
              can_apply_immediately="true"
              default_image_name="Default"
              fallback_image="materials_ui_x_24.png"
              follows="left|top"
-             height="80"
              label="Texture       "
              layout="topleft"
-             left="10"
              name="shinytexture control"
              tool_tip="Click to choose a picture"
-             top_delta="-14"
-             width="64"
              caption_text.font="DejaVu"
-             caption_text.font.size="LSmall" />
-            <text
+             caption_text.font.size="LSmall"
+             left="24"
+             top="250"
+             width="112"
+             height="126"
+             visible="false"/>
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
              name="label shininess"
-             left_pad="10"
              text_readonly_color="LabelDisabledColor"
-             top_delta="4"
-             width="90"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="156"
+             top="258"
+             width="100"
+             height="16"
+             visible="false">
                 Shininess
             </text>
-            <combo_box
-             height="23"
+<combo_box
              layout="topleft"
-             left_pad="10"
              name="combobox shininess"
-             top_delta="-6"
-             width="90"
              drop_down_button.font="DejaVu"
-             drop_down_button.font.size="LSmall" >
+             drop_down_button.font.size="LSmall"
+             left="266"
+             top="254"
+             width="238"
+             height="24"
+             visible="false">
                 <combo_box.item
                  label="None"
                  name="None"
@@ -628,168 +841,178 @@
                  value="Use texture" />
                  -->
             </combo_box>
-            <text
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             left_delta="-100"
              name="label glossiness"
              text_readonly_color="LabelDisabledColor"
-             top_pad="7"
-             width="116"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="156"
+             top="294"
+             width="100"
+             height="16"
+             visible="false">
                 Glossiness
             </text>
-            <spinner
+<spinner
              decimal_digits="0"
              min_val="0"
              max_val="255"
              follows="left|top"
-             height="19"
              initial_value="51"
              increment="1"
              layout="topleft"
-             top_delta="-4"
-             left_pad="10"
              name="glossiness"
-             width="64"
              font="DejaVu"
-             font.size="LSmall" />
-            <text
+             font.size="LSmall"
+             left="266"
+             top="289"
+             width="104"
+             height="24"
+             visible="false"/>
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             left_delta="-126"
              name="label environment"
              text_readonly_color="LabelDisabledColor"
-             top_pad="8"
-             width="116"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="156"
+             top="328"
+             width="100"
+             height="16"
+             visible="false">
                 Environment
             </text>
-            <spinner
+<spinner
              decimal_digits="0"
              min_val="0"
              max_val="255"
              increment="1"
              follows="left|top"
-             height="19"
              initial_value="0"
              layout="topleft"
-             top_delta="-4"
-             left_pad="10"
              name="environment"
-             width="64"
              font="DejaVu"
-             font.size="LSmall" />
-            <text
+             font.size="LSmall"
+             left="266"
+             top="323"
+             width="104"
+             height="24"
+             visible="false"/>
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             left_delta="-126"
              name="label shinycolor"
              text_readonly_color="LabelDisabledColor"
-             top_pad="8"
-             width="116"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="382"
+             top="294"
+             width="60"
+             height="16"
+             visible="false">
                 Color
             </text>
             <!-- label is blank because control places it below the box -->
-            <color_swatch
+<color_swatch
              can_apply_immediately="true"
              follows="left|top"
-             height="45"
              label=""
              layout="topleft"
-             left_pad="10"
              name="shinycolorswatch"
              tool_tip="Click to open color picker"
-             top_delta="-4"
-             width="64" />
-            <text
+             left="442"
+             top="289"
+             width="62"
+             height="58"
+             visible="false"/>
+<text
 			 follows="left|top|right"
-			 height="9"
 			 layout="topleft"
-			 left="10"
-			 top_delta="-50"
              use_ellipses="true"
 			 read_only="true"
 			 name="media_info"
-			 width="280"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="24"
+             top="254"
+             width="480"
+             height="20"
+             visible="false">
 			 URL of chosen media, if any, goes here
 			 </text>
-			<button
+<button
 			 follows="top|left"
-			 height="18"
 			 layout="topleft"
-			 left="10"
 			 name="add_media"
-			 top_pad="4"
 			 tool_tip="Add Media"
 			 label="Choose..."
-			 width="85"
              font="DejaVu"
-             font.size="LSmall" />
-			<button
+             font.size="LSmall"
+             left="222"
+             top="290"
+             width="90"
+             height="24"
+             visible="false"/>
+<button
 			 follows="top|left"
-			 height="18"
 			 layout="topleft"
-			 left_pad="5"
 			 name="delete_media"
 			 tool_tip="Delete this media texture"
-			 top_delta="0"
 			 label="Remove"
-			 width="85"
              font="DejaVu"
-             font.size="LSmall" />
-            <button
+             font.size="LSmall"
+             left="318"
+             top="290"
+             width="90"
+             height="24"
+             visible="false"/>
+<button
 			 follows="left|top"
-			 height="18"
 			 label="Align"
 			 label_selected="Align Media"
 			 layout="topleft"
-			 left_pad="5"
 			 name="button align"
-			 top_delta="0"
 			 tool_tip="Align media texture (must load first)"
-			 width="85"
              font="DejaVu"
-             font.size="LSmall" />
-            <text
+             font.size="LSmall"
+             left="414"
+             top="290"
+             width="90"
+             height="24"
+             visible="false"/>
+<text
              type="string"
              length="1"
              follows="left|top"
-             height="10"
              layout="topleft"
-             left="10"
              name="tex gen"
              text_readonly_color="LabelDisabledColor"
-             top_pad="46"
-             width="140"
              font="DejaVu"
-             font.size="LSmall" >
+             font.size="LSmall"
+             left="24"
+             top="439"
+             width="90"
+             height="16">
                 Mapping
             </text>
-            <combo_box
-             height="23"
+<combo_box
              layout="topleft"
-             left_pad="0"
              name="combobox texgen"
-             top_pad="-13"
-             width="125"
              drop_down_button.font="DejaVu"
-             drop_down_button.font.size="LSmall" >
+             drop_down_button.font.size="LSmall"
+             left="124"
+             top="434"
+             width="240"
+             height="24">
                 <combo_box.item
                  label="Default"
                  name="Default"
@@ -799,382 +1022,418 @@
                  name="Planar"
                  value="Planar" />
             </combo_box>
-            <spinner
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Horizontal scale"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="TexScaleU"
-             top_pad="5"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Vertical scale"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="TexScaleV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="340"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"/>
+<spinner
              decimal_digits="1"
              follows="left|top"
-             height="19"
              initial_value=""
 			 label="Repeats per meter"
              layout="topleft"
-			 label_width="205"
-             left="10"
              max_val="100"
              min_val="-100"
              name="rptctrl"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-           <spinner
+             font.size="LSmall"
+             left="124"
+             top="574"
+             width="164"
+             height="24"
+             label_width="0"/>
+<spinner
              decimal_digits="2"
              follows="left|top"
-             height="19"
              increment="1"
              initial_value="0"
-			 label="Rotation degrees"
              layout="topleft"
-			 label_width="205"
-             left="10"
              max_val="360"
              min_val="-360"
              name="TexRot"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="540"
+             width="164"
+             height="24"
+             label_width="0"
+             label=""/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Horizontal offset"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-1"
              max_val="1"
              decimal_digits="5"
              name="TexOffsetU"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Vertical offset"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-1"
              max_val="1"
              decimal_digits="5"
              name="TexOffsetV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="340"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Horizontal scale"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="bumpyScaleU"
-             top_delta="-115"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Vertical scale"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="bumpyScaleV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-           <spinner
+             font.size="LSmall"
+             left="340"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"
+             visible="false"/>
+<spinner
              decimal_digits="2"
              follows="left|top"
-             height="19"
-             top_pad="27"
              increment="1"
              initial_value="0"
-			 label="Rotation degrees"
              layout="topleft"
-			 label_width="205"
-             left="10"
              max_val="360"
              min_val="-360"
              name="bumpyRot"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="540"
+             width="164"
+             height="24"
+             label_width="0"
+             label=""
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Horizontal offset"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-1"
              max_val="1"
              decimal_digits="5"
              name="bumpyOffsetU"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Vertical offset"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-1"
              max_val="1"
              decimal_digits="5"
              name="bumpyOffsetV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="340"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Horizontal scale"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="shinyScaleU"
-             top_delta="-115"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Vertical scale"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="shinyScaleV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-           <spinner
+             font.size="LSmall"
+             left="340"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"
+             visible="false"/>
+<spinner
              decimal_digits="2"
              follows="left|top"
-             height="19"
-             top_pad="27"
              increment="1"
              initial_value="0"
-			 label="Rotation degrees"
              layout="topleft"
-			 label_width="205"
-             left="10"
              max_val="360"
              min_val="-360"
              name="shinyRot"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="540"
+             width="164"
+             height="24"
+             label_width="0"
+             label=""
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Horizontal offset"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-1"
              max_val="1"
              decimal_digits="5"
              name="shinyOffsetU"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Vertical offset"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-1"
              max_val="1"
              decimal_digits="5"
              name="shinyOffsetV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <check_box
+             font.size="LSmall"
+             left="340"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"
+             visible="false"/>
+<check_box
              follows="top|left"
-             height="16"
              initial_value="false"
              label="Align planar faces"
              layout="topleft"
-             left="7"
              name="checkbox planar align"
              tool_tip="Align textures on all selected faces with the last selected face. Requires Planar texture mapping."
-             top_delta="20"
-             width="260"
              font="DejaVu"
-             font.size="LSmall" />
-			<button
+             font.size="LSmall"
+             left="24"
+             top="618"
+             width="250"
+             height="20"
+             visible="false"/>
+<button
              follows="left|top"
              layout="topleft"
-			 left="9"
-			 top="231"
-			 height="20"
 			 label="Align"
 			 label_selected="Align current texture layers"
 			 name="button align textures"
 			 tool_tip="Align current texture layers"
-			 width="66"
              font="DejaVu"
-             font.size="LSmall" />
-            <web_browser
+             font.size="LSmall"
+             left="414"
+             top="610"
+             width="90"
+             height="24"/>
+<web_browser
              visible="false"
              enabled="false"
              border_visible="true"
              bottom_delta="0"
              follows="top|left"
-             left="0"
              name="title_media"
-             width="4"
-             height="4"
              start_url="about:blank"
-             decouple_texture_size="true" />
+             decouple_texture_size="true"
+             left="0"
+             top="0"
+             width="4"
+             height="4"/>
             <!-- BEGIN PBR Material texture transform parameters -->
-            <spinner
+<spinner
              follows="left|top"
-             height="19"
              initial_value="1"
-             label="Scale u"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="gltfTextureScaleU"
-             top_delta="34"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="1"
-             label="Scale v"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-10000"
              max_val="10000"
              decimal_digits="5"
              name="gltfTextureScaleV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="340"
+             top="472"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"
+             visible="false"/>
+<spinner
              decimal_digits="1"
              follows="left|top"
-             height="19"
              initial_value=""
 			 label="Repeats per meter"
              layout="topleft"
-			 label_width="205"
-             left="10"
              max_val="100"
              min_val="-100"
              name="gltfRptctrl"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="574"
+             width="164"
+             height="24"
+             label_width="0"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Rotation"
-             label_width="205"
              layout="topleft"
-             left="10"
              min_val="-360"
              max_val="360"
              name="gltfTextureRotation"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="540"
+             width="164"
+             height="24"
+             label_width="0"
+             label=""
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Offset u"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-999"
              max_val="999"
              decimal_digits="5"
              name="gltfTextureOffsetU"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
-            <spinner
+             font.size="LSmall"
+             left="124"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="U"
+             visible="false"/>
+<spinner
              follows="left|top"
-             height="19"
              initial_value="0"
-             label="Offset v"
-             label_width="195"
              layout="topleft"
-             left="10"
              min_val="-999"
              max_val="999"
              decimal_digits="5"
              name="gltfTextureOffsetV"
-             width="265"
              font="DejaVu"
-             font.size="LSmall" />
+             font.size="LSmall"
+             left="340"
+             top="506"
+             width="164"
+             height="24"
+             label_width="28"
+             label="V"
+             visible="false"/>
             <!-- END PBR Material texture transform parameters -->
+            </panel>
+            </scroll_container>
 </panel>

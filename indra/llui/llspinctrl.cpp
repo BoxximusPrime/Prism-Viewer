@@ -180,7 +180,7 @@ void LLSpinCtrl::onUpBtn( const LLSD& data )
             F32 cur_val = (F32) atof(text.c_str());
 
             // use getValue()/setValue() to force reload from/to control
-            F32 val = cur_val + mIncrement;
+            F32 val = cur_val + getModifiedIncrement();
             val = clamp_precision(val, mPrecision);
             val = llmin( val, mMaxValue );
             if (val < mMinValue) val = mMinValue;
@@ -213,7 +213,7 @@ void LLSpinCtrl::onDownBtn( const LLSD& data )
             LLLocale locale(LLLocale::USER_LOCALE);
             F32 cur_val = (F32) atof(text.c_str());
 
-            F32 val = cur_val - mIncrement;
+            F32 val = cur_val - getModifiedIncrement();
             val = clamp_precision(val, mPrecision);
             val = llmax( val, mMinValue );
 
@@ -457,6 +457,17 @@ void LLSpinCtrl::reportInvalidData()
     make_ui_sound("UISndBadKeystroke");
 }
 
+F32 LLSpinCtrl::getModifiedIncrement() const
+{
+    const MASK mask = gKeyboard ? gKeyboard->currentMask(true) : MASK_NONE;
+    const F32 multiplier = (mask & MASK_ALT) ? 10.f
+        : (mask & MASK_CONTROL) ? 0.1f
+        : (mask & MASK_SHIFT) ? 0.01f : 1.f;
+
+    // Fine steps must still change the last displayed digit, including integers.
+    return llmax(mIncrement * multiplier, powf(10.f, -F32(mPrecision)));
+}
+
 bool LLSpinCtrl::handleScrollWheel(S32 x, S32 y, S32 clicks)
 {
     if( clicks > 0 )
@@ -501,4 +512,3 @@ bool LLSpinCtrl::handleKeyHere(KEY key, MASK mask)
     }
     return false;
 }
-

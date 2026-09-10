@@ -959,6 +959,7 @@ void LLFloaterIMSession::updateMessages()
             // Add the message to the chat log
             LLSD chat_args;
             chat_args["animate_message_bubble"] = animate_new_messages;
+            chat_args["show_link_previews"] = mIsP2PChat;
             appendMessage(chat, chat_args);
             mLastMessageIndex = msg["index"].asInteger();
 

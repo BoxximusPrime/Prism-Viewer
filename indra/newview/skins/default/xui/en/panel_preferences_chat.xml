@@ -576,6 +576,17 @@
 
   </panel>
   
+  <check_box
+      control_name="ChatLinkPreviews"
+      follows="left|top"
+      height="16"
+      label="DM link previews"
+      layout="topleft"
+      left="352"
+      name="chat_link_previews"
+      tool_tip="Automatically load Imgur, GIPHY, and YouTube thumbnails in expanded DM history. Click a preview to open your browser."
+      top="17"
+      width="155" />
   <button
       height="23"
       label="Translation..."

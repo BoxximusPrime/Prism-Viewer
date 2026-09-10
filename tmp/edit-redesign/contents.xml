@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<panel border="false" follows="all" height="620" label="Content" layout="topleft" left="0" mouse_opaque="false" help_topic="toolbox_contents_tab" name="Contents" top="0" width="536">
+ <panel background_visible="true" bg_alpha_color="DkGray" border="true" follows="left|top|right" height="82" left="12" name="content_actions_section" top="0" width="512">
+  <text font="DejaVu" font.size="LSmall" font.style="BOLD" height="18" left="12" name="content_actions_heading" top="8" width="180">Scripts and inventory</text>
+  <flyout_button height="24" label="New Script" left="12" name="button new script" top="30" width="116"><flyout_button.item label="New LSL Script" name="new_lsl_script" value="lsl"/><flyout_button.item label="New Lua Script" name="new_lua_script" value="lua"/></flyout_button><button height="24" label="New Notecard" left="136" name="button new notecard" top="30" width="116"/><button height="24" label="Permissions" left="260" name="button permissions" top="30" width="116"/><button height="24" is_toggle="true" label="Explore in IDE" label_selected="Stop Exploring" left="384" name="button publish" top="30" width="116"/>
+ </panel>
+ <filter_editor follows="left|top|right" height="24" highlight_text_field="true" label="Filter contents" left="12" max_length_chars="300" name="contents_filter" text_pad_left="10" top="94" width="512"/>
+ <panel_inventory_object bevel_style="in" border="true" border_visible="true" follows="all" height="490" left="12" name="contents_inventory" top="130" width="512"/>
+</panel>

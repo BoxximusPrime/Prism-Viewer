@@ -87,6 +87,9 @@
       <panel name="teleport_progress_holder" follows="all" layout="topleft"
              left="0" top="0" width="1024" height="500"
              mouse_opaque="false" tab_stop="false" />
+      <panel name="edit_dock_holder" follows="all" layout="topleft"
+             left="0" top="0" width="1024" height="500"
+             mouse_opaque="false" tab_stop="false" />
       <floater_view follows="all"
                     height="500"
                     left="0"

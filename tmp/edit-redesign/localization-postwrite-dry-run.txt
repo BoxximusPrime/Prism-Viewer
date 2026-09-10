@@ -1,0 +1,23 @@
+da/floater_tools.xml: retained=254, unmatched=0
+da/panel_tools_texture.xml: retained=44, unmatched=0
+de/floater_tools.xml: retained=281, unmatched=0
+de/panel_tools_texture.xml: retained=84, unmatched=0
+es/floater_tools.xml: retained=285, unmatched=0
+es/panel_tools_texture.xml: retained=82, unmatched=0
+fr/floater_tools.xml: retained=294, unmatched=0
+fr/panel_tools_texture.xml: retained=84, unmatched=0
+it/floater_tools.xml: retained=295, unmatched=0
+it/panel_tools_texture.xml: retained=83, unmatched=0
+ja/floater_tools.xml: retained=311, unmatched=0
+ja/panel_tools_texture.xml: retained=85, unmatched=0
+pl/floater_tools.xml: retained=284, unmatched=0
+pl/panel_tools_texture.xml: retained=79, unmatched=0
+pt/floater_tools.xml: retained=279, unmatched=0
+pt/panel_tools_texture.xml: retained=84, unmatched=0
+ru/floater_tools.xml: retained=304, unmatched=0
+ru/panel_tools_texture.xml: retained=85, unmatched=0
+tr/floater_tools.xml: retained=296, unmatched=0
+tr/panel_tools_texture.xml: retained=84, unmatched=0
+zh/floater_tools.xml: retained=300, unmatched=0
+zh/panel_tools_texture.xml: retained=85, unmatched=0
+22 localized Edit XUI overlays validated (dry run); retained=4062, unmatched=0

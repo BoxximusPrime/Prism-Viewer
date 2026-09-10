@@ -58,9 +58,12 @@
 #include "llparcel.h"
 #include "llradiogroup.h"
 #include "llresmgr.h"
+#include "llresizebar.h"
+#include "llrootview.h"
 #include "llselectmgr.h"
 #include "llslider.h"
 #include "llstatusbar.h"
+#include "llstartup.h"
 #include "lltabcontainer.h"
 #include "lltextbox.h"
 #include "lltoolbrush.h"
@@ -227,6 +230,7 @@ bool    LLFloaterTools::postBuild()
     setSoundFlags(LLView::SILENT);
 
     getDragHandle()->setEnabled( !gSavedSettings.getBOOL("ToolboxAutoMove") );
+    getChild<LLButton>("edit_dock_toggle")->setClickedCallback([this](LLUICtrl*, const LLSD&) { toggleEditDock(); });
 
     LLRect rect;
     mBtnFocus           = getChild<LLButton>("button focus");//btn;
@@ -298,7 +302,7 @@ bool    LLFloaterTools::postBuild()
     mTab = getChild<LLTabContainer>("Object Info Tabs");
     if(mTab)
     {
-        mTab->setFollows(FOLLOWS_TOP | FOLLOWS_LEFT);
+        mTab->setFollows(FOLLOWS_ALL);
         mTab->setBorderVisible(false);
         mTab->selectFirstTab();
     }
@@ -409,6 +413,13 @@ LLFloaterTools::LLFloaterTools(const LLSD& key)
 
 LLFloaterTools::~LLFloaterTools()
 {
+    if (mEditDocked)
+    {
+        mRectControl.swap(mFloatingRectControl);
+        mPosXControl.swap(mFloatingPosXControl);
+        mPosYControl.swap(mFloatingPosYControl);
+        setRect(mFloatingRect);
+    }
     // children automatically deleted
     gFloaterTools = NULL;
 
@@ -564,6 +575,16 @@ void LLFloaterTools::refresh()
 
 void LLFloaterTools::draw()
 {
+    if (mEditDocked)
+    {
+        // A dock is a flush panel, without the floating window's rounded frame.
+        gl_rect_2d(getLocalRect(), LLUIColorTable::instance().getColor("EditDockBackground"));
+    }
+    if (mOfflinePreview)
+    {
+        LLFloater::draw();
+        return;
+    }
     bool has_selection = !LLSelectMgr::getInstance()->getSelection()->isEmpty();
     if(!has_selection && (mHasSelection != has_selection))
     {
@@ -579,6 +600,100 @@ void LLFloaterTools::draw()
 
     //  mCheckSelectIndividual->set(gSavedSettings.getBOOL("EditLinkedParts"));
     LLFloater::draw();
+}
+
+void LLFloaterTools::toggleEditDock()
+{
+    gSavedSettings.setBOOL("BuildEditDocked", !gSavedSettings.getBOOL("BuildEditDocked"));
+    // The next layout pass reparents the floater after mouse-event traversal ends.
+}
+
+void LLFloaterTools::setEditDocked(bool docked)
+{
+    if (mEditDocked == docked) return;
+
+    if (docked)
+    {
+        setMinimized(false);
+        storeRectControl();
+        mFloatingRect = getRect();
+        // Dock geometry must never overwrite the saved floating window geometry.
+        mFloatingRectControl.swap(mRectControl);
+        mFloatingPosXControl.swap(mPosXControl);
+        mFloatingPosYControl.swap(mPosYControl);
+        gViewerWindow->getRootView()->getChildView("edit_dock_holder")->addChild(this);
+    }
+
+    mEditDocked = docked;
+    setBackgroundVisible(!docked);
+    setCanDrag(!docked && !gSavedSettings.getBOOL("ToolboxAutoMove"));
+    setCanMinimize(!docked);
+    enableResizeCtrls(true, true, !docked);
+    mResizeBar[LLResizeBar::RIGHT]->setVisible(!docked);
+    mResizeBar[LLResizeBar::RIGHT]->setEnabled(!docked);
+
+    if (!docked)
+    {
+        mRectControl.swap(mFloatingRectControl);
+        mPosXControl.swap(mFloatingPosXControl);
+        mPosYControl.swap(mFloatingPosYControl);
+        gFloaterView->addChild(this);
+        setResizeLimits(560, 620);
+        setShape(mFloatingRect);
+    }
+}
+
+// Geometry is in scaled UI coordinates; preserve a 320-pixel world beside the dock.
+static LLRect edit_dock_rect(const LLRect& available, S32 preferred_width)
+{
+    if (available.getWidth() < 880 || available.getHeight() < 460) return LLRect();
+    const S32 width = llclamp(preferred_width, 560, available.getWidth() - 320);
+    return LLRect(available.mRight - width, available.mTop, available.mRight, available.mBottom);
+}
+
+S32 LLFloaterTools::updateEditDock(const LLRect& available)
+{
+    if (!getParent()) return 0;
+    if (!getVisible())
+    {
+        setEditDocked(false);
+        return 0;
+    }
+
+    mDockAvailableRect = available;
+    const bool requested = gSavedSettings.getBOOL("BuildEditDocked");
+    // Keep a usable world area on small windows; restore docking when it fits again.
+    LLRect rect = edit_dock_rect(available, gSavedSettings.getS32("BuildEditDockWidth"));
+    const bool fits = !rect.isEmpty();
+    setEditDocked(requested && fits && !isMinimized());
+    LLButton* toggle = getChild<LLButton>("edit_dock_toggle");
+    toggle->setLabel(getString(requested ? "edit_undock_label" : "edit_dock_label"));
+    toggle->setToolTip(getString(requested && !fits ? "edit_dock_small_window" :
+                                requested ? "edit_undock_hint" : "edit_dock_hint"));
+    if (!mEditDocked) return 0;
+
+    const S32 max_width = available.getWidth() - 320;
+    const S32 width = rect.getWidth();
+    setResizeLimits(560, 460);
+    mResizeBar[LLResizeBar::LEFT]->setResizeLimits(560, max_width);
+    const LLRect parent = getParent()->calcScreenRect();
+    rect.translate(-parent.mLeft, -parent.mBottom);
+    if (getRect() != rect) setShape(rect);
+    mResizeBar[LLResizeBar::LEFT]->setRect(LLRect(0, rect.getHeight(), 6, 0));
+    sendChildToFront(mResizeBar[LLResizeBar::LEFT]);
+    return width;
+}
+
+void LLFloaterTools::handleReshape(const LLRect& new_rect, bool by_user)
+{
+    if (mEditDocked && by_user)
+    {
+        gSavedSettings.setS32("BuildEditDockWidth", llclamp(new_rect.getWidth(), 560,
+                                                      mDockAvailableRect.getWidth() - 320));
+        updateEditDock(mDockAvailableRect);
+        return;
+    }
+    LLFloater::handleReshape(new_rect, by_user);
 }
 
 void LLFloaterTools::dirty()
@@ -869,6 +984,13 @@ bool LLFloaterTools::canClose()
 // virtual
 void LLFloaterTools::onOpen(const LLSD& key)
 {
+    mOfflinePreview = LLStartUp::getStartupState() < STATE_STARTED && key.isMap() && key["offline_preview"].asBoolean();
+    getChildView("offline_preview_blocker")->setVisible(mOfflinePreview);
+    if (mOfflinePreview)
+    {
+        mTab->setVisible(true);
+        return;
+    }
     mParcelSelection = LLViewerParcelMgr::getInstance()->getFloatingParcelSelection();
     mObjectSelection = LLSelectMgr::getInstance()->getEditSelection();
 
@@ -896,6 +1018,11 @@ void LLFloaterTools::onOpen(const LLSD& key)
 // virtual
 void LLFloaterTools::onClose(bool app_quitting)
 {
+    if (mOfflinePreview)
+    {
+        mOfflinePreview = false;
+        return;
+    }
     mTab->setVisible(false);
 
     LLViewerJoystick::getInstance()->moveAvatar(false);
@@ -1153,7 +1280,8 @@ void LLFloaterTools::setTool(const LLSD& user_data)
 
 void LLFloaterTools::onFocusReceived()
 {
-    LLToolMgr::getInstance()->setCurrentToolset(gBasicToolset);
+    // The login preview has no initialized in-world toolset.
+    if (!mOfflinePreview) LLToolMgr::getInstance()->setCurrentToolset(gBasicToolset);
     LLFloater::onFocusReceived();
 }
 

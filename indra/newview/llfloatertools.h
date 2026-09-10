@@ -76,6 +76,11 @@ public:
     // button highlights, etc.
     void updatePopup(LLCoordGL center, MASK mask);
 
+    // Returns the space reserved on the right of the world viewport (UI pixels).
+    S32 updateEditDock(const LLRect& available);
+    bool isEditDocked() const { return mEditDocked; }
+    void handleReshape(const LLRect& new_rect, bool by_user = false) override;
+
     // When the floater is going away, reset any options that need to be
     // cleared.
     void resetToolState();
@@ -107,6 +112,8 @@ private:
     void refresh();
     static void setObjectType( LLPCode pcode );
     void onClickGridOptions();
+    void toggleEditDock();
+    void setEditDocked(bool docked);
 
 public:
     LLButton        *mBtnFocus;
@@ -191,6 +198,13 @@ public:
 private:
     bool                    mDirty;
     bool                    mHasSelection;
+    bool                    mEditDocked = false;
+    bool                    mOfflinePreview = false;
+    LLRect                  mFloatingRect;
+    LLRect                  mDockAvailableRect;
+    std::string             mFloatingRectControl;
+    std::string             mFloatingPosXControl;
+    std::string             mFloatingPosYControl;
 
     std::map<std::string, std::string> mStatusText;
 

@@ -1,0 +1,51 @@
+da/floater_tools.xml: retained=244, unmatched=10
+  unmatched: __shared__:('text', 'RenderingCost', '') [tool_tip='Hvis beregnede rendering omkostninger for dette objekt', #text='�: [COUNT]']
+  unmatched: __shared__:('text', 'checkbox uniform label', '') [label='Str�k begge sider', #text='Str�k begge sider']
+  unmatched: __shared__:('text', 'obj_count', '') [#text='Objekter: [COUNT]']
+  unmatched: __shared__:('text', 'prim_count', '') [#text='Prims: [COUNT]']
+  unmatched: __shared__:('text', 'linked_set_count', '') [#text='L�nkede s�t: [COUNT]']
+  unmatched: __shared__:('text', 'linked_set_cost', '') [tool_tip='Pris for nuv�rende valgte l�nkede s�t som [prims] / [physics complexity]', #text='Pris: [COST] / [PHYSICS]']
+  unmatched: __shared__:('text', 'object_count', '') [#text='Objekter: [COUNT]']
+  unmatched: __shared__:('text', 'object_cost', '') [tool_tip='Pris for nuv�rende valgte objekter som [prims] / [physics complexity]', #text='Pris: [COST] / [PHYSICS]']
+  unmatched: Object:('combo_box.item', 'None', '') [label='(ingen)']
+  unmatched: Object:('combo_box.item', 'Mesh', '') [label='Mesh']
+da/panel_tools_texture.xml: retained=45, unmatched=7
+  unmatched: __shared__:('panel.string', 'string repeats per face', '') [#text='Gentagelser pr. overflade']
+  unmatched: __shared__:('check_box', 'checkbox flip s', '') [label='Vend']
+  unmatched: __shared__:('check_box', 'checkbox flip t', '') [label='Vend']
+  unmatched: __shared__:('button', 'button apply', '') [label='Gem', label_selected='Gem']
+  unmatched: __shared__:('text', 'tex offset', '') [#text='Tekstur offset']
+  unmatched: __shared__:('text', 'media_tex', '') [#text='Media']
+  unmatched: __shared__:('button', 'edit_media', '') [tool_tip='Redig�r dette media']
+de/floater_tools.xml: retained=271, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights Weitere Infos]']
+de/panel_tools_texture.xml: retained=84, unmatched=0
+es/floater_tools.xml: retained=274, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights M�s informaci�n]']
+es/panel_tools_texture.xml: retained=82, unmatched=0
+fr/floater_tools.xml: retained=282, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text="[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights Plus d'infos]"]
+fr/panel_tools_texture.xml: retained=84, unmatched=0
+it/floater_tools.xml: retained=284, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights Maggiori informazioni]']
+it/panel_tools_texture.xml: retained=83, unmatched=0
+ja/floater_tools.xml: retained=299, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights \u8a73\u7d30]']
+ja/panel_tools_texture.xml: retained=85, unmatched=0
+pl/floater_tools.xml: retained=271, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights Wi\u0119cej]']
+pl/panel_tools_texture.xml: retained=80, unmatched=1
+  unmatched: __shared__:('panel.string', 'string repeats per face', '') [#text='Powt�rzenia na stron\u0119']
+pt/floater_tools.xml: retained=270, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights More info]']
+pt/panel_tools_texture.xml: retained=84, unmatched=0
+ru/floater_tools.xml: retained=292, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights \u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044f]']
+ru/panel_tools_texture.xml: retained=85, unmatched=0
+tr/floater_tools.xml: retained=284, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights Ek bilgi]']
+tr/panel_tools_texture.xml: retained=84, unmatched=0
+zh/floater_tools.xml: retained=288, unmatched=1
+  unmatched: __shared__:('text', 'remaining_capacity', '') [#text='[CAPACITY_STRING] [secondlife:///app/openfloater/object_weights \u8a73\u60c5]']
+zh/panel_tools_texture.xml: retained=85, unmatched=0
+22 localized Edit XUI overlays validated (dry run); retained=3940, unmatched=28

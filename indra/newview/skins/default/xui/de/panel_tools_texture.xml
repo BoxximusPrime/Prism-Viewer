@@ -1,112 +1,91 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<panel label="Textur" name="Texture">
-	<text name="color label">
-		Farbe
-	</text>
-	<color_swatch label="" name="colorswatch" tool_tip="Klicken Sie hier, um die Farbauswahl zu öffnen"/>
-	<text name="color trans">
-		Transparenz %
-	</text>
-	<text name="glow label">
-		Leuchten
-	</text>
-	<check_box label="Ganz hell" name="checkbox fullbright"/>
-	<combo_box name="combobox matmedia">
-		<combo_box.item label="Material" name="Materials"/>
-		<combo_box.item label="Medien" name="Media"/>
-	</combo_box>
-	<radio_group name="radio_material_type">
-		<radio_item label="Textur (diffus)" name="Texture (diffuse)" value="0"/>
-		<radio_item label="Unebenheit (normal)" name="Bumpiness (normal)" value="1"/>
-		<radio_item label="Glanzlicht (Spiegel)" name="Shininess (specular)" value="2"/>
-	</radio_group>
-	<check_box initial_value="false" label="Aktualisierung sperren" name="checkbox_sync_settings" tool_tip="Alle Kartenaktualisierungen gleichzeitig durchführen"/>
-	<texture_picker label="Textur" name="texture control" tool_tip="Klicken, um ein Bild zu wählen"/>
-	<text name="label alphamode">
-		Alpha-Modus
-	</text>
-	<combo_box name="combobox alphamode">
-		<combo_box.item label="Keiner" name="None"/>
-		<combo_box.item label="Alpha-Mischung" name="Alpha blending"/>
-		<combo_box.item label="Alpha-Maske" name="Alpha masking"/>
-		<combo_box.item label="Selbststrahlende Maske" name="Emissive mask"/>
-	</combo_box>
-	<text name="label maskcutoff">
-		Maskenabgrenzung
-	</text>
-	<texture_picker label="Textur" name="bumpytexture control" tool_tip="Klicken, um ein Bild auszuwählen"/>
-	<text name="label bumpiness">
-		Unebenheit
-	</text>
-	<combo_box name="combobox bumpiness">
-		<combo_box.item label="Keine" name="None"/>
-		<combo_box.item label="Helligkeit" name="Brightness"/>
-		<combo_box.item label="Dunkelheit" name="Darkness"/>
-		<combo_box.item label="Holzmaserung" name="woodgrain"/>
-		<combo_box.item label="Rinde" name="bark"/>
-		<combo_box.item label="Backsteine" name="bricks"/>
-		<combo_box.item label="Schachbrett" name="checker"/>
-		<combo_box.item label="Beton" name="concrete"/>
-		<combo_box.item label="Rostkachel" name="crustytile"/>
-		<combo_box.item label="Steinfliesen" name="cutstone"/>
-		<combo_box.item label="Scheiben" name="discs"/>
-		<combo_box.item label="Kies" name="gravel"/>
-		<combo_box.item label="Petrischale" name="petridish"/>
-		<combo_box.item label="Verkleidung" name="siding"/>
-		<combo_box.item label="Steinkachel" name="stonetile"/>
-		<combo_box.item label="Stuck" name="stucco"/>
-		<combo_box.item label="Saugkraft" name="suction"/>
-		<combo_box.item label="Gewebe" name="weave"/>
-	</combo_box>
-	<texture_picker label="Textur" name="shinytexture control" tool_tip="Klicken, um ein Bild auszuwählen"/>
-	<text name="label shininess">
-		Glanz
-	</text>
-	<combo_box name="combobox shininess">
-		<combo_box.item label="Keiner" name="None"/>
-		<combo_box.item label="Niedrig" name="Low"/>
-		<combo_box.item label="Mittel" name="Medium"/>
-		<combo_box.item label="Hoch" name="High"/>
-	</combo_box>
-	<text name="label glossiness">
-		Glanz
-	</text>
-	<text name="label environment">
-		Umgebung
-	</text>
-	<text name="label shinycolor">
-		Farbe
-	</text>
-	<color_swatch label="" name="shinycolorswatch" tool_tip="Klicken Sie hier, um die Farbauswahl zu öffnen"/>
-	<text name="media_info">
-		URL der ausgewählten Medien ggf. hier angeben
-	</text>
-	<button label="Auswählen..." name="add_media" tool_tip="Medien hinzufügen"/>
-	<button label="Entfernen" name="delete_media" tool_tip="Diese Medientextur löschen"/>
-	<button label="Ausrichten" label_selected="Medien ausrichten" name="button align" tool_tip="Medientextur ausrichten (muss zuerst geladen werden)"/>
-	<text name="tex gen">
-		Zuordnung
-	</text>
-	<combo_box name="combobox texgen">
-		<combo_box.item label="Standard" name="Default"/>
-		<combo_box.item label="Planar" name="Planar"/>
-	</combo_box>
-	<spinner label="Horizontale Skalierung" name="TexScaleU"/>
-	<spinner label="Vertikale Skalierung" name="TexScaleV"/>
-	<spinner label="Wiederholungen pro Meter" name="rptctrl"/>
-	<spinner label="Drehung (Grad)" name="TexRot"/>
-	<spinner label="Horizontaler Versatz" name="TexOffsetU"/>
-	<spinner label="Vertikaler Versatz" name="TexOffsetV"/>
-	<spinner label="Horizontale Skalierung" name="bumpyScaleU"/>
-	<spinner label="Vertikale Skalierung" name="bumpyScaleV"/>
-	<spinner label="Drehung (Grad)" name="bumpyRot"/>
-	<spinner label="Horizontaler Versatz" name="bumpyOffsetU"/>
-	<spinner label="Vertikaler Versatz" name="bumpyOffsetV"/>
-	<spinner label="Horizontale Skalierung" name="shinyScaleU"/>
-	<spinner label="Vertikale Skalierung" name="shinyScaleV"/>
-	<spinner label="Drehung (Grad)" name="shinyRot"/>
-	<spinner label="Horizontaler Versatz" name="shinyOffsetU"/>
-	<spinner label="Vertikaler Versatz" name="shinyOffsetV"/>
-	<check_box initial_value="false" label="Planare Flächen ausrichten" name="checkbox planar align" tool_tip="Texturen auf allen ausgewählten Flächen an der zuletzt ausgewählten Fläche ausrichten. Erfordert planares Texture Mapping."/>
-	<button label="Ausrichten" label_selected="Aktuelle Texturebenen ausrichten" name="button align textures" tool_tip="Aktuelle Texturebenen ausrichten"/>
+<?xml version='1.0' encoding='utf-8'?>
+<panel name="Texture" label="Textur">
+	<scroll_container name="texture_scroll">
+		<panel name="texture_scroll_content">
+			<text name="color label">Farbe</text>
+			<color_swatch name="colorswatch" tool_tip="Klicken Sie hier, um die Farbauswahl zu öffnen" />
+			<text name="color trans">Transparenz %</text>
+			<text name="glow label">Leuchten</text>
+			<check_box name="checkbox fullbright" label="Ganz hell" />
+			<combo_box name="combobox matmedia">
+				<combo_box.item name="Materials" value="Materials" label="Material" />
+				<combo_box.item name="Media" value="Media" label="Medien" />
+			</combo_box>
+			<radio_group name="radio_material_type">
+				<radio_item name="Texture (diffuse)" value="0" label="Textur (diffus)" ><radio_item.check_button label="Textur (diffus)" label_selected="Textur (diffus)" /></radio_item>
+				<radio_item name="Bumpiness (normal)" value="1" label="Unebenheit (normal)" ><radio_item.check_button label="Unebenheit (normal)" label_selected="Unebenheit (normal)" /></radio_item>
+				<radio_item name="Shininess (specular)" value="2" label="Glanzlicht (Spiegel)" ><radio_item.check_button label="Glanzlicht (Spiegel)" label_selected="Glanzlicht (Spiegel)" /></radio_item>
+			</radio_group>
+			<check_box name="checkbox_sync_settings" label="Aktualisierung sperren" tool_tip="Alle Kartenaktualisierungen gleichzeitig durchführen" />
+			<texture_picker name="texture control" label="Textur" tool_tip="Klicken, um ein Bild zu wählen" />
+			<text name="label alphamode">Alpha-Modus</text>
+			<combo_box name="combobox alphamode">
+				<combo_box.item name="None" value="None" label="Keiner" />
+				<combo_box.item name="Alpha blending" value="Alpha blending" label="Alpha-Mischung" />
+				<combo_box.item name="Alpha masking" value="Alpha masking" label="Alpha-Maske" />
+				<combo_box.item name="Emissive mask" value="Emissive mask" label="Selbststrahlende Maske" />
+			</combo_box>
+			<text name="label maskcutoff">Maskenabgrenzung</text>
+			<texture_picker name="bumpytexture control" label="Textur" tool_tip="Klicken, um ein Bild auszuwählen" />
+			<text name="label bumpiness">Unebenheit</text>
+			<combo_box name="combobox bumpiness">
+				<combo_box.item name="None" value="None" label="Keine" />
+				<combo_box.item name="Brightness" value="Brightness" label="Helligkeit" />
+				<combo_box.item name="Darkness" value="Darkness" label="Dunkelheit" />
+				<combo_box.item name="woodgrain" value="woodgrain" label="Holzmaserung" />
+				<combo_box.item name="bark" value="bark" label="Rinde" />
+				<combo_box.item name="bricks" value="bricks" label="Backsteine" />
+				<combo_box.item name="checker" value="checker" label="Schachbrett" />
+				<combo_box.item name="concrete" value="concrete" label="Beton" />
+				<combo_box.item name="crustytile" value="crustytile" label="Rostkachel" />
+				<combo_box.item name="cutstone" value="cutstone" label="Steinfliesen" />
+				<combo_box.item name="discs" value="discs" label="Scheiben" />
+				<combo_box.item name="gravel" value="gravel" label="Kies" />
+				<combo_box.item name="petridish" value="petridish" label="Petrischale" />
+				<combo_box.item name="siding" value="siding" label="Verkleidung" />
+				<combo_box.item name="stonetile" value="stonetile" label="Steinkachel" />
+				<combo_box.item name="stucco" value="stucco" label="Stuck" />
+				<combo_box.item name="suction" value="suction" label="Saugkraft" />
+				<combo_box.item name="weave" value="weave" label="Gewebe" />
+			</combo_box>
+			<texture_picker name="shinytexture control" label="Textur" tool_tip="Klicken, um ein Bild auszuwählen" />
+			<text name="label shininess">Glanz</text>
+			<combo_box name="combobox shininess">
+				<combo_box.item name="None" value="None" label="Keiner" />
+				<combo_box.item name="Low" value="Low" label="Niedrig" />
+				<combo_box.item name="Medium" value="Medium" label="Mittel" />
+				<combo_box.item name="High" value="High" label="Hoch" />
+			</combo_box>
+			<text name="label glossiness">Glanz</text>
+			<text name="label environment">Umgebung</text>
+			<text name="label shinycolor">Farbe</text>
+			<color_swatch name="shinycolorswatch" tool_tip="Klicken Sie hier, um die Farbauswahl zu öffnen" />
+			<text name="media_info">URL der ausgewählten Medien ggf. hier angeben</text>
+			<button name="add_media" label="Auswählen..." tool_tip="Medien hinzufügen" />
+			<button name="delete_media" label="Entfernen" tool_tip="Diese Medientextur löschen" />
+			<button name="button align" label="Ausrichten" label_selected="Medien ausrichten" tool_tip="Medientextur ausrichten (muss zuerst geladen werden)" />
+			<text name="tex gen">Zuordnung</text>
+			<combo_box name="combobox texgen">
+				<combo_box.item name="Default" value="Default" label="Standard" />
+			</combo_box>
+			<spinner name="TexScaleU" label="Horizontale Skalierung" />
+			<spinner name="TexScaleV" label="Vertikale Skalierung" />
+			<spinner name="rptctrl" label="Wiederholungen pro Meter" />
+			<spinner name="TexRot" label="Drehung (Grad)" />
+			<spinner name="TexOffsetU" label="Horizontaler Versatz" />
+			<spinner name="TexOffsetV" label="Vertikaler Versatz" />
+			<spinner name="bumpyScaleU" label="Horizontale Skalierung" />
+			<spinner name="bumpyScaleV" label="Vertikale Skalierung" />
+			<spinner name="bumpyRot" label="Drehung (Grad)" />
+			<spinner name="bumpyOffsetU" label="Horizontaler Versatz" />
+			<spinner name="bumpyOffsetV" label="Vertikaler Versatz" />
+			<spinner name="shinyScaleU" label="Horizontale Skalierung" />
+			<spinner name="shinyScaleV" label="Vertikale Skalierung" />
+			<spinner name="shinyRot" label="Drehung (Grad)" />
+			<spinner name="shinyOffsetU" label="Horizontaler Versatz" />
+			<spinner name="shinyOffsetV" label="Vertikaler Versatz" />
+			<check_box name="checkbox planar align" label="Planare Flächen ausrichten" tool_tip="Texturen auf allen ausgewählten Flächen an der zuletzt ausgewählten Fläche ausrichten. Erfordert planares Texture Mapping." />
+			<button name="button align textures" label="Ausrichten" label_selected="Aktuelle Texturebenen ausrichten" tool_tip="Aktuelle Texturebenen ausrichten" />
+		</panel>
+	</scroll_container>
 </panel>

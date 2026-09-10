@@ -826,6 +826,7 @@ set(viewer_HEADER_FILES
     llchannelmanager.h
     llchatbar.h
     llchathistory.h
+    llchatlinkpreview.h
     llchatitemscontainerctrl.h
     llchatmsgbox.h
     llchiclet.h

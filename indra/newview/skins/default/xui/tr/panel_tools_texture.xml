@@ -1,112 +1,91 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<panel label="Doku" name="Texture">
-	<text name="color label">
-		Renk
-	</text>
-	<color_swatch label="" name="colorswatch" tool_tip="Renk seçiciyi açmak için tıklayın"/>
-	<text name="color trans">
-		Saydamlık %
-	</text>
-	<text name="glow label">
-		Parıltı
-	</text>
-	<check_box label="Tam Parlak" name="checkbox fullbright"/>
-	<combo_box name="combobox matmedia">
-		<combo_box.item label="Malzemeler" name="Materials"/>
-		<combo_box.item label="Ortam" name="Media"/>
-	</combo_box>
-	<radio_group name="radio_material_type">
-		<radio_item label="Doku (yayılmış)" name="Texture (diffuse)" value="0"/>
-		<radio_item label="Yumruluk (normal)" name="Bumpiness (normal)" value="1"/>
-		<radio_item label="Parıldama (yansıtan)" name="Shininess (specular)" value="2"/>
-	</radio_group>
-	<check_box initial_value="false" label="Kilit tekrarı" name="checkbox_sync_settings" tool_tip="Tüm harita tekrarlarını aynı anda ayarla"/>
-	<texture_picker label="Doku" name="texture control" tool_tip="Bir resim seçmek için tıklayın"/>
-	<text name="label alphamode">
-		Alfa modu
-	</text>
-	<combo_box name="combobox alphamode">
-		<combo_box.item label="Hiçbiri" name="None"/>
-		<combo_box.item label="Alfa karıştırma" name="Alpha blending"/>
-		<combo_box.item label="Alfa maskeleme" name="Alpha masking"/>
-		<combo_box.item label="Yayımlatıcı maske" name="Emissive mask"/>
-	</combo_box>
-	<text name="label maskcutoff">
-		Maske kesimi
-	</text>
-	<texture_picker label="Doku" name="bumpytexture control" tool_tip="Bir resim seçmek için tıklayın"/>
-	<text name="label bumpiness">
-		Yumruluk
-	</text>
-	<combo_box name="combobox bumpiness">
-		<combo_box.item label="Yok" name="None"/>
-		<combo_box.item label="Parlaklık" name="Brightness"/>
-		<combo_box.item label="Koyuluk" name="Darkness"/>
-		<combo_box.item label="damarlı ahşap" name="woodgrain"/>
-		<combo_box.item label="ağaç kabuğu" name="bark"/>
-		<combo_box.item label="tuğlalar" name="bricks"/>
-		<combo_box.item label="dama tahtası" name="checker"/>
-		<combo_box.item label="beton" name="concrete"/>
-		<combo_box.item label="sert çini" name="crustytile"/>
-		<combo_box.item label="kesilmiş taş" name="cutstone"/>
-		<combo_box.item label="diskler" name="discs"/>
-		<combo_box.item label="çakıl" name="gravel"/>
-		<combo_box.item label="petri kabı" name="petridish"/>
-		<combo_box.item label="dış kaplama" name="siding"/>
-		<combo_box.item label="taş çini" name="stonetile"/>
-		<combo_box.item label="stükko" name="stucco"/>
-		<combo_box.item label="vakum" name="suction"/>
-		<combo_box.item label="örgü" name="weave"/>
-	</combo_box>
-	<texture_picker label="Doku" name="shinytexture control" tool_tip="Bir resim seçmek için tıklayın"/>
-	<text name="label shininess">
-		Parıldama
-	</text>
-	<combo_box name="combobox shininess">
-		<combo_box.item label="Yok" name="None"/>
-		<combo_box.item label="Düşük" name="Low"/>
-		<combo_box.item label="Orta" name="Medium"/>
-		<combo_box.item label="Yüksek" name="High"/>
-	</combo_box>
-	<text name="label glossiness">
-		Pürüzsüzlük
-	</text>
-	<text name="label environment">
-		Ortam
-	</text>
-	<text name="label shinycolor">
-		Renk
-	</text>
-	<color_swatch label="" name="shinycolorswatch" tool_tip="Renk seçiciyi açmak için tıklayın"/>
-	<text name="media_info">
-		Varsa, seçilen ortamın URL&apos;si burada yer alır
-	</text>
-	<button label="Seç..." name="add_media" tool_tip="Ortam Ekle"/>
-	<button label="Kaldır" name="delete_media" tool_tip="Bu ortam dokusunu sil"/>
-	<button label="Hizala" label_selected="Ortamı Hizala" name="button align" tool_tip="Ortam dokusunu hizala (önce yüklenmelidir)"/>
-	<text name="tex gen">
-		Eşleştirme
-	</text>
-	<combo_box name="combobox texgen">
-		<combo_box.item label="Varsayılan" name="Default"/>
-		<combo_box.item label="Planar" name="Planar"/>
-	</combo_box>
-	<spinner label="Yatay ölçek" name="TexScaleU"/>
-	<spinner label="Dikey ölçek" name="TexScaleV"/>
-	<spinner label="Metrede kaç kez tekrarlandığı" name="rptctrl"/>
-	<spinner label="Dönüş derecesi" name="TexRot"/>
-	<spinner label="Yatay ofset" name="TexOffsetU"/>
-	<spinner label="Dikey ofset" name="TexOffsetV"/>
-	<spinner label="Yatay ölçek" name="bumpyScaleU"/>
-	<spinner label="Dikey ölçek" name="bumpyScaleV"/>
-	<spinner label="Dönüş derecesi" name="bumpyRot"/>
-	<spinner label="Yatay ofset" name="bumpyOffsetU"/>
-	<spinner label="Dikey ofset" name="bumpyOffsetV"/>
-	<spinner label="Yatay ölçek" name="shinyScaleU"/>
-	<spinner label="Dikey ölçek" name="shinyScaleV"/>
-	<spinner label="Dönüş derecesi" name="shinyRot"/>
-	<spinner label="Yatay ofset" name="shinyOffsetU"/>
-	<spinner label="Dikey ofset" name="shinyOffsetV"/>
-	<check_box initial_value="false" label="Planar yüzleri hizala" name="checkbox planar align" tool_tip="Tüm seçili yüzeylerdeki dokuları son seçili yüzdekiyle hizalar. Planar doku eşleştirmesi gerektirir."/>
-	<button label="Hizala" label_selected="Geçerli doku katmanlarına hizala" name="button align textures" tool_tip="Geçerli doku katmanlarına hizala"/>
+<?xml version='1.0' encoding='utf-8'?>
+<panel name="Texture" label="Doku">
+	<scroll_container name="texture_scroll">
+		<panel name="texture_scroll_content">
+			<text name="color label">Renk</text>
+			<color_swatch name="colorswatch" tool_tip="Renk seçiciyi açmak için tıklayın" />
+			<text name="color trans">Saydamlık %</text>
+			<text name="glow label">Parıltı</text>
+			<check_box name="checkbox fullbright" label="Tam Parlak" />
+			<combo_box name="combobox matmedia">
+				<combo_box.item name="Materials" value="Materials" label="Malzemeler" />
+				<combo_box.item name="Media" value="Media" label="Ortam" />
+			</combo_box>
+			<radio_group name="radio_material_type">
+				<radio_item name="Texture (diffuse)" value="0" label="Doku (yayılmış)" ><radio_item.check_button label="Doku (yayılmış)" label_selected="Doku (yayılmış)" /></radio_item>
+				<radio_item name="Bumpiness (normal)" value="1" label="Yumruluk (normal)" ><radio_item.check_button label="Yumruluk (normal)" label_selected="Yumruluk (normal)" /></radio_item>
+				<radio_item name="Shininess (specular)" value="2" label="Parıldama (yansıtan)" ><radio_item.check_button label="Parıldama (yansıtan)" label_selected="Parıldama (yansıtan)" /></radio_item>
+			</radio_group>
+			<check_box name="checkbox_sync_settings" label="Kilit tekrarı" tool_tip="Tüm harita tekrarlarını aynı anda ayarla" />
+			<texture_picker name="texture control" label="Doku" tool_tip="Bir resim seçmek için tıklayın" />
+			<text name="label alphamode">Alfa modu</text>
+			<combo_box name="combobox alphamode">
+				<combo_box.item name="None" value="None" label="Hiçbiri" />
+				<combo_box.item name="Alpha blending" value="Alpha blending" label="Alfa karıştırma" />
+				<combo_box.item name="Alpha masking" value="Alpha masking" label="Alfa maskeleme" />
+				<combo_box.item name="Emissive mask" value="Emissive mask" label="Yayımlatıcı maske" />
+			</combo_box>
+			<text name="label maskcutoff">Maske kesimi</text>
+			<texture_picker name="bumpytexture control" label="Doku" tool_tip="Bir resim seçmek için tıklayın" />
+			<text name="label bumpiness">Yumruluk</text>
+			<combo_box name="combobox bumpiness">
+				<combo_box.item name="None" value="None" label="Yok" />
+				<combo_box.item name="Brightness" value="Brightness" label="Parlaklık" />
+				<combo_box.item name="Darkness" value="Darkness" label="Koyuluk" />
+				<combo_box.item name="woodgrain" value="woodgrain" label="damarlı ahşap" />
+				<combo_box.item name="bark" value="bark" label="ağaç kabuğu" />
+				<combo_box.item name="bricks" value="bricks" label="tuğlalar" />
+				<combo_box.item name="checker" value="checker" label="dama tahtası" />
+				<combo_box.item name="concrete" value="concrete" label="beton" />
+				<combo_box.item name="crustytile" value="crustytile" label="sert çini" />
+				<combo_box.item name="cutstone" value="cutstone" label="kesilmiş taş" />
+				<combo_box.item name="discs" value="discs" label="diskler" />
+				<combo_box.item name="gravel" value="gravel" label="çakıl" />
+				<combo_box.item name="petridish" value="petridish" label="petri kabı" />
+				<combo_box.item name="siding" value="siding" label="dış kaplama" />
+				<combo_box.item name="stonetile" value="stonetile" label="taş çini" />
+				<combo_box.item name="stucco" value="stucco" label="stükko" />
+				<combo_box.item name="suction" value="suction" label="vakum" />
+				<combo_box.item name="weave" value="weave" label="örgü" />
+			</combo_box>
+			<texture_picker name="shinytexture control" label="Doku" tool_tip="Bir resim seçmek için tıklayın" />
+			<text name="label shininess">Parıldama</text>
+			<combo_box name="combobox shininess">
+				<combo_box.item name="None" value="None" label="Yok" />
+				<combo_box.item name="Low" value="Low" label="Düşük" />
+				<combo_box.item name="Medium" value="Medium" label="Orta" />
+				<combo_box.item name="High" value="High" label="Yüksek" />
+			</combo_box>
+			<text name="label glossiness">Pürüzsüzlük</text>
+			<text name="label environment">Ortam</text>
+			<text name="label shinycolor">Renk</text>
+			<color_swatch name="shinycolorswatch" tool_tip="Renk seçiciyi açmak için tıklayın" />
+			<text name="media_info">Varsa, seçilen ortamın URL'si burada yer alır</text>
+			<button name="add_media" label="Seç..." tool_tip="Ortam Ekle" />
+			<button name="delete_media" label="Kaldır" tool_tip="Bu ortam dokusunu sil" />
+			<button name="button align" label="Hizala" label_selected="Ortamı Hizala" tool_tip="Ortam dokusunu hizala (önce yüklenmelidir)" />
+			<text name="tex gen">Eşleştirme</text>
+			<combo_box name="combobox texgen">
+				<combo_box.item name="Default" value="Default" label="Varsayılan" />
+			</combo_box>
+			<spinner name="TexScaleU" label="Yatay ölçek" />
+			<spinner name="TexScaleV" label="Dikey ölçek" />
+			<spinner name="rptctrl" label="Metrede kaç kez tekrarlandığı" />
+			<spinner name="TexRot" label="Dönüş derecesi" />
+			<spinner name="TexOffsetU" label="Yatay ofset" />
+			<spinner name="TexOffsetV" label="Dikey ofset" />
+			<spinner name="bumpyScaleU" label="Yatay ölçek" />
+			<spinner name="bumpyScaleV" label="Dikey ölçek" />
+			<spinner name="bumpyRot" label="Dönüş derecesi" />
+			<spinner name="bumpyOffsetU" label="Yatay ofset" />
+			<spinner name="bumpyOffsetV" label="Dikey ofset" />
+			<spinner name="shinyScaleU" label="Yatay ölçek" />
+			<spinner name="shinyScaleV" label="Dikey ölçek" />
+			<spinner name="shinyRot" label="Dönüş derecesi" />
+			<spinner name="shinyOffsetU" label="Yatay ofset" />
+			<spinner name="shinyOffsetV" label="Dikey ofset" />
+			<check_box name="checkbox planar align" label="Planar yüzleri hizala" tool_tip="Tüm seçili yüzeylerdeki dokuları son seçili yüzdekiyle hizalar. Planar doku eşleştirmesi gerektirir." />
+			<button name="button align textures" label="Hizala" label_selected="Geçerli doku katmanlarına hizala" tool_tip="Geçerli doku katmanlarına hizala" />
+		</panel>
+	</scroll_container>
 </panel>
