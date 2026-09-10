@@ -27,12 +27,14 @@ The committed feature list is based on the differences from the `upstream/develo
 - AO inventory uses `#Prism/#AO`; when no `#Prism` folder exists, the legacy `#Boxxy` folder is renamed in place, preserving existing sets and links. (in progress; awaiting in-world verification)
 - Prism Radar, including full and compact radar floaters, near/far avatar grouping, distance display, search, radar options, toolbar integration, and automatic display behavior.
 - Minimalist radar with shadowed text, remembered position, Shift-only dragging, safe click-through without Shift, and protection from Ctrl+W closing. (in progress)
-- Radar VIP matching with fuzzy configured-name matching.
+- Radar VIP matching with fuzzy configured-name matching against whole avatar-name words, avoiding prefix matches such as `Trixy` matching `Trixyab`. (in progress; runtime verification pending)
 - Radar friend highlighting, typing indicators, and muted/blocked-avatar display.
 - Radar retains avatars in the current and neighboring regions while dropping distant cached entries after travel. (in progress; runtime verification pending)
 - VIP and friend color highlighting in radar and chat.
 
 ## Chat and messaging
+
+- Allowlisted thumbnail cards below DM bubbles for Imgur single-image links, GIPHY shares/media, and YouTube videos/Shorts; cards open the system browser, with no inline playback. Includes a Chat preference, lazy loading, and up to three distinct previews per message. (in progress; Release build, 53 URL checks, all three providers' thumbnail rendering, and preference layout verified; in-world DM testing pending)
 
 - DM popouts retain their own size when detached from Conversations, starting at the XUI default of 540×480; reattaching and detaching preserves a manually resized popout. Minimal radar restores its saved bottom-left anchor, independent of list height, and the Now Playing border follows the card's rounded background. (in progress; installer regression testing pending)
 
@@ -88,7 +90,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Transmission-depth debug checkbox and sun/local-map selector show filtered measured paths before absorption, cutoff, or blur: white 0 mm, black 300 mm/blocked, magenta unavailable. (in progress; 376 GPU checks, control-layout checks, and Release build/startup passed; in-world debug comparison pending)
 - Separate skin transmission brightness (0–4 linear multiplier) and measured penetration limit (5–300 mm), with a smooth cutoff independent of absorption. Brightness and penetration are independently adjustable. (in progress; 169 GPU checks and control-layout checks passed; in-world tuning pending)
 - Transmission fades across the full penetration range to reduce bright-island contrast at low absorption. (in progress; 516 GPU checks, Release build, and live shader reload passed; Althea arm comparison improves with a higher penetration limit, visual tuning ongoing)
-- Tuned Combined skin defaults: strength 1.0, diffusion 0.014 m, skin tone response 1.0, range 29 m, wrap 0.40, transmission brightness 1.70, local transmission boost 1.0, optical absorption 1.5, and penetration 109 mm. Depth transmission, point-light depth, and automatic detection on; transmission blur and highlighting off. (in progress; Release build passed; all 16 preset values verified against the screenshot in source and staged settings)
+- Tuned Combined skin defaults: strength 1.0, diffusion 0.014 m, skin tone response 1.0, range 29 m, wrap 0.40, transmission brightness 1.70, local transmission boost 1.0, optical absorption 1.5, penetration 109 mm, and transmission blur 70 mm. Depth transmission, point-light depth, and automatic detection on; highlighting off. (in progress; Release executable and installer built, in-world verification pending)
 - Adjustable final transmission blur (0–100 mm) isolates shine-through from other skin lighting, reuses the separable diffusion filter with gentler normal rejection, and checks skin membership and depth at edges. Textures and highlights remain sharp; zero disables the extra capture and two filter passes. (in progress; Release build/startup, 201 lighting GPU checks, 6 blur GPU checks, and control-layout checks passed; in-world tuning pending)
 - Nearby-avatar worn-attachments inspector with attachment points, attachment names, and linked creator profiles. (in progress)
 - Avatar look-at crosshairs with visible avatar names.
@@ -98,7 +100,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Avatar animation synchronization improvements; enabled by default. (in progress)
 - Tuned first-run preferences: start-location selector, mouselook body, readable profile text, translation after provider setup, gesture muting, group-invite suppression and left-click action blocking enabled; appearance camera movement disabled; 128 m draw distance, SMAA and 0.65 chat bubble opacity, with a softer sage/gray/pink chat palette and green/slate IM bubbles. Existing saved choices and hardware graphics presets still take precedence. (in progress)
 - T-Pose toolbar floater with Firestorm pose choices and temporary built-in AO suspension, restoring the prior enabled state when closed. (in progress)
-- Attachment visibility and rendering adjustments.
+- Graphics > Avatar collects avatar display/complexity controls and can suppress lights and particles attached to avatars. (in progress; runtime verification pending)
 - Animation-stable avatar nameplate positioning with avatar-relative height. (in progress)
 - Avatar name tags block clicks from reaching world objects behind them. (in progress; runtime verification pending)
 
@@ -138,6 +140,10 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Interface and preferences
 
+- Wider Build/Edit window with larger transform fields and direct Copy/Paste buttons for position, size, and rotation; numeric spinners support Alt 10×, Ctrl 0.1×, and Shift 0.01× steps, limited to displayed precision. (in progress; Release build, regression checks, and XUI layout/keyboard/scroll verification passed; in-world transform application pending)
+- Redesigned Build/Edit inspector across General, Object, Features, Texture, and Content, with rounded charcoal sections, subtle outlines, clearer headings, horizontal XYZ transforms, direct Copy/Paste actions, a spaced shared toolbar, button-style Texture channel selectors, and scrollable form bodies. Release build and all five tabs checked in the offline preview. (in progress; uncommitted, live object editing not yet verified)
+- Build/Edit can dock on the right or return to its saved floating position using Dock/Undock. The dock has a flush charcoal background without the floating window's outer frame, reserves world viewport space, moves edge toolbars clear, remembers the resized dock width, and falls back to floating on small windows. Release build, geometry regression checks, and offline switching, edge resize, small-window recovery, and close/reopen checks passed. (in progress; uncommitted, in-world HUD/editing check pending)
+
 - Session Money Log floater for successful incoming and outgoing L$ transactions, with counterparties, transaction context, timestamps, live "seconds ago" ages, and clearing. (in progress)
 - Dedicated Prism preferences panel.
 - Preference to prevent left-click world-object actions while retaining action cursors. (in progress; runtime verification pending)
@@ -150,7 +156,7 @@ The committed feature list is based on the differences from the `upstream/develo
 - Separated top-center DM chiclets and top-right notification controls; notification popup anchors beneath the relocated top-right control (in progress; runtime verification pending).
 - Custom colors for VIP, friend, blocked, and radar states.
 - Volume and audio UI adjustments.
-- Themed Now Playing card with a top-right visibility toggle, copyable stream URL and track title, pause-aware listening time, decorative playback bars, and parcel-music volume control, positioned clear of the right-side notifications. (in progress)
+- Themed Now Playing card with a blurred translucent surface, border and shadow, a top-right visibility toggle, copyable stream URL and track title, pause-aware listening time aligned with the parcel-music volume control, and decorative playback bars, positioned clear of the right-side notifications. (in progress; runtime verification pending)
 - Parcel music plugin initialization and retry fixes, playback error notifications and connection status, and optional "Now playing" song announcements in nearby chat (Preferences > Sound > Song in chat; enabled by default). (in progress)
 - Group visibility and notification preferences.
 

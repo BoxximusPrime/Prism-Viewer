@@ -1,0 +1,959 @@
+name|src_file|src_line|total_ns|total_perc|counts|mean_ns|min_ns|max_ns|std_ns
+"getGeometryVolume - texgen default"|E:\BoxxyViewer\indra\newview\llface.cpp|1828|279789|0.000010|1221|229|54|2878|8268.984512
+LLSpatialPartition::cull|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|1438|74423314|0.002770|7602|9789|15|306440|66039.682304
+"genDrawInfo - allocate"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|6774|496233|0.000018|2661|186|64|41603|4237.989047
+LLVOAvatar::updateGeometry|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|7846|30065|0.000001|173|173|64|481|64.712872
+LLReflectionMap::autoAdjustOrigin|E:\BoxxyViewer\indra\newview\llreflectionmap.cpp|79|320848|0.000012|17042|18|5|7028|64.352348
+"Swap"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1560|37366|0.000001|172|217|153|809|59735.764994
+"gi - function queue"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2352|146453|0.000005|172|851|55|2429|20478.296459
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::push_|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|309|1942813|0.000072|974|1994|28|31489|2190.660865
+"df suspend"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1429|2344605|0.000087|172|13631|2264|124804|26760.408845
+"Update Dynamic Textures"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|706|32517|0.000001|173|187|107|888|11598.502520
+"lllog"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|433|85153|0.000003|1097|77|6|430|67.278170
+"df Display"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1500|143519|0.000005|172|834|572|1691|23472420.760653
+LLTextureCache::readComplete|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|1971|43408|0.000002|19|2284|377|8166|5694.743019
+LLDrawPoolBump::renderFullbrightShiny|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|355|121297|0.000005|1850|65|33|11274|1315.938262
+LLTextBase::draw|E:\BoxxyViewer\indra\llui\lltextbase.cpp|1522|20131004|0.000749|6708|3001|271|86862|35152.950806
+"getGeometryVolume - color"|E:\BoxxyViewer\indra\newview\llface.cpp|2109|673299|0.000025|4718|142|16|50218|1250.964585
+LLGLSLShader::uniform1f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1849|83273033|0.003099|2944648|28|12|138289|165.508187
+"df LLTrace"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1367|144163|0.000005|172|838|566|1648|34812.488190
+LLThreadSafeQueue<struct tagMSG,class std::queue<struct tagMSG,class std::deque<struct tagMSG,class std::allocator<struct tagMSG> > > >::tryPop|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|477|16575|0.000001|282|58|20|841|23560.320746
+LLPipeline::rebuildPools|E:\BoxxyViewer\indra\newview\pipeline.cpp|5129|1225622|0.000046|173|7084|5387|14645|4214.807359
+"UI 2D"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1540|7998094|0.000298|172|46500|37886|91221|2778866.375120
+LLTrace::AccumulatorBufferGroup::sync|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|133|81123|0.000003|860|94|30|1098|404.888904
+LLTrace::PeriodicRecording::getPeriodMaxPerSec|E:\BoxxyViewer\indra\llcommon\lltracerecording.h|482|115331|0.000004|344|335|93|1854|254.433006
+LLCore::HttpOpRequest::writeCallback|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|795|1537966|0.000057|140|10985|1173|48021|11700.380725
+LLImageGL::setImage|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|745|23697|0.000001|15|1579|184|4938|11340.666653
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::tryLock|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|278|2004542|0.000075|1922|1042|76|122102|4741.930301
+"deferred pool render"|E:\BoxxyViewer\indra\newview\pipeline.cpp|4155|5096676|0.000190|5082|1002|39|89274|220549.611026
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::tryPush|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|360|4633|0.000000|16|289|18|1183|17892.654279
+LLError::GenericRecorder<void (__cdecl*)(enum LLError::ELevel,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &)>::recordMessage|E:\BoxxyViewer\indra\llcommon\llerrorcontrol.h|191|3984|0.000000|44|90|11|438|84.546671
+LLMeshCostData::init|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|5479|464909|0.000017|6441|72|12|901|82.585932
+LLSD::operator []|E:\BoxxyViewer\indra\llcommon\llsd.cpp|1138|917539|0.000034|4906|187|23|2535|274.247205
+LLTrace::AccumulatorBufferGroup::makeCurrent|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|69|111385|0.000004|344|323|101|1125|114.505287
+LLGLTexture::setSubImage|E:\BoxxyViewer\indra\llrender\llgltexture.cpp|252|128|0.000000|1|128|128|128|0.000000
+LLReflectionMapManager::updateNeighbors|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|1056|3060|0.000000|29|105|27|191|2370.276385
+LLTrace::BlockTimer::updateTimes|E:\BoxxyViewer\indra\llcommon\llfasttimer.cpp|266|62421|0.000002|688|90|14|750|101.227409
+LLRenderPass::pushUntexturedGLTFBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|930|21864|0.000001|1024|21|6|611|31.114709
+"tfwdw - INIT"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1104|34833|0.000001|19|1833|508|3442|975.210405
+LLFolderView::filter|E:\BoxxyViewer\indra\llui\llfolderview.cpp|348|1465871|0.000055|521|2813|77|8302|2719.523410
+LLDefaultVBOPool::clean|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|535|468255|0.000017|45|10405|6273|24534|111759.361261
+LLTextureFetch::releaseHttpWaiters|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|3306|26400|0.000001|172|153|52|675|578.948058
+FTM_GEO_UPDATE|E:\BoxxyViewer\indra\newview\pipeline.cpp|2917|3836404|0.000143|173|22175|2443|110003|289806.678420
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1137|2143|0.000000|19|112|9|207|56.083767
+"unmapBuffer - vertex"|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1484|1710406|0.000064|7227|236|21|8633|10676.328137
+"deferred"|E:\BoxxyViewer\indra\newview\pipeline.cpp|8635|1551719|0.000058|345|4497|1584|22738|128900.684363
+"audio update"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5619|4957610|0.000185|173|28656|9135|176320|40930.492949
+LLQueuedThread::updateQueue|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|157|150557|0.000006|516|291|64|1243|4273.422993
+LLSpatialPartition::put|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|930|1181182|0.000044|1355|871|55|11504|1907.987438
+LLDrawable::makeActive|E:\BoxxyViewer\indra\newview\lldrawable.cpp|500|3915930|0.000146|95056|41|5|23268|108.155390
+"rmmun - search"|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|1079|30294|0.000001|24|1262|738|2145|314.335600
+LLVolume::generate|E:\BoxxyViewer\indra\llmath\llvolume.cpp|2047|68649|0.000003|70|980|112|4309|7327.472760
+LLDrawPoolMaterials::beginDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolmaterials.cpp|55|345079|0.000013|13872|24|13|6380|2699.591752
+LLTerrainMaterials::getMaterialType|E:\BoxxyViewer\indra\newview\llvlcomposition.cpp|212|96629|0.000004|202|478|163|1336|153.695360
+LLBumpImageList::getBrightnessDarknessImage|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|753|13234|0.000000|132|100|20|1297|2116.170288
+"glTexImage2D alloc"|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1470|16401|0.000001|35|468|14|1308|471.040869
+"lllog"|E:\BoxxyViewer\indra\newview\pipeline.cpp|11492|12928|0.000000|261|49|6|707|53.040804
+LLTextureFetch::cmdDequeue|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|3503|18450|0.000001|172|107|44|550|301.132376
+LLTextureCacheWorker::doWork|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|709|10176|0.000000|35|290|98|910|887809.829637
+LLLayoutStack::updateLayout|E:\BoxxyViewer\indra\llui\lllayoutstack.cpp|412|188434|0.000007|11180|16|5|7343|99.435591
+LLPipeline::updateGL|E:\BoxxyViewer\indra\newview\pipeline.cpp|2797|62924|0.000002|173|363|44|1454|1767.262744
+"display - 1"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|730|2410043|0.000090|172|14011|10876|31548|22428909.080336
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1233|232|0.000000|2|116|115|117|1.414214
+LL::GLTFSceneManager::render|E:\BoxxyViewer\indra\newview\gltfscenemanager.cpp|603|477192|0.000018|19688|24|6|869|49.742006
+LLDrawPoolAvatar::endDeferredSkinned|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|653|28947|0.000001|607|47|21|828|129.355409
+LLViewerParcelOverlay::updateGL|E:\BoxxyViewer\indra\newview\llviewerparceloverlay.cpp|633|61737|0.000002|77|801|611|1346|2244.702284
+render_ui|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1475|182688|0.000007|172|1062|742|11425|3127778.230368
+LLImageGL::setSubImage|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1225|497|0.000000|1|497|497|497|0.000000
+LLImageGL::createPickMask|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|2389|537|0.000000|1|537|537|537|0.000000
+"lllog"|E:\BoxxyViewer\indra\llaudio\llaudioengine.cpp|1680|724|0.000000|3|241|163|318|77.514515
+Sleep2|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1533|309912|0.000012|172|1801|1367|6641|20714.355278
+LLImageGL::setSubImage|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1116|378|0.000000|1|378|378|378|0.000000
+LLPipeline::createObject|E:\BoxxyViewer\indra\newview\pipeline.cpp|2036|37579|0.000001|41|916|581|2046|6944.477747
+LLCore::HttpOpRequest::stageFromReady|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|211|12027|0.000000|43|279|27|1050|17467.271228
+"getGeometryVolume - emissive"|E:\BoxxyViewer\indra\newview\llface.cpp|2135|156064|0.000006|1929|80|17|29532|844.979032
+LLGLSLShader::uniform2fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1526|277884|0.000010|14262|19|6|1997|44.556449
+LLGLDepthTest::~LLGLDepthTest|E:\BoxxyViewer\indra\llrender\llgl.cpp|2825|1384059|0.000052|39105|35|6|66201|339.050872
+FTM_UPDATE_CAMERA|E:\BoxxyViewer\indra\newview\llagentcamera.cpp|1212|1087414|0.000040|173|6285|4607|16952|6552.535702
+"vftuf - has raw image"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1956|2153|0.000000|14|153|20|433|1779.008540
+LLStringUtilBase<char>::format|E:\BoxxyViewer\indra\llcommon\llstring.cpp|1667|16283|0.000001|47|346|149|1087|208.032345
+"Update Geom"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|761|99354|0.000004|173|574|304|17303|311910.567933
+LLMotionController::updateMotionsMinimal|E:\BoxxyViewer\indra\llcharacter\llmotioncontroller.cpp|936|4989175|0.000186|11154|447|121|65910|4889.931031
+LLGLSLShader::uniform1i|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1778|47502619|0.001768|1898771|25|12|108111|178.581888
+LLEnvironment::update|E:\BoxxyViewer\indra\newview\llenvironment.cpp|1641|797117|0.000030|345|2310|1605|3860|38193.262016
+LLRenderPass::uploadMatrixPalette|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|846|9667615|0.000360|330512|29|6|172182|531.108749
+LLTextureCache::setHeaderCacheEntry|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|1905|664|0.000000|2|332|176|488|328206.274823
+LLDrawPoolBump::endFullbrightShiny|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|387|30513|0.000001|1850|16|6|222|14.015154
+LLSpatialGroup::changeLOD|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|735|5978471|0.000223|376565|15|6|9970|50.095099
+LLMeshLODHandler::processData|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|3982|1741|0.000000|3|580|433|749|1364.933149
+FTM_CLEANUP_DRAWABLES|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5498|45469|0.000002|173|262|98|819|105.638012
+LLDrawPoolAvatar::beginPostDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|230|42850|0.000002|868|49|28|710|5129.594802
+LLVOVolume::getCostData|E:\BoxxyViewer\indra\newview\llvovolume.cpp|4566|357265|0.000013|3490|102|14|1553|184.109885
+"vftuf - make request"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2296|8174|0.000000|19|430|53|1113|10738.377428
+LLParticlePartition::rebuildGeom|E:\BoxxyViewer\indra\newview\llvopartgroup.cpp|665|17138135|0.000638|3688|4646|32|103232|29338.764112
+`anonymous-namespace'::ImplMap::has|E:\BoxxyViewer\indra\llcommon\llsd.cpp|502|514617|0.000019|9116|56|12|4390|98.651335
+LLQueuedThread::completeRequest|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|390|97221|0.000004|49|1984|99|15174|2826.196992
+LLPipeline::resetFrameStats|E:\BoxxyViewer\indra\newview\pipeline.cpp|2074|6631|0.000000|173|38|34|198|13.408822
+LLPipeline::createObjects|E:\BoxxyViewer\indra\newview\pipeline.cpp|2012|26131|0.000001|173|151|91|268|38.773642
+"media sort"|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|686|128006|0.000005|172|744|565|1508|158.326777
+LLTrace::AccumulatorBuffer<class LLTrace::SampleAccumulator>::reset|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|132|5816941|0.000217|2752|2113|1900|62961|1718.032757
+LLCore::HttpOpRequest::stageFromActive|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|219|69149|0.000003|42|1646|1051|2961|463.378710
+ImageRequest::finishRequest|E:\BoxxyViewer\indra\llimage\llimageworker.cpp|221|7617|0.000000|18|423|185|957|2441.595067
+LLTextureCache::updateEntry|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|1278|1878153|0.000070|16|117384|83226|245334|48951.764668
+LLVolume::unpackVolumeFaces|E:\BoxxyViewer\indra\llmath\llvolume.cpp|2382|1349039|0.000050|33|40879|5795|372619|622667.564431
+"lllog"|E:\BoxxyViewer\indra\llplugin\llpluginclassmedia.cpp|1126|1498|0.000000|60|24|6|250|48.323416
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12073|149|0.000000|2|74|36|113|54.451814
+LLTrace::PeriodicRecording::getPeriodMin|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|719|1890293|0.000070|6020|314|93|39089|594.239242
+LLVertexBuffer::genBuffer|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1099|706722|0.000026|19648|35|11|39525|1400.217587
+send_agent_update|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|3221|739322|0.000028|172|4298|2052|55826|8569.796001
+LLUICtrl::postBuild|E:\BoxxyViewer\indra\llui\lluictrl.cpp|478|2289|0.000000|3|763|30|1634|810.855721
+LLSD::operator []|E:\BoxxyViewer\indra\llcommon\llsd.cpp|1197|47403|0.000002|2926|16|6|852|29.380807
+LLMotionController::updateLoadingMotions|E:\BoxxyViewer\indra\llcharacter\llmotioncontroller.cpp|781|441361|0.000016|15538|28|5|11881|153.978354
+LLVertexBuffer::destroyGLBuffer|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1178|2024891|0.000075|20909|96|12|27705|5213.491905
+LLViewerTexture::reorganizeVolumeList|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1026|412305|0.000015|44982|9|6|3085|18.143035
+LLRenderPass::pushBumpBatch|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|1009|162876|0.000006|560|290|120|1342|524.174466
+FTM_PROCESS_MESSAGES|E:\BoxxyViewer\indra\llmessage\lltemplatemessagereader.cpp|539|8740065|0.000325|585|14940|1108|195225|49731.744067
+LLAppViewer::idleNetwork|E:\BoxxyViewer\indra\newview\llappviewer.cpp|6046|139851|0.000005|172|813|547|2088|328545.133462
+LLViewerObjectList::updateActive|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|1500|89674|0.000003|1718|52|5|735|77.557058
+LLTextureFetch::updateRequestPriority|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2888|2350|0.000000|16|146|20|428|18001.608363
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|7158|37366|0.000001|3474|10|6|599|18.519427
+LLViewerTexture::updateClass|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|488|420972|0.000016|173|2433|1795|3568|3735.594175
+LLPipeline::calcNearbyLights|E:\BoxxyViewer\indra\newview\pipeline.cpp|5637|34159283|0.001271|1039|32877|44|128639|37140.752524
+LLDrawPoolAvatar::getModelView|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|146|1268973|0.000047|20418|62|5|1012|73.718173
+"gi - message queue"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2326|7780|0.000000|110|70|38|696|71.584299
+LLTrace::PeriodicRecording::getPeriodMinPerSec|E:\BoxxyViewer\indra\llcommon\lltracerecording.h|409|851596|0.000032|344|2475|265|38683|3059.201336
+FTM_HUD_EFFECTS|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5517|816906|0.000030|173|4722|3275|16315|1089.015450
+LLDrawPoolAvatar::endShadowPass|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|339|156564|0.000006|6144|25|12|2171|67.136598
+LLImageGL::updateStats|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|410|4122|0.000000|173|23|22|37|1.582976
+LLViewerMedia::updateMedia|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|642|253613|0.000009|172|1474|1105|2546|65648.917809
+LLTrace::AccumulatorBuffer<class LLTrace::EventAccumulator>::AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|68|101509|0.000004|344|295|71|1257|391.612611
+LLViewerObject::processUpdateMessage|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|1233|2827526|0.000105|1677|1686|173|26428|2703.683138
+LLSettingsVOWater::updateSettings|E:\BoxxyViewer\indra\newview\llsettingsvo.cpp|1148|214571|0.000008|173|1240|820|2803|3473.002803
+"shadow alpha grass"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9969|132848|0.000005|2048|64|28|2239|172182.240338
+LLVertexBuffer::genIndices|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1115|67387|0.000003|2795|24|13|710|2069.947324
+LLPipeline::doWaterHaze|E:\BoxxyViewer\indra\newview\pipeline.cpp|9271|558787|0.000021|867|644|6|12980|4283.529529
+LLDefaultVBOPool::allocate|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|437|8524622|0.000317|22443|379|17|87160|1399.885993
+"httppt - curl_multi_info_read"|E:\BoxxyViewer\indra\llcorehttp\_httplibcurl.cpp|183|315258|0.000012|2006|157|7|4352|1195.787086
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1291|2662|0.000000|17|156|7|508|117.679119
+LLGLSLShader::uniform4fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1580|13977213|0.000520|564159|24|6|42231|287.576267
+LLMemory::updateMemoryInfo|E:\BoxxyViewer\indra\llcommon\llmemory.cpp|112|29930|0.000001|10|2993|2578|4937|18593.314345
+LLViewerTextureList::updateImagesFetchTextures|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|1251|9871714|0.000367|173|57061|28163|624498|2086107.468604
+LLViewerObjectList::findOrphans|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|2002|74743|0.000003|1677|44|10|1312|121.717671
+LLPipeline::generateImpostor|E:\BoxxyViewer\indra\newview\pipeline.cpp|11473|2734833|0.000102|261|10478|4392|37171|498980.025991
+LLSettingsWater::blend|E:\BoxxyViewer\indra\llinventory\llsettingswater.cpp|237|26205|0.000001|173|151|122|384|33.776798
+LLDrawPoolAvatar::renderAvatars|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|668|10578806|0.000394|164070|64|6|23694|585.123661
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::pushIfOpen|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|325|211672|0.000008|974|217|22|8922|3005.867739
+LLQueuedThread::update|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|143|48308|0.000002|516|93|15|767|4558.654157
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|1300|4950|0.000000|42|117|22|248|30.695992
+LLAppViewer::pingMainloopTimeout|E:\BoxxyViewer\indra\newview\llappviewer.cpp|6399|3450173|0.000128|50806|67|34|13979|145.498372
+LLGLSLShader::uniform4fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1969|548363|0.000020|4702|116|21|4016|159.543508
+"vftuf - data good"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1967|4284|0.000000|14|306|51|1083|1478.821698
+LLRenderPass::pushMaskBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|561|1459682|0.000054|7733|188|6|7977|7082.824374
+LLCore::HttpOpRequest::readCallback|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|811|29088|0.000001|23|1264|588|2139|340.188851
+LLGLSLShader::bindTexture|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1159|359912|0.000013|3619|99|14|4768|114.523614
+LLVolumeImplFlexible::doUpdateGeometry|E:\BoxxyViewer\indra\newview\llflexibleobject.cpp|756|34946|0.000001|129|270|20|1587|1802.626214
+"lllog"|E:\BoxxyViewer\indra\llcommon\lleventcoro.cpp|249|9685|0.000000|76|127|13|339|62.144026
+LLVertexBuffer::mapIndexBuffer|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1324|513151|0.000019|5723|89|8|1228|94.606377
+LLCore::HttpOpRequest::stageFromRequest|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|203|51498|0.000002|43|1197|34|3313|759.308379
+LLTrace::PeriodicRecording::getPeriodMedian|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|787|516632|0.000019|172|3003|1728|5270|521.261190
+LLTrace::AccumulatorBuffer<class LLTrace::CountAccumulator>::getDefaultBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|223|17832|0.000001|688|25|6|253|19.639472
+"lllog"|E:\BoxxyViewer\indra\llprimitive\llprimitive.cpp|1549|8955|0.000000|282|31|6|266|48.365269
+LLDrawPoolAvatar::isDead|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|118|623436|0.000023|15570|40|5|3465|61.020195
+LLCore::HttpLibcurl::completeRequest|E:\BoxxyViewer\indra\llcorehttp\_httplibcurl.cpp|320|248707|0.000009|42|5921|1723|9777|2517.493285
+process_terse_object_update_improved|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|3665|16111|0.000001|122|132|18|1013|57572.592487
+LLFace::getGeometryVolume|E:\BoxxyViewer\indra\newview\llface.cpp|1235|6033178|0.000225|5336|1130|86|204254|30130.527878
+"df Snapshot"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1508|310588|0.000012|172|1805|1271|2918|1377281.488718
+"lllog"|E:\BoxxyViewer\indra\llcommon\lleventcoro.cpp|275|5207|0.000000|23|226|61|845|154.943831
+"getGeometryVolume - norm mat override"|E:\BoxxyViewer\indra\newview\llface.cpp|1566|128120|0.000005|5268|24|7|978|41.098750
+"Deffered alpha mask analysis"|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|2356|3782|0.000000|1|3782|3782|3782|0.000000
+LLPipeline::stateSort|E:\BoxxyViewer\indra\newview\pipeline.cpp|3348|11532407|0.000429|83430|138|7|25407|2077.353845
+LLVOAvatar::performPartialComplexityUpdate|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11942|592397|0.000022|98|6044|1814|13670|119402.003515
+LLThreadSafeQueue<struct tagMSG,class std::queue<struct tagMSG,class std::deque<struct tagMSG,class std::allocator<struct tagMSG> > > >::tryLock|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|278|962221|0.000036|282|3412|88|76369|9214.283845
+LLViewerObjectList::removeFromLocalIDTable|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|170|2252|0.000000|42|53|6|458|75.770514
+LLTrace::AccumulatorBuffer<class LLTrace::EventAccumulator>::~AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|79|129918|0.000005|344|377|50|1410|180.040358
+"subimage - batched lines"|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1077|94888|0.000004|15|6325|1321|8225|2086.691897
+"Clear stats maps"|E:\BoxxyViewer\indra\newview\llperfstats.cpp|219|73707|0.000003|172|428|237|1339|160.902916
+LLViewerTextureList::findImage|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|684|8855488|0.000330|58824|150|37|107852|581.114349
+"pushRiggedGLTFBatch"|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|1001|10895785|0.000406|36378|299|87|10727|1007.899909
+LLThread::currentID|E:\BoxxyViewer\indra\llcommon\llthread.cpp|460|684035|0.000025|49486|13|5|5910|51.301263
+"Texture Cache"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1670|72529|0.000003|172|421|306|663|8606.832365
+LLHeadRotMotion::onUpdate|E:\BoxxyViewer\indra\llcharacter\llheadrotmotion.cpp|178|81286|0.000003|184|441|289|1306|126.290973
+LLDrawPoolTerrain::renderShadow|E:\BoxxyViewer\indra\newview\lldrawpoolterrain.cpp|175|15832|0.000001|1024|15|6|199|12.328352
+LLThreadSafeQueue<struct tagMSG,class std::queue<struct tagMSG,class std::deque<struct tagMSG,class std::allocator<struct tagMSG> > > >::push_|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|309|39627|0.000001|111|357|231|1454|135.696855
+"lllog"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|5394|21209|0.000001|111|191|76|443|72.825320
+LLTextureCache::update|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|820|265678|0.000010|172|1544|571|13907|7122.193872
+LLTextureFetch::commonUpdate|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2959|527009|0.000020|172|3064|492|17841|5720.922717
+"Picking"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|523|20739|0.000001|173|119|32|5164|391.498478
+LLGLSLShader::uniform3f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1884|1582517|0.000059|23253|68|12|7872|207.674990
+"network"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5299|73076|0.000003|172|424|245|1206|10365.623184
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|154|6507|0.000000|41|158|108|342|52.299379
+"getGeometryVolume - indices"|E:\BoxxyViewer\indra\newview\llface.cpp|1437|1972397|0.000073|4668|422|24|78646|2298.513085
+LLParticlePartition::getGeometry|E:\BoxxyViewer\indra\newview\llvopartgroup.cpp|786|34158639|0.001271|3355|10181|378|218968|22142.270314
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|7181|80818|0.000003|3474|23|6|876|22.056050
+LLTextureCacheWorker::finishWork|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|729|10411|0.000000|35|297|175|562|3879.339494
+LLViewerTexture::bindDefaultImage|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|832|353057|0.000013|4243|83|18|1373|299.778377
+"renderAlpha - group"|E:\BoxxyViewer\indra\newview\lldrawpoolalpha.cpp|643|28347418|0.001055|178869|158|6|112108|8015.282982
+LLVolume::createVolumeFaces|E:\BoxxyViewer\indra\llmath\llvolume.cpp|2935|97989|0.000004|70|1399|73|45943|9388.812952
+LLViewerMediaImpl::update|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|2898|293675|0.000011|688|426|50|1798|23781.197781
+LL::WorkQueueBase::callWork|E:\BoxxyViewer\indra\llcommon\workqueue.cpp|209|42140302|0.001568|878|47995|15|14946885|5569955.092956
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::done|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|587|74756|0.000003|1512|49|20|476|42.478460
+LL::WorkQueueBase::postMaybe|E:\BoxxyViewer\indra\llcommon\workqueue.h|553|12105|0.000000|43|281|222|1048|356.666244
+"HUD"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1504|10220420|0.000380|172|59421|51612|176663|3046892.350040
+"display - 2"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|801|4735492|0.000176|173|27372|19553|92392|5989085.607341
+LLRenderPass::pushUntexturedBatch|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|759|47547050|0.001770|426530|111|41|114116|409.987825
+LLStopWatchControlsMixinCommon::setPlayState|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|1060|12910|0.000000|172|75|45|657|9914.364893
+LLMutex::isLocked|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|103|3262|0.000000|41|79|20|157|35.759964
+LLTrace::AccumulatorBuffer<class LLTrace::CountAccumulator>::resize|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|182|97677|0.000004|344|283|120|1093|118.372590
+LLTrace::SampleAccumulator::sample|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|338|509766|0.000019|3633|140|24|1392|114.631914
+LLVolumeImplFlexible::preRebuild|E:\BoxxyViewer\indra\newview\llflexibleobject.cpp|727|6433|0.000000|37|173|30|946|4494.200157
+"vb cache clean"|E:\BoxxyViewer\indra\llrender\llrender.cpp|1624|5497006|0.000205|15|366467|325276|491484|362709.530178
+"processRequest - retry"|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|521|70582|0.000003|173|407|27|4653|12391817.796091
+LLVOAvatar::getAssociatedVolumes|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11399|2926924|0.000109|214|13677|604|76813|10887.653970
+"df JoystickKeyboard"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1441|2671969|0.000099|172|15534|2090|372851|45170.905098
+LLPath::generate|E:\BoxxyViewer\indra\llmath\llvolume.cpp|1461|14351|0.000001|33|434|26|4917|3429.076939
+FTM_MEDIA_UPDATE_VOLUME|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|2156|419589|0.000016|688|609|355|1908|285.049098
+LLImageGL::setManualImage|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1311|3714|0.000000|35|106|21|371|7051.593744
+"tfwdw - SEND_HTTP_REQ"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1386|52767|0.000002|17|3103|693|9673|7869.623510
+LLHUDNameTag::updateAll|E:\BoxxyViewer\indra\newview\llhudnametag.cpp|744|12980139|0.000483|173|75029|67388|102376|5829.162579
+LLVOAvatar::getTotalGPURenderTime|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12711|3061780|0.000114|172|17801|5038|131213|13981.812200
+LLViewerObject::createObject|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|153|165648|0.000006|41|4040|2998|5721|2923.845828
+LLSettingsVOSky::updateSettings|E:\BoxxyViewer\indra\newview\llsettingsvo.cpp|660|340102|0.000013|173|1965|1417|3332|5995.548399
+LLAudioEngine::idle|E:\BoxxyViewer\indra\llaudio\llaudioengine.cpp|228|3122359|0.000116|173|18048|13883|34991|22778.227467
+LLPipeline::processPartitionQ|E:\BoxxyViewer\indra\newview\pipeline.cpp|3144|51255|0.000002|173|296|157|1469|1456.427564
+LLViewerRegion::idleUpdate|E:\BoxxyViewer\indra\newview\llviewerregion.cpp|1615|1109570|0.000041|173|6413|4390|13452|2859.870091
+LLPipeline::bindDeferredShader|E:\BoxxyViewer\indra\newview\pipeline.cpp|8341|32493618|0.001209|22650|1434|625|62756|3385.717889
+LLPipeline::renderShadow|E:\BoxxyViewer\indra\newview\pipeline.cpp|9821|1102506|0.000041|1024|1076|358|3171|1027392.346321
+"lllog"|E:\BoxxyViewer\indra\llplugin\llpluginmessagepipe.cpp|308|5857|0.000000|67|87|8|239|73.849150
+"Update Camera"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|207|477615|0.000018|345|1384|784|4905|432.564802
+"vbo pool miss"|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|452|994593|0.000037|106|9382|142|72309|12287.157956
+LLVolumeFace::createTangents|E:\BoxxyViewer\indra\llmath\llvolume.cpp|6909|165891|0.000006|8942|18|6|636|45.308666
+"lllog"|E:\BoxxyViewer\indra\newview\llcontrolavatar.cpp|592|506|0.000000|6|84|9|204|77.761173
+"llvfcs - generate indices"|E:\BoxxyViewer\indra\llmath\llvolume.cpp|7312|18022|0.000001|71|253|11|1233|243.970402
+LLVOVolume::regenFaces|E:\BoxxyViewer\indra\newview\llvovolume.cpp|1865|177081|0.000007|142|1247|156|2338|364.436045
+LLDrawPoolAvatar::prerender|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|137|534212|0.000020|37976|14|5|897|22.935034
+LLDrawable::getSpatialPartition|E:\BoxxyViewer\indra\newview\lldrawable.cpp|1198|2550959|0.000095|62630|40|7|11641|116.764055
+"df mainloop"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1422|2415589|0.000090|172|14044|8398|41600|35370.421851
+LLVolumeFace::cacheOptimize|E:\BoxxyViewer\indra\llmath\llvolume.cpp|5994|4925905|0.000183|85|57951|1601|2747586|297400.011787
+LLTrace::AccumulatorBufferGroup::handOffTo|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|60|39719|0.000001|516|76|35|2379|2389.422742
+LLDrawPoolAvatar::endDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|192|83943|0.000003|1821|46|14|942|480.649483
+process_object_update|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|3603|7614|0.000000|98|77|24|264|45866.857188
+LLCore::HttpOpRequest::sslCertVerifyCallback|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|1052|329500|0.000012|1|329500|329500|329500|0.000000
+LLMotionController::updateIdleMotion|E:\BoxxyViewer\indra\llcharacter\llmotioncontroller.cpp|516|19094224|0.000711|205704|92|5|60491|244.363935
+"lllog"|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|4140|228|0.000000|3|76|34|100|36.496575
+LLWebRTCVoiceClient::sessionState::processSessionStates|E:\BoxxyViewer\indra\newview\llvoicewebrtc.cpp|2231|10985|0.000000|43|255|169|1067|148.865551
+LLImageDecodeThread::decodeImage|E:\BoxxyViewer\indra\llimage\llimageworker.cpp|97|25882|0.000001|18|1437|463|2235|2181.840440
+LLDrawable::updateMoveDamped|E:\BoxxyViewer\indra\newview\lldrawable.cpp|848|15497729|0.000577|77575|199|19|42216|455.197255
+LLDrawable::init|E:\BoxxyViewer\indra\newview\lldrawable.cpp|102|89919|0.000003|41|2193|1819|2995|283.679661
+"lllog"|E:\BoxxyViewer\indra\newview\llvoicewebrtc.cpp|397|210|0.000000|1|210|210|210|0.000000
+LLCore::HttpOpRequest::visitNotifier|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|256|844142|0.000031|42|20098|1376|40145|39835.596564
+LLEventPolling::Details::LLEventPollImpl::handleMessage|E:\BoxxyViewer\indra\newview\lleventpoll.cpp|101|355999|0.000013|23|15478|13224|21016|6388.747373
+LLTextureFetch::removeFromHTTPQueue|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2661|14561|0.000001|23|633|26|1316|426.430267
+LLViewerJointMesh::updateFaceData|E:\BoxxyViewer\indra\newview\llviewerjointmesh.cpp|342|438340|0.000016|403|1087|6|16035|1793.355538
+LLTextureFetchWorker::DecodeResponder::completed|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|355|14226|0.000001|18|790|414|1455|1657.886163
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|242|188619|0.000007|1677|112|6|1654|77.180023
+LLWorld::renderPropertyLines|E:\BoxxyViewer\indra\newview\llworld.cpp|771|50287|0.000002|172|292|139|710|92.317942
+LLDrawPoolGrass::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolsimple.cpp|139|35679|0.000001|317|112|52|326|2478.376276
+"Env Update"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|747|31195|0.000001|173|180|98|370|55959.513200
+LLGLTFMaterialList::applyQueuedOverrides|E:\BoxxyViewer\indra\newview\llgltfmateriallist.cpp|271|514167|0.000019|4888|105|11|826|197.856675
+"df pauseMainloopTimeout"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1465|64325|0.000002|172|373|126|2172|822.474351
+"Emissives"|E:\BoxxyViewer\indra\newview\lldrawpoolalpha.cpp|572|1533548|0.000057|10596|144|85|22807|805.495945
+"ARC - face list"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|4365|1317275|0.000049|3490|377|10|28760|551.500747
+LLTrace::Recording::handleStart|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|129|88996|0.000003|172|517|386|2133|7066.658268
+LLPluginClassMedia::idle|E:\BoxxyViewer\indra\llplugin\llpluginclassmedia.cpp|176|3397350|0.000126|861|3945|861|122637|22501.740609
+"lllog"|E:\BoxxyViewer\indra\newview\llselectmgr.cpp|6019|120260|0.000004|44|2733|1130|6445|43262.356976
+LLSettingsSky::blend|E:\BoxxyViewer\indra\llinventory\llsettingssky.cpp|577|3309289|0.000123|173|19128|14342|113024|12137.828844
+LLViewerFetchedTexture::destroyRawImage|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2939|13838|0.000001|360|38|6|660|38.801473
+"Render Cube Face"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1160|545982|0.000020|172|3174|1874|6307|1359563.227875
+"qt - update"|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|166|113422|0.000004|516|219|75|3686|4531.405890
+LLPipeline::updateCull|E:\BoxxyViewer\indra\newview\pipeline.cpp|2552|4182825|0.000156|1029|4064|1974|122764|288662.916682
+LLStatusBar::draw|E:\BoxxyViewer\indra\newview\llstatusbar.cpp|148|5617505|0.000209|172|32659|25202|101999|16266.043626
+LLTrace::AccumulatorBufferGroup::reset|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|124|170846|0.000006|2236|76|32|35748|3235.255428
+LLDrawPoolAvatar::beginDeferredSkinned|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|639|45247|0.000002|607|74|31|830|1125.956364
+LLDrawPoolAvatar::beginDeferredImpostor|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|545|24383|0.000001|346|70|47|799|616.340596
+"df gMeshRepo"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1608|64693|0.000002|172|376|229|941|107.243152
+"display - 5"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|994|61372|0.000002|173|354|197|978|2032384.956232
+FTM_UPDATE_WORLD_VIEW|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|4197|212784|0.000008|172|1237|741|2425|290.775631
+LLViewerObjectList::update|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|834|34529937|0.001285|172|200755|176899|311144|4568207.018324
+LLRenderPass::pushRiggedBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|513|1227293|0.000046|16407|74|6|16375|18421.409514
+LLPath::genNGon|E:\BoxxyViewer\indra\llmath\llvolume.cpp|1224|85718|0.000003|26|3296|1067|9965|2180.585316
+"Network"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5372|382323|0.000014|172|2222|1562|4081|352848.792444
+LLBodyNoiseMotion::onUpdate|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|368|282399|0.000011|2843|99|14|1028|138.481442
+LLTrace::PeriodicRecording::getPeriodMeanPerSec|E:\BoxxyViewer\indra\llcommon\lltracerecording.h|574|25932|0.000001|173|149|92|296|5101.521221
+LLOcclusionCullingGroup::checkOcclusion|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1111|58237418|0.002168|472696|123|5|103543|299.969435
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|519|746|0.000000|4|186|117|282|79.166491
+LLTrace::PeriodicRecording::getPeriodMax|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|741|664609|0.000025|6020|110|88|52820|685.841049
+LLDrawPoolTerrain::beginShadowPass|E:\BoxxyViewer\indra\newview\lldrawpoolterrain.cpp|157|332376|0.000012|1024|324|127|1782|356.633724
+"shadow alpha masked"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9945|268363|0.000010|2048|131|45|997|7336.321009
+"getGeometryVolume - tangent"|E:\BoxxyViewer\indra\newview\llface.cpp|2074|3008100|0.000112|1710|1759|25|241736|11246.613847
+LLTextureFetchWorker::CacheReadResponder::completed|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|305|4103|0.000000|19|215|38|608|1180.984312
+LLVOAvatar::getMaxGPURenderTime|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12725|204591|0.000008|172|1189|1072|2236|173.036875
+"mwp - default"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|3602|460|0.000000|6|76|42|249|248.128596
+LLCore::HttpOpRequest::curlSslCtxCallback|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|1025|1955|0.000000|1|1955|1955|1955|0.000000
+LLRenderPass::pushUntexturedBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|460|2961184|0.000110|14351|206|6|8384|6556.657346
+LLDrawPoolAvatar::render|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|425|4347543|0.000162|164070|26|13|7691|601.025601
+`anonymous-namespace'::RecordToStderr::recordMessage|E:\BoxxyViewer\indra\llcommon\llerror.cpp|239|186205|0.000007|44|4231|3207|6883|2067.586071
+LLVOAvatar::getAverageGPURenderTime|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12739|295423|0.000011|172|1717|1495|10672|891.439145
+LLVolumeGeometryManager::genDrawInfo|E:\BoxxyViewer\indra\newview\llvovolume.cpp|6574|12560293|0.000467|12464|1007|333|158510|46569.072645
+LLTrace::PeriodicRecording::getPeriodMeanPerSec|E:\BoxxyViewer\indra\llcommon\lltracerecording.h|552|2623419|0.000098|1035|2534|92|8765|1940.570316
+"tfwdw - DECODE_IMAGE_UPDATE"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1825|22079|0.000001|36|613|28|6669|2297.352495
+LLRenderPass::pushUntexturedRiggedBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|541|7555724|0.000281|13312|567|6|70417|18380.541589
+LLViewerFetchedTexture::scheduleCreateTexture|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1609|7504|0.000000|14|536|61|1234|542.132896
+LLPipeline::renderDeferredLighting|E:\BoxxyViewer\indra\newview\pipeline.cpp|8602|1524323|0.000057|344|4431|1306|14332|4422276.033669
+LLVOVolume::updateTextures|E:\BoxxyViewer\indra\newview\llvovolume.cpp|795|24373820|0.000907|32942|739|14|87385|3585.227718
+`anonymous-namespace'::ImplMap::makeMap|E:\BoxxyViewer\indra\llcommon\llsd.cpp|487|179441|0.000007|6978|25|5|7477|152.748989
+LLVOAvatarSelf::writeWearablesToAvatar|E:\BoxxyViewer\indra\newview\llvoavatarself.cpp|813|8504528|0.000317|172|49444|42837|96556|6069.038840
+"doOcclusion - draw"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1269|1086053|0.000040|45099|24|19|5870|48.459092
+LLSDXMLParser::doParse|E:\BoxxyViewer\indra\llcommon\llsdserialize_xml.cpp|1008|2426940|0.000090|127|19109|7291|39573|11452.819326
+LLDrawPoolBump::renderPostDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|597|286655|0.000011|1011|283|126|7781|6785.581384
+"doOcclusion - set state"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1289|372515|0.000014|45099|8|6|2007|17.325387
+"lllog"|E:\BoxxyViewer\indra\newview\lltoolpie.cpp|832|22628|0.000001|172|131|95|704|55.643077
+LLMotionController::activateMotionInstance|E:\BoxxyViewer\indra\llcharacter\llmotioncontroller.cpp|979|60765|0.000002|134|453|70|2355|1791.370247
+"rmdo - glGetQueryObject"|E:\BoxxyViewer\indra\newview\llreflectionmap.cpp|351|2309554|0.000086|14878|155|38|24993|251.319668
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1852|6797|0.000000|18|377|33|1719|379.236152
+"df idle"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1472|63668|0.000002|172|370|193|1043|6520171.664863
+"calcPixelArea - rigged"|E:\BoxxyViewer\indra\newview\llface.cpp|2296|243469881|0.009062|372858|652|16|149659|720.934843
+LLTextBase::reflow|E:\BoxxyViewer\indra\llui\lltextbase.cpp|1834|1354562|0.000050|20126|67|12|5197|245.645719
+LLTextureFetch::getRequestFinished|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2795|71557|0.000003|14|5111|1864|9037|35834.701947
+"tfwdw - LOAD_FROM_TEXTURE_CACHE"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1145|39969|0.000001|46|868|11|2065|14766.252045
+"lllog"|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|4041|16253|0.000001|194|83|6|660|107.763486
+LLTrace::Recording::update|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|97|178684|0.000007|517|345|33|2180|10984.120489
+LLPipeline::renderAlphaObjects|E:\BoxxyViewer\indra\newview\pipeline.cpp|6970|1240586|0.000046|2048|605|72|20026|12783.238253
+LLMeshRepoThread::notifyLoadedMeshes|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|3411|216916|0.000008|1118|194|6|62322|10126.113189
+LLFlyAdjustMotion::onUpdate|E:\BoxxyViewer\indra\llcharacter\llkeyframewalkmotion.cpp|378|3896|0.000000|15|259|135|540|134.407430
+LLViewerObject::unpackParticleSource|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|6447|346470|0.000013|312|1110|322|4274|784.728413
+"lllog"|E:\BoxxyViewer\indra\llui\lltextbase.cpp|2601|62930|0.000002|814|77|6|50746|1778.398409
+FTM_LOD_UPDATE|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5611|15047933|0.000560|173|86982|58976|378927|603930.024939
+LLSpatialPartition::calcDistance|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|640|31406787|0.001169|222623|141|6|50025|211.793034
+LLPipeline::doAtmospherics|E:\BoxxyViewer\indra\newview\pipeline.cpp|9206|390532|0.000015|867|450|6|3365|4081.779606
+LLTextureFetch::getWorkerAfterLock|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2771|64232|0.000002|129|497|9|6113|601.984239
+render_hud_elements|E:\BoxxyViewer\indra\newview\pipeline.cpp|3919|1906330|0.000071|344|5541|214|43172|6766.744315
+LLUICtrlFactory::createWidgetImpl|E:\BoxxyViewer\indra\llui\lluictrlfactory.h|213|1187|0.000000|1|1187|1187|1187|0.000000
+"lllog"|E:\BoxxyViewer\indra\llcommon\lleventcoro.cpp|313|11609|0.000000|53|219|7|902|118.033568
+"lllog"|E:\BoxxyViewer\indra\newview\llsechandler_basic.cpp|1124|40|0.000000|1|40|40|40|0.000000
+"shadow alpha material"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9980|269716|0.000010|2048|131|58|2543|171946.204002
+"pushRiggedGLTFBatch"|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|1020|1512259|0.000056|9396|160|68|9185|548.818474
+LLTrace::AccumulatorBuffer<class LLTrace::SampleAccumulator>::resize|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|182|145717|0.000005|344|423|212|1099|140.761869
+LLThreadSafeQueue<struct tagMSG,class std::queue<struct tagMSG,class std::deque<struct tagMSG,class std::allocator<struct tagMSG> > > >::pushIfOpen|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|325|15633|0.000001|111|140|64|835|391.085645
+"deferred pools"|E:\BoxxyViewer\indra\newview\pipeline.cpp|4107|2799726|0.000104|606|4620|1547|16293|1061129.683408
+LLPipeline::updateMovedList|E:\BoxxyViewer\indra\newview\pipeline.cpp|2152|28758104|0.001070|346|83115|34075|213307|53719.450809
+LLThread::lockData|E:\BoxxyViewer\indra\llcommon\llthread.cpp|493|44690|0.000002|950|47|13|769|746.111921
+LLShaderUniforms::apply|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|2042|21282700|0.000792|104236|204|6|80683|670.721411
+LLVOVolume::updateLOD|E:\BoxxyViewer\indra\newview\llvovolume.cpp|1758|16411932|0.000611|97725|167|20|7020|429.032046
+LLPumpIO::pump|E:\BoxxyViewer\indra\llmessage\llpumpio.cpp|435|140750|0.000005|172|818|553|1632|170.045333
+LLSkinningUtil::updateRiggingInfo|E:\BoxxyViewer\indra\newview\llskinningutil.cpp|332|122337|0.000005|69|1773|334|35484|4196.652833
+LLVOAvatar::updateSkinInfoMatrixPalette|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|10589|17950908|0.000668|67539|265|18|134020|1214.845342
+"shadow alpha blend"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9954|53076|0.000002|2048|25|12|826|13166.451496
+FTM_CLEANUP|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5493|55643|0.000002|173|321|200|1062|79990.554324
+"doOcclusion - render"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1207|2158488|0.000080|45099|47|29|4851|384.568435
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2642|4205|0.000000|19|221|9|401|102.728877
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::tryLock|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|278|54365|0.000002|16|3397|113|20654|6611.940381
+"idle network"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|6054|8345799|0.000311|172|48522|15625|184351|299423.233004
+ImageRequest::processRequest|E:\BoxxyViewer\indra\llimage\llimageworker.cpp|159|1552892|0.000058|18|86271|41096|176060|3295791.145225
+LLTrace::AccumulatorBuffer<class LLTrace::TimeBlockAccumulator>::~AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|79|154404|0.000006|344|448|76|6488|383.048361
+LLViewerTextureList::updateImagesLoadingFastCache|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|1195|14886|0.000001|173|86|27|273|54.722662
+"vtluift - copy"|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|1280|8183448|0.000305|173|47303|39539|69876|5127.914060
+LLVOAvatar::idleUpdate|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|2941|173465028|0.006456|15538|11163|1113|211094|79140.546275
+LLTrace::AccumulatorBuffer<class LLTrace::SampleAccumulator>::AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|68|200425|0.000007|344|582|138|2437|561.686385
+LLTextureFetchWorker::doWork|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1039|351480|0.000013|210|1673|36|89595|27131.663099
+LLPipeline::renderGeomShadow|E:\BoxxyViewer\indra\newview\pipeline.cpp|4359|8368747|0.000311|1024|8172|4265|73623|37032.312058
+LLGLSLShader::uniform2f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1363|875101|0.000033|69327|12|6|11466|52.200536
+LLSpatialBridge::setVisible|E:\BoxxyViewer\indra\newview\lldrawable.cpp|1507|63075728|0.002348|140240|449|6|128941|1060.046470
+LLViewerFetchedTexture::preCreateTexture|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1446|4951|0.000000|14|353|27|496|146.292910
+LLTrace::AccumulatorBuffer<class LLTrace::SampleAccumulator>::~AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|79|107580|0.000004|344|312|46|7099|394.490305
+LLDrawPoolFullbright::renderPostDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolsimple.cpp|158|90961|0.000003|1011|89|42|785|20184.307036
+"lllog"|E:\BoxxyViewer\indra\llmessage\message.cpp|2390|1783|0.000000|23|77|36|172|40.001136
+LLCondition::wait|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|341|5159161368|0.192019|1117|4618765|219108|20765458|4298709.334856
+LLDrawPoolGlow::renderPostDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolsimple.cpp|47|251005|0.000009|839|299|129|1774|19782.909432
+`anonymous-namespace'::RecordToWinDebug::recordMessage|E:\BoxxyViewer\indra\llcommon\llerror.cpp|343|10770|0.000000|44|244|9|946|241.537613
+LLGLSLShader::uniform4fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1598|7471064|0.000278|349298|21|9|143246|344.497328
+LLBreatheMotionRot::onUpdate|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|489|3727|0.000000|19|196|107|358|72.635697
+LLRenderPass::uploadMatrixPalette|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|809|79684882|0.002966|1585831|50|5|133426|405.526402
+LLImageDecodeThread::update|E:\BoxxyViewer\indra\llimage\llimageworker.cpp|82|66510|0.000002|172|386|118|1121|172.328226
+LLVOAvatar::updateRiggingInfo|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11458|43497|0.000002|214|203|46|1010|29498.190361
+LLTrace::Recording::handleReset|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|118|27710|0.000001|344|80|28|339|4956.810477
+"df gatherInput"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1395|5916|0.000000|172|34|31|56|85.020156
+"co - query result"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1145|1685641|0.000063|45025|37|30|26796|156.722917
+LLPipeline::updateMoveDampedAsync|E:\BoxxyViewer\indra\newview\pipeline.cpp|2090|6380962|0.000237|67494|94|21|97418|684.577678
+FTM_HUD_UPDATE|E:\BoxxyViewer\indra\newview\llhudobject.cpp|264|7480818|0.000278|173|43241|35281|183765|84237.291657
+LLDrawPoolTerrain::endShadowPass|E:\BoxxyViewer\indra\newview\lldrawpoolterrain.cpp|168|32046|0.000001|1024|31|14|680|66.990859
+"UI 3D"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1522|30677|0.000001|172|178|97|902|1275.079901
+"rebuildMesh - gen draw info"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|6443|417423|0.000016|742|562|14|6072|97304.798891
+LLPipeline::rebuildPriorityGroups|E:\BoxxyViewer\indra\newview\pipeline.cpp|2888|1898017|0.000071|1118|1697|69|19930|471595.331266
+"tcwfw - write"|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|752|584|0.000000|16|36|21|113|27.224989
+LLViewerTextureList::updateImagesCreateTextures|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|1093|66163|0.000002|173|382|200|2012|4979.719572
+LLReflectionMapManager::doProbeUpdate|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|743|35091|0.000001|172|204|145|778|1371678.638655
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12126|231|0.000000|3|77|37|98|34.655447
+LLTextureFetchWorker::onCompleted|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1956|59521|0.000002|16|3720|455|6191|2246.841650
+LLPerfStats::StatsRecorder::endFrame|E:\BoxxyViewer\indra\newview\llperfstats.h|183|7811|0.000000|172|45|27|281|1176.188668
+LLPumpIO::callback|E:\BoxxyViewer\indra\llmessage\llpumpio.cpp|743|7271|0.000000|172|42|38|123|6.569022
+LLSettingsVOWater::applySpecial|E:\BoxxyViewer\indra\newview\llsettingsvo.cpp|1065|567684|0.000021|345|1645|714|59937|3201.841749
+"List"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|868|65742|0.000002|173|380|198|960|2152239.329999
+"lllog"|E:\BoxxyViewer\indra\newview\lleventpoll.cpp|186|2749|0.000000|23|119|95|178|23.426869
+LLGLSLShader::disableTexture|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1255|1885434|0.000070|122181|15|6|6863|43.567182
+LLViewerFetchedTexture::updateVirtualSize|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1821|1244772|0.000046|44294|28|20|8012|80.113877
+"doOcclusion - early fail"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1196|29260|0.000001|96|304|8|1034|144.674298
+"lllog"|E:\BoxxyViewer\indra\newview\llface.cpp|828|16546|0.000001|156|106|6|873|102.639300
+LLTextureFetch::cmdDoWork|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|3520|15439|0.000001|172|89|47|409|416.267430
+LLVOAvatar::calculateUpdateRenderComplexity|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11988|506082|0.000019|699|724|6|11995|46805.836535
+"lllog"|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|4136|315|0.000000|3|105|94|127|19.052559
+LLControlGroup::get|E:\BoxxyViewer\indra\llxml\llcontrol.h|229|1216098|0.000045|21843|55|19|2543|94.499935
+LL::WorkQueueBase::runFor|E:\BoxxyViewer\indra\llcommon\workqueue.h|171|436886|0.000016|1290|338|54|6688|6091.177846
+LLCore::HttpOpRequest::setupCommon|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|429|12226|0.000000|43|284|107|1018|152.161099
+"lllog"|E:\BoxxyViewer\indra\newview\llsechandler_basic.cpp|536|468|0.000000|1|468|468|468|0.000000
+LLDrawPoolAvatar::endDeferredRigid|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|585|33241|0.000001|607|54|22|811|148.526142
+LLVOSky::updateGeometry|E:\BoxxyViewer\indra\newview\llvosky.cpp|982|523194|0.000019|345|1516|1026|7010|2850.662294
+"lllog"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|5402|12151|0.000000|111|109|42|630|61.748611
+FTM_DISPLAY_DEBUG_TEXT|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|981|66938|0.000002|172|389|215|1142|140.627291
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::push|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|348|8174|0.000000|111|73|42|336|1172.379783
+"media sort2"|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|904|15291|0.000001|172|88|31|677|64.469268
+LLVOAvatar::calculateSpatialExtents|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|1648|2745368|0.000102|214|12828|3317|23632|31301.690482
+LLProfile::generate|E:\BoxxyViewer\indra\llmath\llvolume.cpp|742|183726|0.000007|70|2624|8|18843|3913.292787
+FTM_OBJECTLIST_UPDATE|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5477|136681|0.000005|172|794|462|1367|4769075.350418
+LLSkinningUtil::initSkinningMatrixPalette|E:\BoxxyViewer\indra\newview\llskinningutil.cpp|134|48978545|0.001823|67539|725|10|60024|663.312217
+"tfwdw - WAIT_ON_WRITE"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1909|129043|0.000005|48|2688|36|21751|10583.959311
+"notify loaded meshes"|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|3423|312703|0.000012|4|78175|31127|205010|105984.416029
+delete_buffers|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|296|11519|0.000000|40|287|7|2977|621.359902
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|6713|194|0.000000|5|38|34|56|9.695360
+LLDrawable::updateSpatialExtents|E:\BoxxyViewer\indra\newview\lldrawable.cpp|1062|7877807|0.000293|61772|127|10|118421|2570.038953
+LLTrace::AccumulatorBuffer<class LLTrace::EventAccumulator>::addSamples|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|112|514151|0.000019|2580|199|21|6108|172.059140
+LLRenderPass::pushBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|435|1904145|0.000071|19131|99|6|31226|15064.786821
+"update sky"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|918|121845|0.000005|173|704|398|2594|499.340903
+LLViewerWindow::cubeSnapshot|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|5620|402383|0.000015|172|2339|1419|3695|1364230.551837
+LLViewerTexture::addFace|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|907|40790|0.000002|282|144|6|16589|986.719303
+LLVOVolume::updateGeometry|E:\BoxxyViewer\indra\newview\llvovolume.cpp|2211|815537|0.000030|1636|498|35|47109|5658.509089
+"lllog"|E:\BoxxyViewer\indra\llplugin\llpluginprocessparent.cpp|1143|3389|0.000000|25|135|9|881|163.928846
+LLDrawable::updateGeometry|E:\BoxxyViewer\indra\newview\lldrawable.cpp|984|864827|0.000032|5493|157|12|11212|11018.812138
+LLWindowWin32::swapBuffers|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|4106|6977013|0.000260|172|40564|21741|464058|43699.030638
+"qtpr - retry"|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|490|93908|0.000003|174|539|52|3009|2171.149746
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|1236|21478|0.000001|1677|12|8|645|26.083467
+LLThreadSafeQueue<struct tagMSG,class std::queue<struct tagMSG,class std::deque<struct tagMSG,class std::allocator<struct tagMSG> > > >::pop_|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|424|35498|0.000001|282|125|6|935|136.879041
+LL::WorkQueueBase::postMaybe|E:\BoxxyViewer\indra\llcommon\workqueue.h|553|231|0.000000|1|231|231|231|0.000000
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2842|2482|0.000000|14|177|11|336|90.204895
+`anonymous-namespace'::writeToRecorders|E:\BoxxyViewer\indra\llcommon\llerror.cpp|1265|597005|0.000022|44|13568|8027|21023|29902.485581
+LLPipeline::generateSSSDepth|E:\BoxxyViewer\indra\newview\pipeline.cpp|10482|69083045|0.002571|173|399323|135241|7466733|4859056.065446
+LLGLState::~LLGLState|E:\BoxxyViewer\indra\llrender\llgl.cpp|2556|9063063|0.000337|798734|11|5|48483|61.827690
+LLTrace::AccumulatorBuffer<class LLTrace::TimeBlockAccumulator>::getDefaultBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|223|16316|0.000001|688|23|6|661|43.529374
+LLThread::wake|E:\BoxxyViewer\indra\llcommon\llthread.cpp|473|97618|0.000004|516|189|58|874|415.234782
+LLMutexTrylock::~LLMutexTrylock|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|391|96554|0.000004|4472|21|12|803|46.653076
+LLRenderPass::pushRiggedMaskBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|625|33908804|0.001262|7561|4484|6|149066|64822.005113
+LLSharedMutex::unlockExclusive|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|306|52782|0.000002|333|158|31|1665|196.137860
+LLVOAvatar::idleUpdateMisc|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|3268|21389949|0.000796|15539|1376|30|62322|23822.482003
+LLSharedMutex::lockShared|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|182|44074|0.000002|20|2203|70|6524|1735.870175
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|1538|269|0.000000|1|269|269|269|0.000000
+"lllog"|E:\BoxxyViewer\indra\newview\llsechandler_basic.cpp|1088|218|0.000000|1|218|218|218|0.000000
+LLTrace::AccumulatorBufferGroup::~AccumulatorBufferGroup|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|55|7236|0.000000|344|21|6|80|8.735171
+LLPipeline::postSort|E:\BoxxyViewer\indra\newview\pipeline.cpp|3648|92719144|0.003451|1290|71875|5459|435330|512301.219277
+LLMotionController::updateIdleActiveMotions|E:\BoxxyViewer\indra\llcharacter\llmotioncontroller.cpp|555|22108496|0.000823|11154|1982|25|204718|3303.268119
+LLImageGL::generateTextures|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1248|4066|0.000000|14|290|54|847|184.184272
+LL::GLTFSceneManager::update|E:\BoxxyViewer\indra\newview\gltfscenemanager.cpp|484|27424|0.000001|173|158|67|816|75.024647
+`anonymous-namespace'::RecordToStderr::writeANSI|E:\BoxxyViewer\indra\llcommon\llerror.cpp|279|56128|0.000002|44|1275|436|2792|790.202005
+LLTrace::AccumulatorBuffer<class LLTrace::SampleAccumulator>::sync|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|142|234309|0.000009|860|272|93|1476|228.548232
+LLPipeline::renderGeomDeferred|E:\BoxxyViewer\indra\newview\pipeline.cpp|4076|18072100|0.000673|606|29821|22|234647|1102617.738613
+LLCore::HttpOpRequest::prepareRequest|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|472|526987|0.000020|43|12255|2905|40282|8871.936842
+LLTextureFetchWorker::finishWork|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2082|1568|0.000000|18|87|9|625|144.681801
+LLError::Log::flush|E:\BoxxyViewer\indra\llcommon\llerror.cpp|1438|32743|0.000001|44|744|220|1847|42024.472792
+"lllog"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|3603|1097|0.000000|6|182|118|415|116.602744
+LLTextureFetch::getFetchState|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|3159|1552|0.000000|19|81|48|102|228.687317
+`anonymous-namespace'::ImplMap::insert|E:\BoxxyViewer\indra\llcommon\llsd.cpp|547|239411|0.000009|1381|173|45|1611|144.375888
+LLMeshHandlerBase::onCompleted|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|3641|54254|0.000002|3|18084|10424|31920|12360.492405
+LLThread::unlockData|E:\BoxxyViewer\indra\llcommon\llthread.cpp|499|37653|0.000001|950|39|12|894|208.194575
+LLEnvironment::updateShaderUniforms|E:\BoxxyViewer\indra\newview\llenvironment.cpp|1722|1442260|0.000054|26059|55|35|2363|1784.076611
+FTM_UPDATE_HUD_EFFECTS|E:\BoxxyViewer\indra\newview\llhudmanager.cpp|61|5158656|0.000192|173|29818|25494|41068|2973.632521
+LLSpatialBridge::updateSpatialExtents|E:\BoxxyViewer\indra\newview\lldrawable.cpp|1334|3202364|0.000119|56405|56|10|27215|769.890717
+LLViewerTextureList::updateImagesUpdateStats|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|1323|5268|0.000000|173|30|28|63|4.073453
+LLMutex::trylock|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|127|758354|0.000028|5333|142|34|14883|239.014359
+LLTextBase::updateSegments|E:\BoxxyViewer\indra\llui\lltextbase.cpp|2189|322755|0.000012|20127|16|6|4966|52.776479
+LLKeyframeWalkMotion::onUpdate|E:\BoxxyViewer\indra\llcharacter\llkeyframewalkmotion.cpp|108|3400|0.000000|20|170|99|389|2374.829911
+"lllog"|E:\BoxxyViewer\indra\llappearance\llavatarappearance.cpp|456|319|0.000000|1|319|319|319|0.000000
+LLVolumeGeometryManager::rebuildGeom|E:\BoxxyViewer\indra\newview\llvovolume.cpp|5899|2434443|0.000091|779|3125|199|31961|318345.052591
+"renderDeferredLighting - projectors"|E:\BoxxyViewer\indra\newview\pipeline.cpp|8939|2602985|0.000097|271|9605|1351|231540|20794.577607
+LLAppViewer::idle|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5203|6887881|0.000256|172|40045|31264|224588|6480232.194959
+LLTrace::PeriodicRecording::nextPeriod|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|450|103301|0.000004|172|600|389|1325|34219.756288
+"df pauseMainloopTimeout"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1524|231714|0.000009|172|1347|830|8373|1267.655692
+"tfwdw - LOAD_FROM_NETWORK"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1259|134891|0.000005|17|7934|1339|29111|6365.006854
+LLCondition::signal|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|348|3457832|0.000129|1633|2117|7|20476|1599.062531
+LLGLSLShader::uniform3fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1952|2193006|0.000082|17397|126|13|18036|752.431766
+LLDrawPoolBump::beginBump|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|496|174810|0.000007|1850|94|20|1162|898.873313
+"lllog"|E:\BoxxyViewer\indra\llappearance\llavatarappearance.cpp|462|252|0.000000|1|252|252|252|0.000000
+"renderDeferredLighting - sun shadow"|E:\BoxxyViewer\indra\newview\pipeline.cpp|8668|178599|0.000007|173|1032|705|3801|7411.091723
+LLOcclusionCullingGroup::releaseOcclusionQueryObjectName|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|824|738850|0.000027|45397|16|8|1994|40.239647
+LLVolume::getLoDTriangleCounts|E:\BoxxyViewer\indra\llmath\llvolume.cpp|3993|47527|0.000002|539|88|18|917|99.291177
+"Exact OIT prepare capture"|E:\BoxxyViewer\indra\newview\fsexactoit.cpp|833|243579|0.000009|172|1416|1147|1946|2716.162901
+"unmapBuffer - index"|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1518|366430|0.000014|3539|103|18|2929|2196.886466
+LLPipeline::stateSort|E:\BoxxyViewer\indra\newview\pipeline.cpp|3338|4932643|0.000184|54874|89|12|10218|9625.351335
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::pop_|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|424|881461|0.000033|3256|270|6|9909|600.942138
+LLWalkAdjustMotion::onUpdate|E:\BoxxyViewer\indra\llcharacter\llkeyframewalkmotion.cpp|202|19587|0.000001|23|851|418|2059|336.250853
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|6746|544|0.000000|7|77|7|100|31.577946
+"httppt - curl_multi_perform"|E:\BoxxyViewer\indra\llcorehttp\_httplibcurl.cpp|173|30054899|0.001119|2006|14982|1048|6736467|153636.899377
+LLFontGL::render|E:\BoxxyViewer\indra\llrender\llfontgl.cpp|155|32563310|0.001212|35020|929|6|216676|2694.035857
+"pushGLTFBatch"|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|920|12023012|0.000447|35134|342|121|12782|1120.716640
+LLVOAvatar::idleUpdateNameTag|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|3647|27215287|0.001013|15539|1751|21|58091|1436.401750
+FTM_WINDOW_CHECK_SETTINGS|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|6135|93239|0.000003|173|538|192|39697|2995.927545
+LLViewerTextureList::getImage|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|561|5023648|0.000187|88987|56|15|36717|516.341060
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::pop|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|446|19002943324|0.707270|790|24054358|21|2697449501|130766208.275873
+"lllog"|E:\BoxxyViewer\indra\newview\pipeline.cpp|11496|11037|0.000000|261|42|6|214|30.367049
+LLPerfStats::RecordTime<0>::RecordTime|E:\BoxxyViewer\indra\newview\llperfstats.h|325|22124|0.000001|1721|12|5|84|7.144847
+LLViewerWindow::updateUI|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|3538|37530223|0.001397|172|218198|188795|433044|58494.729512
+"lllog"|E:\BoxxyViewer\indra\newview\pipeline.cpp|11790|23061|0.000001|261|88|6|808|75.513549
+"lllog"|E:\BoxxyViewer\indra\llprimitive\llprimitive.cpp|1415|9389|0.000000|312|30|6|237|44.041014
+LLDrawPoolBump::beginFullbrightShiny|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|284|743652|0.000028|1850|401|148|2152|1481.207830
+"ggv - texgen 2"|E:\BoxxyViewer\indra\newview\llface.cpp|1723|209372|0.000008|1563|133|15|2592|161.960961
+LLVOVolume::setVolume|E:\BoxxyViewer\indra\newview\llvovolume.cpp|1162|571109|0.000021|682|837|15|8463|1581.025435
+"tfwdw - WAIT_HTTP_RESOURCE"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1353|3063|0.000000|17|180|42|332|343.574592
+LLQueuedThread::addRequest|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|276|34767|0.000001|54|643|39|2297|8162.708651
+LLGLSLShader::uniformMatrix4fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|2005|773022|0.000029|6261|123|18|1656|107.545899
+`anonymous-namespace'::RecordToTracy::recordMessage|E:\BoxxyViewer\indra\llcommon\llerror.cpp|364|7666|0.000000|44|174|22|577|152.795044
+LLMutex::lock|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|49|1739020|0.000065|19082|91|14|11061|208.071325
+"gi - mouse queue"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2371|8260|0.000000|172|48|40|86|272.841041
+LLViewerTextureList::updateImages|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|810|199477|0.000007|173|1153|773|2083|2151084.289055
+LLSpatialGroup::handleChildAddition|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|816|998765|0.000037|908|1099|275|4318|734.735467
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12080|8777|0.000000|96|91|29|328|51.383286
+LLGLDepthTest::LLGLDepthTest|E:\BoxxyViewer\indra\llrender\llgl.cpp|2792|2883890|0.000107|39106|73|6|8148|148.369439
+LLTextureFetch::getPending|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2917|28386|0.000001|344|82|44|397|592.829943
+LLMaterial::getHash|E:\BoxxyViewer\indra\llprimitive\llmaterial.cpp|470|87016|0.000003|2672|32|10|1106|78.514622
+LLVOVolume::genBBoxes|E:\BoxxyViewer\indra\newview\llvovolume.cpp|1913|450320|0.000017|1544|291|27|3812|5154.193900
+LLHandMotion::onUpdate|E:\BoxxyViewer\indra\llcharacter\llhandmotion.cpp|124|1503272|0.000056|2800|536|260|6204|241.474117
+LLDrawPoolTerrain::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolterrain.cpp|137|780089|0.000029|345|2261|27|95250|13090.677197
+"llvfcuccm - generate indices"|E:\BoxxyViewer\indra\llmath\llvolume.cpp|6433|521|0.000000|8|65|44|149|115.865686
+"tgd - do bump"|E:\BoxxyViewer\indra\newview\llface.cpp|1955|3546|0.000000|4|886|783|1047|120.212312
+LLDrawPoolBump::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|543|394221|0.000015|578|682|223|2271|4465.352097
+LLPerfStats::RecordTime<0>::RecordTime|E:\BoxxyViewer\indra\newview\llperfstats.h|318|33037|0.000001|1721|19|5|632|23.387410
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1249|3182|0.000000|17|187|7|524|144.191496
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2013|2273|0.000000|16|142|7|298|63.826327
+LLTextBase::appendTextImpl|E:\BoxxyViewer\indra\llui\lltextbase.cpp|2446|1051829|0.000039|312|3371|1938|23085|3850.296821
+LLView::findChildView|E:\BoxxyViewer\indra\llui\llview.cpp|1650|108616446|0.004043|1979224|54|5|221903|10974.141805
+LLUIImage::draw|E:\BoxxyViewer\indra\llrender\lluiimage.inl|44|7823371|0.000291|23392|334|48|51427|556.578270
+"lllog"|E:\BoxxyViewer\indra\newview\pipeline.cpp|11486|9857|0.000000|261|37|6|757|48.599145
+"lllog"|E:\BoxxyViewer\indra\llmessage\llhttpnode.cpp|258|3274|0.000000|46|71|7|252|67.232928
+LLPipeline::updateMoveNormalAsync|E:\BoxxyViewer\indra\newview\pipeline.cpp|2121|1894471|0.000071|10764|176|18|9588|1308.973755
+calc_light_dist|E:\BoxxyViewer\indra\newview\pipeline.cpp|5613|3256944|0.000121|87054|37|6|25605|115.032689
+LLMaterialMgr::onIdle|E:\BoxxyViewer\indra\newview\llmaterialmgr.cpp|576|252250|0.000009|172|1466|1040|2921|336.142653
+LLGLSLShader::uniformMatrix3x4fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1678|49667663|0.001849|310387|160|9|60385|251.170814
+LLTextureFetch::update|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2996|187903|0.000007|172|1092|174|32848|6694.819966
+LLPerfStats::updateClass|E:\BoxxyViewer\indra\newview\llperfstats.cpp|290|42629|0.000002|172|247|145|859|25242.622323
+LLCore::HttpService::processRequestQueue|E:\BoxxyViewer\indra\llcorehttp\_httpservice.cpp|340|346646429|0.012902|1726|200838|130|33599764|2054813.762339
+LLFace::calcPixelArea|E:\BoxxyViewer\indra\newview\llface.cpp|2288|71784294|0.002672|460064|156|11|42151|948.721169
+LLTrace::AccumulatorBuffer<class LLTrace::CountAccumulator>::~AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|79|122287|0.000005|344|355|49|1261|160.851116
+LLVOPartGroup::updateGeometry|E:\BoxxyViewer\indra\newview\llvopartgroup.cpp|218|21516402|0.000801|3684|5840|318|71535|11025.774003
+LLTrace::PeriodicRecording::getPeriodMeanPerSec|E:\BoxxyViewer\indra\llcommon\lltracerecording.h|574|25672|0.000001|518|49|12|749|3406.544622
+"clear max/sum"|E:\BoxxyViewer\indra\newview\llperfstats.cpp|228|5393|0.000000|172|31|22|203|23.563898
+"getGeometryVolume - normal"|E:\BoxxyViewer\indra\newview\llface.cpp|2056|3977647|0.000148|5268|755|17|165469|5375.223976
+LL::WorkQueueBase::runPending|E:\BoxxyViewer\indra\llcommon\workqueue.cpp|97|37510|0.000001|111|337|137|2018|1135.162151
+LLViewerFetchedTexture::processTextureStats|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1728|157610|0.000006|4165|37|5|971|145.507534
+"lllog"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|5394|14078|0.000001|111|126|41|325|67.500034
+LLControlGroup::get|E:\BoxxyViewer\indra\llxml\llcontrol.h|229|1912313|0.000071|3622|527|32|102527|1741.141517
+LLViewerTexture::addTextureStats|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|872|2394306|0.000089|55078|43|5|2967|102.835504
+LLViewerTexture::reorganizeFaceList|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1002|472921|0.000018|44982|10|6|7944|47.691137
+LLViewerObject::markDead|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|425|59848|0.000002|42|1424|238|2203|16455.641871
+LLDrawPoolAvatar::endPostDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|246|288706|0.000011|868|332|260|2423|495.575869
+"cglt - late setImage"|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1692|1963|0.000000|14|140|16|269|12401.782183
+LLDrawPoolAlphaMask::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolsimple.cpp|118|66136|0.000002|578|114|40|2099|21530.990524
+LLSD::operator []|E:\BoxxyViewer\indra\llcommon\llsd.cpp|1192|164345|0.000006|823|199|6|1317|214.480127
+LLViewerLODTexture::processTextureStats|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|3188|2178665|0.000081|43932|49|16|13411|157.424791
+LLPipeline::stateSort|E:\BoxxyViewer\indra\newview\pipeline.cpp|3198|118556690|0.004413|1290|91904|123|749165|806149.079640
+LLEnvironment::updateGLVariablesForSettings|E:\BoxxyViewer\indra\newview\llenvironment.cpp|1708|282287|0.000011|690|409|168|1385|2634.124791
+"ggv - texgen 1"|E:\BoxxyViewer\indra\newview\llface.cpp|1717|1049891|0.000039|1929|544|9|84517|4056.564667
+LLDrawable::setNumFacesFast|E:\BoxxyViewer\indra\newview\lldrawable.cpp|440|161165|0.000006|168|959|149|2516|3621.896923
+LLGLSLShader::uniform4fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1978|321855|0.000012|4702|68|11|2682|82.229173
+LLQueuedThread::processRequest|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|435|139795|0.000005|227|615|63|2264|346756.413351
+"voiceConnectionCoroLoop"|E:\BoxxyViewer\indra\newview\llvoicewebrtc.cpp|626|1992388|0.000074|43|46334|17873|96704|13820.532107
+LL::WorkQueueBase::postTo|E:\BoxxyViewer\indra\llcommon\workqueue.h|502|650|0.000000|1|650|650|650|0.000000
+LLViewerRegion::updateReflectionProbes|E:\BoxxyViewer\indra\newview\llviewerregion.cpp|1277|292351|0.000011|173|1689|1144|13543|953.105591
+llsd_equals|E:\BoxxyViewer\indra\llcommon\llsdutil.cpp|770|55561|0.000002|218|254|10|667|91.588616
+gen_buffer|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|263|5923|0.000000|106|55|7|355|60.303755
+LLFace::calcImportanceToCamera|E:\BoxxyViewer\indra\newview\llface.cpp|2488|17293810|0.000644|448749|38|5|33064|69.444537
+LLPipeline::setupHWLights|E:\BoxxyViewer\indra\newview\pipeline.cpp|5825|3123507|0.000116|1990|1569|45|10643|1426.111848
+ms_sleep|E:\BoxxyViewer\indra\llcommon\lltimer.cpp|112|281166|0.000010|1817|154|35|6162|47196481.757547
+"Class"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|858|28344|0.000001|173|163|121|809|5216.890815
+LLScopedLock::unlock|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|422|3486|0.000000|98|35|6|317|52.482299
+LLViewerWindow::updateLayout|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|3993|1390115|0.000052|172|8082|6112|38879|3437.397036
+"getGeometryVolume - tcoord"|E:\BoxxyViewer\indra\newview\llface.cpp|1592|282019|0.000010|4718|59|22|1474|5010.765681
+"df processMiscNativeEvents"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1385|30763|0.000001|172|178|158|1399|2116409.946495
+LLVolumeImplFlexible::updateClass|E:\BoxxyViewer\indra\newview\llflexibleobject.cpp|95|2573326|0.000096|173|14874|9603|38755|12875.038597
+"lllog"|E:\BoxxyViewer\indra\llmessage\message.cpp|2389|1246|0.000000|23|54|36|143|24.338522
+"tfwdw - DONE"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1931|3241|0.000000|18|180|25|471|134.229610
+LLHUDNameTag::renderText|E:\BoxxyViewer\indra\newview\llhudnametag.cpp|246|6760893|0.000252|7224|935|273|83233|33247.643381
+LLViewerFetchedTexture::addToCreateTexture|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1400|3531|0.000000|14|252|26|860|1214.992719
+"deferred poolrender"|E:\BoxxyViewer\indra\newview\pipeline.cpp|4294|3065552|0.000114|7772|394|23|11682|513674.284286
+"tfwdw - DECODE_IMAGE"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1743|29527|0.000001|18|1640|275|3005|4064.724562
+FTM_PROCESS_OBJECTS|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|399|4348759|0.000162|220|19767|1795|140841|36579.309693
+"lllog"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|2576|27185|0.000001|3406|7|6|687|14.322579
+LLStringUtilBase<char>::format|E:\BoxxyViewer\indra\llcommon\llstring.cpp|1740|9553|0.000000|2|4776|2541|7012|10765.764998
+"rebuildMesh - flush"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|6507|41208|0.000002|742|55|13|798|96906.392296
+"glTexImage2D"|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1455|46333|0.000002|35|1323|203|2851|6055.237946
+LLPolyMorphTarget::apply|E:\BoxxyViewer\indra\llappearance\llpolymorph.cpp|549|5419668|0.000202|2965|1827|490|75132|1628.967255
+LLWindowWin32::updateCursor|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2262|6988|0.000000|172|40|34|117|16.110728
+micro_sleep|E:\BoxxyViewer\indra\llcommon\lltimer.cpp|94|10475327641|0.389881|1817|5765177|2008331|1000967359|46842846.387890
+LLTextureCacheRemoteWorker::doWrite|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|536|5947690|0.000221|16|371730|126407|728984|1083375.703949
+"gi - PeekMessage"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2341|4115141|0.000153|172|23925|5423|652181|72400.595757
+LLGLSLShader::uniform3f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1390|865459|0.000032|60321|14|8|12628|60.931756
+LLVOAvatar::renderSkinned|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|5540|19327220|0.000719|27992|690|101|61772|1408.125369
+LLDrawPoolAvatar::beginShadowPass|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|281|616396|0.000023|6144|100|23|940|178.862592
+update_statistics|E:\BoxxyViewer\indra\newview\llviewerstats.cpp|463|1199498|0.000045|172|6973|5386|24831|26335.498983
+"GPU Collect"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|4111|3955|0.000000|172|22|20|167|12.039166
+"mwp - DefWindowProc"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|3621|107582|0.000004|117|919|154|27191|3236.394078
+LLVolumeImplFlexible::doFlexibleUpdate|E:\BoxxyViewer\indra\newview\llflexibleobject.cpp|431|26643|0.000001|37|720|310|2277|433.805384
+LLFace::init|E:\BoxxyViewer\indra\newview\llface.cpp|125|47309|0.000002|1753|26|11|874|44.977233
+LLCore::HttpOpRequest::setupGetByteRange|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|328|4815|0.000000|20|240|52|873|481.055637
+"lllog"|E:\BoxxyViewer\indra\llmessage\llcoproceduremanager.cpp|486|1742|0.000000|27|64|6|312|90.306742
+LLTextureCache::writeToFastCache|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|2088|311027|0.000012|2|155513|105212|205815|72158.225948
+LLGLSLShader::uniformMatrix3fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1657|2716189|0.000101|143282|18|6|8579|46.466153
+"lllog"|E:\BoxxyViewer\indra\llplugin\llpluginmessagepipe.cpp|325|61441|0.000002|818|75|6|4112|169.592272
+LLPipeline::renderDebug|E:\BoxxyViewer\indra\newview\pipeline.cpp|4502|429416|0.000016|866|495|32|16119|743.279428
+"lllog"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2371|489|0.000000|8|61|8|120|43.446190
+"vbo cache timeout"|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|551|810658|0.000030|40|20266|192|167376|35786.571588
+LLSettingsBlenderTimeDelta::applyTimeDelta|E:\BoxxyViewer\indra\llinventory\llsettingsbase.cpp|803|59874|0.000002|346|173|25|906|31697.655936
+LLTextBase::appendText|E:\BoxxyViewer\indra\llui\lltextbase.cpp|2552|15081|0.000001|332|45|12|3716|5334.492488
+LLBumpImageList::onSourceUpdated|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|870|77494|0.000003|16|4843|1333|9186|3112.442856
+LLViewerObjectList::killObject|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|1335|12849|0.000000|42|305|109|880|17879.619130
+LLKeyframeMotion::onUpdate|E:\BoxxyViewer\indra\llcharacter\llkeyframemotion.cpp|686|113554370|0.004226|23728|4785|168|99852|8043.150229
+LLDrawPoolFullbrightAlphaMask::renderPostDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolsimple.cpp|186|148969|0.000006|1011|147|73|1052|12277.404998
+"w32t - GetMessage"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|5577|5154228452|0.191835|110|46856622|42277183|51235151|1887728.119803
+LLViewerRegion::applyCacheMiscExtras|E:\BoxxyViewer\indra\newview\llviewerregion.cpp|3882|498264|0.000019|4888|101|7|1635|148.666749
+"lllog"|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|493|831|0.000000|5|166|115|350|102.887074
+"getGeometryVolume - texgen"|E:\BoxxyViewer\indra\newview\llface.cpp|1712|162178|0.000006|3497|46|14|7236|3049.008881
+"Exact OIT conditional fallback submission"|E:\BoxxyViewer\indra\newview\fsexactoit.cpp|1588|1322410|0.000049|172|7688|4358|23054|1293948.401907
+"df resumeMainloopTimeout"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1477|194122|0.000007|173|1122|663|3009|457.025736
+LLSpatialPartition::rebuildGeom|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|357|55280|0.000002|1235|44|7|925|72.515521
+LLVolumeGeometryManager::rebuildMesh|E:\BoxxyViewer\indra\newview\llvovolume.cpp|6438|2681705|0.000100|299748|8|6|3138|4845.407762
+LLPipeline::resetDrawOrders|E:\BoxxyViewer\indra\newview\pipeline.cpp|5506|5712350|0.000213|1290|4428|868|32294|2343.658083
+LLSpatialPartition::remove|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|956|67672|0.000003|1356|49|14|859|5050.551636
+LLFontWidthBuffer::getWidth|E:\BoxxyViewer\indra\llrender\llfontvertexbuffer.cpp|273|1339489|0.000050|19382|69|6|2548|405.782178
+"doOcclusion - push"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1230|6334325|0.000236|45099|140|49|7194|264.493958
+LLDrawPoolMaterials::endDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolmaterials.cpp|98|340401|0.000013|13872|24|13|26186|231.036024
+LLDefaultVBOPool::free|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|493|3734514|0.000139|23705|157|66|37247|4911.294043
+"renderDeferredLighting - soften shadow"|E:\BoxxyViewer\indra\newview\pipeline.cpp|8695|368841|0.000014|173|2132|1654|4044|6753.857398
+LLTrace::Recording::handleStop|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|141|254015|0.000009|172|1476|1153|2391|15836.816187
+LLDrawable::makeStatic|E:\BoxxyViewer\indra\newview\lldrawable.cpp|564|4087830|0.000152|55440|73|5|6272|58.860996
+draw_ui_backdrop|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1693|122791101|0.004570|172|713901|29434|1410177|240888.512741
+LLSpatialPartition::move|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|973|6805524|0.000253|116863|58|13|114111|2335.683707
+LLViewerMediaImpl::calculateInterest|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|3751|366625|0.000014|688|532|68|3840|1962.651860
+FTM_UI_STRING|E:\BoxxyViewer\indra\llui\lluistring.cpp|128|109280|0.000004|63|1734|33|5534|1564.829245
+LLFolderView::update|E:\BoxxyViewer\indra\llui\llfolderview.cpp|1734|1036386|0.000039|521|1989|610|8716|4995.771320
+LLImageGL::deleteTextures|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1299|2148|0.000000|13|165|9|257|85.580858
+LLPipeline::clearReferences|E:\BoxxyViewer\indra\newview\pipeline.cpp|2296|14980|0.000001|344|43|12|284|29.520957
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::size|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|555|65254|0.000002|1892|34|21|1515|51.135059
+gl_segmented_rect_3d_tex|E:\BoxxyViewer\indra\llrender\llrender2dutils.cpp|1566|3543085|0.000132|14276|248|187|133409|1139.031442
+LLDrawPoolBump::bindBumpMap|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|445|98847|0.000004|560|176|23|1166|1137.764061
+LLFace::dirtyTexture|E:\BoxxyViewer\indra\newview\llface.cpp|315|1269|0.000000|4|317|121|870|368.655666
+LLGLSLShader::unbind|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1112|1278387|0.000048|39429|32|11|6420|60.386918
+"renderDeferredLighting - atmospherics"|E:\BoxxyViewer\indra\newview\pipeline.cpp|8772|346537|0.000013|345|1004|640|7629|11885.314626
+LLDrawPoolBump::renderBump|E:\BoxxyViewer\indra\newview\lldrawpoolbump.cpp|518|459406|0.000017|1850|248|75|1440|472.383249
+"rmmun - clear"|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|1064|28069|0.000001|24|1169|599|3561|661.531918
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|7210|4689|0.000000|48|97|6|167|39.777306
+"stateSort"|E:\BoxxyViewer\indra\newview\pipeline.cpp|3304|2130811|0.000079|1290|1651|22|25798|61723.568305
+"tcwfw - read fail"|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|745|800|0.000000|2|400|256|544|203.646753
+LLEnvironment::DayInstance::applyTimeDelta|E:\BoxxyViewer\indra\newview\llenvironment.cpp|2673|107194|0.000004|173|619|487|1312|50408.221549
+LLDrawable::addFace|E:\BoxxyViewer\indra\newview\lldrawable.cpp|317|308445|0.000011|1753|175|55|27878|717.234014
+LLViewerObject::getAvatar|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|7688|37543255|0.001397|755438|49|5|63614|126.032437
+LLTextureCache::readFromCache|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|1956|119342|0.000004|19|6281|778|78828|18845.346822
+LLStopWatchControlsMixinCommon::start|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|927|15807|0.000001|172|91|73|866|9822.756310
+"Exact OIT GPU scheduled finish"|E:\BoxxyViewer\indra\newview\fsexactoit.cpp|1540|567523|0.000021|172|3299|2672|4981|2292195.534280
+LLReflectionMapManager::updateUniforms|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|1101|2404610|0.000089|606|3968|1609|118994|7589.294023
+"llvfcs - copy verts"|E:\BoxxyViewer\indra\llmath\llvolume.cpp|7170|59469|0.000002|219|271|27|3902|490.784646
+LLMotionController::updateMotionsByType|E:\BoxxyViewer\indra\llcharacter\llmotioncontroller.cpp|570|151920809|0.005654|8768|17326|8|240469|42514.183237
+LLUIImageList::getUIImage|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|1644|382604|0.000014|192|1992|79|3429|586.747901
+LLSettingsVOSky::applySpecial|E:\BoxxyViewer\indra\newview\llsettingsvo.cpp|751|308431|0.000011|345|894|601|1915|182.319320
+LLGLTFMaterial::getHash|E:\BoxxyViewer\indra\llprimitive\llgltfmaterial.cpp|865|1147|0.000000|5|229|63|484|198.695747
+LLSettingsSky::updateSettings|E:\BoxxyViewer\indra\llinventory\llsettingssky.cpp|1122|91180|0.000003|173|527|357|1271|109.939862
+"glBeginQuery"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1236|2052280|0.000076|45099|45|24|27374|175.978239
+"shadow fullbright alpha masked"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9960|284046|0.000011|2048|138|54|754|8964.324998
+"lllog"|E:\BoxxyViewer\indra\newview\llcontrolavatar.cpp|234|52821|0.000002|865|61|6|801|59.737970
+"lllog"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|2023|15118|0.000001|397|38|6|370|73.318800
+"w32t - Function Queue"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|5594|63087|0.000002|111|568|181|29408|3190.525632
+LLTrace::AccumulatorBufferGroup::append|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|105|125045|0.000005|1376|90|33|935|1646.984487
+LLDrawPoolAlpha::renderAlpha|E:\BoxxyViewer\indra\newview\lldrawpoolalpha.cpp|608|6890667|0.000256|2538|2714|18|53043|390294.752635
+LL::WorkQueueBase::runUntil|E:\BoxxyViewer\indra\llcommon\workqueue.cpp|117|482871|0.000018|1290|374|109|4628|5939.393319
+"tfwdw - CACHE_POST"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1217|20343|0.000001|19|1070|115|3370|1116.077606
+LLMutex::unlock|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|81|862853|0.000032|24415|35|7|5063|69.199730
+display_stats|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|242|80328|0.000003|172|467|270|1139|113.293853
+FTM_REGION_UPDATE|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5541|26385|0.000001|173|152|110|826|11924.371545
+"vb cache hit"|E:\BoxxyViewer\indra\llrender\llrender.cpp|1608|8487675|0.000316|46552|182|17|5575|103.746343
+"GLTF Materials Cleanup"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|875|835472|0.000031|173|4829|3322|6810|718.097713
+LLGLSLShader::setMinimumAlpha|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|2035|4671315|0.000174|123058|37|12|8803|97.059241
+LLImageGL::createGLTexture|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1624|26675|0.000001|14|1905|247|3214|13383.360355
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|550|281546|0.000010|1365|206|6|3003|200.739166
+FTM_NETWORK|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5529|108443|0.000004|173|626|296|7643|1051.349938
+FTM_AGENT_POSITION|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5470|963829|0.000036|172|5603|4497|9986|1771.313686
+LLImageGL::analyzeAlphaData|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|2203|6631|0.000000|1|6631|6631|6631|0.000000
+LLSDBinaryParser::doParse|E:\BoxxyViewer\indra\llcommon\llsdserialize.cpp|954|805562|0.000030|1945|414|53|27276|6585.559095
+LLVOVolume::getBinRadius|E:\BoxxyViewer\indra\newview\llvovolume.cpp|4828|22853331|0.000851|140097|163|8|70454|377.341018
+LLVOAvatar::calculateAttachmentComplexity|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11794|147170|0.000005|212|694|32|2738|65621.793224
+LLTrace::AccumulatorBufferGroup::AccumulatorBufferGroup|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|41|6636|0.000000|344|19|6|34|5.125822
+LLSharedMutex::lockExclusive|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|207|114358|0.000004|333|343|30|3422|650.798363
+LLTextureCacheWorker::endWork|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|764|2959|0.000000|35|84|8|334|92.920111
+LLPerfStats::StatsRecorder::processUpdate|E:\BoxxyViewer\indra\newview\llperfstats.h|241|120574|0.000004|1893|63|13|844|484.822623
+"lllog"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|1644|524286|0.000020|48782|10|6|5229|26.953000
+"Exact OIT queue stats"|E:\BoxxyViewer\indra\newview\fsexactoit.cpp|1277|1921589|0.000072|172|11172|2448|702569|60472.702911
+LLTrace::AccumulatorBuffer<class LLTrace::EventAccumulator>::getDefaultBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|223|14398|0.000001|688|20|6|646|26.863773
+LLVOVolume::updateRiggedVolume|E:\BoxxyViewer\indra\newview\llvovolume.cpp|5218|2322002|0.000086|43622|53|5|952|74.398076
+LLFace::getTextureVirtualSize|E:\BoxxyViewer\indra\newview\llface.cpp|2227|12339560|0.000459|104434|118|8|7698|1009.923924
+LLVOAvatar::processAnimationStateChanges|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|6369|6084675|0.000226|200|30423|323|187173|27720.261400
+LLCore::HttpOpRequest::headerCallback|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|875|310024|0.000012|457|678|58|17919|1429.934339
+LLControlGroup::get|E:\BoxxyViewer\indra\llxml\llcontrol.h|229|253943|0.000009|237|1071|70|37728|2400.995521
+"world update"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5578|20077|0.000001|173|116|45|544|155234.284652
+LLTextureFetchWorker::endWork|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2066|367714|0.000014|14|26265|1655|42568|14468.628474
+LLGLSLShader::bindTexture|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1138|30500102|0.001135|1442553|21|6|94922|211.563325
+process_object_animation|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|4129|28067|0.000001|3|9355|8217|11040|147990.360255
+LLCore::HttpRequest::requestGetByteRange|E:\BoxxyViewer\indra\llcorehttp\httprequest.cpp|219|77861|0.000003|20|3893|806|11048|2797.200113
+LLImageJ2C::decodeChannels|E:\BoxxyViewer\indra\llimage\llimagej2c.cpp|158|46061306|0.001714|18|2558961|305923|5992587|1948197.404144
+LLViewerDynamicTexture::updateAllInstances|E:\BoxxyViewer\indra\newview\lldynamictexture.cpp|186|1576314|0.000059|173|9111|7149|56349|5019.920166
+"Autopilot"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|5315|92161|0.000003|172|535|401|1244|164.397980
+LLWindowWin32::mainWindowProc|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2393|64938|0.000002|117|555|356|1060|4123.196533
+"rmdo - push query"|E:\BoxxyViewer\indra\newview\llreflectionmap.cpp|370|890189|0.000033|14878|59|42|2106|175.458031
+LLGLSLShader::unbindTexture|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1208|34227|0.000001|864|39|12|283|25.615053
+LLTrace::AccumulatorBuffer<class LLTrace::CountAccumulator>::reset|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|132|83322|0.000003|2752|30|17|746|24.885211
+LLTextureFetch::createRequest|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2520|78193|0.000003|19|4115|1344|6570|5542.775744
+"Exact OIT overflow predicate submission"|E:\BoxxyViewer\indra\newview\fsexactoit.cpp|1558|165128235|0.006146|172|960047|111637|1495197|166142.687052
+LLViewerFetchedTexture::updateFetch|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2140|2175564|0.000081|48097|45|14|34025|764.896311
+LLMeshRepository::loadMesh|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|4477|32272|0.000001|38|849|314|3155|505.541962
+LLGLSLShader::uniform2fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1935|107727|0.000004|4702|22|13|7020|106.066092
+LLUICtrlFactory::createWidgetImpl|E:\BoxxyViewer\indra\llui\lluictrlfactory.h|213|15061|0.000001|1|15061|15061|15061|0.000000
+LLReflectionMap::doOcclusion|E:\BoxxyViewer\indra\newview\llreflectionmap.cpp|319|528961|0.000020|16781|31|7|2264|435.032696
+LLMutexTrylock::LLMutexTrylock|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|367|162082|0.000006|4472|36|13|862|200.981328
+LLPelvisFixMotion::onUpdate|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|591|90|0.000000|2|45|36|54|12.727922
+LLViewerMediaTexture::updateClass|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|3332|158733|0.000006|173|917|700|1850|170.201215
+"lllog"|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|2186|86|0.000000|3|28|6|73|38.405729
+"HUD Update"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|754|160033|0.000006|173|925|580|3000|157061.937142
+LLViewerWindow::setup3DViewport|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|5887|444570|0.000017|15483|28|7|1282|32.864820
+LLTextureFetch::threadedUpdate|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|3051|58708|0.000002|172|341|93|16818|7519.419782
+LLVolumeFace::create|E:\BoxxyViewer\indra\llmath\llvolume.cpp|5396|64162|0.000002|307|208|15|4441|1889.098732
+LLFace::genVolumeBBoxes|E:\BoxxyViewer\indra\newview\llface.cpp|812|601343|0.000022|5323|112|6|5695|174.301499
+LLVOSky::updateSky|E:\BoxxyViewer\indra\newview\llvosky.cpp|692|44339|0.000002|173|256|127|4604|349.284093
+LLGLSLShader::enableTexture|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1234|32458521|0.001208|2172699|14|6|150690|168.964870
+LLPerfStats::StatsRecorder::send|E:\BoxxyViewer\indra\newview\llperfstats.h|177|139134|0.000005|1721|80|13|924|463.665155
+"lllog"|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|4146|728|0.000000|3|242|113|439|172.924839
+LLViewerObjectList::cleanupReferences|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|1284|60310|0.000002|42|1435|743|2981|531.534640
+render_ui_2d|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1807|39024905|0.001452|172|226888|147245|1199924|2123342.125697
+LLViewerFetchedTexture::setKnownDrawSize|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1691|29968|0.000001|1020|29|14|708|51.177499
+LLReflectionMap::update|E:\BoxxyViewer\indra\newview\llreflectionmap.cpp|55|76961|0.000003|172|447|246|1693|1365946.908342
+"tfwdw - WRITE_TO_CACHE"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1866|123682|0.000005|18|6871|173|17227|21188.894997
+LLDrawPoolWLSky::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolwlsky.cpp|473|2048252|0.000076|345|5936|2740|28811|19994.677856
+LLTrace::AccumulatorBufferGroup::merge|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.cpp|114|72869|0.000003|1204|60|27|2760|488.925379
+LLOcclusionCullingGroup::getNewOcclusionQueryObjectName|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|801|472018|0.000018|45406|10|6|12266|62.507152
+LLTextureFetchWorker::callbackCacheRead|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2289|4016|0.000000|19|211|74|399|239.352715
+"glTexImage2D copy"|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1477|1960|0.000000|15|130|23|255|7225.724595
+LLTrace::PeriodicRecording::getPeriodMean|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|764|750449|0.000028|6020|124|85|1126|74.944735
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|552|40268|0.000001|1677|24|6|2618|81.923388
+LLViewerTextureList::updateImageDecodePriority|E:\BoxxyViewer\indra\newview\llviewertexturelist.cpp|929|42997372|0.001600|43297|993|20|148753|36613.837127
+"renderDeferredLighting - fullscreen lights"|E:\BoxxyViewer\indra\newview\pipeline.cpp|8981|2240060|0.000083|345|6492|503|43472|18536.285350
+LLVolumeFace::resizeIndices|E:\BoxxyViewer\indra\llmath\llvolume.cpp|7062|141833|0.000005|414|342|59|10937|742.152000
+LLGLSLShader::getUniformLocation|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1746|7672278|0.000286|801662|9|5|113311|142.998014
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2360|6838|0.000000|18|379|94|1168|314.688268
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|5837|112153|0.000004|3406|32|6|418|48.260834
+FTM_SIMULATE_PARTICLES|E:\BoxxyViewer\indra\newview\llviewerpartsim.cpp|672|29108640|0.001083|173|168258|108192|297651|49316.060414
+"lllog"|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|3774|100|0.000000|1|100|100|100|0.000000
+LLVOVolume::lodOrSculptChanged|E:\BoxxyViewer\indra\newview\llvovolume.cpp|2144|88955|0.000003|370|240|14|1411|2618.088735
+"tcwfw - read"|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|735|74192|0.000003|19|3904|74|5855|2158.429663
+LLDrawable::cleanupReferences|E:\BoxxyViewer\indra\newview\lldrawable.cpp|251|235443|0.000009|42|5605|1373|12802|9207.813212
+LLCharacter::updateMotions|E:\BoxxyViewer\indra\llcharacter\llcharacter.cpp|175|543630|0.000020|15538|34|12|1357|49379.461502
+LLReflectionMapManager::updateProbeFace|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|785|723190|0.000027|172|4204|2745|11162|1368470.206849
+LLMeshRepository::getMeshSize|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|5213|228094|0.000008|2951|77|24|800|90.120012
+"renderDeferredLighting - local lights"|E:\BoxxyViewer\indra\newview\pipeline.cpp|8827|16072513|0.000598|345|46586|24263|161395|21185.256928
+FTM_FRAME|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1347|2242391|0.000083|170|13190|5791|64276|30179334.897986
+"vftuf - request created"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2319|817|0.000000|19|43|14|54|311.850659
+LLDate::toHTTPDateString|E:\BoxxyViewer\indra\llcommon\lldate.cpp|103|10235|0.000000|7|1462|436|6085|2049.617973
+LLViewerFetchedTexture::doLoadedCallbacks|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2658|53133|0.000002|346|153|16|1082|100.614633
+`anonymous-namespace'::RecordToFile::recordMessage|E:\BoxxyViewer\indra\llcommon\llerror.cpp|172|646024|0.000024|44|14682|4064|28851|9824.235637
+LLTextureFetch::deleteRequest|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2674|12224|0.000000|8|1528|421|2007|1670.074421
+LLDrawPoolAvatar::renderShadow|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|352|10969161|0.000408|276480|39|5|200858|622.855227
+LLImageGL::setManualImage|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1314|1102|0.000000|35|31|7|177|33.449259
+LLDate::toHTTPDateString|E:\BoxxyViewer\indra\llcommon\lldate.cpp|94|786|0.000000|7|112|28|561|2746.666373
+LLDrawPoolAvatar::endDeferredImpostor|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|562|165757|0.000006|346|479|290|2523|599.460588
+"vb cache hash"|E:\BoxxyViewer\indra\llrender\llrender.cpp|1577|8824444|0.000328|61924|142|36|186167|803.609087
+"lllog"|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|2114|1449|0.000000|30|48|7|498|95.394101
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|544|9006|0.000000|312|28|6|307|43.500674
+LLSettingsBlender::update|E:\BoxxyViewer\indra\llinventory\llsettingsbase.cpp|752|1512245|0.000056|346|4370|615|13762|28253.359578
+LLPhysicsMotionController::onUpdate|E:\BoxxyViewer\indra\newview\llphysicsmotion.cpp|456|22669688|0.000844|2836|7993|39|87340|16009.220789
+LLTrace::AccumulatorBuffer<class LLTrace::CountAccumulator>::AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|68|141816|0.000005|344|412|67|1165|422.535561
+LLWorkerThread::WorkRequest::finishRequest|E:\BoxxyViewer\indra\llcommon\llworkerthread.cpp|193|7819|0.000000|53|147|24|1042|3283.634777
+"lllog"|E:\BoxxyViewer\indra\llplugin\llpluginprocessparent.cpp|1033|5999|0.000000|104|57|6|267|66.691508
+LLViewerOctreeGroup::unbound|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|519|22441840|0.000835|124097|180|5|39170|342.821859
+LLAudioEngine::getAudioData|E:\BoxxyViewer\indra\llaudio\llaudioengine.cpp|929|2259|0.000000|3|753|645|807|93.530744
+LLDrawPoolSimple::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolsimple.cpp|101|106996|0.000004|578|185|59|965|110374.306448
+LLTexUnit::bind|E:\BoxxyViewer\indra\llrender\llrender.cpp|217|8682261|0.000323|437942|19|8|93171|3093.619515
+"lllog"|E:\BoxxyViewer\indra\llmessage\message.cpp|2388|4192|0.000000|23|182|97|801|150.568015
+LLMeshRepoThread::fetchMeshLOD|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|2035|2674439|0.000100|33|81043|29514|193396|27083.115600
+LLCalculateTangentArray|E:\BoxxyViewer\indra\llmath\llvolume.cpp|7590|6746|0.000000|27|249|112|905|257.570080
+LLPipeline::unlinkDrawable|E:\BoxxyViewer\indra\newview\pipeline.cpp|1919|145962|0.000005|42|3475|1205|7027|6010.104376
+LLReflectionMapManager::getReflectionMaps|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|603|964617|0.000036|606|1591|453|43358|1739.537921
+LLSettingsBlenderTimeDelta::calculateBlend|E:\BoxxyViewer\indra\llinventory\llsettingsbase.cpp|797|30149|0.000001|346|87|8|800|95.361722
+LLTrace::AccumulatorBuffer<class LLTrace::TimeBlockAccumulator>::reset|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|132|617085|0.000023|2752|224|47|8635|208.732659
+LLVolumeFace::resizeVertices|E:\BoxxyViewer\indra\llmath\llvolume.cpp|6938|283570|0.000011|414|684|85|28661|1612.836420
+LLGLSLShader::uniform1f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1327|44323423|0.001650|3244902|13|6|129584|132.238643
+"shadow simple"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9909|1013741|0.000038|2048|494|232|2851|92319.784605
+LLFloater::draw|E:\BoxxyViewer\indra\llui\llfloater.cpp|2031|7806979|0.000291|516|15129|3609|65359|206395.971454
+LLMeshRepository::notifyLoadedMeshes|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|4565|1004774|0.000037|1118|898|127|12160|11290.752520
+LLStopWatchControlsMixinCommon::stop|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|949|27689|0.000001|172|160|73|405|17311.553299
+"System Messages"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1401|39113|0.000001|172|227|167|425|89845.210681
+LLVertexBuffer::flushBuffers|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1022|285356|0.000011|2802|101|6|5264|50747.684359
+"lllog"|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|915|15507|0.000001|172|90|34|419|48.820773
+LLRender::flush|E:\BoxxyViewer\indra\llrender\llrender.cpp|1502|18575056|0.000691|63405|292|71|123815|10691.864861
+LLUICtrlFactory::createWidgetImpl|E:\BoxxyViewer\indra\llui\lluictrlfactory.h|213|48361|0.000002|1|48361|48361|48361|0.000000
+LLRenderPass::pushGLTFBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|915|408724|0.000015|3363|121|6|6268|34885.690525
+"getGeometryVolume - weight"|E:\BoxxyViewer\indra\newview\llface.cpp|2101|2747459|0.000102|932|2947|16|209967|13483.586235
+LLSD::operator []|E:\BoxxyViewer\indra\llcommon\llsd.cpp|1150|328059|0.000012|6394|51|12|7018|108.329792
+LLGLSLShader::bind|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1060|18865433|0.000702|254578|74|7|44818|644.386512
+LLDrawable::updateXform|E:\BoxxyViewer\indra\newview\lldrawable.cpp|612|8999099|0.000335|77869|115|22|62445|339.639296
+"shadow geom"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9930|65235|0.000002|1024|63|12|716|44682.504828
+LLTrace::AccumulatorBuffer<class LLTrace::SampleAccumulator>::getDefaultBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|223|15355|0.000001|688|22|5|678|30.989198
+"lllog"|E:\BoxxyViewer\indra\newview\lleventpoll.cpp|316|4173|0.000000|23|181|121|345|54.187385
+sub_image_lines|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1064|4775|0.000000|15|318|32|871|6901.723858
+LLGLSLShader::uniform4uiv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1987|36454|0.000001|344|105|33|510|147.388887
+LLGLSLShader::uniform1i|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1302|2894062|0.000108|128746|22|6|8620|69.687988
+LLRender::setAmbientLightColor|E:\BoxxyViewer\indra\llrender\llrender.cpp|1408|53837|0.000002|1991|27|6|983|44.071128
+LLWorld::setLandFarClip|E:\BoxxyViewer\indra\newview\llworld.cpp|861|12362|0.000000|173|71|33|254|36.488370
+"UI updateClass"|E:\BoxxyViewer\indra\newview\llviewerwindow.cpp|3557|2743031|0.000102|172|15947|12374|35294|8781.501317
+LLVOAvatar::calculateControlAvatarComplexity|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11851|10722|0.000000|98|109|39|698|73.648790
+`anonymous-namespace'::ImplMap::insert|E:\BoxxyViewer\indra\llcommon\llsd.cpp|535|217501|0.000008|1064|204|45|10762|588.866912
+LLVertexBuffer::destroyGLIndices|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1195|166911|0.000006|2796|59|13|2912|1424.697459
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11460|63864|0.000002|214|298|7|13810|1062.051982
+"shadow alpha"|E:\BoxxyViewer\indra\newview\pipeline.cpp|9935|356428|0.000013|1024|348|201|2504|293327.835548
+LLPipeline::doOcclusion|E:\BoxxyViewer\indra\newview\pipeline.cpp|2694|1409322|0.000052|173|8146|5789|19694|149722.251499
+"lllog"|E:\BoxxyViewer\indra\llui\llview.cpp|173|136|0.000000|4|34|10|98|42.739521
+"media misc"|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|717|451250|0.000017|172|2623|1955|6694|822.568712
+LLVOAvatar::updateTooSlow|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|9262|1236857|0.000046|15538|79|6|11795|125.114772
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12225|13612|0.000001|212|64|6|756|74.600230
+LLViewerFetchedTexture::postCreateTexture|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|1576|2889|0.000000|14|206|26|312|115.156081
+LLFace::LLFace|E:\BoxxyViewer\indra\newview\llface.h|79|43198|0.000002|1753|24|13|629|67.304159
+"vftuf - current < min"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2268|96632|0.000004|8086|11|5|3006|38.466267
+LLViewerObjectList::cleanDeadObjects|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|1425|6481209|0.000241|40|162030|137407|290128|33411.024557
+"Update Images"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|855|48530|0.000002|173|280|129|641|2163058.386537
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1461|2931|0.000000|17|172|8|552|146.130721
+"vftuf - current <= desired"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2288|322448|0.000012|33814|9|6|3116|28.698193
+LLTrace::ThreadRecorder::pullFromChildren|E:\BoxxyViewer\indra\llcommon\lltracethreadrecorder.cpp|282|76828|0.000003|172|446|318|6245|23869.123762
+LLVOVolume::getRenderCost|E:\BoxxyViewer\indra\newview\llvovolume.cpp|4240|463169|0.000017|3490|132|33|1217|956.325610
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|1234|23970|0.000001|1677|14|8|836|31.252895
+LLFontGL::maxDrawableChars|E:\BoxxyViewer\indra\llrender\llfontgl.cpp|603|234640|0.000009|501|468|8|7119|1178.574566
+LLControlGroup::get|E:\BoxxyViewer\indra\llxml\llcontrol.h|229|4815002|0.000179|11684|412|22|37634|691.667692
+"tgd - transform"|E:\BoxxyViewer\indra\newview\llface.cpp|1929|3186128|0.000119|3325|958|8|53440|2831.564528
+"vftuf - create or missing"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2263|401|0.000000|14|28|8|86|23.189852
+LLVOAvatar::idleUpdateRenderComplexity|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11633|108715|0.000004|710|153|15|1097|46586.080170
+render_ui_3d|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1639|183308|0.000007|172|1065|775|1957|296.399841
+"materials draw loop"|E:\BoxxyViewer\indra\newview\lldrawpoolmaterials.cpp|192|105967391|0.003944|538219|196|38|125054|639.979173
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::tryPop|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|477|160497|0.000006|1922|83|12|3543|6866.658878
+LLReflectionMapManager::update|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|213|880473|0.000033|172|5119|3775|11148|1373388.835556
+LLGLSLShader::getUniformLocation|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1720|66958163|0.002492|5886589|11|6|101618|92.626030
+override_bbox|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|3260|13242964|0.000493|41192|321|12|87884|1811.252226
+LLImageJ2C::decode|E:\BoxxyViewer\indra\llimage\llimagej2c.cpp|150|2090|0.000000|18|116|60|207|3277475.580771
+LLMeshRepository::getCostData|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|5631|857436|0.000032|5902|145|40|1532|271.627020
+LLImageGL::createGLTexture|E:\BoxxyViewer\indra\llrender\llimagegl.cpp|1524|11991|0.000000|14|856|212|1169|15340.481193
+LLSD::operator []|E:\BoxxyViewer\indra\llcommon\llsd.cpp|1144|182953|0.000007|1026|178|44|6081|357.354096
+LLTextureFetchWorker::setState|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|3084|101677|0.000004|213|477|34|2994|683.397423
+LLCore::HttpOpRequest::setupPost|E:\BoxxyViewer\indra\llcorehttp\_httpoprequest.cpp|348|5507|0.000000|23|239|155|457|276.597427
+LLSpatialGroup::updateInGroup|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|226|26017319|0.000968|116822|222|14|102559|2094.119791
+LLTrace::AccumulatorBuffer<class LLTrace::SampleAccumulator>::addSamples|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|112|884446|0.000033|2580|342|35|4804|323.838771
+LLTextureCache::getHeaderCacheEntry|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|1892|7162253|0.000267|35|204635|2184|4037405|668835.607553
+LLDrawPoolAlpha::renderPostDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolalpha.cpp|147|10238976|0.000381|1499|6830|27|51673|1245199.995061
+LLGLSLShader::uniformMatrix4fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1699|10418087|0.000388|577358|18|5|107574|233.474107
+"df resumeMainloopTimeout"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1625|81705|0.000003|172|475|362|1092|156.286063
+LLTrace::AccumulatorBuffer<class LLTrace::EventAccumulator>::reset|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|132|253580|0.000009|2752|92|38|1458|88.528542
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2197|3426|0.000000|16|214|9|441|118.957696
+"rebuildGeom - face list"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|5975|8220005|0.000306|779|10551|7|384448|195992.358974
+"genDrawInfo - sort"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|6584|422091|0.000016|12464|33|7|16081|214.536560
+LLWorld::updateRegions|E:\BoxxyViewer\indra\newview\llworld.cpp|684|290665|0.000011|173|1680|1178|8669|10371.768991
+"lllog"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|2572|53091|0.000002|3406|15|6|672|34.957953
+process_avatar_animation|E:\BoxxyViewer\indra\newview\llviewermessage.cpp|4017|641571|0.000024|194|3307|1500|46174|40532.981864
+"getGeometryVolume - indices tail"|E:\BoxxyViewer\indra\newview\llface.cpp|1453|185492|0.000007|4668|39|6|785|57.241701
+"Image Fetch"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1678|62609|0.000002|172|364|212|908|7433.392054
+"glEndQuery"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1282|518966|0.000019|45099|11|8|2057|24.906454
+LLSharedMutex::unlockShared|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|285|5954|0.000000|20|297|95|729|148.866242
+LLVOVolume::updateSpotLightPriority|E:\BoxxyViewer\indra\newview\llvovolume.cpp|3418|863399|0.000032|6920|124|22|6178|149.720120
+LLMotionController::updateMotions|E:\BoxxyViewer\indra\llcharacter\llmotioncontroller.cpp|837|37347512|0.001390|4384|8519|162|132831|85706.040764
+LLTrans::getString|E:\BoxxyViewer\indra\llui\lltrans.cpp|142|25083|0.000001|5|5016|3627|5842|1038.483389
+LLVOAvatar::accountRenderComplexityForObject|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12178|1114212|0.000041|212|5255|124|52259|63419.209822
+"Image Decode"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1674|24980|0.000001|172|145|109|285|498.856154
+LLFontGL::getWidthF32|E:\BoxxyViewer\indra\llrender\llfontgl.cpp|535|4101707|0.000153|13395|306|8|52003|744.676246
+LLVOAvatar::getOverallAppearance|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|12460|38720724|0.001441|224112|172|5|35093|199.254171
+LLVolumeFace::createSide|E:\BoxxyViewer\indra\llmath\llvolume.cpp|7125|68140|0.000003|219|311|26|2306|1922.022069
+LLRenderPass::pushRiggedGLTFBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|992|413704|0.000015|3019|137|6|2377|30938.539472
+LLRenderPass::pushUntexturedRiggedGLTFBatches|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|1011|137141|0.000005|1024|133|19|22041|7372.422566
+"lllog"|E:\BoxxyViewer\indra\newview\llviewerobjectlist.cpp|475|27533|0.000001|1365|20|6|241|23.737336
+"media update interest"|E:\BoxxyViewer\indra\newview\llviewermedia.cpp|669|173230|0.000006|172|1007|389|1725|63089.511957
+"vftuf - missing asset"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2169|1938|0.000000|96|20|6|48|6.690134
+"update rig info - get key"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11469|2208885|0.000082|214|10321|30|26852|6859.147509
+LLWorkerThread::WorkRequest::processRequest|E:\BoxxyViewer\indra\llcommon\llworkerthread.cpp|182|206322|0.000008|227|908|63|21091|345625.151514
+LLCore::HttpService::threadRun|E:\BoxxyViewer\indra\llcorehttp\_httpservice.cpp|294|2046801|0.000076|1725|1186|231|29002|3677560.863641
+"Render"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|419|646275|0.000024|172|3757|2787|5478|22458955.373259
+LLPipeline::renderGeomPostDeferred|E:\BoxxyViewer\indra\newview\pipeline.cpp|4217|3090246|0.000115|1038|2977|449|15802|1549429.933056
+LLThreadSafeQueue<class std::function<void __cdecl(void)>,class std::queue<class std::function<void __cdecl(void)>,class std::deque<class std::function<void __cdecl(void)>,class std::allocator<class std::function<void __cdecl(void)> > > > >::push_|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|309|11387|0.000000|16|711|33|3790|1118.899072
+LLTrace::AccumulatorBuffer<class LLTrace::CountAccumulator>::addSamples|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|112|552018|0.000021|2580|213|43|1408|117.702272
+"Exact OIT collect completed stats"|E:\BoxxyViewer\indra\newview\fsexactoit.cpp|1241|306344909|0.011402|172|1781075|1065246|4493216|348305.580170
+LLGLSLShader::uniform4f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1417|9441710|0.000351|471481|20|6|36967|99.711653
+LLGLSLShader::uniform2f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1866|226143|0.000008|1894|119|15|1004|209.246959
+"LFS Thread"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1593|79399|0.000003|172|461|319|6980|3546.622479
+LLDrawPoolAvatar::renderPostDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|258|1815634|0.000068|56286|32|14|5481|621.060883
+LLDrawPoolTerrain::beginDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolterrain.cpp|124|9336|0.000000|345|27|20|617|35.340495
+LLWindowWin32::LLWindowWin32Thread::run|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|5558|380915|0.000014|110|3462|2281|5633|47115454.299253
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|6730|19275|0.000001|666|28|6|631|65.862388
+"genDrawInfo - face size"|E:\BoxxyViewer\indra\newview\llvovolume.cpp|6654|143371|0.000005|2661|53|6|1938|96.385933
+LLPerfStats::StatsRecorder::toggleBuffer|E:\BoxxyViewer\indra\newview\llperfstats.cpp|160|92223|0.000003|172|536|299|1418|506.300508
+LLViewerTexture::removeFace|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|923|13584|0.000001|306|44|6|398|68.879843
+LLTrace::AccumulatorBuffer<class LLTrace::TimeBlockAccumulator>::resize|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|182|111154|0.000004|344|323|227|1310|110.514435
+"lllog"|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|6697|13210|0.000000|507|26|6|483|45.880839
+LLMemoryInfo::loadStatsMap|E:\BoxxyViewer\indra\llcommon\llsys.cpp|920|82196|0.000003|10|8219|6812|11166|8738.160879
+"co - query available"|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1133|3622619|0.000135|45025|80|20|36574|421.546216
+LLGLSLShader::uniform3fv|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1553|10266720|0.000382|649544|15|6|12592|43.456877
+LLTrace::AccumulatorBuffer<class LLTrace::EventAccumulator>::resize|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|182|103717|0.000004|344|301|136|1283|133.848202
+LL::WorkQueueBase::runUntilClose|E:\BoxxyViewer\indra\llcommon\workqueue.cpp|86|251244|0.000009|789|318|25|6254|133368068.224377
+LLDrawPoolAvatar::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|218|3010960|0.000112|107784|27|13|2179|608.863372
+LLPipeline::updateMove|E:\BoxxyViewer\indra\newview\pipeline.cpp|2193|458507|0.000017|173|2650|739|35833|152612.618101
+"mwp - WM_TIMER"|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2435|81935|0.000003|111|738|469|1759|1264.124667
+"vftuf - desired > max"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2258|20572|0.000001|1242|16|5|645|31.660416
+LLTrace::AccumulatorBuffer<class LLTrace::TimeBlockAccumulator>::addSamples|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|112|718593|0.000027|1376|522|159|7337|270.444500
+LLVOAvatar::calculateBodyPartsComplexity|E:\BoxxyViewer\indra\newview\llvoavatar.cpp|11822|7740|0.000000|3|2580|2314|2821|245.101000
+"lllog"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1802|4587|0.000000|18|254|16|408|92.054012
+LLDrawable::updateDistance|E:\BoxxyViewer\indra\newview\lldrawable.cpp|873|49272336|0.001834|109315|450|6|163719|1807.318810
+LLTextureFetchWorker::CacheWriteResponder::completed|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|330|3546|0.000000|16|221|45|1016|1105.206255
+"vb cache miss"|E:\BoxxyViewer\indra\llrender\llrender.cpp|1615|10556101|0.000393|15372|686|232|91488|21462.960750
+FTM_RENDER_BLOOM|E:\BoxxyViewer\indra\newview\pipeline.cpp|8128|1704753|0.000063|172|9911|7836|34144|12289.090868
+LLRenderPass::pushBatchRange|E:\BoxxyViewer\indra\newview\lldrawpool.cpp|704|168228012|0.006261|1066002|157|38|121083|463.268700
+LLTextureCacheRemoteWorker::doRead|E:\BoxxyViewer\indra\newview\lltexturecache.cpp|288|2695441|0.000100|19|141865|259|282722|158607.646769
+LLUICtrlFactory::createWidgetImpl|E:\BoxxyViewer\indra\llui\lluictrlfactory.h|213|6605|0.000000|1|6605|6605|6605|0.000000
+LLCore::HttpLibcurl::processTransport|E:\BoxxyViewer\indra\llcorehttp\_httplibcurl.cpp|147|639013|0.000024|1726|370|35|9305|168114.435844
+"glBufferSubData"|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1388|20634731|0.000768|64760|318|16|307884|3443.731621
+LLScopedLock::LLScopedLock|E:\BoxxyViewer\indra\llcommon\llmutex.cpp|403|4594|0.000000|98|46|7|327|56.714150
+LLGLState::LLGLState|E:\BoxxyViewer\indra\llrender\llgl.cpp|2520|25667443|0.000955|798738|32|5|74231|141.869031
+LLVOVolume::updateTextureVirtualSize|E:\BoxxyViewer\indra\newview\llvovolume.cpp|837|15316009|0.000570|37830|404|9|128008|3283.888350
+LLViewerOctreeGroup::rebound|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|548|47733003|0.001777|210114|227|6|72841|5415.219125
+LLOcclusionCullingGroup::earlyFail|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1060|1221341|0.000045|45208|27|6|9512|58.377481
+"Env Update"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1195|28086|0.000001|172|163|78|399|7798.284367
+"Image Update Bump"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|863|108606|0.000004|173|627|264|9119|6393.083720
+LLDrawPoolAvatar::beginDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|166|98772|0.000004|1821|54|6|865|799.488512
+"lllog"|E:\BoxxyViewer\indra\newview\llavatarrenderinfoaccountant.cpp|380|460|0.000000|1|460|460|460|0.000000
+"display - 4"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|893|71588|0.000003|173|413|272|1103|1724839.190067
+LLHUDNameTag::render|E:\BoxxyViewer\indra\newview\llhudnametag.cpp|231|1057752|0.000039|7224|146|31|5975|33539.233669
+"ra - push batch"|E:\BoxxyViewer\indra\newview\lldrawpoolalpha.cpp|699|257341585|0.009578|470376|547|128|208243|1689.858640
+LLSD::Impl::makeMap|E:\BoxxyViewer\indra\llcommon\llsd.cpp|872|472491|0.000018|2304|205|74|4543|260.819522
+LLOcclusionCullingGroup::doOcclusion|E:\BoxxyViewer\indra\newview\llvieweroctree.cpp|1176|3434005|0.000128|48155|71|6|4515|456.848009
+LLScrollContainer::draw|E:\BoxxyViewer\indra\llui\llscrollcontainer.cpp|488|25583001|0.000952|860|29747|87|194665|120216.191612
+"Texture Unbind"|E:\BoxxyViewer\indra\newview\llviewerdisplay.cpp|1024|134689|0.000005|173|778|523|1676|168.272049
+"qtpr - complete"|E:\BoxxyViewer\indra\llcommon\llqueuedthread.cpp|476|10137|0.000000|53|191|47|573|3583.541729
+LLGLSLShader::uniform4f|E:\BoxxyViewer\indra\llrender\llglslshader.cpp|1901|2460099|0.000092|24725|99|13|2167|350.966695
+"rmmsu - update buffer"|E:\BoxxyViewer\indra\newview\llreflectionmapmanager.cpp|1310|2075160|0.000077|606|3424|1450|44657|1836.767857
+LLDrawPoolTerrain::endDeferredPass|E:\BoxxyViewer\indra\newview\lldrawpoolterrain.cpp|130|20014|0.000001|345|58|37|775|61.965576
+LLDrawPoolMaterials::renderDeferred|E:\BoxxyViewer\indra\newview\lldrawpoolmaterials.cpp|107|6476275|0.000241|13872|466|80|92648|46673.974240
+"tfwdw - WAIT_HTTP_REQ"|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|1515|984981|0.000037|113|8716|7|108699|25745.888765
+LLPerfStats::StatsRecorder::doUpd|E:\BoxxyViewer\indra\newview\llperfstats.h|273|413592|0.000015|1721|240|14|1611|267.158334
+LLDrawable::movePartition|E:\BoxxyViewer\indra\newview\lldrawable.cpp|775|7874489|0.000293|61607|127|20|13867|3027.634562
+LLSpatialBridge::updateDistance|E:\BoxxyViewer\indra\newview\lldrawable.cpp|1606|3431676|0.000128|3631|945|56|109959|36995.371891
+LLDrawPoolWaterExclusion::render|E:\BoxxyViewer\indra\newview\lldrawpoolwaterexclusion.cpp|45|944013|0.000035|1039|908|111|10108|1751.503983
+LLEyeMotion::onUpdate|E:\BoxxyViewer\indra\llcharacter\llheadrotmotion.cpp|462|814873|0.000030|560|1455|87|31943|4661.743499
+"MISSING TEXTURE"|E:\BoxxyViewer\indra\llrender\llrender.cpp|199|291515|0.000011|4111|70|13|1300|381.241961
+LLSpatialGroup::removeObject|E:\BoxxyViewer\indra\newview\llspatialpartition.cpp|415|2890056|0.000108|2712|1065|17|24245|3334.454984
+LLCore::HttpLibcurl::addOp|E:\BoxxyViewer\indra\llcorehttp\_httplibcurl.cpp|223|75917|0.000003|43|1765|367|8434|15902.211358
+LLThreadSafeQueue<struct tagMSG,class std::queue<struct tagMSG,class std::deque<struct tagMSG,class std::allocator<struct tagMSG> > > >::push|E:\BoxxyViewer\indra\llcommon\llthreadsafequeue.h|348|6740|0.000000|111|60|41|277|525.595558
+LLRender::syncMatrices|E:\BoxxyViewer\indra\llrender\llrender.cpp|909|54744812|0.002038|2840402|19|6|101343|202.216091
+LLStopWatchControlsMixinCommon::reset|E:\BoxxyViewer\indra\llcommon\lltracerecording.cpp|1054|14758|0.000001|172|85|52|273|6719.513656
+LLDrawPoolAvatar::beginDeferredRigid|E:\BoxxyViewer\indra\newview\lldrawpoolavatar.cpp|575|33780|0.000001|607|55|30|788|407.432883
+LLWindowWin32::gatherInput|E:\BoxxyViewer\indra\llwindow\llwindowwin32.cpp|2306|122861|0.000005|172|714|380|5756|89385.923223
+"vftuf - is fetching"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2205|7596|0.000000|14|542|37|1038|42480.939678
+LLTrace::AccumulatorBuffer<class LLTrace::TimeBlockAccumulator>::AccumulatorBuffer|E:\BoxxyViewer\indra\llcommon\lltraceaccumulators.h|68|180919|0.000007|344|525|118|1616|476.398371
+"vftuf - priority <= 0"|E:\BoxxyViewer\indra\newview\llviewertexture.cpp|2253|413493|0.000015|4826|85|5|2088|74.809734
+"mesh_thread_loop"|E:\BoxxyViewer\indra\newview\llmeshrepository.cpp|1027|1003206|0.000037|1118|897|85|24899|81459.956293
+LLVolumeGeometryManager::registerFace|E:\BoxxyViewer\indra\newview\llvovolume.cpp|5585|7059182|0.000263|4848|1456|54|24275|1255.158802
+`anonymous-namespace'::RecordToFixedBuffer::recordMessage|E:\BoxxyViewer\indra\llcommon\llerror.cpp|316|146136|0.000005|44|3321|1319|6996|1739.424270
+"System Messages"|E:\BoxxyViewer\indra\newview\llappviewer.cpp|1390|19849|0.000001|172|115|54|680|59.390225
+LLTextureFetch::addToHTTPQueue|E:\BoxxyViewer\indra\newview\lltexturefetch.cpp|2652|7512|0.000000|17|441|133|1640|528.865236
+LLViewerObject::recursiveGetScaledSurfaceArea|E:\BoxxyViewer\indra\newview\llviewerobject.cpp|4271|482798|0.000018|212|2277|103|40370|4893.444020
+LLVertexBuffer::mapVertexBuffer|E:\BoxxyViewer\indra\llrender\llvertexbuffer.cpp|1282|3280562|0.000122|42862|76|8|104254|596.656140

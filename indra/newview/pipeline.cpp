@@ -444,8 +444,10 @@ void LLPipeline::init()
     gOctreeMaxCapacity = gSavedSettings.getU32("OctreeMaxNodeCapacity");
     gOctreeMinSize = gSavedSettings.getF32("OctreeMinimumNodeSize");
     sDynamicLOD = gSavedSettings.getBOOL("RenderDynamicLOD");
-    sRenderAttachedLights = gSavedSettings.getBOOL("RenderAttachedLights");
-    sRenderAttachedParticles = gSavedSettings.getBOOL("RenderAttachedParticles");
+    sRenderAttachedLights = gSavedSettings.getBOOL("RenderAttachedLights") &&
+                            !gSavedSettings.getBOOL("BoxxyDisableAvatarAttachedLights");
+    sRenderAttachedParticles = gSavedSettings.getBOOL("RenderAttachedParticles") &&
+                               !gSavedSettings.getBOOL("BoxxyDisableAvatarAttachedParticles");
 
     mReflectionMapManager.refreshSettings();
 
@@ -623,6 +625,8 @@ void LLPipeline::init()
     connectRefreshCachedSettingsSafe("RenderHeroProbeUpdateRate");
     connectRefreshCachedSettingsSafe("RenderHeroProbeConservativeUpdateMultiplier");
     connectRefreshCachedSettingsSafe("RenderAvatarCloth");
+    connectRefreshCachedSettingsSafe("BoxxyDisableAvatarAttachedLights");
+    connectRefreshCachedSettingsSafe("BoxxyDisableAvatarAttachedParticles");
 
     LLPointer<LLControlVariable> cntrl_ptr = gSavedSettings.getControl("CollectFontVertexBuffers");
     if (cntrl_ptr.notNull())
@@ -1099,6 +1103,10 @@ void LLPipeline::updateRenderTransparentWater()
 void LLPipeline::refreshCachedSettings()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
+    LLPipeline::sRenderAttachedLights = gSavedSettings.getBOOL("RenderAttachedLights") &&
+                                        !gSavedSettings.getBOOL("BoxxyDisableAvatarAttachedLights");
+    LLPipeline::sRenderAttachedParticles = gSavedSettings.getBOOL("RenderAttachedParticles") &&
+                                           !gSavedSettings.getBOOL("BoxxyDisableAvatarAttachedParticles");
     LLPipeline::sAutoMaskAlphaDeferred = gSavedSettings.getBOOL("RenderAutoMaskAlphaDeferred");
     LLPipeline::sAutoMaskAlphaNonDeferred = gSavedSettings.getBOOL("RenderAutoMaskAlphaNonDeferred");
     LLPipeline::sUseFarClip = gSavedSettings.getBOOL("RenderUseFarClip");

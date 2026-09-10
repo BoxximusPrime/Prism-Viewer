@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <colors>
 
+    <!-- Build/Edit section surfaces. Rounded_Rect supplies the corner mask. -->
+    <color name="EditSectionBackground" value="0.133 0.169 0.188 1" />
+    <color name="EditDockBackground" value="0.055 0.067 0.075 1" />
+    <color name="EditSectionBorder" value="0.235 0.286 0.310 1" />
+    <color name="EditSectionHeading" value="0.863 0.910 0.933 1" />
+
 	<!-- Named Colors -->
 	<color
 	 name="AccentColor"

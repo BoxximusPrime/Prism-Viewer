@@ -184,7 +184,7 @@
     <string>Radius in millimeters for a separate depth-aware transmission blur in Combined mode. Zero disables the extra buffer and two filter passes. Does not blur skin textures or specular highlights.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.0</real>
+    <key>Value</key><real>70.0</real>
   </map>
   <key>BoxxySSSPenetration</key>
   <map>
@@ -6843,6 +6843,17 @@
       <real>0.9</real>
     </map>
 
+    <key>ChatLinkPreviews</key>
+    <map>
+      <key>Comment</key>
+      <string>Show image thumbnails from Imgur, GIPHY, and YouTube in direct message bubbles. Loads images from those services.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
    <key>PlainTextChatHistory</key>
     <map>
       <key>Comment</key>
@@ -7653,6 +7664,17 @@
         <key>Value</key>
             <integer>1</integer>
         </map>
+    <key>BoxxyDisableAvatarAttachedLights</key>
+        <map>
+        <key>Comment</key>
+            <string>Do not render lights attached to avatars</string>
+        <key>Persist</key>
+            <integer>1</integer>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <integer>0</integer>
+        </map>
     <key>RenderAttachedParticles</key>
         <map>
         <key>Comment</key>
@@ -7663,6 +7685,17 @@
             <string>Boolean</string>
         <key>Value</key>
             <integer>1</integer>
+        </map>
+    <key>BoxxyDisableAvatarAttachedParticles</key>
+        <map>
+        <key>Comment</key>
+            <string>Do not render particle systems attached to avatars</string>
+        <key>Persist</key>
+            <integer>1</integer>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <integer>0</integer>
         </map>
   <key>RenderAvatarCloth</key>
     <map>
@@ -12511,6 +12544,20 @@
       <string>Boolean</string>
       <key>Value</key>
       <integer>0</integer>
+    </map>
+    <key>BuildEditDocked</key>
+    <map>
+      <key>Comment</key><string>Reserve a right-side dock for Build/Edit tools.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>BuildEditDockWidth</key>
+    <map>
+      <key>Comment</key><string>Preferred Build/Edit dock width in scaled UI pixels.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>S32</string>
+      <key>Value</key><integer>560</integer>
     </map>
     <key>TrackFocusObject</key>
     <map>

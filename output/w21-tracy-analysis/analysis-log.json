@@ -1,0 +1,596 @@
+{
+  "frame_count": 170,
+  "main_thread_export_id": 1,
+  "frame_zone_seconds": 5.099919627,
+  "first_to_last_frame_seconds": 5.127876341,
+  "first_frame_since_process_start_seconds": 2681.652857685,
+  "approx_fps_from_mean_frame_zone": 33.33385865533759,
+  "frame_stats": {
+    "mean_ms": 29.999527217647056,
+    "median_ms": 29.8144705,
+    "p95_ms": 34.34498445,
+    "p99_ms": 36.94884922999999,
+    "max_ms": 43.443516
+  },
+  "frames_over_33_33_ms": 16,
+  "frames_over_16_67_ms": 170,
+  "gaps_over_1ms": [
+    [
+      2,
+      27.701609
+    ]
+  ],
+  "containment": {
+    "LLPipeline::renderShadow inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 1024,
+      "total_ms": 809.71873,
+      "mean_ms_per_parent": 4.680455086705202,
+      "mean_count_per_parent": 5.91907514450867
+    },
+    "LLPipeline::stateSort inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 512,
+      "total_ms": 286.525767,
+      "mean_ms_per_parent": 1.6562183063583813,
+      "mean_count_per_parent": 2.959537572254335
+    },
+    "LLPipeline::rebuildPriorityGroups inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 512,
+      "total_ms": 148.428238,
+      "mean_ms_per_parent": 0.8579666936416185,
+      "mean_count_per_parent": 2.959537572254335
+    },
+    "LLPipeline::renderDeferredLighting inside Render": {
+      "parent_count": 172,
+      "child_count": 172,
+      "total_ms": 1067.145702,
+      "mean_ms_per_parent": 6.204335476744186,
+      "mean_count_per_parent": 1
+    },
+    "LLPipeline::renderDeferredLighting inside df Snapshot": {
+      "parent_count": 172,
+      "child_count": 172,
+      "total_ms": 70.759275,
+      "mean_ms_per_parent": 0.4113911337209303,
+      "mean_count_per_parent": 1
+    },
+    "LLFace::calcPixelArea inside LLViewerTextureList::updateImages": {
+      "parent_count": 173,
+      "child_count": 367878,
+      "total_ms": 297.906258,
+      "mean_ms_per_parent": 1.7220014913294797,
+      "mean_count_per_parent": 2126.4624277456646
+    },
+    "LLFace::calcPixelArea inside LLVOAvatar::idleUpdate": {
+      "parent_count": 15538,
+      "child_count": 0,
+      "total_ms": 0.0,
+      "mean_ms_per_parent": 0.0,
+      "mean_count_per_parent": 0
+    },
+    "LLFace::calcPixelArea inside LLPipeline::stateSort": {
+      "parent_count": 1290,
+      "child_count": 24793,
+      "total_ms": 14.130567,
+      "mean_ms_per_parent": 0.010953927906976744,
+      "mean_count_per_parent": 19.21937984496124
+    },
+    "LLDrawPoolAlpha::renderAlpha inside Exact OIT conditional fallback submission": {
+      "parent_count": 172,
+      "child_count": 344,
+      "total_ms": 215.585201,
+      "mean_ms_per_parent": 1.2534023313953488,
+      "mean_count_per_parent": 2
+    },
+    "LLDrawPoolAlpha::renderAlpha inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 0,
+      "total_ms": 0.0,
+      "mean_ms_per_parent": 0.0,
+      "mean_count_per_parent": 0
+    },
+    "Exact OIT collect completed stats inside LLPipeline::renderDeferredLighting": {
+      "parent_count": 344,
+      "child_count": 172,
+      "total_ms": 306.344909,
+      "mean_ms_per_parent": 0.8905375261627907,
+      "mean_count_per_parent": 0.5
+    },
+    "Exact OIT GPU scheduled finish inside LLPipeline::renderDeferredLighting": {
+      "parent_count": 344,
+      "child_count": 172,
+      "total_ms": 392.029,
+      "mean_ms_per_parent": 1.1396191860465117,
+      "mean_count_per_parent": 0.5
+    }
+  },
+  "allocation": {
+    "SSS depth": {
+      "mean_ms": 5.08161105882353,
+      "median_ms": 4.7508645,
+      "p95_ms": 6.9512148499999995,
+      "p99_ms": 9.748244320000001,
+      "max_ms": 13.911761,
+      "share_percent": 16.93897047762239
+    },
+    "Lighting and transparency": {
+      "mean_ms": 6.2132798764705885,
+      "median_ms": 6.1443885,
+      "p95_ms": 6.94004485,
+      "p99_ms": 7.826444430000002,
+      "max_ms": 8.561906,
+      "share_percent": 20.711259318832397
+    },
+    "UI and HUD rendering": {
+      "mean_ms": 3.103516911764706,
+      "median_ms": 3.0651475,
+      "p95_ms": 3.8463779499999986,
+      "p99_ms": 4.34339734,
+      "max_ms": 4.535228,
+      "share_percent": 10.345219407121453
+    },
+    "Texture updates": {
+      "mean_ms": 2.1434431647058823,
+      "median_ms": 2.086631,
+      "p95_ms": 2.4072185499999996,
+      "p99_ms": 2.63585451,
+      "max_ms": 2.80869,
+      "share_percent": 7.144923148805537
+    },
+    "Main opaque geometry": {
+      "mean_ms": 2.0211661411764705,
+      "median_ms": 2.025304,
+      "p95_ms": 2.2850752,
+      "p99_ms": 2.4565635600000006,
+      "max_ms": 2.710252,
+      "share_percent": 6.737326646893057
+    },
+    "Main scene sorting": {
+      "mean_ms": 1.7043874764705882,
+      "median_ms": 1.6787495,
+      "p95_ms": 2.1251213499999997,
+      "p99_ms": 2.32129617,
+      "max_ms": 2.336557,
+      "share_percent": 5.681381123459811
+    },
+    "Reflection update": {
+      "mean_ms": 1.000460488235294,
+      "median_ms": 0.531304,
+      "p95_ms": 3.1149703499999988,
+      "p99_ms": 3.95660702,
+      "max_ms": 4.170799,
+      "share_percent": 3.334920850508533
+    },
+    "Avatar and object updates": {
+      "mean_ms": 4.740084282352941,
+      "median_ms": 4.6969165,
+      "p95_ms": 5.467354299999998,
+      "p99_ms": 5.7243424,
+      "max_ms": 6.050449,
+      "share_percent": 15.800529948234026
+    },
+    "Other simulation and UI updates": {
+      "mean_ms": 1.7220570882352941,
+      "median_ms": 1.713527,
+      "p95_ms": 2.481537149999999,
+      "p99_ms": 2.67310572,
+      "max_ms": 2.733546,
+      "share_percent": 5.740280757565751
+    },
+    "Other frame work": {
+      "mean_ms": 2.2695207294117647,
+      "median_ms": 2.2458425,
+      "p95_ms": 3.2312788999999986,
+      "p99_ms": 3.7073816600000002,
+      "max_ms": 3.822162,
+      "share_percent": 7.565188320957043
+    }
+  },
+  "slowest_frames": [
+    {
+      "frame_index": 105,
+      "relative_seconds": 3.111981597,
+      "frame_ms": 43.443516,
+      "allocation_ms": {
+        "SSS depth": 13.911761,
+        "Lighting and transparency": 8.561906,
+        "UI and HUD rendering": 3.396627,
+        "Texture updates": 2.086502,
+        "Main opaque geometry": 2.094984,
+        "Main scene sorting": 1.824982,
+        "Reflection update": 2.444743,
+        "Avatar and object updates": 4.283959,
+        "Other simulation and UI updates": 1.862674,
+        "Other frame work": 2.975378
+      },
+      "oit_collect_ms": 4.019947,
+      "oit_finish_ms": 2.177226,
+      "sss_self_ms": 0.469599,
+      "priority_rebuild_ms": 7.636708
+    },
+    {
+      "frame_index": 143,
+      "relative_seconds": 4.293841353,
+      "frame_ms": 37.055408,
+      "allocation_ms": {
+        "SSS depth": 10.347352,
+        "Lighting and transparency": 6.237761,
+        "UI and HUD rendering": 4.397158,
+        "Texture updates": 2.718393,
+        "Main opaque geometry": 2.284435,
+        "Main scene sorting": 1.562728,
+        "Reflection update": 0.465661,
+        "Avatar and object updates": 4.80857,
+        "Other simulation and UI updates": 1.815416,
+        "Other frame work": 2.417934
+      },
+      "oit_collect_ms": 1.614892,
+      "oit_finish_ms": 2.355403,
+      "sss_self_ms": 7.466733,
+      "priority_rebuild_ms": 0.550443
+    },
+    {
+      "frame_index": 139,
+      "relative_seconds": 4.161098048,
+      "frame_ms": 36.900975,
+      "allocation_ms": {
+        "SSS depth": 6.602916,
+        "Lighting and transparency": 6.60466,
+        "UI and HUD rendering": 3.527404,
+        "Texture updates": 2.06405,
+        "Main opaque geometry": 2.285599,
+        "Main scene sorting": 1.684006,
+        "Reflection update": 4.170799,
+        "Avatar and object updates": 5.276975,
+        "Other simulation and UI updates": 2.424695,
+        "Other frame work": 2.259871
+      },
+      "oit_collect_ms": 1.746415,
+      "oit_finish_ms": 2.575766,
+      "sss_self_ms": 0.321514,
+      "priority_rebuild_ms": 2.533557
+    },
+    {
+      "frame_index": 15,
+      "relative_seconds": 0.467520355,
+      "frame_ms": 36.260295,
+      "allocation_ms": {
+        "SSS depth": 9.47908,
+        "Lighting and transparency": 8.479359,
+        "UI and HUD rendering": 2.874666,
+        "Texture updates": 2.078577,
+        "Main opaque geometry": 1.787076,
+        "Main scene sorting": 1.360335,
+        "Reflection update": 0.578386,
+        "Avatar and object updates": 4.861766,
+        "Other simulation and UI updates": 1.750748,
+        "Other frame work": 3.010302
+      },
+      "oit_collect_ms": 4.493216,
+      "oit_finish_ms": 2.026156,
+      "sss_self_ms": 0.471733,
+      "priority_rebuild_ms": 3.764765
+    },
+    {
+      "frame_index": 103,
+      "relative_seconds": 3.042925115,
+      "frame_ms": 35.285814,
+      "allocation_ms": {
+        "SSS depth": 5.572903,
+        "Lighting and transparency": 6.815308,
+        "UI and HUD rendering": 2.95867,
+        "Texture updates": 2.284982,
+        "Main opaque geometry": 2.17588,
+        "Main scene sorting": 1.812198,
+        "Reflection update": 2.194884,
+        "Avatar and object updates": 6.050449,
+        "Other simulation and UI updates": 1.598378,
+        "Other frame work": 3.822162
+      },
+      "oit_collect_ms": 1.911637,
+      "oit_finish_ms": 2.689904,
+      "sss_self_ms": 0.269899,
+      "priority_rebuild_ms": 1.32959
+    },
+    {
+      "frame_index": 146,
+      "relative_seconds": 4.394468863,
+      "frame_ms": 35.269149,
+      "allocation_ms": {
+        "SSS depth": 6.880019,
+        "Lighting and transparency": 6.690881,
+        "UI and HUD rendering": 3.493362,
+        "Texture updates": 2.059347,
+        "Main opaque geometry": 2.06761,
+        "Main scene sorting": 2.326614,
+        "Reflection update": 1.067957,
+        "Avatar and object updates": 5.107902,
+        "Other simulation and UI updates": 2.174878,
+        "Other frame work": 3.400579
+      },
+      "oit_collect_ms": 2.082539,
+      "oit_finish_ms": 2.14865,
+      "sss_self_ms": 0.384547,
+      "priority_rebuild_ms": 1.9413
+    },
+    {
+      "frame_index": 145,
+      "relative_seconds": 4.359780744,
+      "frame_ms": 34.686345,
+      "allocation_ms": {
+        "SSS depth": 5.321063,
+        "Lighting and transparency": 6.614298,
+        "UI and HUD rendering": 3.130785,
+        "Texture updates": 2.096859,
+        "Main opaque geometry": 2.092129,
+        "Main scene sorting": 1.841587,
+        "Reflection update": 3.929314,
+        "Avatar and object updates": 4.762453,
+        "Other simulation and UI updates": 2.40792,
+        "Other frame work": 2.489937
+      },
+      "oit_collect_ms": 1.826976,
+      "oit_finish_ms": 2.60937,
+      "sss_self_ms": 0.418251,
+      "priority_rebuild_ms": 1.021783
+    },
+    {
+      "frame_index": 168,
+      "relative_seconds": 5.063287294,
+      "frame_ms": 34.554393,
+      "allocation_ms": {
+        "SSS depth": 6.94009,
+        "Lighting and transparency": 7.533106,
+        "UI and HUD rendering": 2.95514,
+        "Texture updates": 2.108273,
+        "Main opaque geometry": 2.264961,
+        "Main scene sorting": 2.304625,
+        "Reflection update": 0.369849,
+        "Avatar and object updates": 5.203393,
+        "Other simulation and UI updates": 2.113013,
+        "Other frame work": 2.761943
+      },
+      "oit_collect_ms": 2.230101,
+      "oit_finish_ms": 2.913622,
+      "sss_self_ms": 0.468656,
+      "priority_rebuild_ms": 2.272855
+    }
+  ],
+  "worst_frame_large_nested_zones": [
+    {
+      "name": "LLPipeline::renderShadow",
+      "offset_ms": 8.543227,
+      "duration_ms": 9.918965
+    },
+    {
+      "name": "LLPipeline::stateSort",
+      "offset_ms": 8.593132,
+      "duration_ms": 9.249184
+    },
+    {
+      "name": "LLPipeline::postSort",
+      "offset_ms": 8.739532,
+      "duration_ms": 9.102634
+    },
+    {
+      "name": "LLPipeline::rebuildPriorityGroups",
+      "offset_ms": 8.746547,
+      "duration_ms": 7.280943
+    },
+    {
+      "name": "LLVolumeGeometryManager::rebuildGeom",
+      "offset_ms": 8.773489,
+      "duration_ms": 1.304246
+    },
+    {
+      "name": "LLVolumeGeometryManager::rebuildGeom",
+      "offset_ms": 10.078536,
+      "duration_ms": 1.207363
+    },
+    {
+      "name": "LLVolumeGeometryManager::rebuildGeom",
+      "offset_ms": 12.019933,
+      "duration_ms": 2.177705
+    },
+    {
+      "name": "LLPipeline::renderShadow",
+      "offset_ms": 18.825126,
+      "duration_ms": 1.599049
+    },
+    {
+      "name": "LLPipeline::stateSort",
+      "offset_ms": 25.038725,
+      "duration_ms": 1.810782
+    }
+  ],
+  "background_self_by_thread": [
+    {
+      "name": "micro_sleep",
+      "thread_export_id": 3,
+      "calls": 1705,
+      "self_ms": 4787.198669999995
+    },
+    {
+      "name": "micro_sleep",
+      "thread_export_id": 5,
+      "calls": 108,
+      "self_ms": 1685.5916490000006
+    },
+    {
+      "name": "micro_sleep",
+      "thread_export_id": 8,
+      "calls": 4,
+      "self_ms": 4002.537322
+    },
+    {
+      "name": "LLCondition::wait",
+      "thread_export_id": 2,
+      "calls": 1117,
+      "self_ms": 5159.161367999999
+    },
+    {
+      "name": "w32t - GetMessage",
+      "thread_export_id": 4,
+      "calls": 110,
+      "self_ms": 5154.2284519999985
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 5,
+      "calls": 380,
+      "self_ms": 3454.187503999998
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 6,
+      "calls": 206,
+      "self_ms": 5109.224946999998
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 7,
+      "calls": 171,
+      "self_ms": 5127.6717370000015
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 10,
+      "calls": 1,
+      "self_ms": 2503.708804
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 11,
+      "calls": 1,
+      "self_ms": 2697.449501
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 21,
+      "calls": 18,
+      "self_ms": 51.355526
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 22,
+      "calls": 13,
+      "self_ms": 59.345305
+    },
+    {
+      "name": "LLCore::HttpService::processRequestQueue",
+      "thread_export_id": 3,
+      "calls": 1726,
+      "self_ms": 346.6464290000005
+    },
+    {
+      "name": "processRequest - retry",
+      "thread_export_id": 5,
+      "calls": 173,
+      "self_ms": 0.07058199999999995
+    },
+    {
+      "name": "Sleep2",
+      "thread_export_id": 1,
+      "calls": 172,
+      "self_ms": 0.3099120000000001
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 10,
+      "calls": 2,
+      "self_ms": 4.748952
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 11,
+      "calls": 2,
+      "self_ms": 6.957916
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 12,
+      "calls": 1,
+      "self_ms": 0.985812
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 14,
+      "calls": 1,
+      "self_ms": 2.394029
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 15,
+      "calls": 1,
+      "self_ms": 1.55031
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 16,
+      "calls": 1,
+      "self_ms": 1.245902
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 17,
+      "calls": 1,
+      "self_ms": 2.41768
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 18,
+      "calls": 1,
+      "self_ms": 3.245094
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 19,
+      "calls": 1,
+      "self_ms": 5.120724
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 20,
+      "calls": 1,
+      "self_ms": 0.317829
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 23,
+      "calls": 1,
+      "self_ms": 5.493044
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 24,
+      "calls": 1,
+      "self_ms": 4.2177
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 25,
+      "calls": 1,
+      "self_ms": 4.928353
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 26,
+      "calls": 1,
+      "self_ms": 1.432683
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 27,
+      "calls": 1,
+      "self_ms": 0.305923
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 28,
+      "calls": 1,
+      "self_ms": 0.699355
+    }
+  ]
+}

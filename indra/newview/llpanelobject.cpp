@@ -1826,6 +1826,14 @@ void LLPanelObject::refresh()
 
 void LLPanelObject::draw()
 {
+    for (const std::string& transform : {"pos", "size", "rot"})
+    {
+        getChildView("copy_" + transform)->setEnabled(menuEnableItem(transform + "_copy"));
+        getChildView("paste_" + transform)->setEnabled(menuEnableItem(transform + "_paste"));
+    }
+    getChildView("copy_shape")->setEnabled(mMenuClipboardParams->getEnabled());
+    getChildView("paste_shape")->setEnabled(mMenuClipboardParams->getEnabled() && menuEnableItem("params_paste"));
+
     const LLColor4  white(  1.0f,   1.0f,   1.0f,   1);
     const LLColor4  red(    1.0f,   0.25f,  0.f,    1);
     const LLColor4  green(  0.f,    1.0f,   0.f,    1);
@@ -2125,22 +2133,33 @@ bool LLPanelObject::menuEnableItem(const LLSD& userdata)
     }
     else if (command == "pos_paste")
     {
-        // assumes that menu won't be active if there is no move permission
-        return mHasClipboardPos;
+        return mCtrlPosX->getEnabled() && mHasClipboardPos;
     }
     else if (command == "size_paste")
     {
-        return mHasClipboardSize;
+        return mCtrlScaleX->getEnabled() && mHasClipboardSize;
     }
     else if (command == "rot_paste")
     {
-        return mHasClipboardRot;
+        return mCtrlRotX->getEnabled() && mHasClipboardRot;
     }
     else if (command == "params_paste")
     {
         return mClipboardParams.isMap() && (mClipboardParams.size() != 0);
     }
     // copy options
+    else if (command == "pos_copy")
+    {
+        return mCtrlPosX->getEnabled();
+    }
+    else if (command == "size_copy")
+    {
+        return mCtrlScaleX->getEnabled();
+    }
+    else if (command == "rot_copy")
+    {
+        return mCtrlRotX->getEnabled();
+    }
     else if (command == "psr_copy")
     {
         S32 selected_count = LLSelectMgr::getInstance()->getSelection()->getObjectCount();
@@ -2165,6 +2184,8 @@ bool LLPanelObject::menuEnableItem(const LLSD& userdata)
 
 void LLPanelObject::onCopyPos()
 {
+    if (!menuEnableItem("pos_copy")) return;
+
     mClipboardPos = LLVector3(mCtrlPosX->get(), mCtrlPosY->get(), mCtrlPosZ->get());
 
     std::string stringVec = llformat("<%g, %g, %g>", mClipboardPos.mV[VX], mClipboardPos.mV[VY], mClipboardPos.mV[VZ]);
@@ -2175,6 +2196,8 @@ void LLPanelObject::onCopyPos()
 
 void LLPanelObject::onCopySize()
 {
+    if (!menuEnableItem("size_copy")) return;
+
     mClipboardSize = LLVector3(mCtrlScaleX->get(), mCtrlScaleY->get(), mCtrlScaleZ->get());
 
     std::string stringVec = llformat("<%g, %g, %g>", mClipboardSize.mV[VX], mClipboardSize.mV[VY], mClipboardSize.mV[VZ]);
@@ -2185,6 +2208,8 @@ void LLPanelObject::onCopySize()
 
 void LLPanelObject::onCopyRot()
 {
+    if (!menuEnableItem("rot_copy")) return;
+
     mClipboardRot = LLVector3(mCtrlRotX->get(), mCtrlRotY->get(), mCtrlRotZ->get());
 
     std::string stringVec = llformat("<%g, %g, %g>", mClipboardRot.mV[VX], mClipboardRot.mV[VY], mClipboardRot.mV[VZ]);
@@ -2195,7 +2220,7 @@ void LLPanelObject::onCopyRot()
 
 void LLPanelObject::onPastePos()
 {
-    if (!mHasClipboardPos) return;
+    if (!menuEnableItem("pos_paste")) return;
     if (mObject.isNull()) return;
 
     LLViewerRegion* regionp = mObject->getRegion();
@@ -2224,7 +2249,7 @@ void LLPanelObject::onPastePos()
 
 void LLPanelObject::onPasteSize()
 {
-    if (!mHasClipboardSize) return;
+    if (!menuEnableItem("size_paste")) return;
 
     mClipboardSize.mV[VX] = llclamp(mClipboardSize.mV[VX], MIN_PRIM_SCALE, DEFAULT_MAX_PRIM_SCALE);
     mClipboardSize.mV[VY] = llclamp(mClipboardSize.mV[VY], MIN_PRIM_SCALE, DEFAULT_MAX_PRIM_SCALE);
@@ -2239,7 +2264,7 @@ void LLPanelObject::onPasteSize()
 
 void LLPanelObject::onPasteRot()
 {
-    if (!mHasClipboardRot) return;
+    if (!menuEnableItem("rot_paste")) return;
 
     mCtrlRotX->set(mClipboardRot.mV[VX]);
     mCtrlRotY->set(mClipboardRot.mV[VY]);

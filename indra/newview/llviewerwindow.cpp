@@ -4014,7 +4014,8 @@ void LLViewerWindow::updateLayout()
                 && tool != LLToolCompGun::getInstance()                 // not coming out of mouselook
                 && !suppress_toolbox                                    // not override in third person
                 && LLToolMgr::getInstance()->getCurrentToolset()->isShowFloaterTools()
-                && (!captor || dynamic_cast<LLView*>(captor) != NULL)))                     // not dragging
+                && (!captor || dynamic_cast<LLView*>(captor) != NULL
+                    || gFloaterTools->isEditDocked()))) // Keep the viewport stable during docked edits.
         {
             // Force floater tools to be visible (unless minimized)
             if (!gFloaterTools->getVisible())
@@ -4201,6 +4202,18 @@ void LLViewerWindow::updateWorldViewRect(bool use_full_window)
     if (!use_full_window && mWorldViewPlaceholder.get())
     {
         new_world_rect = mWorldViewPlaceholder.get()->calcScreenRect();
+        if (gFloaterTools)
+        {
+            new_world_rect.mRight -= gFloaterTools->updateEditDock(new_world_rect);
+        }
+        // Keep edge toolbars and their floater snap region beside the world, clear of the dock.
+        if (gToolBarView && gToolBarView->getParent())
+        {
+            LLRect toolbar_rect = new_world_rect;
+            const LLRect parent = gToolBarView->getParent()->calcScreenRect();
+            toolbar_rect.translate(-parent.mLeft, -parent.mBottom);
+            if (gToolBarView->getRect() != toolbar_rect) gToolBarView->setShape(toolbar_rect);
+        }
         // clamp to at least a 1x1 rect so we don't try to allocate zero width gl buffers
         new_world_rect.mTop = llmax(new_world_rect.mTop, new_world_rect.mBottom + 1);
         new_world_rect.mRight = llmax(new_world_rect.mRight, new_world_rect.mLeft + 1);

@@ -102,6 +102,7 @@ public:
     const LLColor4& getDisabledTextColor() const { return mTextDisabledColor.get(); }
 
 private:
+    F32             getModifiedIncrement() const;
     void            updateLabelColor();
     void            updateEditor();
     void            reportInvalidData();

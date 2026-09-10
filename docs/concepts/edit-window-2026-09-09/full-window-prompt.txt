@@ -1,0 +1,46 @@
+Generated with the built-in ImageGen tool, 2026-09-09.
+Status: concept exploration; not implemented.
+
+Use case: ui-mockup.
+Asset type: high-fidelity full-window desktop UI concept board for the BoxxyViewer object editor.
+Input images: Image 1 is the previous Object tab board; use its RIGHT panel B for the Object body. Image 2 is the previous General tab board; use its RIGHT panel B for the General body. Image 3 is the previous Texture tab board; use its LEFT panel, Legacy textures, for the Texture body. These are style and content references.
+Primary request: produce a NEW expanded board with THREE complete windows side by side, General, Object, and Texture, preserving the references' organized charcoal UI, mint selected states, white readable type, and actual tab controls. Correct the important omission in the references: every window MUST have the complete shared tool header ABOVE its property tabs. Show all windows at the same width and height and align every shared toolbar row exactly. Give the output enough resolution, approximately 2304 by 1792, to keep all labels sharp. Use the canvas efficiently with a small outer margin, no decorative scenery.
+Composition: three windows arranged horizontally, each about one third of the board, full top and bottom edges visible. Small outside captions General, Object, Texture. Thin neutral outer window frames, normal title bars titled "Edit object". The header should be compact and balanced rather than excessively tall. The tab bodies may have enough vertical space for all specified controls. These are full-window proposals, not isolated tab contents.
+
+EXACT SHARED HEADER, REQUIRED IDENTICALLY IN ALL THREE WINDOWS, before the main tabs:
+1. Immediately below title bar, five equal primary tool buttons, with small clear icons and exact short labels: "Focus", "Move", "Edit", "Create", "Land". "Edit" is selected in mint. The top-level Move is a separate existing grab tool and must remain present even though Move also appears in the following row.
+2. Four mutually exclusive segmented edit-mode buttons: "Move", "Rotate", "Stretch", "Select Face". "Move" selected. Small secondary hints "Ctrl" under Rotate and "Ctrl+Shift" under Stretch can be included within those buttons.
+3. One row: "Grid:" dropdown displaying "World" with down chevron; checked checkbox "Snap"; button "Options…".
+4. One row: unchecked checkbox "Edit linked" at left; separate "Link" and "Unlink" buttons at right, subdued when unavailable.
+5. One row: checked checkbox "Stretch Both Sides"; checked checkbox "Stretch Textures". Both must be visible with their entire labels.
+6. Small read-only help: "Drag to move, shift-drag to copy".
+7. Small selection summary: "1 object · Land impact 1" and mint "More info" link.
+8. Main properties navigation exactly: "General", "Object", "Features", "Texture", "Content". Only General selected in window 1; only Object in window 2; only Texture in window 3.
+The entire header remains visible in all windows. Do not omit any header row to save space.
+
+WINDOW 1 BODY — GENERAL, orderly compact sections with restrained separators:
+Identity: Name field "Studio Cube"; Description field "A simple building block".
+Ownership: Creator avatar/profile link "Alex Resident"; Owner avatar/profile link "Alex Resident"; Group read-only "Prism Builders" with "Set group" button; unchecked "Share with group" checkbox and separate "Deed" button.
+Permissions: mint status "You can modify this object"; Anyone row with Move and Copy checkboxes ONLY; Next owner row with Modify, Copy, Transfer checkboxes.
+Interaction: "Click to:" dropdown "Touch (default)".
+Sales: "For sale" checkbox; "Price:" field "L$ 100"; "Sale type:" dropdown "Copy"; "Show in search" checkbox.
+Pathfinding: read-only "Pathfinding attributes: None".
+Collapsed "Technical details" line for existing diagnostic permissions.
+
+WINDOW 2 BODY — OBJECT, use horizontal XYZ transform rows from right-hand B reference:
+Top row of four separate checkboxes: "Locked", "Physical", "Temporary", "Phantom".
+Three compact full-width transform sections, each with a heading, "Copy" and "Paste" buttons and small ellipsis menu on the heading's right, then X/Y/Z numeric spinner fields in ONE horizontal row. Axis letters colored red/green/blue, numeric values white.
+"Position (m)": X 15.456, Y 240.223, Z 1365.613.
+"Size (m)": X 0.500, Y 0.500, Z 0.500.
+"Rotation (°)": X 0.00, Y 0.00, Z 0.00.
+"Shape" header with dropdown "Box", separate geometry "Copy" and "Paste" buttons.
+Below shape use a compact two-column grid with ALL of these controls: "Path Cut" Begin 0.000 / End 1.000; "Hollow" 0.0 %; "Hollow Shape" dropdown Default, subdued; "Twist" Begin 0 / End 0; "Taper" X 0.00 / Y 0.00; "Top Shear" X 0.00 / Y 0.00; "Slice" Begin 0.000 / End 1.000.
+Small footer hint "Alt ×10 · Ctrl ×0.1 · Shift ×0.01" and "Limited to field precision".
+
+WINDOW 3 BODY — TEXTURE, use leftmost Legacy textures reference:
+"Surface" section: Color white swatch; Transparency (%) numeric 0; Glow 0.00; Full Bright checkbox; Hide water checkbox; separate surface "Copy" / "Paste" buttons. Material dropdown "Textures".
+"Texture" section heading with separate texture "Copy" / "Paste" buttons. "Channel:" segmented "Diffuse", "Normal", "Specular", Diffuse selected. Small fabric texture preview. "Alpha mode:" dropdown "Alpha masking"; "Mask cutoff:" numeric 128.
+"Mapping" section: Mapping dropdown "Default"; checked "Lock repeat"; aligned U/V numeric grid, Scale 1.000 / 1.000, Offset 0.000 / 0.000; Rotation 0.00°; Repeats per meter 1.000; disabled "Align planar faces" checkbox; "Align" button.
+
+Small annotation BELOW the windows, outside the application chrome: "Shared tools stay above every tab. Grid choices: World / Local / Reference." This is explanatory text, not an extra UI control. It should be legible but subordinate.
+Constraints: Keep every listed existing control. Preserve the reference style and improved body grouping. All title bars and window bottoms must be visible. No giant empty gaps, no invented features, no Apply/Reset buttons, no inline metallic or roughness sliders, no asset manager, no extra tab names, no branding slogans, no cropped controls, no decorative 3D objects outside the texture preview. Checkboxes should look like checkboxes, fields like fields, and all text should be clean and correctly spelled.

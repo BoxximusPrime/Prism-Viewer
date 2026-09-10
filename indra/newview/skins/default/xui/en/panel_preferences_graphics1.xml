@@ -260,123 +260,6 @@
       function="Pref.AutoAdjustments"/>
   </button>
 
-    <text
-      type="string"
-      length="1"
-      follows="left|top"
-      height="16"
-      layout="topleft"
-      left="30"
-      top_delta="42"
-      width="128"
-      name="AvatarComplexityModeLabel"
-      text_readonly_color="LabelDisabledColor">
-        Avatar display:
-    </text>
-    <combo_box
-     control_name="RenderAvatarComplexityMode"
-     height="23"
-     layout="topleft"
-     left_delta="130"
-     top_delta="-4"
-     name="AvatarComplexityMode"
-     width="150">
-        <combo_box.item
-         label="Limit by complexity"
-         name="0"
-         value="0"/>
-        <combo_box.item
-         label="Always show friends"
-         name="1"
-         value="1"/>
-        <combo_box.item
-         label="Only show friends"
-         name="2"
-         value="2"/>
-    </combo_box>
-  
-  <slider
-    control_name="IndirectMaxComplexity"
-    tool_tip="Controls at what point a visually complex avatar is drawn as a JellyDoll"
-    follows="left|top"
-    height="16"
-    initial_value="101"
-    increment="1"
-    label="Avatar maximum complexity:"
-    label_width="187"
-    layout="topleft"
-    left="30"
-    min_val="1"
-    max_val="101"
-    name="IndirectMaxComplexity"
-    show_text="false"
-    top_delta="28"
-    width="394">
-    <slider.commit_callback
-      function="Pref.UpdateIndirectMaxComplexity"
-      parameter="IndirectMaxComlexityText" />
-  </slider>
-  <text
-    type="string"
-    length="1"
-    follows="left|top"
-    height="16"
-    layout="topleft"
-    top_delta="0"
-    left_delta="398"
-    text_readonly_color="LabelDisabledColor"
-    name="IndirectMaxComplexityText"
-    width="65">
-       0
-  </text>
-
-  <slider
-    control_name="IndirectMaxNonImpostors"
-    name="IndirectMaxNonImpostors"
-    decimal_digits="0"
-    increment="1"
-    initial_value="12"
-    show_text="false"
-    min_val="1"
-    max_val="66"
-    label="Maximum number of animated avatars:"
-    follows="left|top"
-    layout="topleft"
-    height="16"
-    label_width="240"
-    left="30"
-    top_delta="20"
-    width="394">
-      <slider.commit_callback
-        function="Pref.UpdateIndirectMaxNonImpostors"
-        parameter="IndirectNonImpostorsText" />
-  </slider>
-  <text
-    type="string"
-    length="1"
-    follows="left|top"
-    height="16"
-    layout="topleft"
-    top_delta="0"
-    left_delta="398"
-    text_readonly_color="LabelDisabledColor"
-    name="IndirectMaxNonImpostorsText"
-    width="65">
-      0
-  </text> 
-    
-  <button
-    height="23"
-    label="Exceptions..."
-    layout="topleft"
-    left="48"
-    name="RenderExceptionsButton"
-    top_delta="24"
-    width="100">
-    <button.commit_callback
-      function="Pref.RenderExceptions"/>
-  </button>
-
   <slider
     control_name="RenderExposure"
     enabled_control="RenderDisableVintageMode"
@@ -467,6 +350,65 @@
       function="Pref.Advanced"
       parameter="advanced" />
   </button>
+
+  </panel>
+
+  <panel
+    follows="all"
+    height="410"
+    label="Avatar"
+    layout="topleft"
+    name="graphics_avatar_panel"
+    width="517">
+
+    <text follows="left|top" height="16" layout="topleft" left="30"
+      name="AvatarComplexityModeLabel" text_readonly_color="LabelDisabledColor"
+      top="28" width="128">Avatar display:</text>
+    <combo_box control_name="RenderAvatarComplexityMode" height="23" layout="topleft"
+      left="160" name="AvatarComplexityMode" top="24" width="150">
+      <combo_box.item label="Limit by complexity" name="0" value="0"/>
+      <combo_box.item label="Always show friends" name="1" value="1"/>
+      <combo_box.item label="Only show friends" name="2" value="2"/>
+    </combo_box>
+
+    <slider control_name="IndirectMaxComplexity" follows="left|top" height="16"
+      increment="1" initial_value="101" label="Avatar maximum complexity:"
+      label_width="187" layout="topleft" left="30" max_val="101" min_val="1"
+      name="IndirectMaxComplexity" show_text="false" top="70" width="394"
+      tool_tip="Controls at what point a visually complex avatar is drawn as a JellyDoll">
+      <slider.commit_callback function="Pref.UpdateIndirectMaxComplexity" parameter="IndirectMaxComlexityText" />
+    </slider>
+    <text follows="left|top" height="16" layout="topleft" left="428"
+      name="IndirectMaxComplexityText" text_readonly_color="LabelDisabledColor"
+      top="70" width="65">0</text>
+
+    <slider control_name="IndirectMaxNonImpostors" decimal_digits="0" follows="left|top"
+      height="16" increment="1" initial_value="12"
+      label="Maximum number of animated avatars:" label_width="240" layout="topleft"
+      left="30" max_val="66" min_val="1" name="IndirectMaxNonImpostors"
+      show_text="false" top="102" width="394">
+      <slider.commit_callback function="Pref.UpdateIndirectMaxNonImpostors" parameter="IndirectNonImpostorsText" />
+    </slider>
+    <text follows="left|top" height="16" layout="topleft" left="428"
+      name="IndirectMaxNonImpostorsText" text_readonly_color="LabelDisabledColor"
+      top="102" width="65">0</text>
+
+    <button height="23" label="Exceptions..." layout="topleft" left="48"
+      name="RenderExceptionsButton" top="135" width="100">
+      <button.commit_callback function="Pref.RenderExceptions"/>
+    </button>
+
+    <view_border bevel_style="in" follows="left|top|right" height="1" layout="topleft"
+      left="20" name="AvatarAttachmentSeparator" top="180" width="470" />
+
+    <check_box control_name="BoxxyDisableAvatarAttachedLights" height="20"
+      label="Do not render attached lights on avatars" layout="topleft" left="30"
+      name="BoxxyDisableAvatarAttachedLights" top="202"
+      tool_tip="Stops lights from avatar attachments from illuminating the scene." width="420" />
+    <check_box control_name="BoxxyDisableAvatarAttachedParticles" height="20"
+      label="Do not render attached particles on avatars" layout="topleft" left="30"
+      name="BoxxyDisableAvatarAttachedParticles" top="232"
+      tool_tip="Stops particle systems emitted by avatar attachments from rendering." width="420" />
 
   </panel>
 
@@ -696,7 +638,7 @@
       height="20" increment="1" label="Transmission blur (mm):" label_width="180"
       layout="topleft" left="30" max_val="100" min_val="0" name="BoxxySSSTransmissionSmoothing"
       show_text="true" top="395" width="450"
-      tool_tip="Smooths transmitted light after lighting, with skin and depth checks at edges. Gentler normal filtering reduces mottling on uneven meshes. Textures and specular highlights stay sharp. Try 20 mm; zero disables the extra buffer and two filter passes." />
+      tool_tip="Smooths transmitted light after lighting, with skin and depth checks at edges. Gentler normal filtering reduces mottling on uneven meshes. Textures and specular highlights stay sharp. The default is 70 mm; zero disables the extra buffer and two filter passes." />
 
     <check_box control_name="BoxxySSSPointDepth" height="20"
       label="Include point-light depth (experimental)" layout="topleft" left="30"

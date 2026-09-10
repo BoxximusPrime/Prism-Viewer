@@ -1,0 +1,1287 @@
+{
+  "frame_count": 170,
+  "main_thread_export_id": 1,
+  "frame_zone_seconds": 5.099919627,
+  "first_to_last_frame_seconds": 5.127876341,
+  "first_frame_since_process_start_seconds": 2681.652857685,
+  "approx_fps_from_mean_frame_zone": 33.33385865533759,
+  "frame_stats": {
+    "mean_ms": 29.999527217647056,
+    "median_ms": 29.8144705,
+    "p95_ms": 34.34498445,
+    "p99_ms": 36.94884922999999,
+    "max_ms": 43.443516
+  },
+  "frames_over_33_33_ms": 16,
+  "frames_over_16_67_ms": 170,
+  "gaps_over_1ms": [
+    [
+      2,
+      27.701609
+    ]
+  ],
+  "zones": {
+    "FTM_FRAME": {
+      "count": 170,
+      "share_of_frame_percent": 100.0,
+      "total_ms": 5099.919627,
+      "mean_ms": 29.999527217647056,
+      "median_ms": 29.8144705,
+      "p95_ms": 34.34498445,
+      "p99_ms": 36.94884922999999,
+      "max_ms": 43.443516,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "render_ui": {
+      "count": 170,
+      "share_of_frame_percent": 10.345219407121453,
+      "total_ms": 527.597875,
+      "mean_ms": 3.103516911764706,
+      "median_ms": 3.0651475,
+      "p95_ms": 3.8463779499999986,
+      "p99_ms": 4.34339734,
+      "max_ms": 4.535228,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::renderShadow": {
+      "count": 1006,
+      "share_of_frame_percent": 15.586578654918869,
+      "total_ms": 794.902984,
+      "mean_ms": 4.675899905882353,
+      "median_ms": 4.40791,
+      "p95_ms": 6.48455335,
+      "p99_ms": 8.274690650000002,
+      "max_ms": 13.435313,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Render Cube Face": {
+      "count": 170,
+      "share_of_frame_percent": 3.2603843229155265,
+      "total_ms": 166.27698,
+      "mean_ms": 0.9780998823529412,
+      "median_ms": 0.5099335,
+      "p95_ms": 3.0923493999999985,
+      "p99_ms": 3.93188016,
+      "max_ms": 4.141687,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::renderDeferredLighting": {
+      "count": 340,
+      "share_of_frame_percent": 22.095601135245108,
+      "total_ms": 1126.857899,
+      "mean_ms": 6.628575876470588,
+      "median_ms": 6.49549,
+      "p95_ms": 7.719655400000001,
+      "p99_ms": 8.48009612,
+      "max_ms": 9.640836,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::renderGeomDeferred": {
+      "count": 598,
+      "share_of_frame_percent": 8.79809194687138,
+      "total_ms": 448.695618,
+      "mean_ms": 2.639385988235294,
+      "median_ms": 2.544272,
+      "p95_ms": 3.3639411499999996,
+      "p99_ms": 3.78220041,
+      "max_ms": 4.093672,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLDrawPoolAlpha::renderAlpha": {
+      "count": 2510,
+      "share_of_frame_percent": 10.273307822856793,
+      "total_ms": 523.930442,
+      "mean_ms": 3.081943776470588,
+      "median_ms": 2.9820625,
+      "p95_ms": 3.86234315,
+      "p99_ms": 4.24953599,
+      "max_ms": 4.500892,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "render_ui_2d": {
+      "count": 170,
+      "share_of_frame_percent": 7.71160243227888,
+      "total_ms": 393.285526,
+      "mean_ms": 2.3134442705882354,
+      "median_ms": 2.275751,
+      "p95_ms": 3.0690035499999997,
+      "p99_ms": 3.5427030200000007,
+      "max_ms": 3.816743,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLDrawPoolAlpha::renderPostDeferred": {
+      "count": 1484,
+      "share_of_frame_percent": 17.093604169460374,
+      "total_ms": 871.760074,
+      "mean_ms": 5.128000435294118,
+      "median_ms": 5.033823,
+      "p95_ms": 5.981738349999999,
+      "p99_ms": 6.819020260000003,
+      "max_ms": 8.191993,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Render": {
+      "count": 170,
+      "share_of_frame_percent": 74.4407194752836,
+      "total_ms": 3796.416863,
+      "mean_ms": 22.3318639,
+      "median_ms": 22.0619295,
+      "p95_ms": 25.264475999999995,
+      "p99_ms": 29.17167512,
+      "max_ms": 34.603225,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::renderGeomPostDeferred": {
+      "count": 1026,
+      "share_of_frame_percent": 14.933488813587532,
+      "total_ms": 761.595927,
+      "mean_ms": 4.479976041176471,
+      "median_ms": 4.3586485,
+      "p95_ms": 5.413934399999999,
+      "p99_ms": 6.251685680000003,
+      "max_ms": 7.652456,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df Display": {
+      "count": 170,
+      "share_of_frame_percent": 77.78079654430601,
+      "total_ms": 3966.758109,
+      "mean_ms": 23.333871229411766,
+      "median_ms": 23.065654,
+      "p95_ms": 26.8364384,
+      "p99_ms": 29.71645814,
+      "max_ms": 37.049885,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "display - 1": {
+      "count": 170,
+      "share_of_frame_percent": 74.3749788706229,
+      "total_ms": 3793.064145,
+      "mean_ms": 22.312142029411763,
+      "median_ms": 22.0406075,
+      "p95_ms": 25.221015999999995,
+      "p99_ms": 29.15264119,
+      "max_ms": 34.580467,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "display - 2": {
+      "count": 170,
+      "share_of_frame_percent": 19.4845571239823,
+      "total_ms": 993.696753,
+      "mean_ms": 5.845275017647059,
+      "median_ms": 5.5553855,
+      "p95_ms": 7.895312149999999,
+      "p99_ms": 11.14053911,
+      "max_ms": 14.849136,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "display - 5": {
+      "count": 170,
+      "share_of_frame_percent": 6.737326646893057,
+      "total_ms": 343.598244,
+      "mean_ms": 2.0211661411764705,
+      "median_ms": 2.025304,
+      "p95_ms": 2.2850752,
+      "p99_ms": 2.4565635600000006,
+      "max_ms": 2.710252,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "FTM_DISPLAY_DEBUG_TEXT": {
+      "count": 170,
+      "share_of_frame_percent": 0.0012998832304931146,
+      "total_ms": 0.066293,
+      "mean_ms": 0.00038995882352941175,
+      "median_ms": 0.0003585,
+      "p95_ms": 0.0005221499999999998,
+      "p99_ms": 0.0010638800000000001,
+      "max_ms": 0.001142,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "display_stats": {
+      "count": 170,
+      "share_of_frame_percent": 0.0015558088323575066,
+      "total_ms": 0.079345,
+      "mean_ms": 0.0004667352941176471,
+      "median_ms": 0.0004435,
+      "p95_ms": 0.00061365,
+      "p99_ms": 0.0009662600000000004,
+      "max_ms": 0.001139,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "display - 4": {
+      "count": 170,
+      "share_of_frame_percent": 5.681381123459811,
+      "total_ms": 289.745871,
+      "mean_ms": 1.7043874764705882,
+      "median_ms": 1.6787495,
+      "p95_ms": 2.1251213499999997,
+      "p99_ms": 2.32129617,
+      "max_ms": 2.336557,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df suspend": {
+      "count": 170,
+      "share_of_frame_percent": 0.04771279114120831,
+      "total_ms": 2.433314,
+      "mean_ms": 0.014313611764705882,
+      "median_ms": 0.0037825,
+      "p95_ms": 0.08073905,
+      "p99_ms": 0.10096974000000002,
+      "max_ms": 0.129018,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df LLTrace": {
+      "count": 170,
+      "share_of_frame_percent": 0.11654056210090152,
+      "total_ms": 5.943475,
+      "mean_ms": 0.034961617647058824,
+      "median_ms": 0.0338795,
+      "p95_ms": 0.03904565,
+      "p99_ms": 0.057476010000000084,
+      "max_ms": 0.095597,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df Snapshot": {
+      "count": 170,
+      "share_of_frame_percent": 3.334920850508533,
+      "total_ms": 170.078283,
+      "mean_ms": 1.000460488235294,
+      "median_ms": 0.531304,
+      "p95_ms": 3.1149703499999988,
+      "p99_ms": 3.95660702,
+      "max_ms": 4.170799,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df JoystickKeyboard": {
+      "count": 170,
+      "share_of_frame_percent": 0.0530534635423579,
+      "total_ms": 2.705684,
+      "mean_ms": 0.015915788235294118,
+      "median_ms": 0.003017,
+      "p95_ms": 0.06521474999999988,
+      "p99_ms": 0.2557289800000002,
+      "max_ms": 0.373471,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df mainloop": {
+      "count": 170,
+      "share_of_frame_percent": 0.07983502285888083,
+      "total_ms": 4.071522,
+      "mean_ms": 0.023950129411764706,
+      "median_ms": 0.010466,
+      "p95_ms": 0.1103626,
+      "p99_ms": 0.12155537,
+      "max_ms": 0.123967,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df pauseMainloopTimeout": {
+      "count": 340,
+      "share_of_frame_percent": 0.010313946855460904,
+      "total_ms": 0.526003,
+      "mean_ms": 0.003094135294117647,
+      "median_ms": 0.0028175,
+      "p95_ms": 0.005033649999999999,
+      "p99_ms": 0.006813030000000004,
+      "max_ms": 0.009498,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df gMeshRepo": {
+      "count": 170,
+      "share_of_frame_percent": 0.0012548433050041084,
+      "total_ms": 0.063996,
+      "mean_ms": 0.0003764470588235294,
+      "median_ms": 0.000354,
+      "p95_ms": 0.0005453999999999998,
+      "p99_ms": 0.0007941000000000005,
+      "max_ms": 0.000941,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df idle": {
+      "count": 170,
+      "share_of_frame_percent": 21.540810705799775,
+      "total_ms": 1098.564033,
+      "mean_ms": 6.462141370588236,
+      "median_ms": 6.3768,
+      "p95_ms": 7.6393194,
+      "p99_ms": 8.16720771,
+      "max_ms": 8.435711,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df gatherInput": {
+      "count": 170,
+      "share_of_frame_percent": 0.00030490676593558793,
+      "total_ms": 0.01555,
+      "mean_ms": 9.147058823529411e-05,
+      "median_ms": 7.6e-05,
+      "p95_ms": 0.00014355,
+      "p99_ms": 0.00016286000000000002,
+      "max_ms": 0.000176,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df processMiscNativeEvents": {
+      "count": 170,
+      "share_of_frame_percent": 0.28923440130128153,
+      "total_ms": 14.750722,
+      "mean_ms": 0.08676895294117647,
+      "median_ms": 0.0526695,
+      "p95_ms": 0.23472574999999998,
+      "p99_ms": 0.47752932000000026,
+      "max_ms": 0.677022,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "df resumeMainloopTimeout": {
+      "count": 340,
+      "share_of_frame_percent": 0.0066694776560642455,
+      "total_ms": 0.340138,
+      "mean_ms": 0.0020008117647058823,
+      "median_ms": 0.001938,
+      "p95_ms": 0.0026417999999999997,
+      "p99_ms": 0.00293872,
+      "max_ms": 0.003877,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::generateSSSDepth": {
+      "count": 170,
+      "share_of_frame_percent": 16.93897047762239,
+      "total_ms": 863.87388,
+      "mean_ms": 5.08161105882353,
+      "median_ms": 4.7508645,
+      "p95_ms": 6.9512148499999995,
+      "p99_ms": 9.748244320000001,
+      "max_ms": 13.911761,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Exact OIT prepare capture": {
+      "count": 170,
+      "share_of_frame_percent": 0.013609018391693175,
+      "total_ms": 0.694049,
+      "mean_ms": 0.004082641176470588,
+      "median_ms": 0.003966,
+      "p95_ms": 0.0049893,
+      "p99_ms": 0.00525634,
+      "max_ms": 0.005973,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Exact OIT conditional fallback submission": {
+      "count": 170,
+      "share_of_frame_percent": 4.312931969270817,
+      "total_ms": 219.956064,
+      "mean_ms": 1.2938592,
+      "median_ms": 1.2845405,
+      "p95_ms": 1.5005738,
+      "p99_ms": 1.5768761100000002,
+      "max_ms": 1.588709,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Exact OIT GPU scheduled finish": {
+      "count": 170,
+      "share_of_frame_percent": 7.606393480130035,
+      "total_ms": 387.919954,
+      "mean_ms": 2.2818820823529413,
+      "median_ms": 2.2487175,
+      "p95_ms": 2.6615568499999998,
+      "p99_ms": 2.7459743000000003,
+      "max_ms": 2.913622,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Exact OIT queue stats": {
+      "count": 170,
+      "share_of_frame_percent": 0.023802335895126057,
+      "total_ms": 1.2139,
+      "mean_ms": 0.007140588235294118,
+      "median_ms": 0.003615,
+      "p95_ms": 0.011044299999999986,
+      "p99_ms": 0.02811011000000001,
+      "max_ms": 0.382779,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Exact OIT overflow predicate submission": {
+      "count": 170,
+      "share_of_frame_percent": 3.2371813690153277,
+      "total_ms": 165.093648,
+      "mean_ms": 0.971139105882353,
+      "median_ms": 0.9475005,
+      "p95_ms": 1.2389085999999994,
+      "p99_ms": 1.3814716400000002,
+      "max_ms": 1.499826,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "Exact OIT collect completed stats": {
+      "count": 170,
+      "share_of_frame_percent": 5.951094844577636,
+      "total_ms": 303.501054,
+      "mean_ms": 1.7853003176470588,
+      "median_ms": 1.742743,
+      "p95_ms": 2.14651975,
+      "p99_ms": 2.9144938600000034,
+      "max_ms": 4.493216,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "FTM_OBJECTLIST_UPDATE": {
+      "count": 170,
+      "share_of_frame_percent": 15.800529948234026,
+      "total_ms": 805.814328,
+      "mean_ms": 4.740084282352941,
+      "median_ms": 4.6969165,
+      "p95_ms": 5.467354299999998,
+      "p99_ms": 5.7243424,
+      "max_ms": 6.050449,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLVOAvatar::idleUpdate": {
+      "count": 15300,
+      "share_of_frame_percent": 15.02588426968557,
+      "total_ms": 766.308021,
+      "mean_ms": 4.50769424117647,
+      "median_ms": 4.4723145,
+      "p95_ms": 5.227912199999999,
+      "p99_ms": 5.47180401,
+      "max_ms": 5.813466,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLVOAvatar::idleUpdateMisc": {
+      "count": 15300,
+      "share_of_frame_percent": 3.2315551038781107,
+      "total_ms": 164.806713,
+      "mean_ms": 0.9694512529411765,
+      "median_ms": 0.95626,
+      "p95_ms": 1.14528425,
+      "p99_ms": 1.3196771200000004,
+      "max_ms": 1.443201,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLVOAvatar::idleUpdateNameTag": {
+      "count": 15300,
+      "share_of_frame_percent": 0.5261428995457382,
+      "total_ms": 26.832865,
+      "mean_ms": 0.15784038235294118,
+      "median_ms": 0.1585905,
+      "p95_ms": 0.18751885,
+      "p99_ms": 0.2142139,
+      "max_ms": 0.234779,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLVOAvatar::idleUpdateRenderComplexity": {
+      "count": 700,
+      "share_of_frame_percent": 0.1434265152194721,
+      "total_ms": 7.314637,
+      "mean_ms": 0.04302727647058824,
+      "median_ms": 0.0009595,
+      "p95_ms": 0.2234513,
+      "p99_ms": 0.4224864600000002,
+      "max_ms": 0.564908,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLCharacter::updateMotions": {
+      "count": 15300,
+      "share_of_frame_percent": 7.3576368932058855,
+      "total_ms": 375.233568,
+      "mean_ms": 2.207256282352941,
+      "median_ms": 2.1803915,
+      "p95_ms": 2.5699463499999995,
+      "p99_ms": 2.79385567,
+      "max_ms": 2.901786,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLViewerTextureList::updateImagesFetchTextures": {
+      "count": 170,
+      "share_of_frame_percent": 7.114880028284807,
+      "total_ms": 362.853163,
+      "mean_ms": 2.1344303705882353,
+      "median_ms": 2.078565,
+      "p95_ms": 2.3996822499999997,
+      "p99_ms": 2.62813291,
+      "max_ms": 2.80064,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLViewerTextureList::updateImagesLoadingFastCache": {
+      "count": 170,
+      "share_of_frame_percent": 0.0002861221561756977,
+      "total_ms": 0.014592,
+      "mean_ms": 8.583529411764705e-05,
+      "median_ms": 8.2e-05,
+      "p95_ms": 0.00018554999999999998,
+      "p99_ms": 0.00025879,
+      "max_ms": 0.000273,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLViewerTextureList::updateImagesCreateTextures": {
+      "count": 170,
+      "share_of_frame_percent": 0.005466988117301167,
+      "total_ms": 0.278812,
+      "mean_ms": 0.001640070588235294,
+      "median_ms": 0.00031,
+      "p95_ms": 0.016176899999999987,
+      "p99_ms": 0.02222519000000001,
+      "max_ms": 0.025133,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLViewerTextureList::updateImagesUpdateStats": {
+      "count": 170,
+      "share_of_frame_percent": 0.00010155061998587846,
+      "total_ms": 0.005179,
+      "mean_ms": 3.046470588235294e-05,
+      "median_ms": 3e-05,
+      "p95_ms": 3.154999999999998e-05,
+      "p99_ms": 5.5620000000000006e-05,
+      "max_ms": 6.3e-05,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLViewerTextureList::updateImages": {
+      "count": 170,
+      "share_of_frame_percent": 7.144923148805537,
+      "total_ms": 364.385338,
+      "mean_ms": 2.1434431647058823,
+      "median_ms": 2.086631,
+      "p95_ms": 2.4072185499999996,
+      "p99_ms": 2.63585451,
+      "max_ms": 2.80869,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::stateSort": {
+      "count": 1271,
+      "share_of_frame_percent": 12.258065081855849,
+      "total_ms": 625.151467,
+      "mean_ms": 3.677361570588235,
+      "median_ms": 3.283634,
+      "p95_ms": 5.81052245,
+      "p99_ms": 6.9378556100000015,
+      "max_ms": 12.579219,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "draw_ui_backdrop": {
+      "count": 170,
+      "share_of_frame_percent": 2.407261407611983,
+      "total_ms": 122.768397,
+      "mean_ms": 0.7221670411764706,
+      "median_ms": 0.727918,
+      "p95_ms": 1.0864893999999998,
+      "p99_ms": 1.13230426,
+      "max_ms": 1.419689,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLFace::calcPixelArea": {
+      "count": 452666,
+      "share_of_frame_percent": 6.780931471334342,
+      "total_ms": 345.822055,
+      "mean_ms": 2.034247382352941,
+      "median_ms": 1.9726195,
+      "p95_ms": 2.5293302499999997,
+      "p99_ms": 2.91906088,
+      "max_ms": 3.391483,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::postSort": {
+      "count": 1271,
+      "share_of_frame_percent": 5.146272435559698,
+      "total_ms": 262.455758,
+      "mean_ms": 1.5438573999999998,
+      "median_ms": 1.1705475,
+      "p95_ms": 3.3676575999999985,
+      "p99_ms": 4.698199450000002,
+      "max_ms": 10.107562,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLPipeline::rebuildPriorityGroups": {
+      "count": 1101,
+      "share_of_frame_percent": 2.9451126877533436,
+      "total_ms": 150.19838,
+      "mean_ms": 0.8835198823529412,
+      "median_ms": 0.5133505,
+      "p95_ms": 2.446598349999999,
+      "p99_ms": 3.74677463,
+      "max_ms": 7.636708,
+      "all_export_threads": [
+        1
+      ]
+    },
+    "LLVolumeGeometryManager::rebuildGeom": {
+      "count": 766,
+      "share_of_frame_percent": 1.7819228663699096,
+      "total_ms": 90.876634,
+      "mean_ms": 0.5345684352941177,
+      "median_ms": 0.1456695,
+      "p95_ms": 2.0441766999999995,
+      "p99_ms": 3.3481615899999997,
+      "max_ms": 6.887023,
+      "all_export_threads": [
+        1
+      ]
+    }
+  },
+  "containment": {
+    "LLPipeline::renderShadow inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 1024,
+      "total_ms": 809.71873,
+      "mean_ms_per_parent": 4.680455086705202,
+      "mean_count_per_parent": 5.91907514450867
+    },
+    "LLPipeline::stateSort inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 512,
+      "total_ms": 286.525767,
+      "mean_ms_per_parent": 1.6562183063583813,
+      "mean_count_per_parent": 2.959537572254335
+    },
+    "LLPipeline::rebuildPriorityGroups inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 512,
+      "total_ms": 148.428238,
+      "mean_ms_per_parent": 0.8579666936416185,
+      "mean_count_per_parent": 2.959537572254335
+    },
+    "LLPipeline::renderDeferredLighting inside Render": {
+      "parent_count": 172,
+      "child_count": 172,
+      "total_ms": 1067.145702,
+      "mean_ms_per_parent": 6.204335476744186,
+      "mean_count_per_parent": 1
+    },
+    "LLPipeline::renderDeferredLighting inside df Snapshot": {
+      "parent_count": 172,
+      "child_count": 172,
+      "total_ms": 70.759275,
+      "mean_ms_per_parent": 0.4113911337209303,
+      "mean_count_per_parent": 1
+    },
+    "LLFace::calcPixelArea inside LLViewerTextureList::updateImages": {
+      "parent_count": 173,
+      "child_count": 367878,
+      "total_ms": 297.906258,
+      "mean_ms_per_parent": 1.7220014913294797,
+      "mean_count_per_parent": 2126.4624277456646
+    },
+    "LLFace::calcPixelArea inside LLVOAvatar::idleUpdate": {
+      "parent_count": 15538,
+      "child_count": 0,
+      "total_ms": 0.0,
+      "mean_ms_per_parent": 0.0,
+      "mean_count_per_parent": 0
+    },
+    "LLFace::calcPixelArea inside LLPipeline::stateSort": {
+      "parent_count": 1290,
+      "child_count": 24793,
+      "total_ms": 14.130567,
+      "mean_ms_per_parent": 0.010953927906976744,
+      "mean_count_per_parent": 19.21937984496124
+    },
+    "LLDrawPoolAlpha::renderAlpha inside Exact OIT conditional fallback submission": {
+      "parent_count": 172,
+      "child_count": 344,
+      "total_ms": 215.585201,
+      "mean_ms_per_parent": 1.2534023313953488,
+      "mean_count_per_parent": 2
+    },
+    "LLDrawPoolAlpha::renderAlpha inside LLPipeline::generateSSSDepth": {
+      "parent_count": 173,
+      "child_count": 0,
+      "total_ms": 0.0,
+      "mean_ms_per_parent": 0.0,
+      "mean_count_per_parent": 0
+    },
+    "Exact OIT collect completed stats inside LLPipeline::renderDeferredLighting": {
+      "parent_count": 344,
+      "child_count": 172,
+      "total_ms": 306.344909,
+      "mean_ms_per_parent": 0.8905375261627907,
+      "mean_count_per_parent": 0.5
+    },
+    "Exact OIT GPU scheduled finish inside LLPipeline::renderDeferredLighting": {
+      "parent_count": 344,
+      "child_count": 172,
+      "total_ms": 392.029,
+      "mean_ms_per_parent": 1.1396191860465117,
+      "mean_count_per_parent": 0.5
+    }
+  },
+  "allocation": {
+    "SSS depth": {
+      "mean_ms": 5.08161105882353,
+      "median_ms": 4.7508645,
+      "p95_ms": 6.9512148499999995,
+      "p99_ms": 9.748244320000001,
+      "max_ms": 13.911761,
+      "share_percent": 16.93897047762239
+    },
+    "Lighting and transparency": {
+      "mean_ms": 6.2132798764705885,
+      "median_ms": 6.1443885,
+      "p95_ms": 6.94004485,
+      "p99_ms": 7.826444430000002,
+      "max_ms": 8.561906,
+      "share_percent": 20.711259318832397
+    },
+    "UI and HUD rendering": {
+      "mean_ms": 3.103516911764706,
+      "median_ms": 3.0651475,
+      "p95_ms": 3.8463779499999986,
+      "p99_ms": 4.34339734,
+      "max_ms": 4.535228,
+      "share_percent": 10.345219407121453
+    },
+    "Texture updates": {
+      "mean_ms": 2.1434431647058823,
+      "median_ms": 2.086631,
+      "p95_ms": 2.4072185499999996,
+      "p99_ms": 2.63585451,
+      "max_ms": 2.80869,
+      "share_percent": 7.144923148805537
+    },
+    "Main opaque geometry": {
+      "mean_ms": 2.0211661411764705,
+      "median_ms": 2.025304,
+      "p95_ms": 2.2850752,
+      "p99_ms": 2.4565635600000006,
+      "max_ms": 2.710252,
+      "share_percent": 6.737326646893057
+    },
+    "Main scene sorting": {
+      "mean_ms": 1.7043874764705882,
+      "median_ms": 1.6787495,
+      "p95_ms": 2.1251213499999997,
+      "p99_ms": 2.32129617,
+      "max_ms": 2.336557,
+      "share_percent": 5.681381123459811
+    },
+    "Reflection update": {
+      "mean_ms": 1.000460488235294,
+      "median_ms": 0.531304,
+      "p95_ms": 3.1149703499999988,
+      "p99_ms": 3.95660702,
+      "max_ms": 4.170799,
+      "share_percent": 3.334920850508533
+    },
+    "Avatar and object updates": {
+      "mean_ms": 4.740084282352941,
+      "median_ms": 4.6969165,
+      "p95_ms": 5.467354299999998,
+      "p99_ms": 5.7243424,
+      "max_ms": 6.050449,
+      "share_percent": 15.800529948234026
+    },
+    "Other simulation and UI updates": {
+      "mean_ms": 1.7220570882352941,
+      "median_ms": 1.713527,
+      "p95_ms": 2.481537149999999,
+      "p99_ms": 2.67310572,
+      "max_ms": 2.733546,
+      "share_percent": 5.740280757565751
+    },
+    "Other frame work": {
+      "mean_ms": 2.2695207294117647,
+      "median_ms": 2.2458425,
+      "p95_ms": 3.2312788999999986,
+      "p99_ms": 3.7073816600000002,
+      "max_ms": 3.822162,
+      "share_percent": 7.565188320957043
+    }
+  },
+  "slowest_frames": [
+    {
+      "frame_index": 105,
+      "relative_seconds": 3.111981597,
+      "frame_ms": 43.443516,
+      "allocation_ms": {
+        "SSS depth": 13.911761,
+        "Lighting and transparency": 8.561906,
+        "UI and HUD rendering": 3.396627,
+        "Texture updates": 2.086502,
+        "Main opaque geometry": 2.094984,
+        "Main scene sorting": 1.824982,
+        "Reflection update": 2.444743,
+        "Avatar and object updates": 4.283959,
+        "Other simulation and UI updates": 1.862674,
+        "Other frame work": 2.975378
+      },
+      "oit_collect_ms": 4.019947,
+      "oit_finish_ms": 2.177226,
+      "sss_self_ms": 0.469599,
+      "priority_rebuild_ms": 7.636708
+    },
+    {
+      "frame_index": 143,
+      "relative_seconds": 4.293841353,
+      "frame_ms": 37.055408,
+      "allocation_ms": {
+        "SSS depth": 10.347352,
+        "Lighting and transparency": 6.237761,
+        "UI and HUD rendering": 4.397158,
+        "Texture updates": 2.718393,
+        "Main opaque geometry": 2.284435,
+        "Main scene sorting": 1.562728,
+        "Reflection update": 0.465661,
+        "Avatar and object updates": 4.80857,
+        "Other simulation and UI updates": 1.815416,
+        "Other frame work": 2.417934
+      },
+      "oit_collect_ms": 1.614892,
+      "oit_finish_ms": 2.355403,
+      "sss_self_ms": 7.466733,
+      "priority_rebuild_ms": 0.550443
+    },
+    {
+      "frame_index": 139,
+      "relative_seconds": 4.161098048,
+      "frame_ms": 36.900975,
+      "allocation_ms": {
+        "SSS depth": 6.602916,
+        "Lighting and transparency": 6.60466,
+        "UI and HUD rendering": 3.527404,
+        "Texture updates": 2.06405,
+        "Main opaque geometry": 2.285599,
+        "Main scene sorting": 1.684006,
+        "Reflection update": 4.170799,
+        "Avatar and object updates": 5.276975,
+        "Other simulation and UI updates": 2.424695,
+        "Other frame work": 2.259871
+      },
+      "oit_collect_ms": 1.746415,
+      "oit_finish_ms": 2.575766,
+      "sss_self_ms": 0.321514,
+      "priority_rebuild_ms": 2.533557
+    },
+    {
+      "frame_index": 15,
+      "relative_seconds": 0.467520355,
+      "frame_ms": 36.260295,
+      "allocation_ms": {
+        "SSS depth": 9.47908,
+        "Lighting and transparency": 8.479359,
+        "UI and HUD rendering": 2.874666,
+        "Texture updates": 2.078577,
+        "Main opaque geometry": 1.787076,
+        "Main scene sorting": 1.360335,
+        "Reflection update": 0.578386,
+        "Avatar and object updates": 4.861766,
+        "Other simulation and UI updates": 1.750748,
+        "Other frame work": 3.010302
+      },
+      "oit_collect_ms": 4.493216,
+      "oit_finish_ms": 2.026156,
+      "sss_self_ms": 0.471733,
+      "priority_rebuild_ms": 3.764765
+    },
+    {
+      "frame_index": 103,
+      "relative_seconds": 3.042925115,
+      "frame_ms": 35.285814,
+      "allocation_ms": {
+        "SSS depth": 5.572903,
+        "Lighting and transparency": 6.815308,
+        "UI and HUD rendering": 2.95867,
+        "Texture updates": 2.284982,
+        "Main opaque geometry": 2.17588,
+        "Main scene sorting": 1.812198,
+        "Reflection update": 2.194884,
+        "Avatar and object updates": 6.050449,
+        "Other simulation and UI updates": 1.598378,
+        "Other frame work": 3.822162
+      },
+      "oit_collect_ms": 1.911637,
+      "oit_finish_ms": 2.689904,
+      "sss_self_ms": 0.269899,
+      "priority_rebuild_ms": 1.32959
+    },
+    {
+      "frame_index": 146,
+      "relative_seconds": 4.394468863,
+      "frame_ms": 35.269149,
+      "allocation_ms": {
+        "SSS depth": 6.880019,
+        "Lighting and transparency": 6.690881,
+        "UI and HUD rendering": 3.493362,
+        "Texture updates": 2.059347,
+        "Main opaque geometry": 2.06761,
+        "Main scene sorting": 2.326614,
+        "Reflection update": 1.067957,
+        "Avatar and object updates": 5.107902,
+        "Other simulation and UI updates": 2.174878,
+        "Other frame work": 3.400579
+      },
+      "oit_collect_ms": 2.082539,
+      "oit_finish_ms": 2.14865,
+      "sss_self_ms": 0.384547,
+      "priority_rebuild_ms": 1.9413
+    },
+    {
+      "frame_index": 145,
+      "relative_seconds": 4.359780744,
+      "frame_ms": 34.686345,
+      "allocation_ms": {
+        "SSS depth": 5.321063,
+        "Lighting and transparency": 6.614298,
+        "UI and HUD rendering": 3.130785,
+        "Texture updates": 2.096859,
+        "Main opaque geometry": 2.092129,
+        "Main scene sorting": 1.841587,
+        "Reflection update": 3.929314,
+        "Avatar and object updates": 4.762453,
+        "Other simulation and UI updates": 2.40792,
+        "Other frame work": 2.489937
+      },
+      "oit_collect_ms": 1.826976,
+      "oit_finish_ms": 2.60937,
+      "sss_self_ms": 0.418251,
+      "priority_rebuild_ms": 1.021783
+    },
+    {
+      "frame_index": 168,
+      "relative_seconds": 5.063287294,
+      "frame_ms": 34.554393,
+      "allocation_ms": {
+        "SSS depth": 6.94009,
+        "Lighting and transparency": 7.533106,
+        "UI and HUD rendering": 2.95514,
+        "Texture updates": 2.108273,
+        "Main opaque geometry": 2.264961,
+        "Main scene sorting": 2.304625,
+        "Reflection update": 0.369849,
+        "Avatar and object updates": 5.203393,
+        "Other simulation and UI updates": 2.113013,
+        "Other frame work": 2.761943
+      },
+      "oit_collect_ms": 2.230101,
+      "oit_finish_ms": 2.913622,
+      "sss_self_ms": 0.468656,
+      "priority_rebuild_ms": 2.272855
+    }
+  ],
+  "worst_frame_large_nested_zones": [
+    {
+      "name": "LLPipeline::renderShadow",
+      "offset_ms": 8.543227,
+      "duration_ms": 9.918965
+    },
+    {
+      "name": "LLPipeline::stateSort",
+      "offset_ms": 8.593132,
+      "duration_ms": 9.249184
+    },
+    {
+      "name": "LLPipeline::postSort",
+      "offset_ms": 8.739532,
+      "duration_ms": 9.102634
+    },
+    {
+      "name": "LLPipeline::rebuildPriorityGroups",
+      "offset_ms": 8.746547,
+      "duration_ms": 7.280943
+    },
+    {
+      "name": "LLVolumeGeometryManager::rebuildGeom",
+      "offset_ms": 8.773489,
+      "duration_ms": 1.304246
+    },
+    {
+      "name": "LLVolumeGeometryManager::rebuildGeom",
+      "offset_ms": 10.078536,
+      "duration_ms": 1.207363
+    },
+    {
+      "name": "LLVolumeGeometryManager::rebuildGeom",
+      "offset_ms": 12.019933,
+      "duration_ms": 2.177705
+    },
+    {
+      "name": "LLPipeline::renderShadow",
+      "offset_ms": 18.825126,
+      "duration_ms": 1.599049
+    },
+    {
+      "name": "LLPipeline::stateSort",
+      "offset_ms": 25.038725,
+      "duration_ms": 1.810782
+    }
+  ],
+  "background_self_by_thread": [
+    {
+      "name": "micro_sleep",
+      "thread_export_id": 3,
+      "calls": 1705,
+      "self_ms": 4787.198669999995
+    },
+    {
+      "name": "micro_sleep",
+      "thread_export_id": 5,
+      "calls": 108,
+      "self_ms": 1685.5916490000006
+    },
+    {
+      "name": "micro_sleep",
+      "thread_export_id": 8,
+      "calls": 4,
+      "self_ms": 4002.537322
+    },
+    {
+      "name": "LLCondition::wait",
+      "thread_export_id": 2,
+      "calls": 1117,
+      "self_ms": 5159.161367999999
+    },
+    {
+      "name": "w32t - GetMessage",
+      "thread_export_id": 4,
+      "calls": 110,
+      "self_ms": 5154.2284519999985
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 5,
+      "calls": 380,
+      "self_ms": 3454.187503999998
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 6,
+      "calls": 206,
+      "self_ms": 5109.224946999998
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 7,
+      "calls": 171,
+      "self_ms": 5127.6717370000015
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 10,
+      "calls": 1,
+      "self_ms": 2503.708804
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 11,
+      "calls": 1,
+      "self_ms": 2697.449501
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 21,
+      "calls": 18,
+      "self_ms": 51.355526
+    },
+    {
+      "name": "LLThreadSafeQueue::pop",
+      "thread_export_id": 22,
+      "calls": 13,
+      "self_ms": 59.345305
+    },
+    {
+      "name": "LLCore::HttpService::processRequestQueue",
+      "thread_export_id": 3,
+      "calls": 1726,
+      "self_ms": 346.6464290000005
+    },
+    {
+      "name": "processRequest - retry",
+      "thread_export_id": 5,
+      "calls": 173,
+      "self_ms": 0.07058199999999995
+    },
+    {
+      "name": "Sleep2",
+      "thread_export_id": 1,
+      "calls": 172,
+      "self_ms": 0.3099120000000001
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 10,
+      "calls": 2,
+      "self_ms": 4.748952
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 11,
+      "calls": 2,
+      "self_ms": 6.957916
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 12,
+      "calls": 1,
+      "self_ms": 0.985812
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 14,
+      "calls": 1,
+      "self_ms": 2.394029
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 15,
+      "calls": 1,
+      "self_ms": 1.55031
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 16,
+      "calls": 1,
+      "self_ms": 1.245902
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 17,
+      "calls": 1,
+      "self_ms": 2.41768
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 18,
+      "calls": 1,
+      "self_ms": 3.245094
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 19,
+      "calls": 1,
+      "self_ms": 5.120724
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 20,
+      "calls": 1,
+      "self_ms": 0.317829
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 23,
+      "calls": 1,
+      "self_ms": 5.493044
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 24,
+      "calls": 1,
+      "self_ms": 4.2177
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 25,
+      "calls": 1,
+      "self_ms": 4.928353
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 26,
+      "calls": 1,
+      "self_ms": 1.432683
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 27,
+      "calls": 1,
+      "self_ms": 0.305923
+    },
+    {
+      "name": "LLImageJ2C::decodeChannels",
+      "thread_export_id": 28,
+      "calls": 1,
+      "self_ms": 0.699355
+    }
+  ]
+}

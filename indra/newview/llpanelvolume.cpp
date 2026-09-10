@@ -723,6 +723,12 @@ void LLPanelVolume::refresh()
 
 void LLPanelVolume::draw()
 {
+    const bool features_enabled = mMenuClipboardFeatures->getEnabled();
+    const bool light_enabled = mMenuClipboardLight->getEnabled();
+    getChildView("features_copy_btn")->setEnabled(features_enabled);
+    getChildView("features_paste_btn")->setEnabled(features_enabled && menuEnableItem("features_paste"));
+    getChildView("light_copy_btn")->setEnabled(light_enabled);
+    getChildView("light_paste_btn")->setEnabled(light_enabled && menuEnableItem("light_paste"));
     LLPanel::draw();
 }
 

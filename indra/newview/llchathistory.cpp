@@ -27,6 +27,15 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llchathistory.h"
+#include "llchatlinkpreview.h"
+#include "llbutton.h"
+#include "llcorehttputil.h"
+#include "llcoros.h"
+#include "llimage.h"
+#include "llurlmatch.h"
+#include "llurlregistry.h"
+#include "llviewertexture.h"
+#include "llweb.h"
 
 #include <boost/signals2.hpp>
 
@@ -108,6 +117,133 @@ public:
     }
 };
 LLObjectIMHandler gObjectIMHandler;
+
+class LLChatHistoryLinkPreview final : public LLPanel
+{
+public:
+    LLChatHistoryLinkPreview(const LLPanel::Params& p, const LLChatLinkPreview& preview, bool from_me)
+    : LLPanel(p), mPreview(preview), mFromMe(from_me)
+    {
+        LLStringUtil::format_map_t args;
+        args["PROVIDER"] = preview.provider;
+        LLButton::Params button;
+        button.name = "open_link_preview";
+        button.label = LLTrans::getString("ChatLinkPreviewOpen", args);
+        button.tool_tip = preview.url;
+        button.rect = LLRect(0, CARD_HEIGHT, 280, 0);
+        button.pad_bottom = 14 - CARD_HEIGHT / 2;
+        button.hover_hand_cursor = true;
+        button.image_unselected = LLUI::getUIImage("Rounded_Square");
+        button.image_selected = LLUI::getUIImage("Rounded_Square");
+        button.image_hover_unselected = LLUI::getUIImage("Rounded_Square");
+        button.image_pressed = LLUI::getUIImage("Rounded_Square");
+        mButton = LLUICtrlFactory::create<LLButton>(button, this);
+        mButton->setClickedCallback([url = preview.url](LLUICtrl*, const LLSD&) { LLWeb::loadURLExternal(url); });
+        reshape(getRect().getWidth(), getRect().getHeight(), false);
+    }
+
+    void reshape(S32 width, S32 height, bool called_from_parent = true) override
+    {
+        LLPanel::reshape(width, CARD_HEIGHT + 6, called_from_parent);
+        if (mButton)
+        {
+            const S32 card_width = llmax(1, llmin(300, ll_round(width * 0.76f)));
+            const S32 left = mFromMe ? llmax(0, width - card_width - 2) : 0;
+            mButton->setShape(LLRect(left, CARD_HEIGHT + 2, left + card_width, 2));
+        }
+    }
+
+    void draw() override
+    {
+        if (auto* editor = getParentByType<LLTextEditor>())
+        {
+            LLRect viewport;
+            editor->localRectToScreen(editor->getVisibleTextRect(), &viewport);
+            if (!viewport.overlaps(calcScreenRect()))
+                return;
+        }
+        // Offscreen history rows never start requests. Fixed card dimensions
+        // keep loading from shifting the history or its selection/caret.
+        if (!mStarted && gSavedSettings.getBOOL("ChatLinkPreviews"))
+        {
+            mStarted = true;
+            LLCoros::instance().launch("chatLinkPreview", [handle = getHandle(), url = mPreview.thumbnail]()
+            {
+                LLCoreHttpUtil::HttpCoroutineAdapter adapter("chatLinkPreview", LLCore::HttpRequest::DEFAULT_POLICY_ID);
+                auto request = std::make_shared<LLCore::HttpRequest>();
+                auto options = std::make_shared<LLCore::HttpOptions>();
+                options->setFollowRedirects(false);
+                options->setSSLVerifyPeer(true);
+                options->setSSLVerifyHost(true);
+                options->setTimeout(10);
+                options->setTransferTimeout(15);
+                options->setRetries(0);
+                auto headers = std::make_shared<LLCore::HttpHeaders>();
+                headers->append("Accept", "image/jpeg");
+                LLSD result = adapter.getRawAndSuspend(request, url, options, headers);
+                auto* panel = dynamic_cast<LLChatHistoryLinkPreview*>(handle.get());
+                if (!panel)
+                    return;
+                panel->mFinished = true;
+                panel->dirtyRect();
+                if (!gSavedSettings.getBOOL("ChatLinkPreviews"))
+                    return;
+                const LLSD& http = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+                const auto status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(http);
+                const auto& bytes = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_RAW].asBinary();
+                if (!status || status.getType() != 200 || bytes.empty() || bytes.size() > 2 * 1024 * 1024)
+                    return;
+                LLPointer<LLImageFormatted> image = LLImageFormatted::loadFromMemory(
+                    bytes.data(), static_cast<U32>(bytes.size()), "image/jpeg");
+                if (!image || image->getWidth() <= 0 || image->getHeight() <= 0
+                    || image->getWidth() > 2048 || image->getHeight() > 2048)
+                    return;
+                LLPointer<LLImageRaw> raw = new LLImageRaw;
+                if (image->decode(raw, 0.f) && LLImage::getLastThreadError() == "No Error" && raw->getData())
+                {
+                    panel->mAspect = static_cast<F32>(raw->getWidth()) / raw->getHeight();
+                    // Viewer GL textures require power-of-two dimensions; keep
+                    // the source aspect separately for an undistorted preview.
+                    raw->biasedScaleToPowerOfTwo(512);
+                    panel->mTexture = LLViewerTextureManager::getLocalTexture(raw.get(), false);
+                }
+            });
+        }
+
+        mButton->setImageColor(LLUIColorTable::instance().getColor(
+            mFromMe ? "IMBubbleOutgoingColor" : "IMBubbleIncomingColor"));
+        LLPanel::draw();
+        const LLRect& card = mButton->getRect();
+        const LLRect area(card.mLeft + 8, card.mTop - 8, card.mRight - 8, card.mBottom + 28);
+        const F32 alpha = getDrawContext().mAlpha;
+        if (mTexture && area.getWidth() > 0)
+        {
+            const S32 height = llmin(area.getHeight(), ll_round(area.getWidth() / mAspect));
+            const S32 width = ll_round(height * mAspect);
+            gl_draw_scaled_image(area.mLeft + (area.getWidth() - width) / 2,
+                area.mBottom + (area.getHeight() - height) / 2, width, height, mTexture, LLColor4::white % alpha);
+        }
+        else
+        {
+            LLFontGL::getFontSansSerifSmall()->renderUTF8(LLTrans::getString(
+                mFinished ? "ChatLinkPreviewUnavailable" : "ChatLinkPreviewLoading"), 0,
+                static_cast<F32>(area.getCenterX()), static_cast<F32>(area.getCenterY()),
+                LLUIColorTable::instance().getColor("White").get() % alpha,
+                LLFontGL::HCENTER, LLFontGL::VCENTER, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
+                S32_MAX, llmax(0, area.getWidth()), nullptr, true);
+        }
+    }
+
+private:
+    static constexpr S32 CARD_HEIGHT = 176;
+    LLChatLinkPreview mPreview;
+    bool mFromMe;
+    bool mStarted = false;
+    bool mFinished = false;
+    LLButton* mButton = nullptr;
+    F32 mAspect = 1.f;
+    LLPointer<LLViewerTexture> mTexture;
+};
 
 class LLChatHistoryBubble final : public LLPanel
 {
@@ -1364,6 +1500,42 @@ LLSD LLChatHistory::getValue() const
     return LLSD(mEditor->getText());
 }
 
+void LLChatHistory::showLinkPreviewTest()
+{
+    LLFloater::Params window(LLFloater::getDefaultParams());
+    window.name = "chat_link_preview_test";
+    window.title = "DM link preview test";
+    window.rect = LLRect(0, 640, 540, 0);
+    window.can_resize = true;
+    window.min_width = 320;
+    window.min_height = 240;
+    window.single_instance = false;
+    window.save_rect = false;
+    auto* floater = new LLFloater(LLSD(), window);
+    LLChatHistory::Params history_params;
+    history_params.rect = LLRect(8, 610, 532, 8);
+    history_params.follows.flags = FOLLOWS_ALL;
+    auto* history = LLUICtrlFactory::create<LLChatHistory>(history_params, floater);
+    LLChat chat;
+    chat.mSessionID.generate();
+    chat.mFromID = gAgent.getID();
+    chat.mFromName = "Preview";
+    chat.mSourceType = CHAT_SOURCE_AGENT;
+    chat.mChatStyle = CHAT_STYLE_HISTORY;
+    chat.mTimeStr = "12:00";
+    LLSD args;
+    args["show_link_previews"] = true;
+    for (const auto* url : {"https://imgur.com/7iqCyFw", "https://giphy.com/gifs/superman-cZ7rmKfFYOvYI",
+                           "https://youtu.be/dQw4w9WgXcQ?t=42", "https://example.com/no-preview"})
+    {
+        chat.mText = url;
+        history->appendMessage(chat, args);
+        chat.mFromID.generate();
+    }
+    floater->center();
+    floater->openFloater();
+}
+
 LLChatHistory::~LLChatHistory()
 {
     this->clear();
@@ -1853,6 +2025,29 @@ void LLChatHistory::appendMessage(const LLChat& chat, const LLSD &args, const LL
             std::string associated_text = bubble->getSelectionText()->getText();
             associated_text += "\n";
             mEditor->appendWidget(bubble_segment, associated_text, false);
+
+            if (args["show_link_previews"].asBoolean() && gSavedSettings.getBOOL("ChatLinkPreviews"))
+            {
+                std::string remaining = chat.mText;
+                std::set<std::string> thumbnails;
+                LLUrlMatch match;
+                while (thumbnails.size() < 3 && LLUrlRegistry::instance().findUrl(remaining, match))
+                {
+                    const auto preview = ll_chat_link_preview(match.getUrl());
+                    remaining.erase(0, match.getEnd() + 1);
+                    if (preview.thumbnail.empty() || !thumbnails.insert(preview.thumbnail).second)
+                        continue;
+                    row_p.name = "message_link_preview";
+                    LLInlineViewSegment::Params segment;
+                    segment.view = new LLChatHistoryLinkPreview(row_p, preview, from_me);
+                    segment.fit_to_width = true;
+                    segment.force_newline = false;
+                    segment.hide_selection = true;
+                    segment.left_pad = mLeftTextPad;
+                    segment.right_pad = mRightTextPad;
+                    mEditor->appendWidget(segment, "\n", false);
+                }
+            }
         }
         else
         {

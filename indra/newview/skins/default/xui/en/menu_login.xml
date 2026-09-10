@@ -188,8 +188,14 @@
        label="UI Tests"
        name="UI Tests"
        tear_off="true">
+        <menu_item_call label="Edit Dock" name="Edit Dock">
+          <menu_item_call.on_click function="Advanced.PreviewEditDock" />
+        </menu_item_call>
         <menu_item_call label="Loading Screen" name="Loading Screen">
           <menu_item_call.on_click function="Advanced.PreviewLoading" />
+        </menu_item_call>
+        <menu_item_call label="DM Link Previews" name="DM Link Previews">
+          <menu_item_call.on_click function="Advanced.PreviewChatLinks" />
         </menu_item_call>
         <menu_item_call
          label="Textbox"

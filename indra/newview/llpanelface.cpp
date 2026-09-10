@@ -550,6 +550,13 @@ void LLPanelFace::draw()
 {
     updateCopyTexButton();
 
+    const bool color_enabled = mMenuClipboardColor->getEnabled();
+    const bool texture_enabled = mMenuClipboardTexture->getEnabled();
+    getChildView("copy_color_params_btn")->setEnabled(color_enabled);
+    getChildView("paste_color_params_btn")->setEnabled(color_enabled && menuEnableItem("color_paste"));
+    getChildView("copy_texture_params_btn")->setEnabled(texture_enabled);
+    getChildView("paste_texture_params_btn")->setEnabled(texture_enabled && menuEnableItem("texture_paste"));
+
     // grab media name/title and update the UI widget
     // Todo: move it, it's preferable not to update
     // labels inside draw
@@ -5687,4 +5694,3 @@ void LLPanelFace::LLSelectedTE::getMaxDiffuseRepeats(F32& repeats, bool& identic
     } max_diff_repeats_func;
     identical = LLSelectMgr::getInstance()->getSelection()->getSelectedTEValue( &max_diff_repeats_func, repeats );
 }
-

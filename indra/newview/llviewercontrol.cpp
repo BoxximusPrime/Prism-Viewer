@@ -69,6 +69,7 @@
 #include "llnavigationbar.h"
 #include "llnotificationsutil.h"
 #include "llfloaterpreference.h"
+#include "llfloaterimsessiontab.h"
 #include "llfloaterreg.h"
 #include "llfloatertools.h"
 #include "llpaneloutfitsinventory.h"
@@ -815,6 +816,10 @@ void setting_setup_signal_listener(LLControlGroup& group, const std::string& set
 void settings_setup_listeners()
 {
     LL_PROFILE_ZONE_SCOPED;
+    setting_setup_signal_listener(gSavedSettings, "ChatLinkPreviews", []()
+    {
+        LLFloaterIMSessionTab::processChatHistoryStyleUpdate();
+    });
     setting_setup_signal_listener(gSavedSettings, "FirstPersonAvatarVisible", handleRenderAvatarMouselookChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderFarClip", handleRenderFarClipChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderTerrainScale", handleTerrainScaleChanged);

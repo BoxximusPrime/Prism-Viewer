@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llchathistory.h"
 
 #ifdef INCLUDE_VLD
 #include "vld.h"
@@ -8447,12 +8448,14 @@ class LLToggleShaderControl : public view_listener_t
 
 void menu_toggle_attached_lights()
 {
-    LLPipeline::sRenderAttachedLights = gSavedSettings.getBOOL("RenderAttachedLights");
+    LLPipeline::sRenderAttachedLights = gSavedSettings.getBOOL("RenderAttachedLights") &&
+                                        !gSavedSettings.getBOOL("BoxxyDisableAvatarAttachedLights");
 }
 
 void menu_toggle_attached_particles()
 {
-    LLPipeline::sRenderAttachedParticles = gSavedSettings.getBOOL("RenderAttachedParticles");
+    LLPipeline::sRenderAttachedParticles = gSavedSettings.getBOOL("RenderAttachedParticles") &&
+                                           !gSavedSettings.getBOOL("BoxxyDisableAvatarAttachedParticles");
 }
 
 class LLAdvancedHandleAttachedLightParticles: public view_listener_t
@@ -10182,6 +10185,19 @@ void initialize_menus()
     commit.add("Advanced.PreviewLoading", [](LLUICtrl*, const LLSD&)
     {
         gViewerWindow->getProgressView()->showPreview();
+    });
+    commit.add("Advanced.PreviewChatLinks", [](LLUICtrl*, const LLSD&)
+    {
+        LLChatHistory::showLinkPreviewTest();
+    });
+    commit.add("Advanced.PreviewEditDock", [](LLUICtrl*, const LLSD&)
+    {
+        if (LLStartUp::getStartupState() == STATE_LOGIN_WAIT)
+        {
+            LLSD key;
+            key["offline_preview"] = true;
+            LLFloaterReg::showInstance("build", key);
+        }
     });
     commit.add("Advanced.ShowURL", boost::bind(&handle_show_url, _2));
     commit.add("Advanced.ReportBug", boost::bind(&handle_report_bug, _2));

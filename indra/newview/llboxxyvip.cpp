@@ -119,9 +119,9 @@ bool fuzzyMatches(const std::string& normalized_term,
             return true;
         }
 
-        // Avoid surprising matches for one- and two-character watch terms.
-        if ((allow_short_substrings || normalized_term.size() >= 3) &&
-            candidate.find(normalized_term) != std::string::npos)
+        // Ordinary radar search supports substrings; VIP terms compare only
+        // against complete name candidates and tokens.
+        if (allow_short_substrings && candidate.find(normalized_term) != std::string::npos)
         {
             return true;
         }
