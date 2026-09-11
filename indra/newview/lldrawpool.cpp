@@ -455,6 +455,14 @@ void LLRenderPass::pushBatches(U32 type, bool texture, bool batch_textures)
     }
 }
 
+// Match the identity sent by applyModelMatrix. Entry still needs every blocker;
+// zero-identity exit fragments are discarded by all focused-depth shaders.
+bool LLRenderPass::skipSSSDepth(const LLDrawInfo& params)
+{
+    return LLPipeline::sShadowRender && gPipeline.mSSSDepthPass == 2 &&
+        (!gPipeline.mSSSDepthOpaque || params.mFullbright || !params.mSSSObject);
+}
+
 void LLRenderPass::pushUntexturedBatches(U32 type)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
@@ -465,9 +473,9 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
 
-        if (pparams && pparams->mCount)
+        if (pparams && pparams->mCount && !skipSSSDepth(*pparams))
         {
-            if (!LLPipeline::sShadowRender || gPipeline.mSSSDepthPass != 0 ||
+            if (!LLPipeline::sShadowRender ||
                 LLGLSLShader::sCurBoundShaderPtr != &gDeferredShadowProgram || pparams->mAvatar)
             {
                 pushUntexturedBatch(*pparams);
@@ -477,7 +485,7 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
             U32 start = pparams->mStart;
             U32 finish = pparams->mEnd;
             U32 count = pparams->mCount;
-            // Plain shadow depth ignores surface-material batch boundaries.
+            // Focused SSS depth additionally requires an identical object identity.
             // Merge only consecutive index ranges; never draw gaps or mutate draw infos.
             while (i != end)
             {
@@ -485,7 +493,10 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
                 if (!next || !next->mCount || next->mAvatar ||
                     next->mVertexBuffer != pparams->mVertexBuffer ||
                     next->mModelMatrix != pparams->mModelMatrix ||
-                    U64(pparams->mOffset) + count != next->mOffset)
+                    U64(pparams->mOffset) + count != next->mOffset ||
+                    (gPipeline.mSSSDepthPass != 0 &&
+                     (next->mFullbright ? nullptr : next->mSSSObject) !=
+                     (pparams->mFullbright ? nullptr : pparams->mSSSObject)))
                 {
                     break;
                 }
@@ -524,7 +535,8 @@ void LLRenderPass::pushRiggedBatches(U32 type, bool texture, bool batch_textures
             LLDrawInfo* pparams = *i;
             LLCullResult::increment_iterator(i, end);
 
-            if (pparams && uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+            if (pparams && !skipSSSDepth(*pparams) &&
+                uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
             {
                 pushBatch(*pparams, texture, batch_textures);
             }
@@ -549,7 +561,8 @@ void LLRenderPass::pushUntexturedRiggedBatches(U32 type)
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
 
-        if (pparams && uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+        if (pparams && !skipSSSDepth(*pparams) &&
+            uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
         {
             pushUntexturedBatch(*pparams);
         }
@@ -571,7 +584,7 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
     {
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
-        if (pparams && pparams->mCount)
+        if (pparams && pparams->mCount && !skipSSSDepth(*pparams))
         {
             if (!alpha_set || last_alpha != pparams->mAlphaMaskCutoff)
             {
@@ -587,8 +600,8 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
             U32 start = pparams->mStart;
             U32 finish = pparams->mEnd;
             U32 count = pparams->mCount;
-            // These shadow shaders only consume transform, diffuse alpha and cutoff.
-            // Keep texture bindings identical and combine adjacent indices only.
+            // Keep texture bindings and focused-depth identity identical.
+            // Combine adjacent indices only.
             while (i != end)
             {
                 LLDrawInfo* next = *i;
@@ -599,6 +612,9 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
                     next->mAlphaMaskCutoff != pparams->mAlphaMaskCutoff ||
                     next->mTexture != pparams->mTexture ||
                     next->mTextureMatrix != pparams->mTextureMatrix ||
+                    (gPipeline.mSSSDepthPass != 0 &&
+                     (next->mFullbright ? nullptr : next->mSSSObject) !=
+                     (pparams->mFullbright ? nullptr : pparams->mSSSObject)) ||
                     (batch_textures && next->mTextureList != pparams->mTextureList))
                 {
                     break;
@@ -638,7 +654,7 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
         llassert(pparams); // figure out how null got here, it shouldn't be happening
 
-        if (pparams)
+        if (pparams && !skipSSSDepth(*pparams))
         {
             if (!alpha_set || last_alpha != pparams->mAlphaMaskCutoff)
             {
@@ -702,7 +718,7 @@ void LLRenderPass::pushBatch(LLDrawInfo& params, bool texture, bool batch_textur
 void LLRenderPass::pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 start, U32 end, U32 count)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
-    if (!count)
+    if (!count || skipSSSDepth(params))
     {
         return;
     }
@@ -758,7 +774,7 @@ void LLRenderPass::pushUntexturedBatch(LLDrawInfo& params)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
 
-    if (!params.mCount)
+    if (!params.mCount || skipSSSDepth(params))
     {
         return;
     }
@@ -773,7 +789,7 @@ void LLRenderPass::pushUntexturedBatch(LLDrawInfo& params)
 bool LLRenderPass::uploadMatrixPalette(LLDrawInfo& params)
 {
     // upload matrix palette to shader
-    return uploadMatrixPalette(params.mAvatar, params.mSkinInfo);
+    return !skipSSSDepth(params) && uploadMatrixPalette(params.mAvatar, params.mSkinInfo);
 }
 
 //static
@@ -943,6 +959,7 @@ void LLRenderPass::pushUntexturedGLTFBatches(U32 type)
 // static
 void LLRenderPass::pushGLTFBatch(LLDrawInfo& params)
 {
+    if (skipSSSDepth(params)) return;
     auto& mat = params.mGLTFMaterial;
 
     if (mat.notNull())
@@ -965,6 +982,7 @@ void LLRenderPass::pushGLTFBatch(LLDrawInfo& params)
 // static
 void LLRenderPass::pushUntexturedGLTFBatch(LLDrawInfo& params)
 {
+    if (skipSSSDepth(params)) return;
     auto& mat = params.mGLTFMaterial;
 
     LLGLDisable cull_face(mat->mDoubleSided ? GL_CULL_FACE : 0);
@@ -1029,7 +1047,8 @@ void LLRenderPass::pushUntexturedRiggedGLTFBatches(U32 type)
 // static
 void LLRenderPass::pushRiggedGLTFBatch(LLDrawInfo& params, const LLVOAvatar*& lastAvatar, U64& lastMeshId, bool& skipLastSkin)
 {
-    if (uploadMatrixPalette(params.mAvatar, params.mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+    if (!skipSSSDepth(params) &&
+        uploadMatrixPalette(params.mAvatar, params.mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
     {
         pushGLTFBatch(params);
     }
@@ -1038,7 +1057,8 @@ void LLRenderPass::pushRiggedGLTFBatch(LLDrawInfo& params, const LLVOAvatar*& la
 // static
 void LLRenderPass::pushUntexturedRiggedGLTFBatch(LLDrawInfo& params, const LLVOAvatar*& lastAvatar, U64& lastMeshId, bool& skipLastSkin)
 {
-    if (uploadMatrixPalette(params.mAvatar, params.mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+    if (!skipSSSDepth(params) &&
+        uploadMatrixPalette(params.mAvatar, params.mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
     {
         pushUntexturedGLTFBatch(params);
     }

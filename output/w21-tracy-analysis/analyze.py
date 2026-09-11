@@ -215,9 +215,12 @@ with (ROOT / "per-frame.csv").open("w", newline="", encoding="utf-8") as stream:
 
 with (ROOT / "self-time-ranked.csv").open("w", newline="", encoding="utf-8") as stream:
     data = list(rows(ROOT / "zones-self.psv"))
-    writer = csv.DictWriter(stream, fieldnames=list(data[0]))
-    writer.writeheader()
-    writer.writerows(sorted(data, key=lambda r: int(r["total_ns"]), reverse=True))
+    writer = csv.writer(stream)
+    writer.writerow(["name", "src_file", "src_line", "self_total_ms", "calls", "self_mean_us", "self_max_ms"])
+    for row in sorted(data, key=lambda r: int(r["total_ns"]), reverse=True):
+        writer.writerow([row["name"], row["src_file"], row["src_line"], int(row["total_ns"]) / 1e6,
+                         int(row["counts"]), int(row["total_ns"]) / int(row["counts"]) / 1e3,
+                         int(row["max_ns"]) / 1e6])
 
 (ROOT / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 print(json.dumps({k: v for k, v in summary.items() if k != "zones"}, indent=2))

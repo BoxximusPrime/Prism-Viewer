@@ -219,6 +219,8 @@ LLTabContainer::Params::Params()
     first_tab("first_tab"),
     middle_tab("middle_tab"),
     last_tab("last_tab"),
+    tab_button("tab_button"),
+    tab_top_frame("tab_top_frame"),
     use_custom_icon_ctrl("use_custom_icon_ctrl", false),
     open_tabs_on_drag_and_drop("open_tabs_on_drag_and_drop", false),
     enable_tabs_flashing("enable_tabs_flashing", false),
@@ -260,6 +262,8 @@ LLTabContainer::LLTabContainer(const LLTabContainer::Params& p)
     mFirstTabParams(p.first_tab),
     mMiddleTabParams(p.middle_tab),
     mLastTabParams(p.last_tab),
+    mTabButtonParams(p.tab_button),
+    mTabTopFrame(p.tab_top_frame),
     mCustomIconCtrlUsed(p.use_custom_icon_ctrl),
     mOpenTabsOnDragAndDrop(p.open_tabs_on_drag_and_drop),
     mTabIconCtrlPad(p.tab_icon_ctrl_pad),
@@ -465,6 +469,16 @@ void LLTabContainer::draw()
         }
     }
 
+    // Keep the frame's fade at its native height as the content area resizes.
+    // Drawing it with the container also hides it when Build switches to Land.
+    if (!getTabsHidden() && mTabPosition == TOP && mTabTopFrame.notNull())
+    {
+        LLLocalClipRect frame_clip(getLocalRect());
+        const S32 frame_height = mTabTopFrame->getHeight();
+        mTabTopFrame->draw(0, getRect().getHeight() - getTopBorderHeight() - mTabHeight + 2 - frame_height,
+                          getRect().getWidth(), frame_height, LLColor4::white % getDrawContext().mAlpha);
+    }
+
     {
         LLRect clip_rect = getLocalRect();
         clip_rect.mLeft+=(LLPANEL_BORDER_WIDTH + 2);
@@ -602,11 +616,9 @@ bool LLTabContainer::handleMouseDown( S32 x, S32 y, MASK mask )
         }
         if( tab_rect.pointInRect( x, y ) )
         {
-            S32 index = getCurrentPanelIndex();
-            index = llclamp(index, 0, tab_count-1);
-            LLButton* tab_button = getTab(index)->mButton;
+            // Preserve focus until mouse-up selects the destination. Focusing the
+            // current tab here flashes its focus border while leaving that tab.
             gFocusMgr.setMouseCapture(this);
-            tab_button->setFocus(true);
             mMouseDownTimer.start();
         }
     }
@@ -1089,6 +1101,8 @@ void LLTabContainer::addTabPanel(const TabPanelParams& panel)
     else
     {
         LLButton::Params& p = (mCustomIconCtrlUsed ? custom_btn_params : normal_btn_params);
+
+        p.overwriteFrom(mTabButtonParams);
 
         p.rect(btn_rect);
         p.font(mFont);

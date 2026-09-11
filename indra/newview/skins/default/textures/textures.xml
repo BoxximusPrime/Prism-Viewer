@@ -705,6 +705,16 @@ with the same filename but different name
   <texture name="TabIcon_Places_Off" file_name="taskpanel/TabIcon_Places_Off.png" preload="false" />
   <texture name="TabIcon_Things_Off" file_name="taskpanel/TabIcon_Things_Off.png" preload="false" />
 
+  <!-- Opt-in Prism tabs: fixed 12px end caps, 32px tabs and an 80px fading frame. -->
+  <texture name="Prism_Tab_Off" file_name="containers/Prism_Tab_Off.png" preload="false" scale.left="12" scale.top="32" scale.right="116" scale.bottom="0" />
+  <texture name="Prism_Tab_Hover" file_name="containers/Prism_Tab_Hover.png" preload="false" scale.left="12" scale.top="32" scale.right="116" scale.bottom="0" />
+  <texture name="Prism_Tab_Selected" file_name="containers/Prism_Tab_Selected.png" preload="false" scale.left="12" scale.top="32" scale.right="116" scale.bottom="0" />
+  <texture name="Prism_Tab_Selected_Hover" file_name="containers/Prism_Tab_Selected_Hover.png" preload="false" scale.left="12" scale.top="32" scale.right="116" scale.bottom="0" />
+  <texture name="Prism_Tab_Pressed" file_name="containers/Prism_Tab_Pressed.png" preload="false" scale.left="12" scale.top="32" scale.right="116" scale.bottom="0" />
+  <texture name="Prism_Tab_Disabled" file_name="containers/Prism_Tab_Disabled.png" preload="false" scale.left="12" scale.top="32" scale.right="116" scale.bottom="0" />
+  <texture name="Prism_Tab_Selected_Disabled" file_name="containers/Prism_Tab_Selected_Disabled.png" preload="false" scale.left="12" scale.top="32" scale.right="116" scale.bottom="0" />
+  <texture name="Prism_Tab_Frame" file_name="containers/Prism_Tab_Frame.png" preload="false" scale.left="12" scale.top="80" scale.right="84" scale.bottom="0" />
+
   <texture name="TabLeft_Flat_Off" file_name="containers/TabLeft_Flat_Off.png" preload="true" scale.left="4" scale.top="19" scale.right="22" scale.bottom="4" />
   <texture name="TabLeft_Flat_Selected" file_name="containers/TabLeft_Flat_Selected.png" preload="true" scale.left="4" scale.top="19" scale.right="22" scale.bottom="4" />
   <texture name="TabTop_First_Flat_Off" file_name="containers/TabTop_First_Flat_Off.png" preload="false"  scale.left="8" scale.top="8" scale.right="62" scale.bottom="9" />

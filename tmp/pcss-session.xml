@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<llsd><map>
+  <key>LeapCommand</key><map>
+    <key>Comment</key><string>Run the isolated PCSS viewer test.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>LLSD</string>
+    <key>Value</key><array><string>E:/BoxxyViewer/.venv/Scripts/python.exe E:/BoxxyViewer/tmp/pcss-viewer-smoke.py</string></array>
+  </map>
+</map></llsd>

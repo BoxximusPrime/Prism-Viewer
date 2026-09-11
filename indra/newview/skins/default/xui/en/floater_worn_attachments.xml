@@ -12,7 +12,17 @@
     <string name="avatar_unavailable">This avatar is no longer available.</string>
     <string name="loading">Loading attachment details...</string>
     <string name="no_attachments">No visible attachments were found.</string>
+    <string name="no_matches">No attachments match your search.</string>
     <string name="unnamed_attachment">Unnamed attachment</string>
+    <filter_editor
+     follows="left|right|top"
+     height="24"
+     label="Search attachment names or points"
+     left="12"
+     max_length_chars="128"
+     name="attachment_filter"
+     right="-12"
+     top="12" />
     <name_list
      draw_heading="true"
      follows="all"
@@ -22,7 +32,8 @@
      right="-12"
      sort_ascending="true"
      sort_column="attachment_point"
-     top="12"
+     top="44"
+     tool_tip="Hover over an attachment to highlight it on the avatar. Double-click to open its creator's profile."
      bottom="-42">
         <name_list.columns
          label="Attachment Point"

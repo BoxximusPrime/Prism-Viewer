@@ -23,7 +23,7 @@ STORAGE_BARRIER, IMAGE_BARRIER, COMMAND_BARRIER, BUFFER_BARRIER = 0x2000, 0x20, 
 NULL = 0xFFFFFFFF
 
 
-def context():
+def context(minor=3):
     sdl = C.CDLL(str(ROOT / "build-vc170-64/packages/lib/release/SDL3.dll"))
     for name, ret, args in [
         ("SDL_Init", C.c_bool, [U]),
@@ -40,7 +40,7 @@ def context():
         fn.restype, fn.argtypes = ret, args
     assert sdl.SDL_Init(0x20), sdl.SDL_GetError()
     assert sdl.SDL_GL_SetAttribute(17, 4)
-    assert sdl.SDL_GL_SetAttribute(18, 3)
+    assert sdl.SDL_GL_SetAttribute(18, minor)
     assert sdl.SDL_GL_SetAttribute(20, 1)
     window = sdl.SDL_CreateWindow(b"Exact OIT shader checks", 32, 32, 0x2 | 0x8)
     assert window, sdl.SDL_GetError()
@@ -82,6 +82,12 @@ def context():
         "FenceSync": (P, U, U), "ClientWaitSync": (U, P, U, C.c_uint64),
         "DeleteSync": (None, P), "Flush": (None,),
     }
+    if minor >= 4:
+        signatures.update({
+            "BufferStorage": (None, U, C.c_ssize_t, P, U),
+            "MapBufferRange": (P, U, C.c_ssize_t, C.c_ssize_t, U),
+            "DeleteBuffers": (None, I, P),
+        })
     funcs = {}
     for name, (ret, *args) in signatures.items():
         address = sdl.SDL_GL_GetProcAddress(("gl" + name).encode())
@@ -162,7 +168,15 @@ def run(gl):
         gl.BindBufferBase(SSBO, binding, buffer)
     upload(control, struct.pack("4I", 0, 4096, 0, 0))
     upload(commands, bytes(27 * 16))
-    upload(staging, bytes(16))
+    mapped = None
+    if "--mapped-readback" in sys.argv:
+        gl.BindBuffer(0x8F37, staging)
+        flags = 0x0001 | 0x0040 | 0x0080 # READ | PERSISTENT | COHERENT, as in production
+        gl.BufferStorage(0x8F37, 16, None, flags)
+        mapped = gl.MapBufferRange(0x8F37, 0, 16, flags)
+        assert mapped and gl.GetError() == 0
+    else:
+        upload(staging, bytes(16))
     heads, counts, background, output = [obj(gl.GenTextures) for _ in range(4)]
     fbo = obj(gl.GenFramebuffers)
     gl.BindFramebuffer(FRAMEBUFFER, fbo)
@@ -385,15 +399,22 @@ def run(gl):
             assert bool(result.value) == overflow
             assert gl.ClientWaitSync(fence, 0, 0) in (0x911A, 0x911C)
             control_pass(0)
-            assert struct.unpack("4I", read(staging, 16)) == (len(records), 4096, int(overflow), max(lengths))
+            sample = C.string_at(mapped, 16) if mapped else read(staging, 16)
+            assert struct.unpack("4I", sample) == (len(records), 4096, int(overflow), max(lengths))
             gl.DeleteSync(fence)
             assert gl.GetError() == 0
             checks += 1
     print(f"Passed {checks} GPU scenarios: empty captures/image edges, capture A/B, reduction edges, deep/equal-depth lists, cutoff, exact blend/glow, overflow fallback, and staged statistics")
+    if mapped:
+        # Production deletes the buffer to unmap it during teardown/fallback.
+        name = U(staging)
+        gl.DeleteBuffers(1, C.byref(name))
+        assert gl.GetError() == 0
+        print("Passed coherent persistent staging readback and mapped-buffer deletion")
 
 
 if __name__ == "__main__":
-    sdl, window, ctx, gl = context()
+    sdl, window, ctx, gl = context(4 if "--mapped-readback" in sys.argv else 3)
     try:
         run(gl)
     finally:

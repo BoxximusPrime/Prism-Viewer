@@ -70,6 +70,64 @@ float pcfShadow(sampler2DShadow shadowMap, vec3 norm, vec4 stc, float bias_mul, 
 #endif
 }
 
+#if defined(SUN_SHADOW) && defined(PCSS_SHADOW)
+uniform sampler2D pcssDepthMap0;
+uniform sampler2D pcssDepthMap1;
+uniform sampler2D pcssDepthMap2;
+uniform sampler2D pcssDepthMap3;
+#if defined(SPOT_SHADOW)
+uniform sampler2D pcssDepthMap4;
+uniform sampler2D pcssDepthMap5;
+uniform float pcss_projector_radius;
+#endif
+uniform mat4 pcss_inverse_matrix[6];
+uniform vec4 pcss_params;
+float pcssShadow(sampler2D depthMap,
+                 mat4 lightMatrix, mat4 inverseMatrix, vec4 start,
+                 vec3 normal, vec3 lightDir, float sourceRadius);
+
+// Filled before the cascade/projector branches. Projector helpers can be
+// called from divergent light-volume branches, where derivatives are invalid.
+vec3 pcssReceiverNormal = vec3(0,0,1);
+bool pcssDepthPrepared = false;
+#endif
+
+vec4 getPosition(vec2 pos_screen);
+void preparePCSSDepth(vec3 pos, vec3 normal, vec2 uv)
+{
+#if defined(SUN_SHADOW) && defined(PCSS_SHADOW)
+    if (pcss_params.x <= 0.0) return;
+    // Screen-space derivatives span 2x2 quads and can cross hair/body or
+    // terrain silhouettes. Use the nearer neighbor on each axis so an
+    // unrelated surface does not tilt the receiver plane of an entire quad.
+    vec2 texel = 1.0 / screen_res;
+    vec3 left = pos - getPosition(uv - vec2(texel.x, 0)).xyz;
+    vec3 right = getPosition(uv + vec2(texel.x, 0)).xyz - pos;
+    vec3 down = pos - getPosition(uv - vec2(0, texel.y)).xyz;
+    vec3 up = getPosition(uv + vec2(0, texel.y)).xyz - pos;
+    vec3 dx = abs(left.z) < abs(right.z) ? left : right;
+    vec3 dy = abs(down.z) < abs(up.z) ? down : up;
+    vec3 geometric = cross(dx, dy);
+    pcssReceiverNormal = dot(geometric, geometric) > 1e-16 ? normalize(geometric) : normal;
+    pcssDepthPrepared = true;
+#endif
+}
+
+float sampleSunShadow(sampler2DShadow shadowMap, int cascade, vec3 norm,
+                      vec4 stc, vec2 pos_screen, vec3 light_dir)
+{
+#if defined(SUN_SHADOW) && defined(PCSS_SHADOW)
+    if (pcss_params.x > 0.0)
+    {
+        if (cascade == 0) return pcssShadow(pcssDepthMap0, shadow_matrix[0], pcss_inverse_matrix[0], stc, norm, light_dir, 0.0);
+        if (cascade == 1) return pcssShadow(pcssDepthMap1, shadow_matrix[1], pcss_inverse_matrix[1], stc, norm, light_dir, 0.0);
+        if (cascade == 2) return pcssShadow(pcssDepthMap2, shadow_matrix[2], pcss_inverse_matrix[2], stc, norm, light_dir, 0.0);
+        return pcssShadow(pcssDepthMap3, shadow_matrix[3], pcss_inverse_matrix[3], stc, norm, light_dir, 0.0);
+    }
+#endif
+    return pcfShadow(shadowMap, norm, stc, 1.0, pos_screen, light_dir);
+}
+
 float pcfSpotShadow(sampler2DShadow shadowMap, vec4 stc, float bias_scale, vec2 pos_screen)
 {
 #if defined(SPOT_SHADOW)
@@ -99,6 +157,17 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
     float shadow = 0.0f;
     vec3 light_dir = normalize((sun_up_factor == 1) ? sun_dir : moon_dir);
 
+    // Evaluate derivatives before the cascade branches. Normal-map detail is
+    // not the receiver plane and must not tilt a wide shadow filter.
+    vec3 receiverNormal = norm;
+#if defined(PCSS_SHADOW)
+    vec3 geometricNormal = cross(dFdx(pos), dFdy(pos));
+    if (dot(geometricNormal, geometricNormal) > 1e-16)
+        receiverNormal = normalize(geometricNormal);
+    if (pcssDepthPrepared) receiverNormal = pcssReceiverNormal;
+    pcssReceiverNormal = receiverNormal;
+#endif
+
     float dp_directional_light = max(0.0, dot(norm.xyz, light_dir));
           dp_directional_light = clamp(dp_directional_light, 0.0, 1.0);
 
@@ -106,7 +175,10 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
 
     vec3 offset = light_dir.xyz * (1.0 - dp_directional_light);
 
-    shadow_pos += offset * shadow_offset * 2.0;
+#if defined(PCSS_SHADOW)
+    if (pcss_params.x <= 0.0)
+#endif
+        shadow_pos += offset * shadow_offset * 2.0;
 
     vec4 spos = vec4(shadow_pos.xyz, 1.0);
 
@@ -125,7 +197,7 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
             float w = 1.0;
             w -= max(spos.z-far_split.z, 0.0)/transition_domain.z;
             //w = clamp(w, 0.0, 1.0);
-            float contrib = pcfShadow(shadowMap3, norm, lpos, 1.0, pos_screen, light_dir)*w;
+            float contrib = sampleSunShadow(shadowMap3, 3, receiverNormal, lpos, pos_screen, light_dir)*w;
             //if (contrib > 0)
             {
                 shadow += contrib;
@@ -142,7 +214,7 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
             w -= max(spos.z-far_split.y, 0.0)/transition_domain.y;
             w -= max(near_split.z-spos.z, 0.0)/transition_domain.z;
             //w = clamp(w, 0.0, 1.0);
-            float contrib = pcfShadow(shadowMap2, norm, lpos, 1.0, pos_screen, light_dir)*w;
+            float contrib = sampleSunShadow(shadowMap2, 2, receiverNormal, lpos, pos_screen, light_dir)*w;
             //if (contrib > 0)
             {
                 shadow += contrib;
@@ -158,7 +230,7 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
             w -= max(spos.z-far_split.x, 0.0)/transition_domain.x;
             w -= max(near_split.y-spos.z, 0.0)/transition_domain.y;
             //w = clamp(w, 0.0, 1.0);
-            float contrib = pcfShadow(shadowMap1, norm, lpos, 1.0, pos_screen, light_dir)*w;
+            float contrib = sampleSunShadow(shadowMap1, 1, receiverNormal, lpos, pos_screen, light_dir)*w;
             //if (contrib > 0)
             {
                 shadow += contrib;
@@ -173,7 +245,7 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
             float w = 1.0;
             w -= max(near_split.x-spos.z, 0.0)/transition_domain.x;
             //w = clamp(w, 0.0, 1.0);
-            float contrib = pcfShadow(shadowMap0, norm, lpos, 1.0, pos_screen, light_dir)*w;
+            float contrib = sampleSunShadow(shadowMap0, 0, receiverNormal, lpos, pos_screen, light_dir)*w;
             //if (contrib > 0)
             {
                 shadow += contrib;
@@ -198,6 +270,21 @@ float sampleSpotShadow(vec3 pos, vec3 norm, int index, vec2 pos_screen)
 {
 #if defined(SPOT_SHADOW)
     float shadow = 0.0f;
+#if defined(PCSS_SHADOW)
+    if (pcss_params.x > 0.0)
+    {
+        if (pos.z <= -shadow_clip.w) return 1.0;
+        int slot = index == 0 ? 4 : 5;
+        vec4 origin = pcss_inverse_matrix[slot] * vec4(0,0,1,0);
+        vec3 lightDir = normalize(origin.xyz / origin.w - pos);
+        vec4 start = shadow_matrix[slot] * vec4(pos, 1.0);
+        float result = index == 0 ?
+            pcssShadow(pcssDepthMap4, shadow_matrix[4], pcss_inverse_matrix[4], start, pcssReceiverNormal, lightDir, pcss_projector_radius) :
+            pcssShadow(pcssDepthMap5, shadow_matrix[5], pcss_inverse_matrix[5], start, pcssReceiverNormal, lightDir, pcss_projector_radius);
+        float fade = max((pos.z + shadow_clip.z) / (shadow_clip.z - shadow_clip.w) * 2.0 - 1.0, 0.0);
+        return clamp(result + fade, 0.0, 1.0);
+    }
+#endif
     pos += norm * spot_shadow_offset;
 
     vec4 spos = vec4(pos,1.0);

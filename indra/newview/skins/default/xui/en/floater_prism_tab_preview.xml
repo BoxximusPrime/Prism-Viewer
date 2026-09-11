@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!-- Open through Debug > XUI Preview Tool. This floater is intentionally unregistered. -->
+<floater name="prism_tab_preview" title="Prism | Tab study" width="720" height="350"
+         min_width="420" min_height="350" can_resize="true" layout="topleft"
+         save_rect="false" save_visibility="false" single_instance="true">
+    <text name="heading" left="28" top="46" width="660" height="28"
+          follows="left|top|right" font="SansSerifLarge" text_color="White">
+        A lighter edge.
+    </text>
+    <text name="description" left="28" top="82" width="660" height="22"
+          follows="left|top|right" font="SansSerifSmall" text_color="0.60 0.61 0.66 1">
+        Charcoal, warm amber, and a border that quietly disappears.
+    </text>
+    <panel name="tab_specimen" filename="panel_prism_tabs.xml" left="28" top="125"
+           width="664" height="190" follows="all" />
+    <text name="hint" left="50" top="183" width="620" height="36" wrap="true"
+          follows="left|top|right" font="SansSerifSmall" text_color="0.60 0.61 0.66 1">
+        Try the tabs, then resize the window. The panel bodies are empty.
+    </text>
+    <button name="disabled_specimen" label="Unavailable" enabled="false"
+            left="43" top="268" width="128" height="32" follows="left|bottom"
+            image_unselected="Prism_Tab_Off" image_selected="Prism_Tab_Selected"
+            image_disabled="Prism_Tab_Disabled" image_disabled_selected="Prism_Tab_Selected_Disabled"
+            image_color="White" image_color_disabled="White" pad_bottom="1"
+            label_color_disabled="0.39 0.39 0.43 1" label_shadow="false" />
+    <text name="footer" left="28" top="319" width="664" height="18"
+          follows="left|bottom|right" font="SansSerifSmall" text_color="0.45 0.46 0.51 1">
+        Control specimen only. No viewer screens connected.
+    </text>
+</floater>

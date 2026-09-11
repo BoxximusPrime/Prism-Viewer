@@ -6658,6 +6658,30 @@ void LLSelectMgr::renderSilhouettes(bool for_hud)
         }
     };
 
+    // Preview worn attachments with the existing posed wireframe renderer.
+    // These temporary nodes never enter the edit, hover-pick or rectangle selection.
+    if (!for_hud)
+    {
+        if (LLViewerObject* attachment = LLFloaterWornAttachments::getHoveredAttachment())
+        {
+            std::vector<LLViewerObject*> objects;
+            attachment->addThisAndNonJointChildren(objects);
+            for (LLViewerObject* object : objects)
+            {
+                if (!object || object->isDead() || !object->getRegion()
+                    || !object->mDrawable || object->mDrawable->isDead()
+                    || !object->mDrawable->getVOVolume())
+                {
+                    continue;
+                }
+                LLSelectNode node(object, false);
+                node.setTransient(true);
+                node.selectAllTEs(true);
+                renderMeshSelection_f(&node, object, sHighlightInspectColor);
+            }
+        }
+    }
+
     if (mSelectedObjects->getNumNodes())
     {
         LLUUID inspect_item_id= LLUUID::null;
@@ -6687,7 +6711,7 @@ void LLSelectMgr::renderSilhouettes(bool for_hud)
                     continue;
 
                 LLViewerObject* objectp = node->getObject();
-                if (!objectp)
+                if (!objectp || objectp->isHUDAttachment() != for_hud)
                     continue;
 
                 if (objectp->mDrawable

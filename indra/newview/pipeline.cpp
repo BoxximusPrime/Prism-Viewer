@@ -924,13 +924,24 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
         mSSSTransmission.release();
         mSSSDiffuse.release();
         mSSSScratch.release();
+        mSSSWide.release();
+        mSSSWideScratch.release();
+        mSSSWideResult.release();
         if (gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getS32("BoxxySSSMode") >= 1)
         {
+            const U32 wide_x = (resX + 3) / 4, wide_y = (resY + 3) / 4;
             if (!mSSSDiffuse.allocate(resX, resY, GL_RGBA16F) ||
-                !mSSSScratch.allocate(resX, resY, GL_RGBA16F))
+                !mSSSScratch.allocate(resX, resY, GL_RGBA16F) ||
+                !mSSSWide.allocate(wide_x, wide_y, GL_RGBA16F) ||
+                !mSSSWide.addColorAttachment(GL_RGBA32F) ||
+                !mSSSWideScratch.allocate(wide_x, wide_y, GL_RGBA16F) ||
+                !mSSSWideResult.allocate(wide_x, wide_y, GL_RGBA16F))
             {
                 mSSSDiffuse.release();
                 mSSSScratch.release();
+                mSSSWide.release();
+                mSSSWideScratch.release();
+                mSSSWideResult.release();
                 LL_WARNS("Render") << "Skin diffusion buffers unavailable; using wrapped skin lighting." << LL_ENDL;
             }
         }
@@ -1220,6 +1231,12 @@ void LLPipeline::releaseGLBuffers()
 {
     assertInitialized();
 
+    if (mPCSSSampler)
+    {
+        glDeleteSamplers(1, &mPCSSSampler);
+        mPCSSSampler = 0;
+    }
+
     if (mNoiseMap)
     {
         LLImageGL::deleteTextures(1, &mNoiseMap);
@@ -1257,6 +1274,9 @@ void LLPipeline::releaseGLBuffers()
     mSSSTransmissionSmoothing = false;
     mSSSDiffuse.release();
     mSSSScratch.release();
+    mSSSWide.release();
+    mSSSWideScratch.release();
+    mSSSWideResult.release();
     for (auto& target : mSSSDepth) target.release();
     mSSSDepthValid = glm::vec3(0);
     mSSSDepthFocusValid = false;
@@ -6965,6 +6985,8 @@ void LLPipeline::renderGLTFObjects(U32 type, bool texture, bool rigged)
 // Currently only used for shadows -Cosmic,2023-04-19
 void LLPipeline::renderAlphaObjects(bool rigged)
 {
+    // Alpha BLEND always has identity zero, so it cannot contribute an SSS exit.
+    if (mSSSDepthPass == 2) return;
     const bool was_opaque = mSSSDepthOpaque;
     mSSSDepthOpaque = false;
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
@@ -8291,31 +8313,57 @@ void LLPipeline::bindLightFunc(LLGLSLShader& shader)
 
 void LLPipeline::bindShadowMaps(LLGLSLShader& shader)
 {
-    for (U32 i = 0; i < 4; i++)
+    static LLCachedControl<bool> pcss_enabled(gSavedSettings, "RenderPCSSEnabled", false);
+    static LLCachedControl<F32> pcss_angle(gSavedSettings, "RenderPCSSLightSize", 0.53f);
+    static LLCachedControl<F32> pcss_radius(gSavedSettings, "RenderPCSSMaxSoftness", 1.f);
+    static LLCachedControl<F32> pcss_minimum(gSavedSettings, "RenderPCSSMinSoftness", 0.02f);
+    static LLCachedControl<F32> pcss_projector_size(gSavedSettings, "RenderPCSSProjectorSize", 0.1f);
+    static LLCachedControl<F32> pcss_bias(gSavedSettings, "RenderPCSSBias", 5.f);
+    static LLCachedControl<S32> pcss_quality(gSavedSettings, "RenderPCSSQuality", 1);
+    static const LLStaticHashedString params("pcss_params"), quality("pcss_quality"), inverse("pcss_inverse_matrix");
+    static const LLStaticHashedString enabled("pcss_enabled");
+    static const LLStaticHashedString projector_radius("pcss_projector_radius");
+    const bool pcss = pcss_enabled && RenderShadowDetail > 0 && gGLManager.mNumTextureImageUnits >= 32 &&
+        !gCubeSnapshot && !sImpostorRender;
+    const F32 max_radius = llclamp(F32(pcss_radius), 0.05f, 3.f);
+    shader.uniform4f(params, pcss ? tanf(llclamp(F32(pcss_angle), 0.1f, 10.f) * DEG_TO_RAD * 0.5f) : 0.f,
+        max_radius, llclamp(F32(pcss_bias), 0.f, 30.f) * 0.001f,
+        llclamp(F32(pcss_minimum), 0.f, llmin(max_radius, 0.5f)));
+    shader.uniform1f(projector_radius, llclamp(F32(pcss_projector_size), 0.01f, 2.f) * 0.5f);
+    shader.uniform1i(enabled, pcss ? 1 : 0);
+    shader.uniform1i(quality, llclamp(S32(pcss_quality), 0, 2));
+    shader.uniformMatrix4fv(inverse, 6, false, glm::value_ptr(mPCSSInverseMatrix[0]));
+
+    for (U32 i = 0; i < 6; i++)
     {
-        LLRenderTarget* shadow_target = getSunShadowTarget(i);
+        LLRenderTarget* shadow_target = i < 4 ? getSunShadowTarget(i) : getSpotShadowTarget(i - 4);
         if (shadow_target)
         {
             S32 channel = shader.enableTexture(LLShaderMgr::DEFERRED_SHADOW0 + i, LLTexUnit::TT_TEXTURE);
             if (channel > -1)
             {
-                gGL.getTexUnit(channel)->bind(getSunShadowTarget(i), true);
+                gGL.getTexUnit(channel)->bind(shadow_target, true);
+            }
+            channel = shader.enableTexture(LLShaderMgr::PCSS_DEPTH0 + i, LLTexUnit::TT_TEXTURE);
+            if (channel > -1)
+            {
+                if (!mPCSSSampler)
+                {
+                    glGenSamplers(1, &mPCSSSampler);
+                    glSamplerParameteri(mPCSSSampler, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+                    glSamplerParameteri(mPCSSSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glSamplerParameteri(mPCSSSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glSamplerParameteri(mPCSSSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                    glSamplerParameteri(mPCSSSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                }
+                // The same depth texture keeps hardware PCF/SSS comparison
+                // sampling on its ordinary unit; only this unit reads raw depth.
+                gGL.getTexUnit(channel)->bind(shadow_target, true);
+                shader.bindSampler(LLShaderMgr::PCSS_DEPTH0 + i, mPCSSSampler);
             }
         }
     }
 
-    for (U32 i = 4; i < 6; i++)
-    {
-        S32 channel = shader.enableTexture(LLShaderMgr::DEFERRED_SHADOW0 + i);
-        if (channel > -1)
-        {
-            LLRenderTarget* shadow_target = getSpotShadowTarget(i - 4);
-            if (shadow_target)
-            {
-                gGL.getTexUnit(channel)->bind(shadow_target, true);
-            }
-        }
-    }
 }
 
 void LLPipeline::bindDeferredShaderFast(LLGLSLShader& shader)
@@ -8358,7 +8406,7 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     static LLCachedControl<F32> sss_thickness(gSavedSettings, "BoxxySSSThickness", 4.0f);
     static const LLStaticHashedString sss_lighting("sss_lighting");
     shader.uniform3f(sss_lighting, llclamp(F32(sss_wrap), 0.f, 1.f),
-        llclamp(F32(sss_transmission), 0.f, 4.f), llclamp(F32(sss_thickness), 0.5f, 20.f));
+        llclamp(F32(sss_transmission), 0.f, 4.f), llclamp(F32(sss_thickness), 0.f, 20.f));
     static LLCachedControl<F32> sss_point_boost(gSavedSettings, "BoxxySSSPointTransmissionBoost", 1.f);
     static const LLStaticHashedString sss_point_boost_name("sss_point_transmission_boost");
     shader.uniform1f(sss_point_boost_name, llclamp(F32(sss_point_boost), 0.f, 16.f));
@@ -9173,12 +9221,39 @@ void LLPipeline::renderSSSDiffusion(bool transmission)
     static const LLStaticHashedString depth_name("sss_depth");
     static const LLStaticHashedString pass_name("sss_pass");
     static const LLStaticHashedString smoothing_name("sss_smoothing_pass");
+    static const LLStaticHashedString full_resolution_name("sss_full_resolution");
+    const bool full_resolution = gSavedSettings.getBOOL("BoxxySSSFullResolution");
     const F32 radius = transmission ? gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") * 0.001f :
         gSavedSettings.getF32("BoxxySSSDepth");
     shader.uniform1f(depth_name, llclamp(radius, 0.001f, 0.1f));
     shader.uniform1i(smoothing_name, transmission ? 1 : 0);
+    shader.uniform1i(full_resolution_name, full_resolution ? 1 : 0);
     LLRenderTarget* source = transmission ? &mSSSTransmission : &mSSSDiffuse;
     shader.bindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
+
+    mScreenTriangleVB->setBuffer();
+    if (!full_resolution)
+    {
+        // Average all source pixels before filtering: sparse full-resolution taps
+        // miss narrow lights. The wide gather reads only cached irradiance/guides.
+        mSSSWide.bindTarget();
+        shader.uniform1i(pass_name, 2);
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mSSSWide.flush();
+        // NORMAL_MAP must retain the deferred surface normal/skin-mask attachment.
+        shader.bindTexture(LLShaderMgr::BUMP_MAP, &mSSSWide, false, LLTexUnit::TFO_POINT, 1);
+        mSSSWideScratch.bindTarget();
+        shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSWide, false, LLTexUnit::TFO_POINT);
+        shader.uniform1i(pass_name, 3);
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mSSSWideScratch.flush();
+        mSSSWideResult.bindTarget();
+        shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSWideScratch, false, LLTexUnit::TFO_POINT);
+        shader.uniform1i(pass_name, 4);
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mSSSWideResult.flush();
+        shader.bindTexture(LLShaderMgr::SPECULAR_MAP, &mSSSWideResult, false, LLTexUnit::TFO_POINT);
+    }
 
     mSSSScratch.bindTarget();
     shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
@@ -9198,6 +9273,8 @@ void LLPipeline::renderSSSDiffusion(bool transmission)
     }
     shader.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
     shader.unbindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP);
+    shader.unbindTexture(LLShaderMgr::BUMP_MAP);
+    shader.unbindTexture(LLShaderMgr::SPECULAR_MAP);
     unbindDeferredShader(shader);
 }
 
@@ -9365,7 +9442,7 @@ namespace
 {
 struct ProjectorParams
 {
-    glm::mat4 matrix, agentMatrix;
+    glm::mat4 matrix, agentMatrix, agentView;
     glm::vec3 plane, normal, origin, agentOrigin;
     F32 nearClip, range, focus, ambiance;
 };
@@ -9434,7 +9511,8 @@ ProjectorParams getProjectorParams(LLDrawable* drawablep)
     F32 proj_range = far_clip - near_clip;
     glm::mat4 light_proj = glm::perspective(fovy, aspect, near_clip, far_clip);
     screen_to_light = trans * light_proj * screen_to_light;
-    return { screen_to_light, trans * light_proj * glm::inverse(light_to_agent),
+    const glm::mat4 agent_view = glm::inverse(light_to_agent);
+    return { screen_to_light, trans * light_proj * agent_view, agent_view,
              p1, n, screen_origin, glm::vec3(origin), near_clip, proj_range, focus, params.mV[2] };
 }
 }
@@ -9641,6 +9719,7 @@ void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
     }
 
     for (U32 i = 0; i < 3; ++i) shader.disableTexture(LLShaderMgr::SSS_DEPTH0 + i);
+    for (U32 i = 0; i < 6; ++i) shader.disableTexture(LLShaderMgr::PCSS_DEPTH0 + i);
     shader.disableTexture(LLShaderMgr::DEFERRED_NOISE);
     shader.disableTexture(LLShaderMgr::DEFERRED_LIGHTFUNC);
 
@@ -10567,7 +10646,8 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         // shadows are on: their cascades and projector slots follow the camera.
         if (i > 0 && (!lights[i - 1] || mSSSDepthLightFade[i - 1] <= 0.f)) continue;
         glm::vec3 origin;
-        glm::mat4 proj;
+        glm::mat4 proj, view;
+        bool projectorView = false;
         F32 farClip;
         if (i == 0)
         {
@@ -10581,17 +10661,35 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         {
             origin = mSSSDepthOrigin[i - 1];
             const F32 distance = glm::distance(origin, center);
-            if (distance < 0.05f) continue;
+            LLVOVolume* volume = lights[i - 1]->getVOVolume();
+            const F32 maxFov = 2.617994f; // 150 degrees
+            // Inside this distance the focused cone cannot enclose the subject.
+            // A close projector may illuminate skin behind the center-facing camera.
+            projectorView = volume->isLightSpotlight() && distance * sinf(maxFov * 0.5f) <= radius;
+            if (!projectorView && distance < 0.05f) continue;
             farClip = distance + radius;
-            const F32 fov = llmin(2.f * asinf(llmin(radius / distance, 0.99f)), 2.617994f);
             // Spend depth precision on the subject and the longest allowed tissue path.
             // Depth clamping below preserves opaque blockers nearer to the light.
             const F32 nearClip = llmax(0.01f, distance - radius - 0.3f);
-            proj = glm::perspective(llmax(fov, 0.05f), 1.f, nearClip, farClip);
+            if (projectorView)
+            {
+                const LLVector3 scale = volume->getScale();
+                view = getProjectorParams(lights[i - 1]).agentView;
+                proj = glm::perspective(volume->getSpotLightParams().mV[0],
+                    scale.mV[VX] / scale.mV[VY], nearClip, farClip);
+            }
+            else
+            {
+                const F32 fov = llmin(2.f * asinf(llmin(radius / distance, 0.99f)), maxFov);
+                proj = glm::perspective(llmax(fov, 0.05f), 1.f, nearClip, farClip);
+            }
         }
-        const glm::vec3 direction = glm::normalize(center - origin);
-        const glm::vec3 up = fabsf(direction.z) > 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
-        const glm::mat4 view = glm::lookAt(origin, center, up);
+        if (!projectorView)
+        {
+            const glm::vec3 direction = glm::normalize(center - origin);
+            const glm::vec3 up = fabsf(direction.z) > 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
+            view = glm::lookAt(origin, center, up);
+        }
         LLRenderTarget& target = mSSSDepth[i];
         const U32 resolution = i == 0 ? 1024 : 512;
         if (target.getWidth() != resolution || !target.isComplete())
@@ -10615,23 +10713,41 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         if (i > 0) shadowCamera.ignoreAgentFrustumPlane(LLCamera::AGENT_PLANE_NEAR);
         LLViewerCamera::sCurCameraID = i == 0 ? LLViewerCamera::CAMERA_SUN_SHADOW0 :
             (LLViewerCamera::eCameraID)(LLViewerCamera::CAMERA_SPOT_SHADOW0 + i - 1);
-        target.bindTarget();
-        target.getViewport(gGLViewport);
-        gGL.setColorMask(true, true);
-        glClearColor(1.f, 0.f, 1.f, 0.f); // Missing entry/exit: no skin identity.
-        target.clear();
+        {
+            LL_PROFILE_ZONE_NAMED("SSS depth target clear");
+            target.bindTarget();
+            target.getViewport(gGLViewport);
+            gGL.setColorMask(true, true);
+            glClearColor(1.f, 0.f, 1.f, 0.f); // Missing entry/exit: no skin identity.
+            target.clear();
+        }
         RenderSpotLight = i == 0 ? nullptr : lights[i - 1];
         for (S32 pass = 1; pass <= 2; ++pass)
         {
             mSSSDepthPass = pass;
             glCullFace(pass == 1 ? GL_BACK : GL_FRONT);
             gGL.setColorMask(pass == 1, pass == 1, pass == 2, pass == 2);
-            if (pass == 2) target.clear(GL_DEPTH_BUFFER_BIT);
-            renderShadow(view, proj, shadowCamera, results[i], true);
+            if (pass == 1)
+            {
+                LL_PROFILE_ZONE_NAMED("SSS depth entry");
+                renderShadow(view, proj, shadowCamera, results[i], true);
+            }
+            else
+            {
+                {
+                    LL_PROFILE_ZONE_NAMED("SSS depth exit clear");
+                    target.clear(GL_DEPTH_BUFFER_BIT);
+                }
+                LL_PROFILE_ZONE_NAMED("SSS depth exit");
+                renderShadow(view, proj, shadowCamera, results[i], true);
+            }
         }
         mSSSDepthPass = 0;
         RenderSpotLight = nullptr;
-        target.flush();
+        {
+            LL_PROFILE_ZONE_NAMED("SSS depth target flush");
+            target.flush();
+        }
         // At skybox altitudes a float projected matrix loses millimeter-scale
         // depth before the camera translation can cancel it during binding.
         mSSSDepthMatrix[i] = glm::dmat4(bias) * glm::dmat4(proj) * glm::dmat4(view);
@@ -11165,6 +11281,7 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
             mShadowModelview[j] = view[j];
             mShadowProjection[j] = proj[j];
             mSunShadowMatrix[j] = trans*proj[j]*view[j]*inv_view;
+            mPCSSInverseMatrix[j] = glm::inverse(mSunShadowMatrix[j]);
 
             stop_glerror();
 
@@ -11300,6 +11417,7 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
             set_current_projection(proj[i + 4]);
 
             mSunShadowMatrix[i + 4] = trans * proj[i + 4] * view[i + 4] * inv_view;
+            mPCSSInverseMatrix[i + 4] = glm::inverse(mSunShadowMatrix[i + 4]);
 
             set_last_modelview(mShadowModelview[i + 4]);
             set_last_projection(mShadowProjection[i + 4]);

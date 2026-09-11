@@ -35,6 +35,7 @@ uniform vec2 delta;
 uniform vec2 screen_res;
 uniform vec3 kern[4];
 uniform float kern_scale;
+uniform int pcss_enabled;
 
 in vec2 vary_fragcoord;
 
@@ -106,6 +107,9 @@ void main()
     }
 
     col /= defined_weight.xyxx;
+    // PCSS already filters sun and projector shadows by blocker distance.
+    // Preserve their chosen contact softness; AO still uses the usual blur.
+    if (pcss_enabled != 0) col.rba = ccol.rba;
     //col.y *= col.y;
 
     frag_color = max(col, vec4(0));
@@ -116,4 +120,3 @@ void main()
     vec3 dummy2 = kern[3];
 #endif
 }
-

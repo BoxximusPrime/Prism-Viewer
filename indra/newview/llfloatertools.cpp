@@ -715,6 +715,24 @@ void LLFloaterTools::resetToolState()
     gGrabBtnVertical = false;
 }
 
+// Match scripting link numbers: an unlinked prim is 0, a linked root is 1,
+// and children follow the root's link order starting at 2.
+static S32 selected_link_number(LLViewerObject* object, bool edit_linked, S32 selected_count)
+{
+    if (!edit_linked || selected_count != 1 || !object || object->isAvatar()) return -1;
+    LLViewerObject* root = object->getRootEdit();
+    if (!root) return -1;
+    const auto& children = root->getChildren();
+    if (object == root) return children.empty() ? 0 : 1;
+    S32 number = 2;
+    for (LLViewerObject* child : children)
+    {
+        if (child == object) return number;
+        ++number;
+    }
+    return -1; // The linkset has not finished arriving in the viewer.
+}
+
 void LLFloaterTools::updatePopup(LLCoordGL center, MASK mask)
 {
     LLTool *tool = LLToolMgr::getInstance()->getCurrentTool();
@@ -814,6 +832,29 @@ void LLFloaterTools::updatePopup(LLCoordGL center, MASK mask)
     {
         mCheckSelectIndividual->setVisible(edit_visible);
         //mCheckSelectIndividual->set(gSavedSettings.getBOOL("EditLinkedParts"));
+    }
+
+    LLObjectSelectionHandle selection = LLSelectMgr::getInstance()->getSelection();
+    S32 link_number = selected_link_number(selection->getFirstObject(),
+        gSavedSettings.getBOOL("EditLinkedParts"), selection->getObjectCount());
+    LLTextBox* link_text = getChild<LLTextBox>("selection_link_number");
+    link_text->setVisible(edit_visible && link_number >= 0);
+    if (edit_visible && link_number >= 0)
+    {
+        link_text->setTextArg("[LINK_NUMBER]", llformat("%d", link_number));
+    }
+    bool can_cycle_links = false;
+    if (link_number > 0)
+    {
+        const auto& children = selection->getFirstObject()->getRootEdit()->getChildren();
+        can_cycle_links = std::any_of(children.begin(), children.end(),
+            [](const LLViewerObject* child) { return !child->isAvatar(); });
+    }
+    for (const char* name : {"select_previous_link", "select_next_link"})
+    {
+        LLButton* button = getChild<LLButton>(name);
+        button->setVisible(edit_visible && link_number >= 0);
+        button->setEnabled(can_cycle_links);
     }
 
     if ( tool == LLToolCompTranslate::getInstance() )

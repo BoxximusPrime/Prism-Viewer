@@ -1,0 +1,135 @@
+{
+  "LLCharacter::updateMotions (175)": {
+    "calls": 15300,
+    "calls_per_frame": 90.0,
+    "mean_ms_per_frame": 2.207256282352941,
+    "p95_ms_per_frame": 2.5699463499999995,
+    "max_ms_per_frame": 2.901786
+  },
+  "LLMotionController::updateMotions (837)": {
+    "calls": 4319,
+    "calls_per_frame": 25.405882352941177,
+    "mean_ms_per_frame": 1.9357975294117649,
+    "p95_ms_per_frame": 2.2864725,
+    "max_ms_per_frame": 2.619595
+  },
+  "LLMotionController::updateMotionsByType (570)": {
+    "calls": 8638,
+    "calls_per_frame": 50.811764705882354,
+    "mean_ms_per_frame": 1.7185301882352941,
+    "p95_ms_per_frame": 2.0406530999999997,
+    "max_ms_per_frame": 2.244752
+  },
+  "LLKeyframeMotion::onUpdate (686)": {
+    "calls": 23381,
+    "calls_per_frame": 137.53529411764706,
+    "mean_ms_per_frame": 0.6584036294117647,
+    "p95_ms_per_frame": 0.77189115,
+    "max_ms_per_frame": 0.826205
+  },
+  "LLMotionController::updateMotionsMinimal (936)": {
+    "calls": 10981,
+    "calls_per_frame": 64.59411764705882,
+    "mean_ms_per_frame": 0.26830607647058824,
+    "p95_ms_per_frame": 0.30194509999999997,
+    "max_ms_per_frame": 0.493938
+  },
+  "LLMotionController::updateIdleActiveMotions (555)": {
+    "calls": 10981,
+    "calls_per_frame": 64.59411764705882,
+    "mean_ms_per_frame": 0.23742327647058822,
+    "p95_ms_per_frame": 0.26138824999999993,
+    "max_ms_per_frame": 0.461995
+  },
+  "LLPhysicsMotionController::onUpdate (456)": {
+    "calls": 2798,
+    "calls_per_frame": 16.458823529411763,
+    "mean_ms_per_frame": 0.16265540588235294,
+    "p95_ms_per_frame": 0.23395039999999995,
+    "max_ms_per_frame": 0.336963
+  },
+  "LLMotionController::updateIdleMotion (516)": {
+    "calls": 202559,
+    "calls_per_frame": 1191.5235294117647,
+    "mean_ms_per_frame": 0.11048543529411765,
+    "p95_ms_per_frame": 0.12558085,
+    "max_ms_per_frame": 0.165335
+  },
+  "LLHandMotion::onUpdate (124)": {
+    "calls": 2761,
+    "calls_per_frame": 16.241176470588236,
+    "mean_ms_per_frame": 0.008724547058823529,
+    "p95_ms_per_frame": 0.01129195,
+    "max_ms_per_frame": 0.014406
+  },
+  "LLEyeMotion::onUpdate (462)": {
+    "calls": 551,
+    "calls_per_frame": 3.2411764705882353,
+    "mean_ms_per_frame": 0.004921564705882353,
+    "p95_ms_per_frame": 0.028822999999999998,
+    "max_ms_per_frame": 0.037542
+  },
+  "LLMotionController::updateLoadingMotions (781)": {
+    "calls": 15300,
+    "calls_per_frame": 90.0,
+    "mean_ms_per_frame": 0.0025280823529411764,
+    "p95_ms_per_frame": 0.0036463999999999997,
+    "max_ms_per_frame": 0.014519
+  },
+  "LLBodyNoiseMotion::onUpdate (368)": {
+    "calls": 2805,
+    "calls_per_frame": 16.5,
+    "mean_ms_per_frame": 0.0016403941176470589,
+    "p95_ms_per_frame": 0.0029006999999999995,
+    "max_ms_per_frame": 0.004447
+  },
+  "LLMotionController::activateMotionInstance (979)": {
+    "calls": 134,
+    "calls_per_frame": 0.788235294117647,
+    "mean_ms_per_frame": 0.0013932176470588236,
+    "p95_ms_per_frame": 0.007775299999999998,
+    "max_ms_per_frame": 0.014389
+  },
+  "LLHeadRotMotion::onUpdate (178)": {
+    "calls": 180,
+    "calls_per_frame": 1.0588235294117647,
+    "mean_ms_per_frame": 0.0004676470588235294,
+    "p95_ms_per_frame": 0.0009019499999999998,
+    "max_ms_per_frame": 0.001306
+  },
+  "LLKeyframeWalkMotion::onUpdate (108)": {
+    "calls": 20,
+    "calls_per_frame": 0.11764705882352941,
+    "mean_ms_per_frame": 0.00025377058823529414,
+    "p95_ms_per_frame": 0.0023740499999999947,
+    "max_ms_per_frame": 0.006094
+  },
+  "LLWalkAdjustMotion::onUpdate (202)": {
+    "calls": 23,
+    "calls_per_frame": 0.13529411764705881,
+    "mean_ms_per_frame": 0.00011521764705882353,
+    "p95_ms_per_frame": 0.0008964999999999989,
+    "max_ms_per_frame": 0.002059
+  },
+  "LLFlyAdjustMotion::onUpdate (378)": {
+    "calls": 15,
+    "calls_per_frame": 0.08823529411764706,
+    "mean_ms_per_frame": 2.291764705882353e-05,
+    "p95_ms_per_frame": 0.00014409999999999998,
+    "max_ms_per_frame": 0.00054
+  },
+  "LLBreatheMotionRot::onUpdate (489)": {
+    "calls": 18,
+    "calls_per_frame": 0.10588235294117647,
+    "mean_ms_per_frame": 2.0470588235294115e-05,
+    "p95_ms_per_frame": 0.00016269999999999975,
+    "max_ms_per_frame": 0.000358
+  },
+  "LLPelvisFixMotion::onUpdate (591)": {
+    "calls": 2,
+    "calls_per_frame": 0.011764705882352941,
+    "mean_ms_per_frame": 5.294117647058824e-07,
+    "p95_ms_per_frame": 0.0,
+    "max_ms_per_frame": 5.4e-05
+  }
+}

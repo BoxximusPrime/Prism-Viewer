@@ -1,6 +1,6 @@
-"""Regress SSS matrix cancellation at SL skybox heights using bundled GLM.
+"""Regress SSS projector coverage and precision at skybox heights using bundled GLM.
 
-Compiles the production storage/composition expressions; no viewer login needed.
+Compiles production camera selection and matrix composition; no viewer login needed.
 Run: .venv/Scripts/python.exe scripts/tests/test_sss_depth_precision.py
 """
 from pathlib import Path
@@ -17,8 +17,7 @@ def main():
     header = (ROOT / 'indra/newview/pipeline.h').read_text()
     bind = source[source.index('void LLPipeline::bindSSSDepth('):source.index('void LLPipeline::generateSSSDepth(')]
     generate = source[source.index('void LLPipeline::generateSSSDepth('):source.index('void LLPipeline::generateSunShadow(')]
-    near = re.search(r'const F32 nearClip = [^;]+;', generate)[0]
-    projection = re.search(r'proj = glm::perspective\([^;]+;', generate)[0]
+    camera = generate[generate.index('        glm::vec3 origin;'):generate.index('        LLRenderTarget& target = mSSSDepth[i];')]
     storage = re.search(r'(glm::\w+)\s+mSSSDepthMatrix', header)[1]
     save = re.search(r'mSSSDepthMatrix\[i\] = [^;]+;', generate)[0]
     inverse = re.search(r'const glm::\w+ inverseView = [^;]+;', bind)[0]
@@ -32,7 +31,46 @@ def main():
 #include <initializer_list>
 #include <algorithm>
 using F32 = float;
+using U32 = unsigned;
+constexpr int VX = 0, VY = 1;
 float llmax(float a, float b) { return std::max(a,b); }
+float llmin(float a, float b) { return std::min(a,b); }
+float llclamp(float v, float lo, float hi) { return std::clamp(v,lo,hi); }
+struct LLVector3 { float mV[3]; };
+struct LLVOVolume {
+    bool spot = true;
+    LLVector3 scale{{1,1,1}}, params{{1,0,0}};
+    glm::mat4 agentView{1};
+    bool isLightSpotlight() { return spot; }
+    LLVector3 getScale() { return scale; }
+    LLVector3 getSpotLightParams() { return params; }
+};
+struct LLDrawable {
+    LLVOVolume* volume;
+    LLVOVolume* getVOVolume() { return volume; }
+};
+struct ProjectorParams { glm::mat4 agentView; };
+ProjectorParams getProjectorParams(LLDrawable* light) { return {light->volume->agentView}; }
+struct LLEnvironment {
+    static LLEnvironment instance() { return {}; }
+    bool getIsSunUp() { return true; }
+};
+struct Capture { bool valid; glm::mat4 proj, view; };
+Capture capture(glm::vec3 center, glm::vec3 lightOrigin, LLVOVolume& volume, bool sun=false) {
+    const float radius=2.5f, RenderFarClip=64;
+    const glm::vec3 mSunDir(0,0,1), mMoonDir(0,0,-1);
+    glm::vec3 mSSSDepthOrigin[1]={lightOrigin};
+    LLDrawable light{&volume}; LLDrawable* lights[1]={&light};
+    for(U32 i=sun?0:1; i<(sun?1u:2u); ++i) {
+        @CAMERA@
+        return {true,proj,view};
+    }
+    return {false,glm::mat4(1),glm::mat4(1)};
+}
+bool covered(const Capture& c, glm::vec3 p) {
+    auto clip=c.proj*c.view*glm::vec4(p,1);
+    return c.valid && clip.w>0 && glm::all(glm::lessThan(glm::abs(glm::vec3(clip)),glm::vec3(clip.w)));
+}
 // Same 24-bit comparison-depth/search operations used by the focused maps.
 float path(glm::mat4 m, glm::vec3 pos, glm::vec3 dir, float depth) {
     auto start=m*glm::vec4(pos,1), step=m*glm::vec4(dir,0);
@@ -47,12 +85,12 @@ float path(glm::mat4 m, glm::vec3 pos, glm::vec3 dir, float depth) {
 }
 int main() {
     auto bias=glm::translate(glm::mat4(1),glm::vec3(.5))*glm::scale(glm::mat4(1),glm::vec3(.5));
-    const float distance=5, radius=2.5f, fov=1, farClip=distance+radius;
-    @NEAR@
-    auto @PROJECTION@
+    LLVOVolume volume;
     for(float height:{15.f,1500.f,4000.f}) {
         glm::vec3 subject(128,128,height), origin=subject+glm::vec3(0,0,5);
-        auto lightView=glm::lookAt(origin,subject,glm::vec3(0,1,0));
+        auto distant=capture(subject,origin,volume);
+        assert(distant.valid);
+        auto proj=distant.proj, lightView=distant.view;
         auto entry=bias*proj*(lightView*glm::vec4(subject+glm::vec3(0,0,.004f),1));
         float depth=std::round(double(entry.z/entry.w)*16777215.)/16777215.;
         @STORAGE@ mSSSDepthMatrix[1];
@@ -72,9 +110,43 @@ int main() {
         }
         printf("Height %.0f m: 4 mm tissue measured %.3f..%.3f mm across 200 camera positions\n",height,1000*minimum,1000*maximum);
     }
+    int closeChecks=0;
+    for(float height:{15.f,1500.f,4000.f})
+    for(float offset:{0.f,.02f,.5f})
+    for(float fov:{30.f,90.f,160.f})
+    for(float aspect:{.25f,1.f,4.f}) {
+        glm::vec3 subject(128,128,height), origin=subject+glm::vec3(0,0,offset);
+        // The beam points above the focus: the old center-facing map looks away.
+        auto beam=glm::lookAt(origin,origin+glm::vec3(0,0,1),glm::vec3(0,1,0));
+        volume.agentView=beam; volume.params.mV[0]=glm::radians(fov); volume.scale.mV[0]=aspect;
+        auto c=capture(subject,origin,volume);
+        assert(c.valid);
+        for(float u:{-.8f,0.f,.8f})
+        for(float v:{-.8f,0.f,.8f}) {
+            glm::vec3 ray(u*aspect*tanf(glm::radians(fov)*.5f),v*tanf(glm::radians(fov)*.5f),-1);
+            auto point=glm::vec3(glm::inverse(beam)*glm::vec4(glm::normalize(ray)*.5f,1));
+            assert(covered(c,point));
+            ++closeChecks;
+        }
+    }
+    // Distant focus coverage survives the switch back to a subject-facing camera.
+    glm::vec3 subject(0), receiver(.05f,0,.2f);
+    for(float distance:{2.58f,2.60f,5.f}) {
+        glm::vec3 origin(0,0,distance);
+        volume.agentView=glm::lookAt(origin,subject,glm::vec3(0,1,0));
+        volume.params.mV[0]=glm::radians(90.f); volume.scale.mV[0]=1;
+        assert(covered(capture(subject,origin,volume),receiver));
+        volume.spot=false;
+        assert(covered(capture(subject,origin,volume),receiver));
+        volume.spot=true;
+    }
+    volume.spot=false;
+    assert(!capture(subject,subject,volume).valid); // point-light singularity guard
+    assert(covered(capture(subject,subject,volume,true),receiver));
+    printf("Passed %d close-projector coverage checks plus sun, point and transition checks\n",closeChecks);
 }
 '''
-    for name, value in [('NEAR', near), ('PROJECTION', projection), ('STORAGE', storage), ('SAVE', save), ('INVERSE', inverse), ('TRANSFORM', transform)]:
+    for name, value in [('CAMERA', camera), ('STORAGE', storage), ('SAVE', save), ('INVERSE', inverse), ('TRANSFORM', transform)]:
         cpp = cpp.replace('@' + name + '@', value)
     compiler = shutil.which('g++')
     assert compiler, 'g++ is required'

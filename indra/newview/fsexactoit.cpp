@@ -97,6 +97,7 @@ void FSExactOIT::allocateResources(U32 width, U32 height) {}
 
 #else // !LL_DARWIN
 
+#include <cstring>
 #include <string>
 #include <utility>
 
@@ -722,6 +723,9 @@ void FSExactOIT::appendDiagnostics(LLSD& info)
     info["EXACT_OIT_NODE_CAPACITY"] = LLSD::Integer(sResources.capacity);
     info["EXACT_OIT_PEAK_NODES"] = LLSD::Integer(sResources.peakNodes);
     info["EXACT_OIT_OVERFLOW_COUNT"] = LLSD::Integer(sResources.overflowCount);
+    S32 mapped_readbacks = 0;
+    for (const auto& sample : sResources.readbacks) mapped_readbacks += sample.mapped != nullptr;
+    info["EXACT_OIT_MAPPED_READBACK_SLOTS"] = mapped_readbacks;
     info["EXACT_OIT_MEMORY_MB"] = LLSD::Integer(
         (static_cast<U64>(sResources.capacity) * 32ull) / (1024ull * 1024ull));
     info["EXACT_OIT_COMPUTE_SORT_AVAILABLE"] = sResources.computeSortAvailable;
@@ -1235,7 +1239,7 @@ void FSExactOIT::recordCaptureStats(U32 nodes, U32 maximum_list, bool mouselook)
     }
 }
 
-// Consume a FIFO of completed samples only. Busy GPU work never holds up the CPU.
+// Consume completed FIFO samples only; never wait for an unsignaled fence.
 void FSExactOIT::collectStats()
 {
     LL_PROFILE_ZONE_NAMED("Exact OIT collect completed stats");
@@ -1243,14 +1247,29 @@ void FSExactOIT::collectStats()
     while (sResources.readbackPending)
     {
         auto& sample = sResources.readbacks[sResources.readbackRead];
-        const GLenum status = glClientWaitSync(sample.fence, 0, 0);
+        GLenum status;
+        {
+            LL_PROFILE_ZONE_NAMED("Exact OIT stats fence poll");
+            status = glClientWaitSync(sample.fence, 0, 0);
+        }
         if (status == GL_TIMEOUT_EXPIRED) break;
         if (status == GL_ALREADY_SIGNALED || status == GL_CONDITION_SATISFIED)
         {
             U32 control[4] = {};
-            glBindBuffer(GL_COPY_READ_BUFFER, sample.buffer);
-            glGetBufferSubData(GL_COPY_READ_BUFFER, 0, sizeof(control), control);
-            glBindBuffer(GL_COPY_READ_BUFFER, 0);
+            {
+                LL_PROFILE_ZONE_NAMED("Exact OIT stats read");
+                if (sample.mapped)
+                {
+                    // Coherent server writes are visible after the copy's fence.
+                    std::memcpy(control, sample.mapped, sizeof(control));
+                }
+                else
+                {
+                    glBindBuffer(GL_COPY_READ_BUFFER, sample.buffer);
+                    glGetBufferSubData(GL_COPY_READ_BUFFER, 0, sizeof(control), control);
+                    glBindBuffer(GL_COPY_READ_BUFFER, 0);
+                }
+            }
             recordCaptureStats(control[0], control[3], sample.mouselook);
             if (control[2] || control[0] > control[1])
             {
@@ -1264,12 +1283,19 @@ void FSExactOIT::collectStats()
         {
             LL_WARNS_ONCE("ExactOIT") << "Discarding failed Exact OIT statistics fence." << LL_ENDL;
         }
-        glDeleteSync(sample.fence);
+        {
+            LL_PROFILE_ZONE_NAMED("Exact OIT stats fence delete");
+            glDeleteSync(sample.fence);
+        }
         sample.fence = nullptr;
         sResources.readbackRead = (sResources.readbackRead + 1) % 3;
         --sResources.readbackPending;
     }
-    if (sResources.available) growNodePool(required_nodes);
+    if (sResources.available && required_nodes > sResources.capacity)
+    {
+        LL_PROFILE_ZONE_NAMED("Exact OIT stats pool growth");
+        growNodePool(required_nodes);
+    }
 }
 
 void FSExactOIT::queueStats(bool mouselook)
@@ -1558,11 +1584,14 @@ void FSExactOIT::finishFrameAsync(LLPipeline& pipeline, LLRenderTarget& screen,
         LL_PROFILE_ZONE_NAMED("Exact OIT overflow predicate submission");
         LL_PROFILE_GPU_ZONE("Exact OIT overflow predicate");
         GLint viewport[4];
-        glGetIntegerv(GL_VIEWPORT, viewport);
         // The preceding pipeline normally restores fill mode, but the
         // one-pixel predicate must also work if a debug view changes it.
         GLint polygon_mode[2];
-        glGetIntegerv(GL_POLYGON_MODE, polygon_mode);
+        {
+            LL_PROFILE_ZONE_NAMED("Exact OIT overflow state queries");
+            glGetIntegerv(GL_VIEWPORT, viewport);
+            glGetIntegerv(GL_POLYGON_MODE, polygon_mode);
+        }
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glViewport(0, 0, 1, 1);
         LLGLDepthTest depth(GL_FALSE, GL_FALSE);
@@ -1783,6 +1812,32 @@ bool FSExactOIT::allocateCaptureImages(U32 width, U32 height)
     return complete;
 }
 
+// Keep the 4.3 readback path when persistent storage or its mapping is unavailable.
+bool FSExactOIT::allocateReadback(Resources::Readback& sample)
+{
+    glGenBuffers(1, &sample.buffer);
+    glBindBuffer(GL_COPY_WRITE_BUFFER, sample.buffer);
+    if (gGLManager.mGLVersion >= 4.39f && glBufferStorage && glMapBufferRange)
+    {
+        constexpr GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+        glBufferStorage(GL_COPY_WRITE_BUFFER, 4 * sizeof(U32), nullptr, flags);
+        if (glGetError() == GL_NO_ERROR)
+        {
+            sample.mapped = static_cast<const U32*>(
+                glMapBufferRange(GL_COPY_WRITE_BUFFER, 0, 4 * sizeof(U32), flags));
+            if (glGetError() == GL_NO_ERROR && sample.mapped) return true;
+        }
+        // Immutable storage cannot be replaced with BufferData on the same name.
+        // Deleting also unmaps any mapping; releaseResources does the same at teardown.
+        glDeleteBuffers(1, &sample.buffer);
+        sample.mapped = nullptr;
+        glGenBuffers(1, &sample.buffer);
+        glBindBuffer(GL_COPY_WRITE_BUFFER, sample.buffer);
+    }
+    glBufferData(GL_COPY_WRITE_BUFFER, 4 * sizeof(U32), nullptr, GL_STREAM_READ);
+    return glGetError() == GL_NO_ERROR;
+}
+
 // Allocates or reuses the bounded node pool and creates its control buffer.
 void FSExactOIT::allocateNodePool(U32 width, U32 height, bool capture_images_ready)
 {
@@ -1826,16 +1881,16 @@ void FSExactOIT::allocateNodePool(U32 width, U32 height, bool capture_images_rea
         glGenBuffers(1, &sResources.commands);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, sResources.commands);
         glBufferData(GL_SHADER_STORAGE_BUFFER, 27 * 4 * sizeof(U32), nullptr, GL_DYNAMIC_DRAW);
+        bool readbacks_ready = glGetError() == GL_NO_ERROR;
         for (auto& sample : sResources.readbacks)
         {
-            glGenBuffers(1, &sample.buffer);
-            glBindBuffer(GL_COPY_WRITE_BUFFER, sample.buffer);
-            glBufferData(GL_COPY_WRITE_BUFFER, 4 * sizeof(U32), nullptr, GL_STREAM_READ);
+            const bool allocated = allocateReadback(sample);
+            readbacks_ready = readbacks_ready && allocated;
         }
         glGenQueries(1, &sResources.overflowQuery);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-        sResources.controlAvailable = glGetError() == GL_NO_ERROR;
+        sResources.controlAvailable = glGetError() == GL_NO_ERROR && readbacks_ready;
         if (!sResources.controlAvailable)
         {
             LL_WARNS("ExactOIT") << "GPU scheduling allocation failed; retaining synchronous validation." << LL_ENDL;

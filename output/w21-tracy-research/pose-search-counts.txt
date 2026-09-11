@@ -1,0 +1,2 @@
+30 joints x 6 poses: 180 joint-state visits, 2760 membership comparisons
+120 joints x 6 poses: 720 joint-state visits, 43440 membership comparisons

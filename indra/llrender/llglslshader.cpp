@@ -355,6 +355,7 @@ void LLGLSLShader::unload()
 
 void LLGLSLShader::unloadInternal()
 {
+    unbindSamplers();
     sInstances.erase(this);
 
     stop_glerror();
@@ -542,7 +543,8 @@ bool LLGLSLShader::createShader()
         // Projector receivers reserve additional samplers only on GPUs with
         // at least 24 fragment texture units (see loadBasicShaders).
         llassert(mActiveTextureChannels <=
-            (getUniformLocation(LLShaderMgr::ALPHA_PROJECTION0) >= 0 ? gGLManager.mNumTextureImageUnits : 16));
+            (getUniformLocation(LLShaderMgr::ALPHA_PROJECTION0) >= 0 ||
+             getUniformLocation(LLShaderMgr::PCSS_DEPTH0) >= 0 ? gGLManager.mNumTextureImageUnits : 16));
         unbind();
     }
 
@@ -1068,6 +1070,7 @@ void LLGLSLShader::bind()
         if (sCurBoundShaderPtr)
         {
             sCurBoundShaderPtr->readProfileQuery();
+            sCurBoundShaderPtr->unbindSamplers();
         }
         LLVertexBuffer::unbind();
         glUseProgram(mProgramObject);
@@ -1116,11 +1119,27 @@ void LLGLSLShader::unbind(void)
     if (sCurBoundShaderPtr)
     {
         sCurBoundShaderPtr->readProfileQuery();
+        sCurBoundShaderPtr->unbindSamplers();
     }
 
     glUseProgram(0);
     sCurBoundShader = 0;
     sCurBoundShaderPtr = NULL;
+}
+
+void LLGLSLShader::bindSampler(S32 uniform, U32 sampler)
+{
+    S32 channel = getTextureChannel(uniform);
+    if (channel < 0) return;
+    glBindSampler(channel, sampler);
+    if (std::find(mBoundSamplerChannels.begin(), mBoundSamplerChannels.end(), U32(channel)) == mBoundSamplerChannels.end())
+        mBoundSamplerChannels.push_back(channel);
+}
+
+void LLGLSLShader::unbindSamplers()
+{
+    for (U32 channel : mBoundSamplerChannels) glBindSampler(channel, 0);
+    mBoundSamplerChannels.clear();
 }
 
 S32 LLGLSLShader::bindTexture(const std::string& uniform, LLTexture* texture, LLTexUnit::eTextureType mode)

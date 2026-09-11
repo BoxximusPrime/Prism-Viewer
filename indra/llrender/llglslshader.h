@@ -260,6 +260,9 @@ public:
     //returns channel texture is enabled in from [0-MAX)
     S32 enableTexture(S32 uniform, LLTexUnit::eTextureType mode = LLTexUnit::TT_TEXTURE);
     S32 disableTexture(S32 uniform, LLTexUnit::eTextureType mode = LLTexUnit::TT_TEXTURE);
+    // Sampler overrides are cleared on shader switches, including fast binds.
+    void bindSampler(S32 uniform, U32 sampler);
+    void unbindSamplers();
 
     // get the texture channel of the given uniform, or -1 if uniform is not used as a texture
     S32 getTextureChannel(S32 uniform) const;
@@ -367,6 +370,7 @@ public:
 #endif
 
 private:
+    std::vector<U32> mBoundSamplerChannels;
     void unloadInternal();
     // This must be static because finishProfile() is called at least once
     // within a __try block. If we default its stats parameter to a temporary

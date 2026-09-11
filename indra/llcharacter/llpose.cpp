@@ -470,22 +470,18 @@ LLPoseBlender::~LLPoseBlender()
 //-----------------------------------------------------------------------------
 bool LLPoseBlender::addMotion(LLMotion* motion)
 {
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
     LLPose* pose = motion->getPose();
 
     for(LLJointState* jsp = pose->getFirstJointState(); jsp; jsp = pose->getNextJointState())
     {
         LLJoint *jointp = jsp->getJoint();
-        LLJointStateBlender* joint_blender;
-        if (mJointStateBlenderPool.find(jointp) == mJointStateBlenderPool.end())
+        auto& joint_blender = mJointStateBlenderPool[jointp];
+        if (!joint_blender)
         {
             // this is the first time we are animating this joint
             // so create new jointblender and add it to our pool
             joint_blender = new LLJointStateBlender();
-            mJointStateBlenderPool[jointp] = joint_blender;
-        }
-        else
-        {
-            joint_blender = mJointStateBlenderPool[jointp];
         }
 
         if (jsp->getPriority() == LLJoint::USE_MOTION_PRIORITY)
@@ -498,9 +494,10 @@ bool LLPoseBlender::addMotion(LLMotion* motion)
         }
 
         // add it to our list of active blenders
-        if (std::find(mActiveBlenders.begin(), mActiveBlenders.end(), joint_blender) == mActiveBlenders.end())
+        if (!joint_blender->mInActiveList)
         {
             mActiveBlenders.push_front(joint_blender);
+            joint_blender->mInActiveList = true;
         }
     }
     return true;
@@ -516,6 +513,7 @@ void LLPoseBlender::blendAndApply()
     {
         LLJointStateBlender* jsbp = *iter++;
         jsbp->blendJointStates();
+        jsbp->mInActiveList = false;
     }
 
     // we're done now so there are no more active blenders for this frame
@@ -562,8 +560,8 @@ void LLPoseBlender::clearBlenders()
     {
         LLJointStateBlender* jsbp = *iter;
         jsbp->clear();
+        jsbp->mInActiveList = false;
     }
 
     mActiveBlenders.clear();
 }
-

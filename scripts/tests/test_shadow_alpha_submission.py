@@ -69,6 +69,8 @@ struct GL { void loadMatrix(int) {} } gGL;
 int gGLModelView = 0;
 void* gGLLastMatrix = nullptr;
 struct LLPipeline {
+    int mSSSDepthPass = 0;
+    bool mSSSDepthOpaque = true;
     LLRenderPass pool;
     LLRenderPass* mSimplePool = &pool;
     std::vector<LLDrawInfo*> inputs;
@@ -94,6 +96,7 @@ int main() {
     gDeferredShadowAlphaMaskProgram.cutoff = 0.9f;
     gPipeline.renderAlphaObjects(false);
     assert((draws == std::vector<int>{1, 2, 3, 4, 5}));
+    assert(gPipeline.mSSSDepthOpaque);
     assert(gDeferredShadowAlphaMaskProgram.setups == 2);
     assert(gDeferredShadowGLTFAlphaBlendProgram.setups == 1);
     draws.clear();
@@ -106,6 +109,26 @@ int main() {
     draws.clear();
     gPipeline.renderAlphaObjects(false);
     assert((draws == std::vector<int>{1, 2, 3, 4, 5}));
+    for (bool opaque : {false, true}) {
+        gPipeline.mSSSDepthOpaque = opaque;
+        gPipeline.mSSSDepthPass = 1;
+        draws.clear();
+        gPipeline.renderAlphaObjects(false);
+        assert((draws == std::vector<int>{1, 2, 3, 4, 5}));
+        assert(gPipeline.mSSSDepthOpaque == opaque);
+        gPipeline.mSSSDepthPass = 2;
+        draws.clear();
+        auto* shader = LLGLSLShader::sCurBoundShaderPtr;
+        const int binds = legacy_rigged.binds + pbr_rigged.binds +
+            gDeferredShadowAlphaMaskProgram.binds + gDeferredShadowGLTFAlphaBlendProgram.binds;
+        gPipeline.renderAlphaObjects(false);
+        gPipeline.renderAlphaObjects(true);
+        assert(draws.empty() && gPipeline.mSSSDepthOpaque == opaque);
+        assert(LLGLSLShader::sCurBoundShaderPtr == shader);
+        assert(binds == legacy_rigged.binds + pbr_rigged.binds +
+            gDeferredShadowAlphaMaskProgram.binds + gDeferredShadowGLTFAlphaBlendProgram.binds);
+    }
+    gPipeline.mSSSDepthPass = 0;
     gPipeline.inputs.clear();
     draws.clear();
     gPipeline.renderAlphaObjects(false);

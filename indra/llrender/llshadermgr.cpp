@@ -257,6 +257,7 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
         {
             return false;
         }
+        if (!shader->attachFragmentObject("deferred/pcssUtil.glsl")) return false;
     }
 
     if (features->hasReflectionProbes)
@@ -1505,6 +1506,12 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("shadowMap5");
 
     llassert(mReservedUniforms.size() == LLShaderMgr::DEFERRED_SHADOW5+1);
+    mReservedUniforms.push_back("pcssDepthMap0");
+    mReservedUniforms.push_back("pcssDepthMap1");
+    mReservedUniforms.push_back("pcssDepthMap2");
+    mReservedUniforms.push_back("pcssDepthMap3");
+    mReservedUniforms.push_back("pcssDepthMap4");
+    mReservedUniforms.push_back("pcssDepthMap5");
     mReservedUniforms.push_back("sssDepthMap0");
     mReservedUniforms.push_back("sssDepthMap1");
     mReservedUniforms.push_back("sssDepthMap2");

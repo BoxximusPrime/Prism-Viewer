@@ -1275,6 +1275,25 @@ void LLFloaterPreference::buildPopupLists()
 
 void LLFloaterPreference::refreshEnabledState()
 {
+    const bool pcss_supported = gGLManager.mNumTextureImageUnits >= 32;
+    const bool pcss_shadows = gSavedSettings.getS32("RenderShadowDetail") > 0;
+    const bool pcss_enabled = pcss_supported && pcss_shadows && gSavedSettings.getBOOL("RenderPCSSEnabled");
+    getChildView("RenderPCSSEnabled")->setEnabled(pcss_supported && pcss_shadows);
+    getChildView("RenderPCSSLightSize")->setEnabled(pcss_enabled);
+    getChildView("RenderPCSSMaxSoftness")->setEnabled(pcss_enabled);
+    getChildView("RenderPCSSMinSoftness")->setEnabled(pcss_enabled);
+    getChildView("RenderPCSSProjectorSize")->setEnabled(pcss_enabled && gSavedSettings.getS32("RenderShadowDetail") > 1);
+    getChildView("RenderPCSSBias")->setEnabled(pcss_enabled);
+    getChildView("RenderPCSSQuality")->setEnabled(pcss_enabled);
+    getChildView("PCSSQualityLabel")->setEnabled(pcss_enabled);
+    getChild<LLTextBox>("PCSSStatus")->setValue(!pcss_supported ?
+        "PCSS is unavailable on this graphics device (32 texture units required)." :
+        !pcss_shadows ? "Choose Sun / Moon shadows above to enable PCSS." :
+        pcss_enabled ? "PCSS is active. Adjustments apply immediately." :
+        "PCSS is off. Enable it above to adjust shadow softness.");
+
+    getChildView("BoxxySSSFullResolution")->setEnabled(gSavedSettings.getBOOL("BoxxySSSEnabled") &&
+        gSavedSettings.getS32("BoxxySSSMode") >= 1);
     const bool sss_combined = gSavedSettings.getBOOL("BoxxySSSEnabled") &&
         gSavedSettings.getS32("BoxxySSSMode") == 2;
     getChildView("BoxxySSSWrapAmount")->setEnabled(sss_combined);
@@ -2634,6 +2653,13 @@ void LLPanelPreferenceGraphics::saveSettings()
 }
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
+    gSavedSettings.getControl("RenderPCSSEnabled")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSLightSize")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSMaxSoftness")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSMinSoftness")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSProjectorSize")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSBias")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSQuality")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSEnabled")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSAutoDetect")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWhitelist")->resetToDefault(true);
@@ -2641,6 +2667,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSShowDepth")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSDebugLight")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSMode")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSFullResolution")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSStrength")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSDepth")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWarmth")->resetToDefault(true);

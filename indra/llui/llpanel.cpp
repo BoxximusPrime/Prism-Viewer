@@ -43,6 +43,7 @@
 #include "llui.h"
 #include "llkeyboard.h"
 #include "lllineeditor.h"
+#include "llscrollcontainer.h"
 #include "llcontrol.h"
 #include "lltextbox.h"
 #include "lluictrl.h"
@@ -169,10 +170,24 @@ void LLPanel::removeBorder()
 // virtual
 void LLPanel::clearCtrls()
 {
-    LLPanel::ctrl_list_t ctrls = getCtrlList();
-    for (LLPanel::ctrl_list_t::iterator ctrl_it = ctrls.begin(); ctrl_it != ctrls.end(); ++ctrl_it)
+    std::vector<LLView*> pending(getChildList()->begin(), getChildList()->end());
+    while (!pending.empty())
     {
-        LLUICtrl* ctrl = *ctrl_it;
+        LLView* view = pending.back();
+        pending.pop_back();
+        // Clear fields, not their layout containers: selection refresh enables
+        // individual fields and must not leave a disabled ancestor blocking them.
+        if (auto* scroll = dynamic_cast<LLScrollContainer*>(view))
+        {
+            if (LLView* content = scroll->getScrolledView()) pending.push_back(content);
+            continue; // Keep the container's own scrollbars usable.
+        }
+        if (!view->isCtrl() || dynamic_cast<LLPanel*>(view))
+        {
+            pending.insert(pending.end(), view->getChildList()->begin(), view->getChildList()->end());
+            continue;
+        }
+        LLUICtrl* ctrl = static_cast<LLUICtrl*>(view);
         ctrl->setFocus( false );
         ctrl->setEnabled( false );
         ctrl->clear();

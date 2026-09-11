@@ -37,12 +37,14 @@ vec4 getNorm(vec2 pos_screen);
 float sampleDirectionalShadow(vec3 shadow_pos, vec3 norm, vec2 pos_screen);
 float sampleSpotShadow(vec3 shadow_pos, vec3 norm, int index, vec2 pos_screen);
 float calcAmbientOcclusion(vec4 pos, vec3 norm, vec2 pos_screen);
+void preparePCSSDepth(vec3 pos, vec3 norm, vec2 pos_screen);
 
 void main()
 {
     vec2 pos_screen = vary_fragcoord.xy;
     vec4 pos  = getPosition(pos_screen);
     vec4 norm = getNorm(pos_screen);
+    preparePCSSDepth(pos.xyz, norm.xyz, pos_screen);
 
     vec4 col;
     col.r = sampleDirectionalShadow(pos.xyz, norm.xyz, pos_screen);
