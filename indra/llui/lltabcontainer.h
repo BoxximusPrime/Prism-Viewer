@@ -90,6 +90,10 @@ public:
                                             middle_tab,
                                             last_tab;
 
+        // Optional button appearance; tab geometry, labels and callbacks stay container-owned.
+        Optional<LLButton::Params>          tab_button;
+        Optional<LLUIImage*>               tab_top_frame;
+
         /**
          * Tab label horizontal alignment
          */
@@ -317,6 +321,8 @@ private:
     TabParams                       mFirstTabParams;
     TabParams                       mMiddleTabParams;
     TabParams                       mLastTabParams;
+    LLButton::Params                 mTabButtonParams;
+    LLUIImagePtr                     mTabTopFrame;
 
     bool                            mCustomIconCtrlUsed;
     bool                            mOpenTabsOnDragAndDrop;

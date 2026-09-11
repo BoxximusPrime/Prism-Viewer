@@ -751,6 +751,9 @@ public:
     bool                    mSSSTransmissionSmoothing = false;
     LLRenderTarget          mSSSDiffuse;
     LLRenderTarget          mSSSScratch;
+    LLRenderTarget          mSSSWide; // quarter-size irradiance/coverage plus normal/depth guide
+    LLRenderTarget          mSSSWideScratch;
+    LLRenderTarget          mSSSWideResult;
     void renderSSSDiffusion(bool transmission = false);
 
     LLRenderTarget          mPbrBrdfLut;
@@ -807,6 +810,8 @@ public:
     LLVector3               mShadowExtents[4][2];
     // TODO : separate Sun Shadow and Spot Shadow matrices
     glm::mat4               mSunShadowMatrix[6];
+    glm::mat4               mPCSSInverseMatrix[6] = { glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1) };
+    U32                     mPCSSSampler = 0;
     glm::mat4               mShadowModelview[6];
     glm::mat4               mShadowProjection[6];
     glm::mat4               mReflectionModelView;

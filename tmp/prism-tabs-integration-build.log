@@ -1,0 +1,309 @@
+MSBuild version 17.14.23+b0019275e for .NET Framework
+
+  1>
+  1>
+  1>Staging viewer resources
+  llwebrtc.vcxproj -> E:\BoxxyViewer\build-vc170-64\llwebrtc\Release\llwebrtc.dll
+  llprecompiled.vcxproj -> E:\BoxxyViewer\build-vc170-64\llprecompiled\Release\llprecompiled.lib
+  Copying PDB for PCH reuse from llprecompiled for llcommon
+  llcommon.vcxproj -> E:\BoxxyViewer\build-vc170-64\llcommon\Release\llcommon.lib
+  Copying PDB for PCH reuse from llprecompiled for llmeshoptimizer
+  llmeshoptimizer.vcxproj -> E:\BoxxyViewer\build-vc170-64\llmeshoptimizer\Release\llmeshoptimizer.lib
+  Copying PDB for PCH reuse from llprecompiled for llmath
+  llmath.vcxproj -> E:\BoxxyViewer\build-vc170-64\llmath\Release\llmath.lib
+  Copying PDB for PCH reuse from llprecompiled for llfilesystem
+  Copying PDB for PCH reuse from llprecompiled for llcorehttp
+  llfilesystem.vcxproj -> E:\BoxxyViewer\build-vc170-64\llfilesystem\Release\llfilesystem.lib
+  llcorehttp.vcxproj -> E:\BoxxyViewer\build-vc170-64\llcorehttp\Release\llcorehttp.lib
+  Copying PDB for PCH reuse from llprecompiled for llxml
+  Copying PDB for PCH reuse from llprecompiled for llmessage
+  llxml.vcxproj -> E:\BoxxyViewer\build-vc170-64\llxml\Release\llxml.lib
+  llmessage.vcxproj -> E:\BoxxyViewer\build-vc170-64\llmessage\Release\llmessage.lib
+  Copying PDB for PCH reuse from llprecompiled for llplugin
+  llplugin.vcxproj -> E:\BoxxyViewer\build-vc170-64\llplugin\Release\llplugin.lib
+  Copying PDB for PCH reuse from llprecompiled for SLPlugin
+  SLPlugin.vcxproj -> E:\BoxxyViewer\build-vc170-64\llplugin\slplugin\Release\SLPlugin.exe
+  media_plugin_base.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\base\Release\media_plugin_base.lib
+  media_plugin_example.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\example\Release\media_plugin_example.dll
+  media_plugin_cef.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\cef\Release\media_plugin_cef.dll
+  media_plugin_libvlc.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\libvlc\Release\media_plugin_libvlc.dll
+  1>Performing viewer_manifest copy
+  E:\BoxxyViewer\.venv\Scripts\python.exe \
+  E:/BoxxyViewer/indra/newview/viewer_manifest.py --actions=copy --arch=x86_64 --artwork=E:/BoxxyViewer/indra/newview --bugsplat= --discord= --openal=ON --tracy=ON --build=E:/BoxxyViewer/build-vc170-64/newview --buildtype=Release '--channel=Prism Release' --configuration=Release --dest=E:/BoxxyViewer/build-vc170-64/newview/Release --grid=agni --source=E:/BoxxyViewer/indra/newview --touch=E:/BoxxyViewer/build-vc170-64/newview/Release/copy_touched.bat --versionfile=E:/BoxxyViewer/build-vc170-64/newview/viewer_version.txt
+  Source tree: E:\BoxxyViewer\indra\newview
+  Artwork tree: E:\BoxxyViewer\indra\newview
+  Build tree: E:\BoxxyViewer\build-vc170-64\newview
+  Destination tree: E:\BoxxyViewer\build-vc170-64\newview\Release
+  Option: source = E:\BoxxyViewer\indra\newview
+  Option: artwork = E:\BoxxyViewer\indra\newview
+  Option: build = E:\BoxxyViewer\build-vc170-64\newview
+  Option: dest = E:\BoxxyViewer\build-vc170-64\newview\Release
+  Option: actions = ['copy']
+  Option: arch = x86_64
+  Option: bugsplat = 
+  Option: discord = 
+  Option: openal = ON
+  Option: tracy = ON
+  Option: buildtype = Release
+  Option: channel = Prism Release
+  Option: configuration = Release
+  Option: grid = None
+  Option: touch = E:/BoxxyViewer/build-vc170-64/newview/Release/copy_touched.bat
+  Option: versionfile = E:/BoxxyViewer/build-vc170-64/newview/viewer_version.txt
+  Option: bundleid = com.secondlife.indra.viewer
+  Option: platform = windows
+  Option: velopack = OFF
+  Option: version = ['0', '2', '0', '54495']
+  ================ Creating base package
+  Processing ../../scripts/messages/message_template.msg => app_settings/message_template.msg ... 1 files
+  Processing *.txt => app_settings/syntax_default\*.txt ... 1 files
+  Processing *.yaml => app_settings/syntax_default\*.yaml ... 2 files
+  Processing *.xml => app_settings/syntax_default\*.xml ... 2 files
+  Processing *.json => app_settings/syntax_default\*.json ... 1 files
+  Processing *.luau => app_settings/syntax_default\*.luau ... 1 files
+  Processing *.yml => app_settings/syntax_default\*.yml ... 1 files
+  Processing *.wav => app_settings/sounds\*.wav ... 5 files
+  Processing ..\llplugin\slplugin\Release\slplugin.exe => slplugin.exe ... 1 files
+  Processing llwebrtc.dll => llwebrtc.dll ... 1 files
+  Processing OpenAL32.dll => OpenAL32.dll ... 1 files
+  Processing alut.dll => alut.dll ... 1 files
+  Processing openjp2.dll => openjp2.dll ... 1 files
+  Processing msvcp140.dll => msvcp140.dll ... 1 files
+  Processing msvcp140_1.dll => msvcp140_1.dll ... 1 files
+  Processing msvcp140_2.dll => msvcp140_2.dll ... 1 files
+  Processing msvcp140_atomic_wait.dll => msvcp140_atomic_wait.dll ... 1 files
+  Processing msvcp140_codecvt_ids.dll => msvcp140_codecvt_ids.dll ... 1 files
+  Processing vcruntime140.dll => vcruntime140.dll ... 1 files
+  Processing vcruntime140_1.dll => vcruntime140_1.dll ... 1 files
+  Processing vcruntime140_threads.dll => vcruntime140_threads.dll ... 1 files
+  Processing tracy-profiler.exe => tracy-profiler.exe ... 1 files
+  Processing licenses-win32.txt => licenses.txt ... 1 files
+  Processing featuretable.txt => featuretable.txt ... 1 files
+  Processing cube.dae => cube.dae ... 1 files
+  Processing ca-bundle.crt => ca-bundle.crt ... 1 files
+  Processing media_plugin_cef.dll => llplugin\media_plugin_cef.dll ... 1 files
+  Processing media_plugin_libvlc.dll => llplugin\media_plugin_libvlc.dll ... 1 files
+  Processing chrome_elf.dll => llplugin\chrome_elf.dll ... 1 files
+  Processing d3dcompiler_47.dll => llplugin\d3dcompiler_47.dll ... 1 files
+  Processing dxcompiler.dll => llplugin\dxcompiler.dll ... 1 files
+  Processing dxil.dll => llplugin\dxil.dll ... 1 files
+  Processing libcef.dll => llplugin\libcef.dll ... 1 files
+  Processing libEGL.dll => llplugin\libEGL.dll ... 1 files
+  Processing libGLESv2.dll => llplugin\libGLESv2.dll ... 1 files
+  Processing v8_context_snapshot.bin => llplugin\v8_context_snapshot.bin ... 1 files
+  Processing vk_swiftshader.dll => llplugin\vk_swiftshader.dll ... 1 files
+  Processing vk_swiftshader_icd.json => llplugin\vk_swiftshader_icd.json ... 1 files
+  Processing vulkan-1.dll => llplugin\vulkan-1.dll ... 1 files
+  Processing dullahan_host.exe => llplugin\dullahan_host.exe ... 1 files
+  Processing msvcp140.dll => llplugin\msvcp140.dll ... 1 files
+  Processing vcruntime140.dll => llplugin\vcruntime140.dll ... 1 files
+  Processing vcruntime140_1.dll => llplugin\vcruntime140_1.dll ... 1 files
+  Processing chrome_100_percent.pak => llplugin\chrome_100_percent.pak ... 1 files
+  Processing chrome_200_percent.pak => llplugin\chrome_200_percent.pak ... 1 files
+  Processing resources.pak => llplugin\resources.pak ... 1 files
+  Processing icudtl.dat => llplugin\icudtl.dat ... 1 files
+  Processing am.pak => llplugin\locales\am.pak ... 1 files
+  Processing ar.pak => llplugin\locales\ar.pak ... 1 files
+  Processing bg.pak => llplugin\locales\bg.pak ... 1 files
+  Processing bn.pak => llplugin\locales\bn.pak ... 1 files
+  Processing ca.pak => llplugin\locales\ca.pak ... 1 files
+  Processing cs.pak => llplugin\locales\cs.pak ... 1 files
+  Processing da.pak => llplugin\locales\da.pak ... 1 files
+  Processing de.pak => llplugin\locales\de.pak ... 1 files
+  Processing el.pak => llplugin\locales\el.pak ... 1 files
+  Processing en-GB.pak => llplugin\locales\en-GB.pak ... 1 files
+  Processing en-US.pak => llplugin\locales\en-US.pak ... 1 files
+  Processing es-419.pak => llplugin\locales\es-419.pak ... 1 files
+  Processing es.pak => llplugin\locales\es.pak ... 1 files
+  Processing et.pak => llplugin\locales\et.pak ... 1 files
+  Processing fa.pak => llplugin\locales\fa.pak ... 1 files
+  Processing fi.pak => llplugin\locales\fi.pak ... 1 files
+  Processing fil.pak => llplugin\locales\fil.pak ... 1 files
+  Processing fr.pak => llplugin\locales\fr.pak ... 1 files
+  Processing gu.pak => llplugin\locales\gu.pak ... 1 files
+  Processing he.pak => llplugin\locales\he.pak ... 1 files
+  Processing hi.pak => llplugin\locales\hi.pak ... 1 files
+  Processing hr.pak => llplugin\locales\hr.pak ... 1 files
+  Processing hu.pak => llplugin\locales\hu.pak ... 1 files
+  Processing id.pak => llplugin\locales\id.pak ... 1 files
+  Processing it.pak => llplugin\locales\it.pak ... 1 files
+  Processing ja.pak => llplugin\locales\ja.pak ... 1 files
+  Processing kn.pak => llplugin\locales\kn.pak ... 1 files
+  Processing ko.pak => llplugin\locales\ko.pak ... 1 files
+  Processing lt.pak => llplugin\locales\lt.pak ... 1 files
+  Processing lv.pak => llplugin\locales\lv.pak ... 1 files
+  Processing ml.pak => llplugin\locales\ml.pak ... 1 files
+  Processing mr.pak => llplugin\locales\mr.pak ... 1 files
+  Processing ms.pak => llplugin\locales\ms.pak ... 1 files
+  Processing nb.pak => llplugin\locales\nb.pak ... 1 files
+  Processing nl.pak => llplugin\locales\nl.pak ... 1 files
+  Processing pl.pak => llplugin\locales\pl.pak ... 1 files
+  Processing pt-BR.pak => llplugin\locales\pt-BR.pak ... 1 files
+  Processing pt-PT.pak => llplugin\locales\pt-PT.pak ... 1 files
+  Processing ro.pak => llplugin\locales\ro.pak ... 1 files
+  Processing ru.pak => llplugin\locales\ru.pak ... 1 files
+  Processing sk.pak => llplugin\locales\sk.pak ... 1 files
+  Processing sl.pak => llplugin\locales\sl.pak ... 1 files
+  Processing sr.pak => llplugin\locales\sr.pak ... 1 files
+  Processing sv.pak => llplugin\locales\sv.pak ... 1 files
+  Processing sw.pak => llplugin\locales\sw.pak ... 1 files
+  Processing ta.pak => llplugin\locales\ta.pak ... 1 files
+  Processing te.pak => llplugin\locales\te.pak ... 1 files
+  Processing th.pak => llplugin\locales\th.pak ... 1 files
+  Processing tr.pak => llplugin\locales\tr.pak ... 1 files
+  Processing uk.pak => llplugin\locales\uk.pak ... 1 files
+  Processing vi.pak => llplugin\locales\vi.pak ... 1 files
+  Processing zh-CN.pak => llplugin\locales\zh-CN.pak ... 1 files
+  Processing zh-TW.pak => llplugin\locales\zh-TW.pak ... 1 files
+  Processing libvlc.dll => llplugin\libvlc.dll ... 1 files
+  Processing libvlccore.dll => llplugin\libvlccore.dll ... 1 files
+  Processing plugins/ => llplugin\plugins/ ... 367 files
+  ================ Created base package  copied_deps
+  touched E:/BoxxyViewer/build-vc170-64/newview/Release/copy_touched.bat
+  Copying PDB for PCH reuse from llprecompiled for llaudio
+  Copying PDB for PCH reuse from llprecompiled for llcharacter
+  llaudio.vcxproj -> E:\BoxxyViewer\build-vc170-64\llaudio\Release\llaudio.lib
+  Copying PDB for PCH reuse from llprecompiled for llimagej2coj
+  llcharacter.vcxproj -> E:\BoxxyViewer\build-vc170-64\llcharacter\Release\llcharacter.lib
+  Copying PDB for PCH reuse from llprecompiled for llinventory
+  llimagej2coj.vcxproj -> E:\BoxxyViewer\build-vc170-64\llimagej2coj\Release\llimagej2coj.lib
+  Copying PDB for PCH reuse from llprecompiled for llimage
+  llinventory.vcxproj -> E:\BoxxyViewer\build-vc170-64\llinventory\Release\llinventory.lib
+  llimage.vcxproj -> E:\BoxxyViewer\build-vc170-64\llimage\Release\llimage.lib
+  lllogin.vcxproj -> E:\BoxxyViewer\build-vc170-64\viewer_components\login\Release\lllogin.lib
+  Copying PDB for PCH reuse from llprecompiled for llphysicsextensionsos
+  llphysicsextensionsos.vcxproj -> E:\BoxxyViewer\build-vc170-64\llphysicsextensionsos\Release\llphysicsextensionsos.lib
+  Copying PDB for PCH reuse from llprecompiled for llwindow
+  llwindow.vcxproj -> E:\BoxxyViewer\build-vc170-64\llwindow\Release\llwindow.lib
+  Copying PDB for PCH reuse from llprecompiled for llrender
+  llrender.vcxproj -> E:\BoxxyViewer\build-vc170-64\llrender\Release\llrender.lib
+  Copying PDB for PCH reuse from llprecompiled for llprimitive
+  llprimitive.vcxproj -> E:\BoxxyViewer\build-vc170-64\llprimitive\Release\llprimitive.lib
+  Copying PDB for PCH reuse from llprecompiled for llui
+  Copying PDB for PCH reuse from llprecompiled for llappearance
+  llappearance.vcxproj -> E:\BoxxyViewer\build-vc170-64\llappearance\Release\llappearance.lib
+  llfloater.cpp
+  llfloaterreg.cpp
+  llmultifloater.cpp
+  lltabcontainer.cpp
+  lluictrl.cpp
+  llui.vcxproj -> E:\BoxxyViewer\build-vc170-64\llui\Release\llui.lib
+  llagent.cpp
+  llappviewer.cpp
+  llavataractions.cpp
+  llchannelmanager.cpp
+  llchiclet.cpp
+  llchicletbar.cpp
+  llconversationview.cpp
+  llfloateravatarpicker.cpp
+  llfloatercamera.cpp
+  llfloaterchatmentionpicker.cpp
+  llfloaterdirectory.cpp
+  llfloatereditextdaycycle.cpp
+  llfloaterexperienceprofile.cpp
+  llfloaterexperiences.cpp
+  llfloaterfixedenvironment.cpp
+  llfloatergesture.cpp
+  llfloatergodtools.cpp
+  llfloatergotoline.cpp
+  llfloaterimcontainer.cpp
+  llfloaterimnearbychat.cpp
+  llfloaterimnearbychathandler.cpp
+  llfloaterimsession.cpp
+  llfloaterimsessiontab.cpp
+  llfloaterland.cpp
+  llfloatermarketplacelistings.cpp
+  llfloatermediasettings.cpp
+  llfloatermodelpreview.cpp
+  llfloaternotificationstabbed.cpp
+  llfloaterpathfindingconsole.cpp
+  llfloaterpreference.cpp
+  llfloaterprofiletexture.cpp
+  llfloaterregioninfo.cpp
+  llfloaterscriptdebug.cpp
+  llfloaterscriptlimits.cpp
+  llfloatersidepanelcontainer.cpp
+  llfloatersnapshot.cpp
+  llfloatertools.cpp
+  llfloaterwhitelistentry.cpp
+  llglsandbox.cpp
+  llgroupactions.cpp
+  llimview.cpp
+  llinventorybridge.cpp
+  llinventoryfunctions.cpp
+  llinventorygallerymenu.cpp
+  llinventorymodel.cpp
+  llinventoryobserver.cpp
+  llinventorypanel.cpp
+  llmaterialeditor.cpp
+  llmodelpreview.cpp
+  lloutfitgallery.cpp
+  llpanelblockedlist.cpp
+  llpanelcontents.cpp
+  llpaneldirbrowser.cpp
+  llpaneldirclassified.cpp
+  llpaneldirplaces.cpp
+  llpaneldirweb.cpp
+  llpanelface.cpp
+  llpanelgroup.cpp
+  llpanelgroupcreate.cpp
+  llpanelgrouplandmoney.cpp
+  llpanelgrouproles.cpp
+  llpanelmaininventory.cpp
+  llpanelmediasettingsgeneral.cpp
+  llpanelmediasettingspermissions.cpp
+  llpanelmediasettingssecurity.cpp
+  llpanelnearbymedia.cpp
+  llpanelobject.cpp
+  llpanelobjectinventory.cpp
+  llpaneloutfitsinventory.cpp
+  llpanelpeople.cpp
+  llpanelplaces.cpp
+  llpanelpresetscamerapulldown.cpp
+  llpanelpresetspulldown.cpp
+  llpanelprofile.cpp
+  llpanelprofileclassifieds.cpp
+  llpanelprofilepicks.cpp
+  llpanelsnapshot.cpp
+  llpanelsnapshotinventory.cpp
+  llpanelsnapshotlocal.cpp
+  llpanelsnapshotoptions.cpp
+  llpanelsnapshotpostcard.cpp
+  llpanelsnapshotprofile.cpp
+  llpanelvolume.cpp
+  llpanelvolumepulldown.cpp
+  llparticipantlist.cpp
+  llpreview.cpp
+  llpreviewanim.cpp
+  llpreviewgesture.cpp
+  llpreviewnotecard.cpp
+  llpreviewscript.cpp
+  llpreviewsound.cpp
+  llpreviewtexture.cpp
+  llscripteditorws.cpp
+  llsearchableui.cpp
+  llsidepanelinventory.cpp
+  llsidetraypanelcontainer.cpp
+  llstartup.cpp
+  llstatusbar.cpp
+  lltexturectrl.cpp
+  lltooldraganddrop.cpp
+  lltoolpie.cpp
+  lltoolselect.cpp
+  llviewerfloaterreg.cpp
+  llviewerinventory.cpp
+  llviewermenu.cpp
+  llviewermenufile.cpp
+  llviewertexteditor.cpp
+  llviewerwindow.cpp
+  Verifying message template - See http://wiki.secondlife.com/wiki/Template_verifier.py
+  master: https://github.com/secondlife/master-message-template/raw/master/message_template.msg
+  current: E:\BoxxyViewer\scripts\messages\message_template.msg
+  Message template SHA_1 has not changed.
+     Creating library E:/BoxxyViewer/build-vc170-64/newview/Release/secondlife-bin.lib and object E:/BoxxyViewer/build-vc170-64/newview/Release/secondlife-bin.exp
+  Generating code
+  25567 of 377338 functions ( 6.8%) were compiled, the rest were copied from previous compilation.
+    4 functions were new in current compilation
+    5747 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  secondlife-bin.vcxproj -> E:\BoxxyViewer\build-vc170-64\newview\Release\secondlife-bin.exe

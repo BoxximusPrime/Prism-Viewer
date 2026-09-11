@@ -1,0 +1,354 @@
+<llsd>
+    <map>
+    <key>CurrentGrid</key>
+        <map>
+        <key>Comment</key>
+            <string>Currently Selected Grid</string>
+        <key>Type</key>
+            <string>String</string>
+        <key>Value</key>
+            <string>util.agni.lindenlab.com</string>
+        </map>
+    <key>DebugQualityPerformance</key>
+        <map>
+        <key>Comment</key>
+            <string>Allows to change performance quality directly from debug settings.</string>
+        <key>Type</key>
+            <string>U32</string>
+        <key>Value</key>
+            <integer>5</integer>
+        </map>
+    <key>DiskCacheVersion</key>
+        <map>
+        <key>Comment</key>
+            <string>Version number of disk cache</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>3</integer>
+        </map>
+    <key>FirstRunThisInstall</key>
+        <map>
+        <key>Comment</key>
+            <string>Specifies that you have not run the viewer since you performed a clean install</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>0</boolean>
+        </map>
+    <key>HttpProxyType</key>
+        <map>
+        <key>Comment</key>
+            <string>Proxy type to use for HTTP operations</string>
+        <key>Type</key>
+            <string>String</string>
+        <key>Value</key>
+            <string>None</string>
+        </map>
+    <key>LastFeatureVersion</key>
+        <map>
+        <key>Comment</key>
+            <string>[DO NOT MODIFY] Feature Table Version number for tracking rendering system changes</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>74</integer>
+        </map>
+    <key>LastGPUString</key>
+        <map>
+        <key>Comment</key>
+            <string>[DO NOT MODIFY] previous GPU id string for tracking hardware changes</string>
+        <key>Type</key>
+            <string>String</string>
+        <key>Value</key>
+            <string>NVIDIA Corporation NVIDIA GeForce RTX 5090/PCIe/SSE2</string>
+        </map>
+    <key>LastPrefTab</key>
+        <map>
+        <key>Comment</key>
+            <string>Last selected tab in preferences window</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>1</integer>
+        </map>
+    <key>LastRunVersion</key>
+        <map>
+        <key>Comment</key>
+            <string>Version number of last instance of the viewer that you ran</string>
+        <key>Type</key>
+            <string>String</string>
+        <key>Value</key>
+            <string>Prism Release 0.2.0.54495</string>
+        </map>
+    <key>LocalCacheVersion</key>
+        <map>
+        <key>Comment</key>
+            <string>Version number of cache</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>9</integer>
+        </map>
+    <key>MigrateCacheDirectory</key>
+        <map>
+        <key>Comment</key>
+            <string>Check for old version of disk cache to migrate to current location</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>0</boolean>
+        </map>
+    <key>NextLoginLocation</key>
+        <map>
+        <key>Comment</key>
+            <string>Location to log into for this session - set from command line or the login panel, cleared following a successfull login.</string>
+        <key>Type</key>
+            <string>String</string>
+        <key>Value</key>
+            <string>last</string>
+        </map>
+    <key>NumSessions</key>
+        <map>
+        <key>Comment</key>
+            <string>Number of successful logins to Second Life</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>1</integer>
+        </map>
+    <key>PreviousInstallChecked</key>
+        <map>
+        <key>Comment</key>
+            <string>Whether viewer checked previous install on the same channel for NSIS</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>1</boolean>
+        </map>
+    <key>ProbeHardwareOnStartup</key>
+        <map>
+        <key>Comment</key>
+            <string>Query current hardware configuration on application startup</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>0</boolean>
+        </map>
+    <key>RenderAnisotropicLevel</key>
+        <map>
+        <key>Comment</key>
+            <string>Anisotropic filtering strength(0(Disable), 2x, 4x, 8x, 16x</string>
+        <key>Type</key>
+            <string>U32</string>
+        <key>Value</key>
+            <integer>4</integer>
+        </map>
+    <key>RenderAvatarLODFactor</key>
+        <map>
+        <key>Comment</key>
+            <string>Controls level of detail of avatars (multiplier for current screen area when calculated level of detail)</string>
+        <key>Type</key>
+            <string>F32</string>
+        <key>Value</key>
+            <real>1</real>
+        </map>
+    <key>RenderAvatarMaxComplexity</key>
+        <map>
+        <key>Comment</key>
+            <string>Maximum Avatar Complexity; above this value, the avatar is
+    rendered as a solid color outline (0 to disable this limit).</string>
+        <key>Type</key>
+            <string>U32</string>
+        <key>Value</key>
+            <integer>350000</integer>
+        </map>
+    <key>RenderAvatarMaxNonImpostors</key>
+        <map>
+        <key>Comment</key>
+            <string>Maximum number of avatars to fully render at one time;
+    over this limit uses impostor rendering (simplified rendering
+    with less frequent updates), reducing client lag.</string>
+        <key>Type</key>
+            <string>U32</string>
+        <key>Value</key>
+            <integer>16</integer>
+        </map>
+    <key>RenderCASSharpness</key>
+        <map>
+        <key>Comment</key>
+            <string>Level of sharpening to apply via Contrast Adaptive Sharpening (0.0(off) - 1.0)</string>
+        <key>Type</key>
+            <string>F32</string>
+        <key>Value</key>
+            <real>0.4000000059604644775390625</real>
+        </map>
+    <key>RenderFSAASamples</key>
+        <map>
+        <key>Comment</key>
+            <string>Quality of antialiasing: 0 = Low, 1 = Medium, 2 = High, 3 = Ultra</string>
+        <key>Type</key>
+            <string>U32</string>
+        <key>Value</key>
+            <integer>2</integer>
+        </map>
+    <key>RenderGLContextCoreProfile</key>
+        <map>
+        <key>Comment</key>
+            <string>Don&apos;t use a compatibility profile OpenGL context.  Requires restart.</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>1</boolean>
+        </map>
+    <key>RenderGLMultiThreadedMedia</key>
+        <map>
+        <key>Comment</key>
+            <string>Allow OpenGL to use multiple render contexts for playing media (may reduce frame stutters, doesn&apos;t play nice with Intel drivers)</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>1</boolean>
+        </map>
+    <key>RenderHeroProbeConservativeUpdateMultiplier</key>
+        <map>
+        <key>Comment</key>
+            <string>How many probe updates to wait until it&apos;s time to update faces that are not directly facing the camera.  Acts as a multiplier.  E.g., frames to the periphery of the camera updating once every 3 updates, vs ones directly facing the camera updating every update.</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>4</integer>
+        </map>
+    <key>RenderHeroProbeDistance</key>
+        <map>
+        <key>Comment</key>
+            <string>Distance in meters for hero probes to render out to.</string>
+        <key>Type</key>
+            <string>F32</string>
+        <key>Value</key>
+            <real>16</real>
+        </map>
+    <key>RenderHeroProbeUpdateRate</key>
+        <map>
+        <key>Comment</key>
+            <string>How many frames to wait for until it&apos;s time to render the probe. E.g., every other frame (1), every two frames (2), every three frames (3) etc.</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>1</integer>
+        </map>
+    <key>RenderHighPrecisionPostProcess</key>
+        <map>
+        <key>Comment</key>
+            <string>Use 16-bit floating point buffers for post process rendering</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>1</boolean>
+        </map>
+    <key>RenderLocalLightCount</key>
+        <map>
+        <key>Comment</key>
+            <string>Number of local lights to render.</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>4096</integer>
+        </map>
+    <key>RenderPCSSEnabled</key>
+        <map>
+        <key>Comment</key>
+            <string>Use contact-hardening PCSS for sun, moon and projector shadows. Requires 32 fragment texture units.</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>1</boolean>
+        </map>
+    <key>RenderQualityPerformance</key>
+        <map>
+        <key>Comment</key>
+            <string>Which graphics settings you&apos;ve chosen. Don&apos;t use this setting to change quality directly from debug settings.</string>
+        <key>Type</key>
+            <string>U32</string>
+        <key>Value</key>
+            <integer>5</integer>
+        </map>
+    <key>RenderShaderCacheVersion</key>
+        <map>
+        <key>Comment</key>
+            <string>Current version hash for shader cache</string>
+        <key>Type</key>
+            <string>String</string>
+        <key>Value</key>
+            <string>330d8b31-dfe7-12be-0887-d53b356e4957</string>
+        </map>
+    <key>RenderShadowDetail</key>
+        <map>
+        <key>Comment</key>
+            <string>Detail of shadows.</string>
+        <key>Type</key>
+            <string>S32</string>
+        <key>Value</key>
+            <integer>0</integer>
+        </map>
+    <key>RenderTerrainLODFactor</key>
+        <map>
+        <key>Comment</key>
+            <string>Controls level of detail of terrain (multiplier for current screen area when calculated level of detail)</string>
+        <key>Type</key>
+            <string>F32</string>
+        <key>Value</key>
+            <real>2</real>
+        </map>
+    <key>RenderTonemapMix</key>
+        <map>
+        <key>Comment</key>
+            <string>Mix between linear and tonemapped colors (0.0(Linear) - 1.0(Tonemapped)</string>
+        <key>Type</key>
+            <string>F32</string>
+        <key>Value</key>
+            <real>0.699999988079071044921875</real>
+        </map>
+    <key>RenderVolumeLODFactor</key>
+        <map>
+        <key>Comment</key>
+            <string>Controls level of detail of primitives (multiplier for current screen area when calculated level of detail)</string>
+        <key>Type</key>
+            <string>F32</string>
+        <key>Value</key>
+            <real>1.75</real>
+        </map>
+    <key>ResetUIScaleOnFirstRun</key>
+        <map>
+        <key>Comment</key>
+            <string>Resets the UI scale factor on first run due to changed display scaling behavior</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>0</boolean>
+        </map>
+    <key>ThreadPoolSizes</key>
+        <map>
+        <key>Comment</key>
+            <string>Map of size overrides for specific thread pools.</string>
+        <key>Type</key>
+            <string>LLSD</string>
+        <key>Value</key>
+            <map>
+            <key>General</key>
+                <integer>1</integer>
+            <key>ImageDecode</key>
+                <integer>16</integer>
+            </map>
+        </map>
+    <key>WindowMaximized</key>
+        <map>
+        <key>Comment</key>
+            <string>SL viewer window maximized on login</string>
+        <key>Type</key>
+            <string>Boolean</string>
+        <key>Value</key>
+            <boolean>1</boolean>
+        </map>
+    </map>
+</llsd>

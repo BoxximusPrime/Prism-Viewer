@@ -215,6 +215,12 @@ public:
         DEFERRED_SHADOW3,                   //  "shadowMap3"
         DEFERRED_SHADOW4,                   //  "shadowMap4"
         DEFERRED_SHADOW5,                   //  "shadowMap5"
+        PCSS_DEPTH0,
+        PCSS_DEPTH1,
+        PCSS_DEPTH2,
+        PCSS_DEPTH3,
+        PCSS_DEPTH4,
+        PCSS_DEPTH5,
         SSS_DEPTH0,
         SSS_DEPTH1,
         SSS_DEPTH2,

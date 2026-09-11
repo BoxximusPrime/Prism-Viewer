@@ -1,0 +1,3 @@
+Passed 36 GPU lighting cases: OIT/fallback, Classic/modern, interpolated normals, PBR intensity, fog/base preservation, alpha preservation
+Passed 36 GPU lighting cases: OIT/fallback, Classic/modern, interpolated normals, PBR intensity, fog/base preservation, alpha preservation
+Passed 180 GPU projector cases: texture color/alpha, beam/near/radius clipping, receiver-depth shadows, both shadow maps/fading, light slots, origin offset, focus/mips/soft edges, ambiance

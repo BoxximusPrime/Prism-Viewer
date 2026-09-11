@@ -97,6 +97,8 @@ public:
     void resetCachedJoint();
 
 public:
+    // Membership belongs to LLPoseBlender and persists through cached interpolation.
+    bool mInActiveList = false;
     LLJoint mJointCache;
 };
 
@@ -137,4 +139,3 @@ public:
 };
 
 #endif // LL_LLPOSE_H
-

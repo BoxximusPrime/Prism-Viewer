@@ -131,7 +131,7 @@ public:
 
     // New virtuals
     virtual     void    refresh();  // called in setFocus()
-    virtual     void    clearCtrls(); // overridden in LLPanelObject and LLPanelVolume
+    virtual     void    clearCtrls(); // Clear/disable fields through layout containers; preserve the containers.
 
     // Border controls
     const LLViewBorder* getBorder() const { return mBorder; }

@@ -143,6 +143,7 @@ private:
         {
             GLuint buffer = 0;
             GLsync fence = nullptr;
+            const U32* mapped = nullptr;
             bool mouselook = false;
         };
         GLuint heads = 0;
@@ -166,6 +167,7 @@ private:
         bool reduceMaximum = false;
         bool available = false;
     };
+    static bool allocateReadback(Resources::Readback& sample);
     static bool captureOverflowed(U32 required_nodes, U32 overflow_flag);
     static void growNodePool(U32 required_nodes);
     static void recordCaptureStats(U32 nodes, U32 maximum_list, bool mouselook);

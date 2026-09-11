@@ -1,0 +1,4 @@
+GPU: NVIDIA GeForce RTX 5090/PCIe/SSE2
+Projector depth on/off: diffuse input unchanged; thick/missing paths lose transmission before blur, while valid thin paths still transmit.
+100 mm arm: maximum reconstruction error 1.01 mm; minimum coverage 0.959
+Passed 728 SSS GPU checks: paths, explicit estimates, sun/spot/point composition, matched layers, coverage fades and real shadow capture fragments.

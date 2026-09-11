@@ -5943,7 +5943,14 @@ class LLToolsSelectNextPartFace : public view_listener_t
 {
     bool handleEvent(const LLSD& userdata)
     {
-        bool cycle_faces = LLToolFace::getInstance() == LLToolMgr::getInstance()->getCurrentTool();
+        const std::string action = userdata.asString();
+        // The Edit window's arrows always change parts, even in Select Face mode.
+        bool parts_only = action == "next_linked" || action == "previous_linked";
+        if (parts_only && LLSelectMgr::getInstance()->getSelection()->getObjectCount() != 1)
+        {
+            return true;
+        }
+        bool cycle_faces = !parts_only && LLToolFace::getInstance() == LLToolMgr::getInstance()->getCurrentTool();
         bool cycle_linked = gSavedSettings.getBOOL("EditLinkedParts");
 
         if (!cycle_faces && !cycle_linked)
@@ -5952,10 +5959,10 @@ class LLToolsSelectNextPartFace : public view_listener_t
             return true;
         }
 
-        bool fwd = (userdata.asString() == "next");
-        bool prev = (userdata.asString() == "previous");
-        bool ifwd = (userdata.asString() == "includenext");
-        bool iprev = (userdata.asString() == "includeprevious");
+        bool fwd = (action == "next" || action == "next_linked");
+        bool prev = (action == "previous" || action == "previous_linked");
+        bool ifwd = (action == "includenext");
+        bool iprev = (action == "includeprevious");
 
         LLViewerObject* to_select = NULL;
         bool restart_face_on_part = !cycle_faces;

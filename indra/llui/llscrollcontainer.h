@@ -96,6 +96,7 @@ public:
     LLRect          getVisibleContentRect();
     LLRect          getContentWindowRect();
     virtual const LLRect    getScrolledViewRect() const { return mScrolledView ? mScrolledView->getRect() : LLRect::null; }
+    LLView*         getScrolledView() const { return mScrolledView; }
     void            pageUp(S32 overlap = 0);
     void            pageDown(S32 overlap = 0);
     void            goToTop();

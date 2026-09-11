@@ -4287,6 +4287,13 @@ void LLViewerWindow::renderSelections( bool for_gl_pick, bool pick_parcel_walls,
         LLSelectMgr::getInstance()->updateSilhouettes();
     }
 
+    if (!for_gl_pick)
+    {
+        // Attachment inspection can highlight world geometry while a HUD is selected.
+        LLSelectMgr::getInstance()->renderSilhouettes(for_hud);
+        stop_glerror();
+    }
+
     // Draw fence around land selections
     if (for_gl_pick)
     {
@@ -4298,10 +4305,6 @@ void LLViewerWindow::renderSelections( bool for_gl_pick, bool pick_parcel_walls,
     else if (( for_hud && selection->getSelectType() == SELECT_TYPE_HUD) ||
              (!for_hud && selection->getSelectType() != SELECT_TYPE_HUD))
     {
-        LLSelectMgr::getInstance()->renderSilhouettes(for_hud);
-
-        stop_glerror();
-
         // setup HUD render
         if (selection->getSelectType() == SELECT_TYPE_HUD && LLSelectMgr::getInstance()->getSelection()->getObjectCount())
         {

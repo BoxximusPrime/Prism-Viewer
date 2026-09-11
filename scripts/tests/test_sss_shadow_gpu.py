@@ -640,6 +640,73 @@ def run(sdl, gl):
                         assert max(transmitted[:3]) < 1e-6, (name,"front light was isolated")
                     checks += 1
         gl.DeleteProgram(prog)
+    # Depth on/off changes through-body transmission before either blur. It must
+    # preserve the diffuse input that spreads across a projector's beam edge.
+    for defines in ("", "#define MULTI_SPOTLIGHT 1\n"):
+        prog=program((SHADERS/"class3/deferred/spotLightF.glsl").read_text(),defines,spot=True)
+        uniform(prog,"color",1,1,1)
+        uniform(prog,"size",10)
+        uniform(prog,"proj_shadow_idx",-1,integer=True)
+        uniform(prog,"sss_depth_focus",0,0,-5,2.5)
+        uniform(prog,"sss_lighting",0.4,1.7,1.5)
+        uniform(prog,"sss_penetration",0.109)
+        uniform(prog,"sss_transmission_smoothing",1,integer=True)
+        for flag in (0.46,0.79):
+            uniform(prog,"test_flag",flag)
+            for nl in (-0.2,0.2,1.0):
+                uniform(prog,"test_normal",math.sqrt(1-nl*nl),0,nl)
+                setup_depth(prog,0.25,perspective=True)
+                uniform(prog,"sss_depth_valid",1,1,1)
+                uniform(prog,"sss_shadow_thickness",0,integer=True)
+                estimated_diffuse,estimated_transmission=pixel(1),pixel(2)
+                uniform(prog,"sss_shadow_thickness",1,integer=True)
+                for available in (0,1):
+                    uniform(prog,"sss_depth_valid",available,available,available)
+                    measured_diffuse,measured_transmission=pixel(1),pixel(2)
+                    assert max(abs(a-b) for a,b in zip(estimated_diffuse,measured_diffuse))<1e-6
+                    assert max(measured_transmission[:3])<1e-6
+                    assert measured_diffuse[0]>0, 'Depth rejection removed surface diffusion input'
+                    checks+=1
+                if nl<0:
+                    assert estimated_transmission[0]>0.1, 'Thick-body estimate did not reproduce the added glow'
+                    setup_depth(prog,0.005,perspective=True)
+                    assert pixel(2)[0]>0, 'Valid thin tissue lost its measured transmission source'
+                    checks+=2
+        gl.DeleteProgram(prog)
+    print('Projector depth on/off: diffuse input unchanged; thick/missing paths lose transmission before blur, while valid thin paths still transmit.')
+    # Stress settings from the viewer: 16x local boost, zero absorption and a
+    # 300 mm limit must brightly transmit a valid 200 mm path, but never bypass
+    # the penetration boundary or missing geometry certification.
+    prog=program((SHADERS/"class3/deferred/spotLightF.glsl").read_text(),"",spot=True)
+    uniform(prog,"color",1,1,1)
+    uniform(prog,"size",10)
+    uniform(prog,"proj_shadow_idx",-1,integer=True)
+    uniform(prog,"sss_depth_focus",0,0,-5,2.5)
+    uniform(prog,"sss_penetration",0.3)
+    uniform(prog,"sss_transmission_smoothing",1,integer=True)
+    for flag in (0.46,0.79):
+        uniform(prog,"test_flag",flag)
+        uniform(prog,"sss_depth_valid",1,1,1)
+        setup_depth(prog,0.2,perspective=True)
+        uniform(prog,"sss_lighting",0,1.7,0)
+        uniform(prog,"sss_point_transmission_boost",1)
+        neutral=pixel(2)
+        uniform(prog,"sss_point_transmission_boost",16)
+        bright=pixel(2)
+        assert bright[0]>6, ('High settings lost a valid 200 mm path',bright)
+        assert max(bright[:3])-min(bright[:3])<1e-5, ('Zero absorption still attenuated colors',bright)
+        assert max(abs(bright[i]-16*neutral[i]) for i in range(3))<1e-5
+        uniform(prog,"sss_lighting",0,1.7,0.5)
+        assert pixel(2)[0]<bright[0]*0.3, 'Zero absorption behaved like the old 0.5 floor'
+        uniform(prog,"sss_lighting",0,1.7,0)
+        for path in (0.3,0.4):
+            setup_depth(prog,path,perspective=True)
+            assert max(pixel(2)[:3])<1e-5, 'High settings bypassed the penetration limit'
+        setup_depth(prog,0.2,perspective=True)
+        uniform(prog,"sss_depth_valid",0,0,0)
+        assert pixel(2)==(0,0,0,0), 'High settings invented an uncertified path'
+        checks+=7
+    gl.DeleteProgram(prog)
     # Brightness scales output, while penetration rejects long measured paths
     # regardless of brightness or absorption.
     prog = program(PROBE, flags)

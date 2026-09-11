@@ -1,0 +1,26 @@
+Post-change validation 2026-09-10T15:17:28.5259682-06:00
+TEST: sss_selection
+Passed SSS projector frustum, linear attenuation ranking and 30/60/144 Hz transition checks
+EXIT: 0
+TEST: sss_depth_precision
+Height 15 m: 4 mm tissue measured 4.062..4.062 mm across 200 camera positions
+Height 1500 m: 4 mm tissue measured 4.062..4.062 mm across 200 camera positions
+Height 4000 m: 4 mm tissue measured 3.906..3.906 mm across 200 camera positions
+Passed 600 SSS altitude/camera precision checks
+EXIT: 0
+TEST: sss_shadow_gpu
+GPU: NVIDIA GeForce RTX 5090/PCIe/SSE2
+100 mm arm: maximum reconstruction error 1.01 mm; minimum coverage 0.959
+Passed 682 SSS GPU checks: paths, explicit estimates, sun/spot/point composition, matched layers, coverage fades and real shadow capture fragments.
+EXIT: 0
+TEST: sss_blur_gpu
+Passed 9 transmission blur GPU checks: mottling, constants, zero radius, texture detail, skin/depth boundaries, and continuous wide filtering on a curved finger.
+Interior mottling variance: 0.122500 -> 0.000000
+EXIT: 0
+TEST: exact_oit_gpu
+GPU: NVIDIA GeForce RTX 5090/PCIe/SSE2 4.3.0 NVIDIA 616.56
+Passed 12 GPU scenarios: empty captures/image edges, capture A/B, reduction edges, deep/equal-depth lists, cutoff, exact blend/glow, overflow fallback, and staged statistics
+EXIT: 0
+TEST: avatar_animation_freeze
+PASS: freeze/resume in normal, forced, hidden sync and hidden non-sync updates; menu wiring
+EXIT: 0

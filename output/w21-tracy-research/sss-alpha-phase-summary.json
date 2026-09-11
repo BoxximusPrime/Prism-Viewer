@@ -1,0 +1,12 @@
+{
+  "entry": {
+    "calls": 1006,
+    "mean_ms_per_frame": 0.05427287647058823,
+    "max_ms_per_frame": 0.182766
+  },
+  "exit": {
+    "calls": 1006,
+    "mean_ms_per_frame": 0.04478117058823529,
+    "max_ms_per_frame": 0.073357
+  }
+}

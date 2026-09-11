@@ -216,15 +216,34 @@
        layout="topleft"
        left="0"
        name="inventory filter tabs"
-       tab_height="30"
+       tab_height="32"
+       tab_top_frame="Prism_Tab_Frame"
+       label_pad_bottom="1"
+       background_visible="false"
+       border="false"
        tab_position="top"
        tab_min_width="100"
        use_tab_offset="true"
        top="0">
+        <tab_button image_hover_unselected="Prism_Tab_Hover"
+                    image_hover_selected="Prism_Tab_Selected_Hover"
+                    image_pressed="Prism_Tab_Pressed"
+                    image_pressed_selected="Prism_Tab_Pressed"
+                    image_disabled="Prism_Tab_Disabled"
+                    image_disabled_selected="Prism_Tab_Selected_Disabled"
+                    image_color="White" image_color_disabled="White"
+                    label_color="0.76 0.77 0.81 1"
+                    label_color_selected="0.96 0.83 0.64 1"
+                    label_color_disabled="0.39 0.39 0.43 1"
+                    label_color_disabled_selected="0.49 0.44 0.36 1"
+                    hover_glow_amount="0" label_shadow="false" />
+        <first_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+        <middle_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+        <last_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
         <inventory_panel
          bg_opaque_color="InventoryBackgroundColor"
          bg_alpha_color="InventoryBackgroundColor"
-         background_visible="true"
+         background_visible="false"
          border="false"
          bevel_style="none"
          follows="all"
@@ -241,7 +260,7 @@
         <recent_inventory_panel
          bg_opaque_color="InventoryBackgroundColor"
          bg_alpha_color="InventoryBackgroundColor"
-         background_visible="true"
+         background_visible="false"
          border="false"
          bevel_style="none"
          follows="all"
@@ -262,7 +281,7 @@
          layout="topleft"
          bg_opaque_color="InventoryBackgroundColor"
          bg_alpha_color="InventoryBackgroundColor"
-         background_visible="true"
+         background_visible="false"
          preinitialize_views="false"
          border="false"
          bevel_style="none"
@@ -272,7 +291,7 @@
         <favorites_inventory_panel
          bg_opaque_color="InventoryBackgroundColor"
          bg_alpha_color="InventoryBackgroundColor"
-         background_visible="true"
+         background_visible="false"
          border="false"
          bevel_style="none"
          follows="all"

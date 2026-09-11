@@ -6,6 +6,8 @@ Visual refinement, 2026-09-10: the five tabs use rounded charcoal section backgr
 
 Scope: the shared tools and selection summary, plus General, Object, Features, Texture, and Content. The original concept study covered General, Object, and Texture; Features and Content were implemented in the same style.
 
+Tab refinement, 2026-09-10: all five property tabs use the approved Prism charcoal/amber artwork with raised selection and hover/pressed/disabled states. Their 80px fading rail belongs to the tab container, so it follows docking/resizing and disappears with the property tabs in Land mode. Existing property panels and localized labels are retained. (in progress; Release build and XML preservation/staging checks passed; integrated appearance awaits runtime verification)
+
 Docking, 2026-09-10: the title bar's Dock/Undock button switches between a right-hand dock and the saved floating rectangle. The dock has a flush charcoal background without the floating window's outer rounded frame; the inner rounded sections remain. It reduces the actual world viewport and moves the edge toolbars clear of it. Drag its left edge to resize; `BuildEditDocked` and `BuildEditDockWidth` remember the preference. Docking needs at least 880 × 460 scaled UI pixels, including a 320-pixel world area; smaller windows temporarily use the floating layout. Closing Edit releases its viewport space. Debug → UI Tests → Edit Dock opens an inert preview of the real docking controller on the login screen.
 
 Concept boards: [General: compact / spacious](concepts/edit-window-2026-09-09/general-concepts.png), [Object: columns / transform rows](concepts/edit-window-2026-09-09/object-concepts.png), [Texture: legacy / PBR / media](concepts/edit-window-2026-09-09/texture-modes.png).
@@ -22,7 +24,7 @@ These controls belong to the build/edit window, independently of the selected pr
 | --- | --- | --- |
 | Primary tool mode | Focus, Move, Edit, Create, Land | The top-level Move tool is the grab tool; it is distinct from Move within Edit mode. The current icon buttons can gain short visible labels. |
 | Edit manipulation | Move; Rotate (Ctrl); Stretch (Ctrl+Shift); Select Face | Four mutually exclusive modes; a segmented row can replace the radio-button stack. |
-| Linked parts | Edit linked checkbox; Link; Unlink | Separate selection option and actions, retaining selection/permission gating. |
+| Linked parts | Edit linked checkbox; previous arrow, selected prim's link number, next arrow; Link; Unlink | Shows the scripting link number for one selected prim while Edit linked is on: 0 for an unlinked prim, 1 for a linked root, and 2 onward for children. Arrows cycle through parts, wrap through the root, and skip seated avatars, including in Select Face mode. Hidden for no or multiple selections; arrows disable without another prim. Existing Link/Unlink gating remains. |
 | Stretch behavior | Stretch Both Sides; Stretch Textures | Two independent checkboxes. Currently visible throughout Edit mode, not only while Stretch is selected. |
 | Grid | Snap checkbox; grid/ruler dropdown; grid Options button | Keep Snap independent of the ruler choice. Options opens the existing grid-options floater. |
 | Grid choices | World / Local / Reference for world objects | Attachments use Attachment / Local / Reference; HUDs use Screen / Local. These choices depend on selection type, not the properties tab. |
@@ -169,11 +171,15 @@ There are two existing Align actions in Media mode. Put one beside the media pre
 
 ## Verification
 
+Link-number display and part cycling, 2026-09-11: `scripts/tests/test_edit_link_number.py` compiles the production lookup, arrow enablement, and selection callback. It checks unlinked/root/child numbers, selection gating, attachments, seated avatars, missing children, relinking, both cycling directions, wraparound, pending-field commits, and compatibility with the existing face-selection shortcuts. The label and arrows default to hidden and fit between Edit linked and Link. This check, the existing Edit regressions, and the Release build passed. Live selection behavior has not been tested in-world.
+
 The Release build and the focused build-control regression check passed. A control-preservation audit found no removed functional controls or changed numeric limits, steps, bindings, or original callbacks across the five tabs. Existing translations were moved into the new group hierarchy.
 
 All five tabs were inspected through the login screen's XUI Preview Tool, including scrolling to the lower Features controls. This generic preview does not instantiate the real selection controllers; live object editing, material application, and selection-dependent permission states still require an in-world check. No character was logged in.
 
 The dock passed the Release build and `scripts/tests/test_edit_dock.py`, which compiles the production geometry helper and checks width limits, offsets, minimum world area, and recovery across window sizes. The real offline dock preview verified Dock/Undock, restoration of the floating frame, native edge double-click resizing to the maximum allowed width, the saved width setting, fallback at 800 × 650, automatic docking after returning to 1184 × 1081, and close/reopen. The default 560-pixel dock width was restored. Automated drag gestures did not produce a visible resize, so continuous drag behavior and HUD placement still need an in-world check.
+
+Field interaction fix, 2026-09-10: the old `LLPanel::clearCtrls()` disabled the new scroll containers in Object, Features, and Texture. Selection refresh enabled their individual fields but left a disabled ancestor blocking input. The shared reset routine now traverses section panels and scroll content, clears only the contained controls, and preserves scrollbars and composite control internals. `scripts/tests/test_panel_clear_controls.py` reproduced the failure before the fix and passes repeated clear/re-enable cycles afterward, including fields that must remain disabled for permissions. General and Content use their own field-specific reset logic. The Release rebuild and existing build-control/docking regression checks also passed; live editing has not been retested.
 
 ## Concept directions
 

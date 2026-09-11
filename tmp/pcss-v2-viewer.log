@@ -1,0 +1,1105 @@
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2449) LLAppViewer::initLoggingAndGetLastDuration : Started logging to E:/BoxxyViewer/tmp/pcss-v2-viewer.log
+2026-09-11T16:28:39Z WARNING #MarkerFile# newview/llappviewer.cpp(2452) LLAppViewer::initLoggingAndGetLastDuration : duration stat failure; start: 0 log: -1
+2026-09-11T16:28:39Z INFO #LLOSInfo# llcommon/llsys.cpp(449) LLOSInfo::LLOSInfo : OS bitness: 64
+2026-09-11T16:28:39Z INFO # newview/llappviewerwin32.cpp(662) LLAppViewerWin32::disableWinErrorReporting : WerAddExcludedApplication() succeeded for secondlife-bin.exe
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location Default
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings.xml
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location Default
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2539) LLAppViewer::loadSettingsFromDirectory : Cannot load E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings_install.xml - No settings found.
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group PerAccount - from location Default
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings_per_account.xml
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group CrashSettings - from location Default
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\settings_crash_behavior.xml
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Warnings - from location Default
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\ignorable_dialogs.xml
+2026-09-11T16:28:39Z INFO #AppInit# newview/llappviewerwin32.cpp(1006) LLAppViewerWin32::initParseCommandLine : Language: en
+2026-09-11T16:28:39Z INFO #AppInit# newview/llappviewerwin32.cpp(1007) LLAppViewerWin32::initParseCommandLine : Location: US
+2026-09-11T16:28:39Z INFO #AppInit# newview/llappviewerwin32.cpp(1008) LLAppViewerWin32::initParseCommandLine : Variant: ISO_8859-1
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2811) LLAppViewer::initConfiguration : Using command line specified settings filename: C:\Users\Trevor\AppData\Roaming\Prism\user_settings\pcss-smoke-01a090ea.xml
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location User
+2026-09-11T16:28:39Z WARNING #Settings# llxml/llcontrol.cpp(1017) LLControlGroup::loadFromFile : Cannot find file C:\Users\Trevor\AppData\Roaming\Prism\user_settings\C:\Users\Trevor\AppData\Roaming\Prism\user_settings\pcss-smoke-01a090ea.xml to load.
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2539) LLAppViewer::loadSettingsFromDirectory : Cannot load C:\Users\Trevor\AppData\Roaming\Prism\user_settings\C:\Users\Trevor\AppData\Roaming\Prism\user_settings\pcss-smoke-01a090ea.xml - No settings found.
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group CrashSettings - from location User
+2026-09-11T16:28:39Z WARNING #Settings# llxml/llcontrol.cpp(1017) LLControlGroup::loadFromFile : Cannot find file C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings_crash_behavior.xml to load.
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2539) LLAppViewer::loadSettingsFromDirectory : Cannot load C:\Users\Trevor\AppData\Roaming\Prism\user_settings\settings_crash_behavior.xml - No settings found.
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Warnings - from location User
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2524) LLAppViewer::loadSettingsFromDirectory : Loaded settings file C:\Users\Trevor\AppData\Roaming\Prism\user_settings\ignorable_dialogs.xml
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location Session
+2026-09-11T16:28:39Z INFO #Settings# newview/llappviewer.cpp(2486) LLAppViewer::loadSettingsFromDirectory : Attempting to load settings for the group Global - from location UserSession
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.ClientSettingsFile to E:/BoxxyViewer/tmp/pcss-viewer-settings.xml
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.AutoLogin to false
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.WindowWidth to 1280
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.WindowHeight to 900
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.RenderShadowDetail to 2
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.RenderShaderCacheEnabled to false
+2026-09-11T16:28:39Z INFO # newview/llappviewer.cpp(2678) tempSetControl : Setting Global.RenderMirrors to true
+2026-09-11T16:28:39Z INFO #GridManager# newview/llviewernetwork.cpp(220) LLGridManager::initialize : Last grid '' not configured
+2026-09-11T16:28:39Z INFO #GridManager# newview/llviewernetwork.cpp(227) LLGridManager::initialize : Default grid to util.agni.lindenlab.com
+2026-09-11T16:28:39Z INFO #GridManager# newview/llviewernetwork.cpp(407) LLGridManager::setGridChoice : setting util.agni.lindenlab.com
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(802) LLAppViewer::init : Configuration initialized.
+2026-09-11T16:28:39Z INFO #Init# newview/llappcorehttp.cpp(283) LLAppCoreHttp::init : HTTP Pipelining enabled!
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(824) LLAppViewer::init : LLCore::Http initialized.
+2026-09-11T16:28:39Z INFO #AppInit# newview/llmachineid.cpp(318) LLWMIMethods::getGenericSerialNumber :  Serial Number : 00330-80000-00000-AA514
+2026-09-11T16:28:39Z INFO #AppInit# newview/llmachineid.cpp(318) LLWMIMethods::getGenericSerialNumber :  Serial Number : A919CAB1-F0AB-1C4D-98CB-04421AEAFEA0
+2026-09-11T16:28:39Z INFO #AppInit# newview/llmachineid.cpp(477) LLMachineID::init : UniqueID: 0x6745417c5b64
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(836) LLAppViewer::init : Threads initialized.
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(864) LLAppViewer::init : UI initialized.
+2026-09-11T16:28:39Z INFO #Notifications# llui/llnotifications.cpp(1586) LLNotifications::loadTemplates : Reading notifications template
+2026-09-11T16:28:39Z INFO #Notifications# llui/llnotifications.cpp(1664) LLNotifications::loadTemplates : ...done
+2026-09-11T16:28:39Z INFO #Notifications# llui/llnotifications.cpp(1442) LLNotifications::createDefaultChannels : Generating default notification channels
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(882) LLAppViewer::init : Notifications initialized.
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(894) LLAppViewer::init : J2C Engine is: OpenJPEG runtime: 2.5.4
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(895) LLAppViewer::init : libcurl version is: libcurl/7.54.1 OpenSSL/1.1.1w zlib/1.3.1.zlib-ng nghttp2/1.64.0
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(920) LLAppViewer::init : UI initialization is done.
+2026-09-11T16:28:39Z INFO #InitInfo# newview/llappviewer.cpp(983) LLAppViewer::init : Hardware test initialization done.
+2026-09-11T16:28:40Z INFO #TextureCache# newview/lltexturecache.cpp(1004) LLTextureCache::initCache : Headers: 919227 Textures size: 2555 MB
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\0
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\1
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\2
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\3
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\4
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\5
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\6
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\7
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\8
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\9
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\a
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\b
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\c
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\d
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\e
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1613) LLTextureCache::purgeAllTextures : Deleting files in directory: C:\Users\Trevor\AppData\Local\SecondLife\texturecache\f
+2026-09-11T16:28:40Z WARNING #LLFile# llcommon/llfile.cpp(270) warnif : Couldn't write to file failed '"C:\\Users\\Trevor\\AppData\\Local\\SecondLife\\texturecache\\texture.entries"' (errno 2): The system cannot find the path specified.
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1649) LLTextureCache::purgeAllTextures : The entire texture cache is cleared.
+2026-09-11T16:28:40Z INFO # newview/lltexturecache.cpp(1758) LLTextureCache::purgeTextures : TEXTURE CACHE: Purging.
+2026-09-11T16:28:40Z INFO # newview/llvocache.cpp(1216) LLVOCache::initCache : Viewer Object Cache Versions - expected: 17 found: 17
+2026-09-11T16:28:40Z INFO #InitInfo# newview/llappviewer.cpp(1002) LLAppViewer::init : Cache initialization is done.
+2026-09-11T16:28:40Z INFO #AppInit# newview/llappviewer.cpp(3325) LLAppViewer::initWindow : Initializing window...
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(5050) LLWindowWin32::requestHighPerformanceGPU : Adapter 0: NVIDIA GeForce RTX 5090, Dedicated VRAM: 32187 MB, Vendor: 0x10de, Flags: 0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 0: \\.\DISPLAY1, NVIDIA GeForce RTX 5090
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 1: \\.\DISPLAY2, NVIDIA GeForce RTX 5090
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 2: \\.\DISPLAY3, NVIDIA GeForce RTX 5090
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(887) LLWindowWin32::LLWindowWin32 : Display Device 3: \\.\DISPLAY4, NVIDIA GeForce RTX 5090
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(896) LLWindowWin32::LLWindowWin32 : Total Display Devices: 4
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1393) LLWindowWin32::switchContext : window is created.
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1431) LLWindowWin32::switchContext : Device context retrieved.
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1453) LLWindowWin32::switchContext : Pixel format chosen.
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1465) LLWindowWin32::switchContext : --- begin pixel format dump ---
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1466) LLWindowWin32::switchContext : pixel_format is 12
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1467) LLWindowWin32::switchContext : pfd.nSize:            40
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1468) LLWindowWin32::switchContext : pfd.nVersion:         1
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1469) LLWindowWin32::switchContext : pfd.dwFlags:          0x8225
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1470) LLWindowWin32::switchContext : pfd.iPixelType:       0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1471) LLWindowWin32::switchContext : pfd.cColorBits:       32
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1472) LLWindowWin32::switchContext : pfd.cRedBits:         8
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1473) LLWindowWin32::switchContext : pfd.cRedShift:        16
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1474) LLWindowWin32::switchContext : pfd.cGreenBits:       8
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1475) LLWindowWin32::switchContext : pfd.cGreenShift:      8
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1476) LLWindowWin32::switchContext : pfd.cBlueBits:        8
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1477) LLWindowWin32::switchContext : pfd.cBlueShift:       0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1478) LLWindowWin32::switchContext : pfd.cAlphaBits:       8
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1479) LLWindowWin32::switchContext : pfd.cAlphaShift:      24
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1480) LLWindowWin32::switchContext : pfd.cAccumBits:       64
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1481) LLWindowWin32::switchContext : pfd.cAccumRedBits:    16
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1482) LLWindowWin32::switchContext : pfd.cAccumGreenBits:  16
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1483) LLWindowWin32::switchContext : pfd.cAccumBlueBits:   16
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1484) LLWindowWin32::switchContext : pfd.cAccumAlphaBits:  16
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1485) LLWindowWin32::switchContext : pfd.cDepthBits:       24
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1486) LLWindowWin32::switchContext : pfd.cStencilBits:     8
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1487) LLWindowWin32::switchContext : pfd.cAuxBuffers:      4
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1488) LLWindowWin32::switchContext : pfd.iLayerType:       0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1489) LLWindowWin32::switchContext : pfd.bReserved:        0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1490) LLWindowWin32::switchContext : pfd.dwLayerMask:      0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1491) LLWindowWin32::switchContext : pfd.dwVisibleMask:    0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1492) LLWindowWin32::switchContext : pfd.dwDamageMask:     0
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1493) LLWindowWin32::switchContext : --- end pixel format dump ---
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1517) LLWindowWin32::switchContext : Drawing context is created.
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1655) LLWindowWin32::switchContext : pixel formats done.
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1708) LLWindowWin32::switchContext : recreate window done.
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(1771) LLWindowWin32::switchContext : GL buffer: Color Bits 32 Alpha Bits 0 Depth Bits 24
+2026-09-11T16:28:40Z INFO # llwindow/llwindowwin32.cpp(1996) LLWindowWin32::createSharedContext : Created OpenGL 4.6 compatibility context.
+2026-09-11T16:28:40Z INFO # llrender/llgl.cpp(2616) parse_gl_version : GL: 4.6.0 NVIDIA 616.56
+2026-09-11T16:28:40Z INFO #RenderInit# llrender/llgl.cpp(1293) LLGLManager::initGL : VRAM Detected (NVXGpuMemoryInfo):32607
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(2035) LLWindowWin32::toggleVSync : Enabling vertical sync
+2026-09-11T16:28:40Z INFO #Window# llwindow/llwindowwin32.cpp(5799) LLWindowWin32::updateWindowTheme : Viewer window theme is set to dark mode
+2026-09-11T16:28:40Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 0
+2026-09-11T16:28:40Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:28:40Z WARNING #Font# llrender/llfontfreetype.cpp(1061) LLFontFreetype::setVariationAxis : ONCE: Axis 'opsz' not found in font: 
+2026-09-11T16:28:40Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font meiryo.TTC
+2026-09-11T16:28:40Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font gulim.ttc
+2026-09-11T16:28:40Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font simhei.ttf
+2026-09-11T16:28:40Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE: Couldn't load font ArialUni.ttf
+2026-09-11T16:28:40Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 0
+2026-09-11T16:28:40Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:28:40Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 0
+2026-09-11T16:28:40Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:28:40Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Medium style 1
+2026-09-11T16:28:40Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:28:40Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Monospace size Monospace style 0
+2026-09-11T16:28:40Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:28:40Z WARNING #Font# llrender/llfontfreetype.cpp(1061) LLFontFreetype::setVariationAxis : ONCE (10th time seen): Axis 'opsz' not found in font: 
+2026-09-11T16:28:40Z INFO # llrender/llvertexbuffer.cpp(954) LLVertexBuffer::initClass : VBO Pooling Enabled
+2026-09-11T16:28:40Z INFO #RenderInit# newview/llviewerwindow.cpp(2132) LLViewerWindow::LLViewerWindow : LLVertexBuffer initialization done.
+2026-09-11T16:28:40Z INFO #RenderInit# newview/llfeaturemanager.cpp(283) LLFeatureManager::parseFeatureTable : Attempting to parse feature table from E:\BoxxyViewer\build-vc170-64\newview\Release\featuretable.txt
+2026-09-11T16:28:40Z INFO #RenderInit# newview/llfeaturemanager.cpp(308) LLFeatureManager::parseFeatureTable : Found feature table version 74
+2026-09-11T16:28:40Z INFO #LLProcess# llcommon/llprocess.cpp(112) `anonymous-namespace'::InitializeJobObject : Job object created - child processes will terminate with parent
+2026-09-11T16:28:40Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched GPU benchmark (PID: 40492)
+2026-09-11T16:28:41Z INFO #LLProcess# llcommon/llprocess.cpp(984) LLProcess::handleExit : GPU benchmark: exited with code 0
+2026-09-11T16:28:41Z INFO #RenderInit# newview/llfeaturemanager.cpp(431) subprocess_gpu_benchmark : subprocess_gpu_benchmark: result = 1001.43 GB/sec
+2026-09-11T16:28:41Z INFO #RenderInit# newview/llfeaturemanager.cpp(793) LLFeatureManager::applyBaseMasks : Setting GPU Class to Class5
+2026-09-11T16:28:41Z INFO #RenderInit# newview/llfeaturemanager.cpp(253) LLFeatureManager::maskFeatures : Applying GPU Feature list: VRAMGT512
+2026-09-11T16:28:41Z INFO #RenderInit# newview/llfeaturemanager.cpp(674) LLFeatureManager::applyRecommendedSettings : Applying Recommended Features for level 5
+2026-09-11T16:28:41Z INFO #RenderInit# newview/llfeaturemanager.cpp(793) LLFeatureManager::applyBaseMasks : Setting GPU Class to Class5
+2026-09-11T16:28:41Z INFO #RenderInit# newview/llfeaturemanager.cpp(253) LLFeatureManager::maskFeatures : Applying GPU Feature list: VRAMGT512
+2026-09-11T16:28:41Z INFO #RenderInit# newview/llfeaturemanager.cpp(253) LLFeatureManager::maskFeatures : Applying GPU Feature list: HighUltra
+2026-09-11T16:28:41Z INFO # llwindow/llwindowwin32.cpp(1996) LLWindowWin32::createSharedContext : Created OpenGL 4.6 compatibility context.
+2026-09-11T16:28:42Z WARNING #Texture# newview/llviewertexturelist.cpp(1137) LLViewerTextureList::updateImagesCreateTextures : ONCE: Texture will be downscaled immediately after loading.
+2026-09-11T16:28:43Z INFO #AppInit# newview/llappviewer.cpp(3357) LLAppViewer::initWindow : gViewerwindow created.
+2026-09-11T16:28:43Z INFO #AppInit# newview/llappviewer.cpp(3372) LLAppViewer::initWindow : watchdog NOT enabled (setting = 0)
+2026-09-11T16:28:43Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Emoji size Small style 0
+2026-09-11T16:28:43Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:28:43Z INFO #Settings# llxml/llcontrol.cpp(998) LLControlGroup::saveToFile : Saved to E:/BoxxyViewer/tmp/pcss-viewer-settings.xml
+2026-09-11T16:28:43Z INFO #DPInvisible# newview/lldrawpoolwaterexclusion.cpp(39) LLDrawPoolWaterExclusion::LLDrawPoolWaterExclusion : Creating water exclusion draw pool
+2026-09-11T16:28:44Z INFO #ShaderMgr# llrender/llshadermgr.cpp(1031) LLShaderMgr::initShaderCache : Initializing shader cache
+2026-09-11T16:28:44Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:28:44Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:28:44Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:28:44Z INFO #Shader# newview/llviewershadermgr.cpp(775) LLViewerShaderMgr::setShaders : Loaded basic shaders.
+2026-09-11T16:28:44Z INFO # newview/llviewershadermgr.cpp(798) LLViewerShaderMgr::setShaders : Loaded water shaders.
+2026-09-11T16:28:44Z INFO # newview/llviewershadermgr.cpp(811) LLViewerShaderMgr::setShaders : Loaded effects shaders.
+2026-09-11T16:28:44Z INFO # newview/llviewershadermgr.cpp(825) LLViewerShaderMgr::setShaders : Loaded interface shaders.
+2026-09-11T16:29:33Z INFO #AppInit# newview/llappviewer.cpp(3456) LLAppViewer::initWindow : gPipeline Initialized
+2026-09-11T16:29:33Z INFO #Settings# llxml/llcontrol.cpp(998) LLControlGroup::saveToFile : Saved to E:/BoxxyViewer/tmp/pcss-viewer-settings.xml
+2026-09-11T16:29:33Z INFO #AppInit# newview/llappviewer.cpp(3476) LLAppViewer::initWindow : This client met the requirements for a maximized initial screen.
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 1
+2026-09-11T16:29:33Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 1
+2026-09-11T16:29:33Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 1
+2026-09-11T16:29:33Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Monospace size Medium style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:29:33Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font meiryo.TTC
+2026-09-11T16:29:33Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font gulim.ttc
+2026-09-11T16:29:33Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font simhei.ttf
+2026-09-11T16:29:33Z INFO #LLFontRegistry# llrender/llfontregistry.cpp(593) LLFontRegistry::createFont : ONCE (10th time seen): Couldn't load font ArialUni.ttf
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Huge style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Huge style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Large style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Small style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Medium style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 1
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Small style 1
+2026-09-11T16:29:33Z INFO # newview/llmediactrl.cpp(500) LLMediaCtrl::onVisibilityChange : visibility changed to false
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont Emoji size Small style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: Emoji size Small style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size ChatMedium style 0
+2026-09-11T16:29:33Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:29:33Z WARNING # llui/llview.h(711) LLView::getChild : Found child named "music_volume" but of wrong type class LLSliderCtrl, expecting class LLSlider * __ptr64
+2026-09-11T16:29:33Z WARNING # llui/llview.h(725) LLView::getChild : Making dummy class LLSlider named "music_volume" in boxxy_now_playing
+2026-09-11T16:29:33Z INFO #AppInit# newview/llappviewer.cpp(3496) LLAppViewer::initWindow : Window initialization done.
+2026-09-11T16:29:33Z INFO #InitInfo# newview/llappviewer.cpp(1013) LLAppViewer::init : Window is initialized.
+2026-09-11T16:29:33Z INFO #SystemInfo# newview/llappviewer.cpp(3944) LLAppViewer::writeSystemInfo : Application: The Prism Viewer
+2026-09-11T16:29:33Z INFO #SystemInfo# newview/llappviewer.cpp(3945) LLAppViewer::writeSystemInfo : Version: Prism Release 0.2.0.54495
+2026-09-11T16:29:33Z INFO #SystemInfo# newview/llappviewer.cpp(3952) LLAppViewer::writeSystemInfo : Local time: 2026-09-11T10:29:33 Mountain Daylight Time
+2026-09-11T16:29:33Z INFO #SystemInfo# newview/llappviewer.cpp(3955) LLAppViewer::writeSystemInfo : CPU info:
+
+
+// CPU General Information
+//////////////////////////
+Processor Name:   13th Gen Intel(R) Core(TM) i9-13900K
+Frequency:        2995.2 MHz
+Vendor:           GenuineIntel
+Family:           Intel Pentium Pro/2/3, Core (i6)
+Extended family:  i0
+Model:            i7
+Extended model:   i11
+Type:             i0
+Brand ID:         i0
+
+// CPU Configuration
+//////////////////////////
+APIC Physical ID = i16
+CLFLUSH cache line size = i64
+Cache Line Size = i64
+Cache Size = i2048
+L2 Associativity = i7
+Max Supported CPUID level = i32
+Max Supported Ext. CPUID level = i0
+
+// CPU Extensions
+//////////////////////////
+  APIC On Chip
+  AVX Instructions
+  AVX2 Instructions
+  CFLUSH Extension
+  CMPXCHG8B Instruction
+  Conditional Move/Compare Instruction
+  Debugging Extensions
+  FXSAVE/FXRSTOR
+  Hyper-threading Technology
+  MMX Technology
+  MONITOR/MWAIT
+  Machine Check Architecture
+  Machine Check Exception
+  Memory Type Range Registers
+  PTE Global Bit
+  Page Attribute Table
+  Page Size Extension
+  Page Size Extensions
+  Pend. Brk. EN.
+  Physical Address Extensions
+  RDMSR and WRMSR Support
+  SSE Extensions
+  SSE2 Extensions
+  SSE3 New Instructions
+  SSE3S Instructions
+  SSE4.1 Instructions
+  SSE4.2 Instructions
+  SYSENTER and SYSEXIT
+  Self Snoop
+  Thermal Monitor
+  Thermal Monitor 2
+  Thermal Monitor and Clock Ctrl
+  Time Stamp Counter
+  Virtual-8086 Mode Enhancement
+  x87 FPU On Chip
+->mHasSSE:     1
+->mHasSSE2:    1
+->mHasSSE3:    1
+->mHasSSE3S:    1
+->mHasSSE41:    1
+->mHasSSE42:    1
+->mHasSSE4a:    0
+->mHasAltivec: 0
+->mCPUMHz:     2995.2
+->mCPUString:  13th Gen Intel(R) Core(TM) i9-13900K (2995.2 MHz)
+
+2026-09-11T16:29:33Z INFO #SystemInfo# newview/llappviewer.cpp(3956) LLAppViewer::writeSystemInfo : Memory info:
+2026-09-11T16:29:33Z <mem>             Avail Physical KB:     33593624
+2026-09-11T16:29:33Z <mem>              Avail Virtual MB:    134213309
+2026-09-11T16:29:33Z <mem>                 Avail page KB:     22735776
+2026-09-11T16:29:33Z <mem>              Page Fault Count:        10448
+2026-09-11T16:29:33Z <mem>              PagefileUsage KB:       117748
+2026-09-11T16:29:33Z <mem>          PeakPagefileUsage KB:       117748
+2026-09-11T16:29:33Z <mem>         PeakWorkingSetSize KB:        36740
+2026-09-11T16:29:33Z <mem>            Percent Memory use:           49
+2026-09-11T16:29:33Z <mem>               PrivateUsage KB:       117748
+2026-09-11T16:29:33Z <mem>     QuotaNonPagedPoolUsage KB:           19
+2026-09-11T16:29:33Z <mem>        QuotaPagedPoolUsage KB:          331
+2026-09-11T16:29:33Z <mem> QuotaPeakNonPagedPoolUsage KB:           20
+2026-09-11T16:29:33Z <mem>    QuotaPeakPagedPoolUsage KB:          335
+2026-09-11T16:29:33Z <mem>             Total Physical KB:     66843408
+2026-09-11T16:29:33Z <mem>              Total Virtual MB:    134217727
+2026-09-11T16:29:33Z <mem>                 Total page KB:     90960656
+2026-09-11T16:29:33Z <mem>             WorkingSetSize KB:        36740
+2026-09-11T16:29:33Z <mem>                     timestamp: 2026-09-11T16:28:39.05Z
+
+2026-09-11T16:29:33Z INFO #SystemInfo# newview/llappviewer.cpp(3957) LLAppViewer::writeSystemInfo : OS: Microsoft Windows 11 64-bit
+2026-09-11T16:29:33Z INFO #SystemInfo# newview/llappviewer.cpp(3958) LLAppViewer::writeSystemInfo : OS info: Microsoft Windows 11 64-bit (Build 26200.9445)
+2026-09-11T16:29:33Z INFO # newview/llappviewer.cpp(3518) LLAppViewer::writeDebugInfo : Writing debug file C:\Users\Trevor\AppData\Roaming\Prism\logs\dump-99c427b0-ee37-c7a8-9da1-a746ce7d8f1f\static_debug_info.log
+2026-09-11T16:29:33Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLAgentWearables::initClass()
+2026-09-11T16:29:33Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLIMWellWindow::initClass()
+2026-09-11T16:29:33Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLEmojiDictionary::initClass()
+2026-09-11T16:29:33Z INFO #RenderInit# llrender/llgl.cpp(1404) LLGLManager::printGLInfoString : GL_VENDOR:     NVIDIA Corporation
+2026-09-11T16:29:33Z INFO #RenderInit# llrender/llgl.cpp(1405) LLGLManager::printGLInfoString : GL_RENDERER:   NVIDIA GeForce RTX 5090/PCIe/SSE2
+2026-09-11T16:29:33Z INFO #RenderInit# llrender/llgl.cpp(1406) LLGLManager::printGLInfoString : GL_VERSION:    4.6.0 NVIDIA 616.56
+2026-09-11T16:29:33Z INFO #RenderInit# llrender/llgl.cpp(1416) LLGLManager::printGLInfoString : GL_EXTENSIONS:
+GL_AMD_multi_draw_indirect
+GL_AMD_seamless_cubemap_per_texture
+GL_AMD_vertex_shader_layer
+GL_AMD_vertex_shader_viewport_index
+GL_ARB_ES2_compatibility
+GL_ARB_ES3_1_compatibility
+GL_ARB_ES3_2_compatibility
+GL_ARB_ES3_compatibility
+GL_ARB_arrays_of_arrays
+GL_ARB_base_instance
+GL_ARB_bindless_texture
+GL_ARB_blend_func_extended
+GL_ARB_buffer_storage
+GL_ARB_clear_buffer_object
+GL_ARB_clear_texture
+GL_ARB_clip_control
+GL_ARB_color_buffer_float
+GL_ARB_compatibility
+GL_ARB_compressed_texture_pixel_storage
+GL_ARB_compute_shader
+GL_ARB_compute_variable_group_size
+GL_ARB_conditional_render_inverted
+GL_ARB_conservative_depth
+GL_ARB_copy_buffer
+GL_ARB_copy_image
+GL_ARB_cull_distance
+GL_ARB_debug_output
+GL_ARB_depth_buffer_float
+GL_ARB_depth_clamp
+GL_ARB_depth_texture
+GL_ARB_derivative_control
+GL_ARB_direct_state_access
+GL_ARB_draw_buffers
+GL_ARB_draw_buffers_blend
+GL_ARB_draw_elements_base_vertex
+GL_ARB_draw_indirect
+GL_ARB_draw_instanced
+GL_ARB_enhanced_layouts
+GL_ARB_explicit_attrib_location
+GL_ARB_explicit_uniform_location
+GL_ARB_fragment_coord_conventions
+GL_ARB_fragment_layer_viewport
+GL_ARB_fragment_program
+GL_ARB_fragment_program_shadow
+GL_ARB_fragment_shader
+GL_ARB_fragment_shader_interlock
+GL_ARB_framebuffer_no_attachments
+GL_ARB_framebuffer_object
+GL_ARB_framebuffer_sRGB
+GL_ARB_geometry_shader4
+GL_ARB_get_program_binary
+GL_ARB_get_texture_sub_image
+GL_ARB_gl_spirv
+GL_ARB_gpu_shader5
+GL_ARB_gpu_shader_fp64
+GL_ARB_gpu_shader_int64
+GL_ARB_half_float_pixel
+GL_ARB_half_float_vertex
+GL_ARB_imaging
+GL_ARB_indirect_parameters
+GL_ARB_instanced_arrays
+GL_ARB_internalformat_query
+GL_ARB_internalformat_query2
+GL_ARB_invalidate_subdata
+GL_ARB_map_buffer_alignment
+GL_ARB_map_buffer_range
+GL_ARB_multi_bind
+GL_ARB_multi_draw_indirect
+GL_ARB_multisample
+GL_ARB_multitexture
+GL_ARB_occlusion_query
+GL_ARB_occlusion_query2
+GL_ARB_parallel_shader_compile
+GL_ARB_pipeline_statistics_query
+GL_ARB_pixel_buffer_object
+GL_ARB_point_parameters
+GL_ARB_point_sprite
+GL_ARB_polygon_offset_clamp
+GL_ARB_post_depth_coverage
+GL_ARB_program_interface_query
+GL_ARB_provoking_vertex
+GL_ARB_query_buffer_object
+GL_ARB_robust_buffer_access_behavior
+GL_ARB_robustness
+GL_ARB_sample_locations
+GL_ARB_sample_shading
+GL_ARB_sampler_objects
+GL_ARB_seamless_cube_map
+GL_ARB_seamless_cubemap_per_texture
+GL_ARB_separate_shader_objects
+GL_ARB_shader_atomic_counter_ops
+GL_ARB_shader_atomic_counters
+GL_ARB_shader_ballot
+GL_ARB_shader_bit_encoding
+GL_ARB_shader_clock
+GL_ARB_shader_draw_parameters
+GL_ARB_shader_group_vote
+GL_ARB_shader_image_load_store
+GL_ARB_shader_image_size
+GL_ARB_shader_objects
+GL_ARB_shader_precision
+GL_ARB_shader_storage_buffer_object
+GL_ARB_shader_subroutine
+GL_ARB_shader_texture_image_samples
+GL_ARB_shader_texture_lod
+GL_ARB_shader_viewport_layer_array
+GL_ARB_shading_language_100
+GL_ARB_shading_language_420pack
+GL_ARB_shading_language_include
+GL_ARB_shading_language_packing
+GL_ARB_shadow
+GL_ARB_sparse_buffer
+GL_ARB_sparse_texture
+GL_ARB_sparse_texture2
+GL_ARB_sparse_texture_clamp
+GL_ARB_spirv_extensions
+GL_ARB_stencil_texturing
+GL_ARB_sync
+GL_ARB_tessellation_shader
+GL_ARB_texture_barrier
+GL_ARB_texture_border_clamp
+GL_ARB_texture_buffer_object
+GL_ARB_texture_buffer_object_rgb32
+GL_ARB_texture_buffer_range
+GL_ARB_texture_compression
+GL_ARB_texture_compression_bptc
+GL_ARB_texture_compression_rgtc
+GL_ARB_texture_cube_map
+GL_ARB_texture_cube_map_array
+GL_ARB_texture_env_add
+GL_ARB_texture_env_combine
+GL_ARB_texture_env_crossbar
+GL_ARB_texture_env_dot3
+GL_ARB_texture_filter_anisotropic
+GL_ARB_texture_filter_minmax
+GL_ARB_texture_float
+GL_ARB_texture_gather
+GL_ARB_texture_mirror_clamp_to_edge
+GL_ARB_texture_mirrored_repeat
+GL_ARB_texture_multisample
+GL_ARB_texture_non_power_of_two
+GL_ARB_texture_query_levels
+GL_ARB_texture_query_lod
+GL_ARB_texture_rectangle
+GL_ARB_texture_rg
+GL_ARB_texture_rgb10_a2ui
+GL_ARB_texture_stencil8
+GL_ARB_texture_storage
+GL_ARB_texture_storage_multisample
+GL_ARB_texture_swizzle
+GL_ARB_texture_view
+GL_ARB_timer_query
+GL_ARB_transform_feedback2
+GL_ARB_transform_feedback3
+GL_ARB_transform_feedback_instanced
+GL_ARB_transform_feedback_overflow_query
+GL_ARB_transpose_matrix
+GL_ARB_uniform_buffer_object
+GL_ARB_vertex_array_bgra
+GL_ARB_vertex_array_object
+GL_ARB_vertex_attrib_64bit
+GL_ARB_vertex_attrib_binding
+GL_ARB_vertex_buffer_object
+GL_ARB_vertex_program
+GL_ARB_vertex_shader
+GL_ARB_vertex_type_10f_11f_11f_rev
+GL_ARB_vertex_type_2_10_10_10_rev
+GL_ARB_viewport_array
+GL_ARB_window_pos
+GL_ATI_draw_buffers
+GL_ATI_texture_float
+GL_ATI_texture_mirror_once
+GL_EXTX_framebuffer_mixed_formats
+GL_EXT_Cg_shader
+GL_EXT_abgr
+GL_EXT_bgra
+GL_EXT_bindable_uniform
+GL_EXT_blend_color
+GL_EXT_blend_equation_separate
+GL_EXT_blend_func_separate
+GL_EXT_blend_minmax
+GL_EXT_blend_subtract
+GL_EXT_compiled_vertex_array
+GL_EXT_depth_bounds_test
+GL_EXT_direct_state_access
+GL_EXT_draw_buffers2
+GL_EXT_draw_instanced
+GL_EXT_draw_range_elements
+GL_EXT_fog_coord
+GL_EXT_framebuffer_blit
+GL_EXT_framebuffer_multisample
+GL_EXT_framebuffer_multisample_blit_scaled
+GL_EXT_framebuffer_object
+GL_EXT_framebuffer_sRGB
+GL_EXT_geometry_shader4
+GL_EXT_gpu_program_parameters
+GL_EXT_gpu_shader4
+GL_EXT_import_sync_object
+GL_EXT_memory_object
+GL_EXT_memory_object_win32
+GL_EXT_multi_draw_arrays
+GL_EXT_multiview_texture_multisample
+GL_EXT_multiview_timer_query
+GL_EXT_packed_depth_stencil
+GL_EXT_packed_float
+GL_EXT_packed_pixels
+GL_EXT_pixel_buffer_object
+GL_EXT_point_parameters
+GL_EXT_polygon_offset_clamp
+GL_EXT_post_depth_coverage
+GL_EXT_provoking_vertex
+GL_EXT_raster_multisample
+GL_EXT_rescale_normal
+GL_EXT_secondary_color
+GL_EXT_semaphore
+GL_EXT_semaphore_win32
+GL_EXT_separate_shader_objects
+GL_EXT_separate_specular_color
+GL_EXT_shader_image_load_formatted
+GL_EXT_shader_image_load_store
+GL_EXT_shader_integer_mix
+GL_EXT_shader_realtime_clock
+GL_EXT_shadow_funcs
+GL_EXT_sparse_texture2
+GL_EXT_stencil_two_side
+GL_EXT_stencil_wrap
+GL_EXT_texture3D
+GL_EXT_texture_array
+GL_EXT_texture_buffer_object
+GL_EXT_texture_compression_dxt1
+GL_EXT_texture_compression_latc
+GL_EXT_texture_compression_rgtc
+GL_EXT_texture_compression_s3tc
+GL_EXT_texture_cube_map
+GL_EXT_texture_edge_clamp
+GL_EXT_texture_env_add
+GL_EXT_texture_env_combine
+GL_EXT_texture_env_dot3
+GL_EXT_texture_filter_anisotropic
+GL_EXT_texture_filter_minmax
+GL_EXT_texture_integer
+GL_EXT_texture_lod
+GL_EXT_texture_lod_bias
+GL_EXT_texture_mirror_clamp
+GL_EXT_texture_object
+GL_EXT_texture_sRGB
+GL_EXT_texture_sRGB_R8
+GL_EXT_texture_sRGB_decode
+GL_EXT_texture_shadow_lod
+GL_EXT_texture_shared_exponent
+GL_EXT_texture_storage
+GL_EXT_texture_swizzle
+GL_EXT_timer_query
+GL_EXT_transform_feedback2
+GL_EXT_vertex_array
+GL_EXT_vertex_array_bgra
+GL_EXT_vertex_attrib_64bit
+GL_EXT_win32_keyed_mutex
+GL_EXT_window_rectangles
+GL_IBM_rasterpos_clip
+GL_IBM_texture_mirrored_repeat
+GL_KHR_blend_equation_advanced
+GL_KHR_blend_equation_advanced_coherent
+GL_KHR_context_flush_control
+GL_KHR_debug
+GL_KHR_no_error
+GL_KHR_parallel_shader_compile
+GL_KHR_robust_buffer_access_behavior
+GL_KHR_robustness
+GL_KHR_shader_subgroup
+GL_KTX_buffer_region
+GL_NVX_blend_equation_advanced_multi_draw_buffers
+GL_NVX_conditional_render
+GL_NVX_gpu_memory_info
+GL_NVX_gpu_multicast2
+GL_NVX_linked_gpu_multicast
+GL_NVX_multigpu_info
+GL_NVX_nvenc_interop
+GL_NVX_progress_fence
+GL_NV_ES1_1_compatibility
+GL_NV_ES3_1_compatibility
+GL_NV_alpha_to_coverage_dither_control
+GL_NV_bindless_multi_draw_indirect
+GL_NV_bindless_multi_draw_indirect_count
+GL_NV_bindless_texture
+GL_NV_blend_equation_advanced
+GL_NV_blend_equation_advanced_coherent
+GL_NV_blend_minmax_factor
+GL_NV_blend_square
+GL_NV_clip_space_w_scaling
+GL_NV_command_list
+GL_NV_compute_program5
+GL_NV_compute_shader_derivatives
+GL_NV_conditional_render
+GL_NV_conservative_raster
+GL_NV_conservative_raster_dilate
+GL_NV_conservative_raster_pre_snap
+GL_NV_conservative_raster_pre_snap_triangles
+GL_NV_conservative_raster_underestimation
+GL_NV_copy_depth_to_color
+GL_NV_copy_image
+GL_NV_depth_buffer_float
+GL_NV_depth_clamp
+GL_NV_draw_texture
+GL_NV_draw_vulkan_image
+GL_NV_explicit_multisample
+GL_NV_feature_query
+GL_NV_fence
+GL_NV_fill_rectangle
+GL_NV_float_buffer
+GL_NV_fog_distance
+GL_NV_fragment_coverage_to_color
+GL_NV_fragment_program
+GL_NV_fragment_program2
+GL_NV_fragment_program_option
+GL_NV_fragment_shader_barycentric
+GL_NV_fragment_shader_interlock
+GL_NV_framebuffer_mixed_samples
+GL_NV_framebuffer_multisample_coverage
+GL_NV_geometry_shader4
+GL_NV_geometry_shader_passthrough
+GL_NV_gpu_multicast
+GL_NV_gpu_program4
+GL_NV_gpu_program4_1
+GL_NV_gpu_program5
+GL_NV_gpu_program5_mem_extended
+GL_NV_gpu_program_fp64
+GL_NV_gpu_program_multiview
+GL_NV_gpu_shader5
+GL_NV_half_float
+GL_NV_internalformat_sample_query
+GL_NV_light_max_exponent
+GL_NV_memory_attachment
+GL_NV_memory_object_sparse
+GL_NV_mesh_shader
+GL_NV_multisample_coverage
+GL_NV_multisample_filter_hint
+GL_NV_occlusion_query
+GL_NV_packed_depth_stencil
+GL_NV_parameter_buffer_object
+GL_NV_parameter_buffer_object2
+GL_NV_path_rendering
+GL_NV_path_rendering_shared_edge
+GL_NV_pixel_data_range
+GL_NV_point_sprite
+GL_NV_primitive_restart
+GL_NV_primitive_shading_rate
+GL_NV_query_resource
+GL_NV_query_resource_tag
+GL_NV_register_combiners
+GL_NV_register_combiners2
+GL_NV_representative_fragment_test
+GL_NV_sample_locations
+GL_NV_sample_mask_override_coverage
+GL_NV_scissor_exclusive
+GL_NV_shader_atomic_counters
+GL_NV_shader_atomic_float
+GL_NV_shader_atomic_float64
+GL_NV_shader_atomic_fp16_vector
+GL_NV_shader_atomic_int64
+GL_NV_shader_buffer_load
+GL_NV_shader_storage_buffer_object
+GL_NV_shader_subgroup_partitioned
+GL_NV_shader_texture_footprint
+GL_NV_shader_thread_group
+GL_NV_shader_thread_shuffle
+GL_NV_shading_rate_image
+GL_NV_stereo_view_rendering
+GL_NV_texgen_reflection
+GL_NV_texture_barrier
+GL_NV_texture_compression_vtc
+GL_NV_texture_dirty_tile_map
+GL_NV_texture_env_combine4
+GL_NV_texture_multisample
+GL_NV_texture_rectangle
+GL_NV_texture_rectangle_compressed
+GL_NV_texture_shader
+GL_NV_texture_shader2
+GL_NV_texture_shader3
+GL_NV_timeline_semaphore
+GL_NV_transform_feedback
+GL_NV_transform_feedback2
+GL_NV_uniform_buffer_std430_layout
+GL_NV_uniform_buffer_unified_memory
+GL_NV_vertex_array_range
+GL_NV_vertex_array_range2
+GL_NV_vertex_attrib_integer_64bit
+GL_NV_vertex_buffer_unified_memory
+GL_NV_vertex_program
+GL_NV_vertex_program1_1
+GL_NV_vertex_program2
+GL_NV_vertex_program2_option
+GL_NV_vertex_program3
+GL_NV_viewport_array2
+GL_NV_viewport_swizzle
+GL_OVR_multiview
+GL_OVR_multiview2
+GL_S3_s3tc
+GL_SGIS_generate_mipmap
+GL_SGIS_texture_lod
+GL_SGIX_depth_texture
+GL_SGIX_shadow
+GL_SUN_slice_accum
+GL_WIN_swap_hint
+WGL_ARB_buffer_region
+WGL_ARB_context_flush_control
+WGL_ARB_create_context
+WGL_ARB_create_context_no_error
+WGL_ARB_create_context_profile
+WGL_ARB_create_context_robustness
+WGL_ARB_extensions_string
+WGL_ARB_make_current_read
+WGL_ARB_multisample
+WGL_ARB_pbuffer
+WGL_ARB_pixel_format
+WGL_ARB_pixel_format_float
+WGL_ARB_render_texture
+WGL_ATI_pixel_format_float
+WGL_EXT_colorspace
+WGL_EXT_create_context_es2_profile
+WGL_EXT_create_context_es_profile
+WGL_EXT_extensions_string
+WGL_EXT_framebuffer_sRGB
+WGL_EXT_pixel_format_packed_float
+WGL_EXT_swap_control
+WGL_EXT_swap_control_tear
+WGL_NVX_DX_interop
+WGL_NV_DX_interop
+WGL_NV_DX_interop2
+WGL_NV_copy_image
+WGL_NV_delay_before_swap
+WGL_NV_float_buffer
+WGL_NV_multigpu_context
+WGL_NV_multisample_coverage
+WGL_NV_render_depth_texture
+WGL_NV_render_texture_rectangle
+
+2026-09-11T16:29:33Z INFO #SECAPI# newview/llsechandler_basic.cpp(1286) LLSecAPIBasicHandler::init : Loading user certificate store from C:\Users\Trevor\AppData\Roaming\Prism\user_settings\CA.pem
+2026-09-11T16:29:33Z INFO #SECAPI# newview/llsechandler_basic.cpp(639) LLBasicCertificateStore::load_from_file : Certificate store not found at C:\Users\Trevor\AppData\Roaming\Prism\user_settings\CA.pem
+2026-09-11T16:29:33Z INFO #SECAPI# newview/llsechandler_basic.cpp(1292) LLSecAPIBasicHandler::init : Loading application certificate store from E:\BoxxyViewer\build-vc170-64\newview\Release\ca-bundle.crt
+2026-09-11T16:29:33Z WARNING #SECAPI# newview/llsecapi.cpp(168) LLCertException::LLCertException : Certificate Error: CertExpired
+2026-09-11T16:29:33Z WARNING #SECAPI# newview/llsecapi.cpp(168) LLCertException::LLCertException : Certificate Error: CertExpired
+2026-09-11T16:29:33Z WARNING #SECAPI# newview/llsecapi.cpp(168) LLCertException::LLCertException : Certificate Error: CertExpired
+2026-09-11T16:29:33Z INFO #SECAPI# newview/llsechandler_basic.cpp(629) LLBasicCertificateStore::load_from_file : loaded 145 good certificates (rejected 3) from E:\BoxxyViewer\build-vc170-64\newview\Release\ca-bundle.crt
+2026-09-11T16:29:33Z INFO #InitInfo# newview/llappviewer.cpp(1162) LLAppViewer::init : Prism automatic updates are not configured.
+2026-09-11T16:29:33Z INFO #InitInfo# newview/llappviewer.cpp(1179) LLAppViewer::init : processing --leap "'E:/BoxxyViewer/.venv/Scripts/python.exe E:/BoxxyViewer/tmp/pcss-viewer-smoke.py'"
+2026-09-11T16:29:33Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched pcss-viewer-smoke.py (PID: 13256)
+2026-09-11T16:29:33Z INFO #InitInfo# newview/llappviewer.cpp(1179) LLAppViewer::init : processing --leap "'E:/BoxxyViewer/.venv/Scripts/python.exe E:/BoxxyViewer/tmp/pcss-viewer-smoke.py noop'"
+2026-09-11T16:29:33Z INFO #LLProcess# llcommon/llprocess.cpp(814) LLProcess::launch : Launched pcss-viewer-smoke.py (PID: 8568)
+2026-09-11T16:29:33Z INFO #CoprocedureManager# llmessage/llcoproceduremanager.cpp(180) LLCoprocedureManager::initializePool : Initializing pool Upload
+2026-09-11T16:29:33Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(382) LLCoprocedurePool::LLCoprocedurePool : Created coprocedure pool named "Upload" with 1 items, queue max 2048
+2026-09-11T16:29:33Z INFO #CoprocedureManager# llmessage/llcoproceduremanager.cpp(180) LLCoprocedureManager::initializePool : Initializing pool AIS
+2026-09-11T16:29:33Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(382) LLCoprocedurePool::LLCoprocedurePool : Created coprocedure pool named "AIS" with 20 items, queue max 524288
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:883): updateDevices, playout count: 3; capture count: 5
+
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(400) LLWebRTCVoiceClient::LogMessage : (llwebrtc.cpp:883): updateDevices, playout count: 3; capture count: 5
+
+2026-09-11T16:29:33Z INFO # newview/llappviewerwin32.cpp(357) ll_nvapi_init : Creating application for secondlife-bin.exe for NVIDIA application profile
+2026-09-11T16:29:33Z WARNING # newview/llappviewerwin32.cpp(273) nvapi_error : NVAPI_EXECUTABLE_ALREADY_IN_USE
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(898) LLWebRTCVoiceClient::addRenderDevice : Voice Render Device: 'SPDIF Interface (Realtek USB2.0 Audio)' ({0.0.0.00000000}.{29abbe22-3573-43b9-8991-8d5c4de3174d})
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(898) LLWebRTCVoiceClient::addRenderDevice : Voice Render Device: 'Headphones (Elgato Wave:XLR)' ({0.0.0.00000000}.{663fada7-c2dd-4e7a-b1ea-0231121438a0})
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(898) LLWebRTCVoiceClient::addRenderDevice : Voice Render Device: 'SONY AVSYSTEM (NVIDIA High Definition Audio)' ({0.0.0.00000000}.{8aa55278-2d94-4a69-b611-dfd248346494})
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Wave Link MicrophoneFX (Elgato Wave:XLR)' ({0.0.1.00000000}.{7925a2e0-025f-469c-a664-9ca08707ff23})
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: '2nd Compute (2- USB SPDIF Receiver)' ({0.0.1.00000000}.{7e1063dd-9994-4b97-95d1-17a9af78c9c0})
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Mic In (Elgato Wave:XLR)' ({0.0.1.00000000}.{98e8ccb0-5851-4ceb-8959-d6dc067e1524})
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Wave Link Monitor (Elgato Wave:XLR)' ({0.0.1.00000000}.{ba922e9f-61ee-465d-b25a-9ed184053c14})
+2026-09-11T16:29:33Z INFO #Voice# newview/llvoicewebrtc.cpp(805) LLWebRTCVoiceClient::addCaptureDevice : Voice Capture Device: 'Wave Link Stream (Elgato Wave:XLR)' ({0.0.1.00000000}.{c9844271-6be9-463a-b17d-532a15f693c1})
+2026-09-11T16:29:33Z WARNING #Proxy# newview/llstartup.cpp(3597) LLStartUp::startLLProxy : Invalid other HTTP proxy configuration: Socks
+2026-09-11T16:29:34Z INFO # llmessage/llmessagetemplateparser.cpp(386) LLTemplateParser::LLTemplateParser : ### Message template version 2  ###
+2026-09-11T16:29:34Z INFO #Messaging# llmessage/message.cpp(328) LLMessageSystem::loadTemplateFile : Read 478 messages from E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\message_template.msg
+2026-09-11T16:29:34Z INFO #AppInit# llmessage/net.cpp(264) start_net : connected on port 51301
+2026-09-11T16:29:34Z INFO # llcommon/lllivefile.cpp(130) LLLiveFile::Impl::check : detected file change 'E:\BoxxyViewer\build-vc170-64\newview\Release\app_settings\/message.xml'
+2026-09-11T16:29:34Z INFO #CoprocedureManager# llmessage/llcoproceduremanager.cpp(180) LLCoprocedureManager::initializePool : Initializing pool AssetStorage
+2026-09-11T16:29:34Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(382) LLCoprocedurePool::LLCoprocedurePool : Created coprocedure pool named "AssetStorage" with 12 items, queue max 524288
+2026-09-11T16:29:34Z INFO #AppInit# newview/llstartup.cpp(790) idle_startup : Message System Initialized.
+2026-09-11T16:29:34Z INFO #AudioEngine# llaudio/llaudioengine.cpp(114) LLAudioEngine::init : LLAudioEngine::init() AudioEngine successfully initialized
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(73) LLAudioEngine_OpenAL::init : LLAudioEngine_OpenAL::init() OpenAL successfully initialized
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(75) LLAudioEngine_OpenAL::init : OpenAL version: 1.1 ALSOFT 1.24.2
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(77) LLAudioEngine_OpenAL::init : OpenAL vendor: OpenAL Community
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(79) LLAudioEngine_OpenAL::init : OpenAL renderer: OpenAL Soft
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(84) LLAudioEngine_OpenAL::init : ALUT version: 1.1
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(90) LLAudioEngine_OpenAL::init : ALC version: 1.1
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(92) LLAudioEngine_OpenAL::init : ALC default device: OpenAL Soft
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(105) LLAudioEngine_OpenAL::init : ALC_SOFT_reopen_device supported
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(114) LLAudioEngine_OpenAL::init : ALC_SOFT_system_events supported
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(121) LLAudioEngine_OpenAL::init : Registered for ALC default-device-change notifications
+2026-09-11T16:29:34Z INFO #AppInit# newview/llstartup.cpp(822) idle_startup : Using media plugins to render streaming audio
+2026-09-11T16:29:34Z INFO #AppInit# newview/llstartup.cpp(836) idle_startup : Audio Engine Initialized.
+2026-09-11T16:29:34Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_FIRST --> STATE_BROWSER_INIT
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(510) LLAudioEngine_OpenAL::initWind : LLAudioEngine_OpenAL::initWind() start
+2026-09-11T16:29:34Z INFO # llaudio/llaudioengine_openal.cpp(537) LLAudioEngine_OpenAL::initWind : LLAudioEngine_OpenAL::initWind() done
+2026-09-11T16:29:34Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_BROWSER_INIT --> STATE_LOGIN_SHOW
+2026-09-11T16:29:34Z INFO #AppInit# newview/llstartup.cpp(2653) login_show : Initializing Login Screen
+2026-09-11T16:29:34Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Large style 1
+2026-09-11T16:29:34Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Large style 1
+2026-09-11T16:29:34Z INFO #AppInit# newview/llpanellogin.cpp(301) LLPanelLogin::LLPanelLogin : default LoginLocation 'last'
+2026-09-11T16:29:34Z INFO #Credentials# newview/llpanellogin.cpp(644) LLPanelLogin::setFields : Setting login fields to util.agni.lindenlab.com:Danny Nolan
+2026-09-11T16:29:34Z INFO #Credentials# newview/llpanellogin.cpp(679) LLPanelLogin::setFields : Setting authenticator field hash
+2026-09-11T16:29:34Z INFO #AppInit# newview/llstartup.cpp(3264) LLStartUp::setStartupState : STATE_LOGIN_SHOW --> STATE_LOGIN_WAIT
+2026-09-11T16:29:34Z INFO # newview/llstartup.cpp(2741) uninstall_nsis_if_required : Looking for previous NSIS installs
+2026-09-11T16:29:34Z INFO # newview/llstartup.cpp(2779) uninstall_nsis_if_required : Found NSIS install 0.2.0.54495
+2026-09-11T16:29:34Z WARNING # newview/lltoastalertpanel.cpp(197) LLToastAlertPanel::LLToastAlertPanel : Alert: The Prism Viewer found an installation of an older version 0.2.0. To uninstall the older version, please follow [https://community.secondlife.com/knowledgebase/english/how-to-uninstall-and-reinstall-second-life-r524 this manual].
+2026-09-11T16:29:34Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 0
+2026-09-11T16:29:34Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Small style 0
+2026-09-11T16:29:34Z INFO #LLProcess# llcommon/llprocess.cpp(976) LLProcess::handleExit : mIOContext was stopped on exit, restarting
+2026-09-11T16:29:34Z INFO #LLProcess# llcommon/llprocess.cpp(984) LLProcess::handleExit : pcss-viewer-smoke.py: exited with code 0
+2026-09-11T16:29:34Z INFO #LLLeap# llcommon/llleap.cpp(175) LLLeapImpl::done : pcss-viewer-smoke.py: exited with code 0
+2026-09-11T16:29:36Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater toast
+2026-09-11T16:29:36Z WARNING # llui/llmodaldialog.cpp(143) LLModalDialog::stopModal : LLModalDialog::stopModal not in list!
+2026-09-11T16:29:36Z INFO # llui/llfloater.cpp(679) LLFloater::openFloater : Opening floater prefs_graphics_advanced full path: /main_view/menu_stack/world_panel/Floater View/prefs_graphics_advanced
+2026-09-11T16:29:36Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:29:36Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 0
+2026-09-11T16:29:36Z INFO # llrender/llfontregistry.cpp(481) LLFontRegistry::createFont : -- matching font exists: SansSerif size Small style 0
+2026-09-11T16:29:36Z INFO # llrender/llfontregistry.cpp(458) LLFontRegistry::createFont : createFont SansSerif size Small style 2
+2026-09-11T16:29:36Z INFO # llrender/llfontgl.cpp(1213) LLFontGL::getFontPathSystem : from SystemRoot: C:\WINDOWS\fonts\
+2026-09-11T16:29:36Z INFO # llui/llfloater.cpp(679) LLFloater::openFloater : Opening floater Preferences full path: /main_view/menu_stack/world_panel/Floater View/Preferences
+2026-09-11T16:29:37Z INFO # newview/llviewerwindow.cpp(5116) LLViewerWindow::saveSnapshot : Saving snapshot to: E:\BoxxyViewer\tmp\pcss-preferences-on.png
+2026-09-11T16:29:40Z INFO # llfilesystem/lldiskcache.cpp(145) LLDiskCache::purge : Purging cache to a maximum of 2254857830 bytes
+2026-09-11T16:29:42Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater Preferences
+2026-09-11T16:29:42Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:29:42Z INFO # llui/llfloater.cpp(679) LLFloater::openFloater : Opening floater Preferences full path: /main_view/menu_stack/world_panel/Floater View/Preferences
+2026-09-11T16:29:43Z INFO # newview/llviewerwindow.cpp(5116) LLViewerWindow::saveSnapshot : Saving snapshot to: E:\BoxxyViewer\tmp\pcss-preferences-off.png
+2026-09-11T16:29:44Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:29:44Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater Preferences
+2026-09-11T16:29:44Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:29:44Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:29:44Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:29:44Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:29:44Z INFO #ShaderMgr# llrender/llshadermgr.cpp(1031) LLShaderMgr::initShaderCache : Initializing shader cache
+2026-09-11T16:29:44Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:29:44Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:29:44Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:29:44Z INFO #Shader# newview/llviewershadermgr.cpp(775) LLViewerShaderMgr::setShaders : Loaded basic shaders.
+2026-09-11T16:29:45Z INFO # newview/llviewershadermgr.cpp(798) LLViewerShaderMgr::setShaders : Loaded water shaders.
+2026-09-11T16:29:45Z INFO # newview/llviewershadermgr.cpp(811) LLViewerShaderMgr::setShaders : Loaded effects shaders.
+2026-09-11T16:29:45Z INFO # newview/llviewershadermgr.cpp(825) LLViewerShaderMgr::setShaders : Loaded interface shaders.
+2026-09-11T16:30:09Z INFO #FrameWatcher# llcommon/llsys.cpp(1278) FrameWatcher::tick :  initial framerate 15.0
+2026-09-11T16:30:09Z <mem>             Avail Physical KB:     31070496
+2026-09-11T16:30:09Z <mem>              Avail Virtual MB:    134207284
+2026-09-11T16:30:09Z <mem>                 Avail page KB:     18919904
+2026-09-11T16:30:09Z <mem>              Page Fault Count:      3890128
+2026-09-11T16:30:09Z <mem>              PagefileUsage KB:      3719540
+2026-09-11T16:30:09Z <mem>          PeakPagefileUsage KB:      3731980
+2026-09-11T16:30:09Z <mem>         PeakWorkingSetSize KB:      1936704
+2026-09-11T16:30:09Z <mem>            Percent Memory use:           53
+2026-09-11T16:30:09Z <mem>               PrivateUsage KB:      3719540
+2026-09-11T16:30:09Z <mem>     QuotaNonPagedPoolUsage KB:           72
+2026-09-11T16:30:09Z <mem>        QuotaPagedPoolUsage KB:          863
+2026-09-11T16:30:09Z <mem> QuotaPeakNonPagedPoolUsage KB:          138
+2026-09-11T16:30:09Z <mem>    QuotaPeakPagedPoolUsage KB:          866
+2026-09-11T16:30:09Z <mem>             Total Physical KB:     66843408
+2026-09-11T16:30:09Z <mem>              Total Virtual MB:    134217727
+2026-09-11T16:30:09Z <mem>                 Total page KB:     90960656
+2026-09-11T16:30:09Z <mem>             WorkingSetSize KB:      1936704
+2026-09-11T16:30:09Z <mem>                     timestamp: 2026-09-11T16:30:09.67Z
+
+2026-09-11T16:30:09Z INFO # llui/llfloater.cpp(679) LLFloater::openFloater : Opening floater Preferences full path: /main_view/menu_stack/world_panel/Floater View/Preferences
+2026-09-11T16:30:11Z INFO # newview/llviewerwindow.cpp(5116) LLViewerWindow::saveSnapshot : Saving snapshot to: E:\BoxxyViewer\tmp\pcss-preferences-sun-only.png
+2026-09-11T16:30:11Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:30:11Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater Preferences
+2026-09-11T16:30:11Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:30:11Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:30:11Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:11Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:11Z INFO #ShaderMgr# llrender/llshadermgr.cpp(1031) LLShaderMgr::initShaderCache : Initializing shader cache
+2026-09-11T16:30:11Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:30:11Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:11Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:11Z INFO #Shader# newview/llviewershadermgr.cpp(775) LLViewerShaderMgr::setShaders : Loaded basic shaders.
+2026-09-11T16:30:11Z INFO # newview/llviewershadermgr.cpp(798) LLViewerShaderMgr::setShaders : Loaded water shaders.
+2026-09-11T16:30:11Z INFO # newview/llviewershadermgr.cpp(811) LLViewerShaderMgr::setShaders : Loaded effects shaders.
+2026-09-11T16:30:11Z INFO # newview/llviewershadermgr.cpp(825) LLViewerShaderMgr::setShaders : Loaded interface shaders.
+2026-09-11T16:30:24Z INFO # llui/llfloater.cpp(679) LLFloater::openFloater : Opening floater Preferences full path: /main_view/menu_stack/world_panel/Floater View/Preferences
+2026-09-11T16:30:25Z INFO # newview/llviewerwindow.cpp(5116) LLViewerWindow::saveSnapshot : Saving snapshot to: E:\BoxxyViewer\tmp\pcss-preferences-shadows-off.png
+2026-09-11T16:30:30Z INFO #FrameWatcher# llcommon/llsys.cpp(1278) FrameWatcher::tick :  slowest framerate for last 20 seconds 13.4
+2026-09-11T16:30:30Z <mem>             Avail Physical KB:     31885380
+2026-09-11T16:30:30Z <mem>              Avail Virtual MB:    134208039
+2026-09-11T16:30:30Z <mem>                 Avail page KB:     19772032
+2026-09-11T16:30:30Z <mem>              Page Fault Count:      4386074
+2026-09-11T16:30:30Z <mem>              PagefileUsage KB:      2839224
+2026-09-11T16:30:30Z <mem>          PeakPagefileUsage KB:      3731980
+2026-09-11T16:30:30Z <mem>         PeakWorkingSetSize KB:      2088256
+2026-09-11T16:30:30Z <mem>            Percent Memory use:           52
+2026-09-11T16:30:30Z <mem>               PrivateUsage KB:      2839224
+2026-09-11T16:30:30Z <mem>     QuotaNonPagedPoolUsage KB:           68
+2026-09-11T16:30:30Z <mem>        QuotaPagedPoolUsage KB:          849
+2026-09-11T16:30:30Z <mem> QuotaPeakNonPagedPoolUsage KB:          138
+2026-09-11T16:30:30Z <mem>    QuotaPeakPagedPoolUsage KB:          866
+2026-09-11T16:30:30Z <mem>             Total Physical KB:     66843408
+2026-09-11T16:30:30Z <mem>              Total Virtual MB:    134217727
+2026-09-11T16:30:30Z <mem>                 Total page KB:     90960656
+2026-09-11T16:30:30Z <mem>             WorkingSetSize KB:      1334708
+2026-09-11T16:30:30Z <mem>                     timestamp: 2026-09-11T16:30:30.17Z
+
+2026-09-11T16:30:30Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:30:30Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater Preferences
+2026-09-11T16:30:30Z INFO # llui/llfloater.cpp(732) LLFloater::closeFloater : Closing floater prefs_graphics_advanced
+2026-09-11T16:30:30Z INFO # newview/llappviewerlistener.cpp(55) LLAppViewerListener::requestQuit : Listener requested quit
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(4474) LLAppViewer::requestQuit : requestQuit
+2026-09-11T16:30:30Z INFO # llcommon/llapp.cpp(406) LLApp::setQuitting : Setting app state to QUITTING
+2026-09-11T16:30:30Z INFO # llcommon/llapp.cpp(369) LLApp::setStatus : status: quitting
+2026-09-11T16:30:30Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(342) LLCoprocedurePool::{ctor}::<lambda_1>::operator () : Pool Upload closing queue because status 'quitting'
+2026-09-11T16:30:30Z INFO # llcommon/llqueuedthread.cpp(584) LLQueuedThread::run : LLQueuedThread LFS EXITING.
+2026-09-11T16:30:30Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(342) LLCoprocedurePool::{ctor}::<lambda_1>::operator () : Pool AssetStorage closing queue because status 'quitting'
+2026-09-11T16:30:30Z INFO #CoProcMgr# llmessage/llcoproceduremanager.cpp(342) LLCoprocedurePool::{ctor}::<lambda_1>::operator () : Pool AIS closing queue because status 'quitting'
+2026-09-11T16:30:30Z INFO #LLProcess# llcommon/llprocess.cpp(976) LLProcess::handleExit : mIOContext was stopped on exit, restarting
+2026-09-11T16:30:30Z INFO #LLProcess# llcommon/llprocess.cpp(984) LLProcess::handleExit : pcss-viewer-smoke.py: exited with code 0
+2026-09-11T16:30:30Z INFO #LLLeap# llcommon/llleap.cpp(175) LLLeapImpl::done : pcss-viewer-smoke.py: exited with code 0
+2026-09-11T16:30:30Z INFO #Voice# newview/llvoicewebrtc.cpp(302) LLWebRTCVoiceClient::terminate : Terminating WebRTC
+2026-09-11T16:30:30Z INFO #Voice# newview/llvoicewebrtc.cpp(376) LLWebRTCVoiceClient::drainConnections : Voice connections drained in 4.6e-06ss.
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1653) LLAppViewer::doFrame : Exiting main_loop
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(219) LLEventPumps::reset : Resetting 33 pumps
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump GroupChat
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLAgent
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLApp
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLAppViewer
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLAppearance
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLChat
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLChatBar
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLCommandDispatcher
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLControlGroup
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLFloaterAbout
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLFloaterReg
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLInventory
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLMediaAPI
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLNotifications
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLPanelLogin
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLPipeline
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLProgressView
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLStartUp
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLStats
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLTeleportHandler
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLToolMgr
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLURLDispatcher
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLViewerControl
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLViewerWindow
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLWindow
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump LLXMLRPCTransaction
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump StartupState
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump UI
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump WebRTCClientPump
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump login
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump mainloop
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump relnotes
+2026-09-11T16:30:30Z INFO # llcommon/llevents.cpp(226) LLEventPumps::reset : Resetting pump store
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(6147) LLAppViewer::disconnectViewer : Disconnecting viewer!
+2026-09-11T16:30:30Z INFO #AvNameCache# llmessage/llavatarnamecache.cpp(500) LLAvatarNameCache::exportFile : LLAvatarNameCache at exit cache has 0
+2026-09-11T16:30:30Z INFO #AvNameCache# llmessage/llavatarnamecache.cpp(513) LLAvatarNameCache::exportFile : LLAvatarNameCache returning 0
+2026-09-11T16:30:30Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLFavoritesOrderStorage::destroyClass()
+2026-09-11T16:30:30Z INFO #FavoritesBar# newview/llfavoritesbar.cpp(1868) LLFavoritesOrderStorage::load : loaded favorites from 'C:\Users\Trevor\AppData\Roaming\Prism\user_settings\stored_favorites_util.agni.lindenlab.com.xml' successfully
+2026-09-11T16:30:30Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLNavigationBar::destroyClass()
+2026-09-11T16:30:30Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLInboxNewItemsStorage::destroyClass()
+2026-09-11T16:30:30Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLPanelTopInfoBar::destroyClass()
+2026-09-11T16:30:30Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLSearchHistory::destroyClass()
+2026-09-11T16:30:30Z INFO #LLInitDestroyClass# llcommon/llinitdestroyclass.cpp(26) LLCallbackRegistry::fireCallbacks : calling class LLInventoryCallbackManager::destroyClass()
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1771) LLAppViewer::cleanup : Viewer disconnected
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1784) LLAppViewer::cleanup : Cleaning Up
+2026-09-11T16:30:30Z INFO #Mesh# newview/llmeshrepository.cpp(4337) LLMeshRepository::shutdown : Shutting down mesh repository.
+2026-09-11T16:30:30Z INFO #Mesh# newview/llmeshrepository.cpp(959) LLMeshRepoThread::~LLMeshRepoThread : Small GETs issued:  0, Large GETs issued:  0, Max Lock Holdoffs:  0
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1833) LLAppViewer::cleanup : Global stuff deleted
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1837) LLAppViewer::cleanup : Shutting down audio
+2026-09-11T16:30:30Z INFO # newview/llviewermedia_streamingaudio.cpp(98) LLStreamingAudio_MediaPlugins::stop : Stopping internet stream.
+2026-09-11T16:30:30Z INFO # llaudio/llaudioengine_openal.cpp(229) LLAudioEngine_OpenAL::shutdown : About to LLAudioEngine::shutdown()
+2026-09-11T16:30:30Z INFO # llaudio/llaudioengine_openal.cpp(544) LLAudioEngine_OpenAL::cleanupWind : LLAudioEngine_OpenAL::cleanupWind()
+2026-09-11T16:30:30Z INFO # llaudio/llaudioengine_openal.cpp(268) LLAudioEngine_OpenAL::shutdown : About to alutExit()
+2026-09-11T16:30:30Z INFO # llaudio/llaudioengine_openal.cpp(274) LLAudioEngine_OpenAL::shutdown : LLAudioEngine_OpenAL::shutdown() OpenAL successfully shut down
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1860) LLAppViewer::cleanup : Settings patched up
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1871) LLAppViewer::cleanup : Cache files removed
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1873) LLAppViewer::cleanup : Shutting down Views
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2480) LLViewerWindow::shutdownViews : Warning logger is cleaned.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2494) LLViewerWindow::shutdownViews : DebugText deleted.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2501) LLViewerWindow::shutdownViews : Global views cleaned.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2504) LLViewerWindow::shutdownViews : Leftover toast cleaned up.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2509) LLViewerWindow::shutdownViews : LLModalDialog shut down.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2514) LLViewerWindow::shutdownViews : LLNavigationBar destroyed.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2519) LLViewerWindow::shutdownViews : menus destroyed.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2522) LLViewerWindow::shutdownViews : view listeners destroyed.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2531) LLViewerWindow::shutdownViews : RootView deleted.
+2026-09-11T16:30:30Z INFO #Mesh# newview/llmeshrepository.cpp(4389) LLMeshRepository::shutdownDecomposition : Shutting down decomposition system.
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1882) LLAppViewer::cleanup : Cleaning up Inventory
+2026-09-11T16:30:30Z INFO #LLCoros# llcommon/llcoros.cpp(256) LLCoros::printActiveCoroutines : Number of active coroutines : 1
+2026-09-11T16:30:30Z INFO #LLCoros# llcommon/llcoros.cpp(260) LLCoros::printActiveCoroutines : -------------- List of active coroutines ------------
+main0  life: 56.4301
+2026-09-11T16:30:30Z INFO #LLCoros# llcommon/llcoros.cpp(269) LLCoros::printActiveCoroutines : -----------------------------------------------------
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1890) LLAppViewer::cleanup : Cleaning up Selections
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1896) LLAppViewer::cleanup : Cleaning up Objects
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerobject.cpp(618): calling LLVOGrass::cleanupClass() in void __cdecl LLViewerObject::cleanupVOClasses(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerobject.cpp(619): calling LLVOWater::cleanupClass() in void __cdecl LLViewerObject::cleanupVOClasses(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerobject.cpp(620): calling LLVOTree::cleanupClass() in void __cdecl LLViewerObject::cleanupVOClasses(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerobject.cpp(621): calling LLVOAvatar::cleanupClass() in void __cdecl LLViewerObject::cleanupVOClasses(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerobject.cpp(622): calling LLVOVolume::cleanupClass() in void __cdecl LLViewerObject::cleanupVOClasses(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(1900): calling LLAvatarAppearance::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1918) LLAppViewer::cleanup : Additional Cleanup...
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(1927): calling LLWorldMapView::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(1928): calling LLFolderViewItem::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1930) LLAppViewer::cleanup : Saving Data
+2026-09-11T16:30:30Z INFO #Settings# llxml/llcontrol.cpp(998) LLControlGroup::saveToFile : Saved to E:/BoxxyViewer/tmp/pcss-viewer-settings.xml
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(1951) LLAppViewer::cleanup : Not saving per-account settings; don't know the account name yet.
+2026-09-11T16:30:30Z INFO #Settings# llxml/llcontrol.cpp(998) LLControlGroup::saveToFile : Saved to C:\Users\Trevor\AppData\Roaming\Prism\user_settings\ignorable_dialogs.xml
+2026-09-11T16:30:30Z INFO # newview/llurlhistory.cpp(77) LLURLHistory::saveFile : Can't save URL history - no user directory set yet.
+2026-09-11T16:30:30Z WARNING # newview/llconversationlog.cpp(511) LLConversationLog::saveToFile : Call log list filename is empty!
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(3518) LLAppViewer::writeDebugInfo : Writing debug file C:\Users\Trevor\AppData\Roaming\Prism\logs\dump-99c427b0-ee37-c7a8-9da1-a746ce7d8f1f\static_debug_info.log
+2026-09-11T16:30:30Z INFO # newview/lllocationhistory.cpp(125) LLLocationHistory::save : can't get path to location history filename - probably not logged in yet.
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(2006) LLAppViewer::cleanup : Shutting down Threads
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(2054) LLAppViewer::cleanup : Shutting down OpenGL
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerwindow.cpp(2553): calling LLFontManager::cleanupClass() in void __cdecl LLViewerWindow::shutdownGL(void)
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2559) LLViewerWindow::shutdownGL : Cleaning up pipeline
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2564) LLViewerWindow::shutdownGL : Cleaning up wearables
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerwindow.cpp(2576): calling LLImageGL::cleanupClass() in void __cdecl LLViewerWindow::shutdownGL(void)
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2578) LLViewerWindow::shutdownGL : All textures and llimagegl images are destroyed!
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2580) LLViewerWindow::shutdownGL : Cleaning up select manager
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2583) LLViewerWindow::shutdownGL : Stopping GL during shutdown
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(6009) LLViewerWindow::stopGL : Shutting down GL...
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(634) LLBumpImageList::clear : Clearing dynamic bumpmaps.
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:30Z INFO # newview/lldrawpoolbump.cpp(172) LLStandardBumpmap::clear : Clearing standard bumpmaps.
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llviewerwindow.cpp(2589): calling LLVertexBuffer::cleanupClass() in void __cdecl LLViewerWindow::shutdownGL(void)
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2591) LLViewerWindow::shutdownGL : LLVertexBuffer cleaned.
+2026-09-11T16:30:30Z INFO # newview/llviewerwindow.cpp(2597) LLViewerWindow::~LLViewerWindow : Destroying Window
+2026-09-11T16:30:30Z INFO #Window# llwindow/llwindowwin32.cpp(1035) LLWindowWin32::close : Cleaning up GL
+2026-09-11T16:30:30Z INFO #Window# llwindow/llwindowwin32.cpp(1058) LLWindowWin32::close : Cleanup and destruction of Window Thread
+2026-09-11T16:30:30Z INFO #Window# llwindow/llwindowwin32.cpp(5670) LLWindowWin32::LLWindowWin32Thread::wakeAndDestroy : Detaching window's thread
+2026-09-11T16:30:30Z INFO #Window# llwindow/llwindowwin32.cpp(5689) LLWindowWin32::LLWindowWin32Thread::wakeAndDestroy : Closing window's pool queue
+2026-09-11T16:30:30Z INFO #Window# llwindow/llwindowwin32.cpp(5704) LLWindowWin32::LLWindowWin32Thread::wakeAndDestroy : Thread pool shutdown complete
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(2066) LLAppViewer::cleanup : ViewerWindow deleted
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(2072) LLAppViewer::cleanup : Cleaning up Keyboard & Joystick
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(2084) LLAppViewer::cleanup : Shutting down message system
+2026-09-11T16:30:30Z INFO #Messaging# llmessage/message.cpp(2969) end_messaging_system : START MESSAGE LOG SUMMARY
+Run time:       56.553 seconds
+Incoming:
+Total bytes received:                         0 ( 0.00 kbits per second)
+Total packets received:                       0 ( 0.00 packets per second)
+Average packet size:                  -nan(ind) bytes
+Total reliable packets:                       0 ( 0.00%)
+Total compressed packets:                     0 ( 0.00%)
+Total compression savings:                    0 bytes
+Avg comp packet savings:                      0 ( 0.00 : 1)
+Avg overall comp savings:                     0 ( 0.00 : 1)
+
+Outgoing:
+Total bytes sent:                             0 ( 0.00 kbits per second)
+Total packets sent:                           0 ( 0.00 packets per second)
+Average packet size:                  -nan(ind) bytes
+Total reliable packets:                       0 ( 0.00%)
+Total compressed packets:                     0 ( 0.00%)
+Total compression savings:                    0 bytes
+Avg comp packet savings:                      0 ( 0.00 : 1)
+Avg overall comp savings:                     0 ( 0.00 : 1)
+
+SendPacket failures:                          0
+Dropped packets:                              0
+Resent packets:                               0
+Failed reliable resends:                      0
+Off-circuit rejected packets:                 0
+On-circuit invalid packets:                   0
+
+Decoding: 
+                            Message     Count      Time       Max       Avg
+END MESSAGE LOG SUMMARY
+
+2026-09-11T16:30:30Z WARNING #HTTPCore# llcorehttp/httpstats.cpp(107) LLCore::HTTPStats::dumpStats : HTTP DATA SUMMARY
+HTTP Transfer counts:
+Data Sent: 0B   (0)
+Data Recv: 0B   (0)
+Total requests: 4(request objects created)
+
+Result Codes:
+--- -----
+
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(2090): calling LLFilePickerThread::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(2091): calling LLDirPickerThread::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(2126): calling LLMetricPerformanceTesterBasic::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(2128) LLAppViewer::cleanup : Cleaning up Media and Textures
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(2136): calling LLImage::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(2137): calling LLLFSThread::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:30Z INFO # newview/llappviewer.cpp(2139) LLAppViewer::cleanup : Misc Cleanup
+2026-09-11T16:30:31Z INFO # newview/llappviewer.cpp(2168) LLAppViewer::cleanup : Cleaning up LLProxy.
+2026-09-11T16:30:31Z INFO #Cleanup# llcommon/llcleanup.cpp(29) log_subsystem_cleanup : newview/llappviewer.cpp(2169): calling LLProxy::cleanupClass() in bool __cdecl LLAppViewer::cleanup(void)
+2026-09-11T16:30:31Z INFO #LLCoros# llcommon/llcoros.cpp(256) LLCoros::printActiveCoroutines : Number of active coroutines at entry to ~LLCoros(): 1
+2026-09-11T16:30:31Z INFO #LLCoros# llcommon/llcoros.cpp(260) LLCoros::printActiveCoroutines : -------------- List of active coroutines ------------
+main0  life: 57.2742
+2026-09-11T16:30:31Z INFO #LLCoros# llcommon/llcoros.cpp(269) LLCoros::printActiveCoroutines : -----------------------------------------------------
+2026-09-11T16:30:31Z INFO #LLCoros# llcommon/llcoros.cpp(256) LLCoros::printActiveCoroutines : Number of active coroutines after pumping: 1
+2026-09-11T16:30:31Z INFO #LLCoros# llcommon/llcoros.cpp(260) LLCoros::printActiveCoroutines : -------------- List of active coroutines ------------
+main0  life: 57.2743
+2026-09-11T16:30:31Z INFO #LLCoros# llcommon/llcoros.cpp(269) LLCoros::printActiveCoroutines : -----------------------------------------------------
+2026-09-11T16:30:31Z INFO # newview/llappviewer.cpp(2205) LLAppViewer::cleanup : Goodbye!
+2026-09-11T16:30:31Z WARNING #MarkerFile# newview/llappviewer.cpp(4422) LLAppViewer::removeMarkerFiles : logout marker '' not open
+2026-09-11T16:30:31Z INFO # llcommon/llapp.cpp(369) LLApp::setStatus : status: stopped

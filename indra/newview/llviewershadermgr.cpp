@@ -41,6 +41,9 @@
 #include "llversioninfo.h"
 
 #include "llrender.h"
+#include "llrender2dutils.h"
+#include "llfontgl.h"
+#include "lltrans.h"
 #include "llenvironment.h"
 #include "llerrorcontrol.h"
 #include "llworld.h"
@@ -578,6 +581,68 @@ static bool hashShaderSources(HBXXH128& hash_obj, const std::filesystem::path& r
     return true;
 }
 
+static void displayShaderCompilationMessage()
+{
+    LLWindow* window = gViewerWindow ? gViewerWindow->getWindow() : nullptr;
+    LLCoordWindow size;
+    if (!window || !window->getVisible() || window->getMinimized()
+        || !window->getSize(&size) || size.mX <= 0 || size.mY <= 0)
+    {
+        return;
+    }
+
+    // Present directly to the window: the normal progress UI and render targets
+    // are not available yet during startup, and are torn down during reloads.
+    gGL.flush();
+    GLint framebuffer, viewport[4];
+    GLfloat clear_color[4];
+    GLboolean color_mask[4];
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &framebuffer);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
+    glGetBooleanv(GL_COLOR_WRITEMASK, color_mask);
+    const auto matrix_mode = gGL.getMatrixMode();
+    LLGLSUIDefault gls_ui;
+    LLGLDisable scissor(GL_SCISSOR_TEST);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glViewport(0, 0, size.mX, size.mY);
+    gGL.setColorMask(true, true);
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    gGL.matrixMode(LLRender::MM_PROJECTION);
+    gGL.pushMatrix();
+    gGL.matrixMode(LLRender::MM_MODELVIEW);
+    gGL.pushMatrix();
+    gGL.matrixMode(LLRender::MM_TEXTURE0);
+    gGL.pushMatrix();
+    gGL.loadIdentity();
+    gl_state_for_2d(size.mX, size.mY);
+    LLRender2D::pushMatrix();
+    LLRender2D::loadIdentity();
+    gUIProgram.bind();
+    LLFontGL::getFontSansSerifBig()->renderUTF8(
+        LLTrans::getString("CompilingShaders"), 0,
+        size.mX / (2.f * LLFontGL::sScaleX), size.mY / (2.f * LLFontGL::sScaleY),
+        LLColor4::white, LLFontGL::HCENTER, LLFontGL::VCENTER,
+        LLFontGL::NORMAL, LLFontGL::NO_SHADOW);
+    gGL.flush();
+    window->swapBuffers(); // Put the message on screen before blocking in the driver.
+    gUIProgram.unbind();
+    LLRender2D::popMatrix();
+    gGL.matrixMode(LLRender::MM_TEXTURE0);
+    gGL.popMatrix();
+    gGL.matrixMode(LLRender::MM_PROJECTION);
+    gGL.popMatrix();
+    gGL.matrixMode(LLRender::MM_MODELVIEW);
+    gGL.popMatrix();
+    gGL.matrixMode(matrix_mode);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
+    gGL.setColorMask(color_mask[0], color_mask[1], color_mask[2], color_mask[3]);
+}
+
 void LLViewerShaderMgr::setShaders()
 {
     LL_PROFILE_ZONE_SCOPED;
@@ -690,6 +755,19 @@ void LLViewerShaderMgr::setShaders()
     mShaderLevel[SHADER_EFFECT] = effect_class;
     mShaderLevel[SHADER_WINDLIGHT] = wl_class;
     mShaderLevel[SHADER_DEFERRED] = deferred_class;
+
+    // Bootstrap only the text/UI shader before compiling the rest. It is
+    // self-contained, so it does not need the basic shader feature objects.
+    gUIProgram.mName = "UI Shader";
+    gUIProgram.mShaderFiles = {
+        {"interface/uiV.glsl", GL_VERTEX_SHADER},
+        {"interface/uiF.glsl", GL_FRAGMENT_SHADER}};
+    gUIProgram.mShaderLevel = interface_class;
+    gUIProgram.mFeatures.attachNothing = true;
+    if (gUIProgram.createShader())
+    {
+        displayShaderCompilationMessage();
+    }
 
     std::string shader_name = loadBasicShaders();
     if (shader_name.empty())
@@ -893,6 +971,13 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     {
         attribs["SUN_SHADOW"] = "1";
 
+        // Six raw-depth samplers supplement the comparison maps. Leave room
+        // for indexed materials, SSS depth, probes and transparent projectors.
+        if (gGLManager.mNumTextureImageUnits >= 32)
+        {
+            attribs["PCSS_SHADOW"] = "1";
+        }
+
         if (shadow_detail >= 2)
         {
             attribs["SPOT_SHADOW"] = "1";
@@ -964,6 +1049,7 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/globalF.glsl",                          1));
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/sssDepthUtil.glsl",                      1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/shadowUtil.glsl",                      1) );
+    index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/pcssUtil.glsl",                        1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/aoUtil.glsl",                          1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/pbrterrainUtilF.glsl",                 1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/tonemapUtilF.glsl",                    1) );
@@ -3253,7 +3339,7 @@ bool LLViewerShaderMgr::loadShadersAvatar()
 bool LLViewerShaderMgr::loadShadersInterface()
 {
     LL_PROFILE_ZONE_SCOPED;
-    bool success = true;
+    bool success = gUIProgram.isComplete();
 
     if (success)
     {
@@ -3284,16 +3370,6 @@ bool LLViewerShaderMgr::loadShadersInterface()
         gHighlightSpecularProgram.mShaderFiles.push_back(make_pair("interface/highlightF.glsl", GL_FRAGMENT_SHADER));
         gHighlightSpecularProgram.mShaderLevel = mShaderLevel[SHADER_INTERFACE];
         success = gHighlightSpecularProgram.createShader();
-    }
-
-    if (success)
-    {
-        gUIProgram.mName = "UI Shader";
-        gUIProgram.mShaderFiles.clear();
-        gUIProgram.mShaderFiles.push_back(make_pair("interface/uiV.glsl", GL_VERTEX_SHADER));
-        gUIProgram.mShaderFiles.push_back(make_pair("interface/uiF.glsl", GL_FRAGMENT_SHADER));
-        gUIProgram.mShaderLevel = mShaderLevel[SHADER_INTERFACE];
-        success = gUIProgram.createShader();
     }
 
     // Optional effect: retain ordinary panel tint if either shader is unavailable.

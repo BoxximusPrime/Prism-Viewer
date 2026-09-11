@@ -23,10 +23,11 @@ struct LLGLSLShader { inline static LLGLSLShader* sCurBoundShaderPtr = nullptr; 
 LLGLSLShader gDeferredShadowProgram, other_shader;
 struct { int mGLMaxVertexRange = 65535, mGLMaxIndexRange = 65535; } gGLManager;
 struct LLRender { enum { TRIANGLES }; };
-using Record = std::tuple<int, const int*, U32>;
+using Record = std::tuple<int, const int*, U32, const int*>;
 std::vector<Record> submitted;
 int draw_calls = 0;
 const int* current_matrix = nullptr;
+const int* current_identity = nullptr;
 struct Buffer {
     int id;
     void setBuffer() {}
@@ -34,7 +35,7 @@ struct Buffer {
         ++draw_calls;
         // Fixture indices are sequential, making incorrect vertex bounds detectable.
         assert(start <= offset && finish >= offset + count - 1);
-        for (U32 i = offset; i < offset + count; ++i) submitted.emplace_back(id, current_matrix, i);
+        for (U32 i = offset; i < offset + count; ++i) submitted.emplace_back(id, current_matrix, i, current_identity);
     }
 };
 struct LLDrawInfo {
@@ -42,6 +43,8 @@ struct LLDrawInfo {
     Buffer* mVertexBuffer;
     const int* mModelMatrix;
     bool mAvatar = false;
+    const int* mSSSObject = nullptr;
+    bool mFullbright = false;
 };
 struct LLCullResult {
     using drawinfo_iterator = LLDrawInfo**;
@@ -49,13 +52,19 @@ struct LLCullResult {
 };
 struct LLPipeline {
     inline static bool sShadowRender = true;
+    int mSSSDepthPass = 0;
+    bool mSSSDepthOpaque = true;
     std::vector<LLDrawInfo*> inputs;
     LLDrawInfo** beginRenderMap(U32) { return inputs.data(); }
     LLDrawInfo** endRenderMap(U32) { return inputs.data() + inputs.size(); }
 } gPipeline;
 struct LLRenderPass {
     void pushUntexturedBatches(U32);
-    static void applyModelMatrix(const LLDrawInfo& p) { current_matrix = p.mModelMatrix; }
+    static bool skipSSSDepth(const LLDrawInfo&);
+    static void applyModelMatrix(const LLDrawInfo& p) {
+        current_matrix = p.mModelMatrix;
+        current_identity = gPipeline.mSSSDepthPass && gPipeline.mSSSDepthOpaque && !p.mFullbright ? p.mSSSObject : nullptr;
+    }
     static void pushUntexturedBatch(LLDrawInfo& p) {
         if (!p.mCount) return;
         applyModelMatrix(p);
@@ -108,6 +117,30 @@ int main() {
     pass.pushUntexturedBatches(0);
     assert(submitted == reference && draw_calls == 9);
 #endif
+    gGLManager.mGLMaxIndexRange = gGLManager.mGLMaxVertexRange = 65535;
+    int skin_a = 1, skin_b = 2;
+    for (int phase : {0, 1, 2}) {
+        for (int boundary = 0; boundary < 4; ++boundary) {
+            LLDrawInfo x{0,5,6,0,&a,nullptr}, y{6,11,6,6,&a,nullptr};
+            x.mSSSObject = y.mSSSObject = &skin_a;
+            if (boundary == 1) y.mSSSObject = &skin_b;
+            if (boundary == 2) y.mSSSObject = nullptr;
+            if (boundary == 3) y.mFullbright = true;
+            gPipeline.inputs = {&x, &y}; gPipeline.mSSSDepthPass = phase;
+            LLGLSLShader::sCurBoundShaderPtr = &gDeferredShadowProgram;
+            submitted.clear(); draw_calls = 0;
+            pass.pushUntexturedBatches(0);
+            const bool omit_y = phase == 2 && boundary >= 2;
+            assert(submitted.size() == (omit_y ? 6u : 12u));
+            for (size_t i = 0; i < submitted.size(); ++i) {
+                const int* expected = phase == 0 ? nullptr :
+                    (i < 6 || boundary == 0 ? &skin_a : boundary == 1 ? &skin_b : nullptr);
+                assert(std::get<2>(submitted[i]) == i && std::get<3>(submitted[i]) == expected);
+            }
+            assert(draw_calls == (phase == 0 || boundary == 0 || omit_y ? 1 : 2));
+            assert(x.mCount == 6 && y.mOffset == 6);
+        }
+    }
     gPipeline.inputs.clear(); submitted.clear(); draw_calls = 0;
     pass.pushUntexturedBatches(0);
     assert(submitted.empty() && draw_calls == 0);
@@ -121,7 +154,7 @@ def main():
         raise SystemExit("g++ must be on PATH")
     root = Path(__file__).resolve().parents[2]
     source = (root / "indra/newview/lldrawpool.cpp").read_text()
-    start = source.index("void LLRenderPass::pushUntexturedBatches(U32 type)")
+    start = source.index("bool LLRenderPass::skipSSSDepth(")
     end = source.index("void LLRenderPass::pushRiggedBatches(", start)
     with tempfile.TemporaryDirectory(prefix="boxxy-shadow-batching-") as directory:
         cpp = Path(directory) / "check.cpp"
@@ -131,7 +164,7 @@ def main():
             subprocess.run([compiler, "-std=c++17", f"-DLL_DARWIN={darwin}",
                             str(cpp), "-o", str(exe)], check=True)
             subprocess.run([str(exe)], check=True)
-    print("Passed shadow batching: identical indices/transforms, 9 to 6 fixture draws, platform limits")
+    print("Passed shadow batching: indices/transforms, SSS identity boundaries and zero-ID exit skips, compatible merges, platform limits")
 
 
 if __name__ == "__main__":

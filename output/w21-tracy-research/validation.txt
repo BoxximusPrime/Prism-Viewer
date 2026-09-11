@@ -1,0 +1,63 @@
+Research baseline validation 2026-09-10T10:24:25.4493842-06:00
+TEST: sss_selection
+Passed SSS projector frustum, linear attenuation ranking and 30/60/144 Hz transition checks
+EXIT: 0
+TEST: sss_depth_precision
+Height 15 m: 4 mm tissue measured 4.062..4.062 mm across 200 camera positions
+Height 1500 m: 4 mm tissue measured 4.062..4.062 mm across 200 camera positions
+Height 4000 m: 4 mm tissue measured 3.906..3.906 mm across 200 camera positions
+Passed 600 SSS altitude/camera precision checks
+EXIT: 0
+TEST: shadow_batching
+C:\Users\Trevor\AppData\Local\Temp\boxxy-shadow-batching-ggf7dybw\check.cpp: In member function 'void LLRenderPass::pushUntexturedBatches(U32)':
+C:\Users\Trevor\AppData\Local\Temp\boxxy-shadow-batching-ggf7dybw\check.cpp:67:57: error: 'struct LLPipeline' has no member named 'mSSSDepthPass'
+   67 |             if (!LLPipeline::sShadowRender || gPipeline.mSSSDepthPass != 0 ||
+      |                                                         ^~~~~~~~~~~~~
+Traceback (most recent call last):
+  File "E:\BoxxyViewer\scripts\tests\test_shadow_batching.py", line 138, in <module>
+    main()
+  File "E:\BoxxyViewer\scripts\tests\test_shadow_batching.py", line 131, in main
+    subprocess.run([compiler, "-std=c++17", f"-DLL_DARWIN={darwin}",
+  File "C:\Users\Trevor\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['C:\\QMK_MSYS\\mingw64\\bin\\g++.EXE', '-std=c++17', '-DLL_DARWIN=0', 'C:\\Users\\Trevor\\AppData\\Local\\Temp\\boxxy-shadow-batching-ggf7dybw\\check.cpp', '-o', 'C:\\Users\\Trevor\\AppData\\Local\\Temp\\boxxy-shadow-batching-ggf7dybw\\check.exe']' returned non-zero exit status 1.
+EXIT: 1
+TEST: shadow_mask_batching
+Passed masked shadow batching: per-index state, 3 to 1 compatible draws, boundaries and platform limits
+EXIT: 0
+TEST: shadow_alpha_submission
+C:\Users\Trevor\AppData\Local\Temp\boxxy-shadow-submission-d7bnd9yc\check.cpp: In member function 'void LLPipeline::renderAlphaObjects(bool)':
+C:\Users\Trevor\AppData\Local\Temp\boxxy-shadow-submission-d7bnd9yc\check.cpp:70:29: error: 'mSSSDepthOpaque' was not declared in this scope
+   70 |     const bool was_opaque = mSSSDepthOpaque;
+      |                             ^~~~~~~~~~~~~~~
+Traceback (most recent call last):
+  File "E:\BoxxyViewer\scripts\tests\test_shadow_alpha_submission.py", line 136, in <module>
+    main()
+  File "E:\BoxxyViewer\scripts\tests\test_shadow_alpha_submission.py", line 130, in main
+    subprocess.run([compiler, "-std=c++17", str(cpp), "-o", str(exe)], check=True)
+  File "C:\Users\Trevor\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['C:\\QMK_MSYS\\mingw64\\bin\\g++.EXE', '-std=c++17', 'C:\\Users\\Trevor\\AppData\\Local\\Temp\\boxxy-shadow-submission-d7bnd9yc\\check.cpp', '-o', 'C:\\Users\\Trevor\\AppData\\Local\\Temp\\boxxy-shadow-submission-d7bnd9yc\\check.exe']' returned non-zero exit status 1.
+EXIT: 1
+TEST: exact_oit_readback
+Passed production readback ring: busy/full, FIFO/camera identity, historical capacity, wraparound, failed fences
+EXIT: 0
+TEST: avatar_animation_freeze
+PASS: freeze/resume in normal, forced, hidden sync and hidden non-sync updates; menu wiring
+EXIT: 0
+TEST: sss_shadow_gpu
+GPU: NVIDIA GeForce RTX 5090/PCIe/SSE2
+100 mm arm: maximum reconstruction error 1.01 mm; minimum coverage 0.959
+Passed 682 SSS GPU checks: paths, explicit estimates, sun/spot/point composition, matched layers, coverage fades and real shadow capture fragments.
+EXIT: 0
+TEST: sss_blur_gpu
+Passed 9 transmission blur GPU checks: mottling, constants, zero radius, texture detail, skin/depth boundaries, and continuous wide filtering on a curved finger.
+Interior mottling variance: 0.122500 -> 0.000000
+EXIT: 0
+TEST: exact_oit_gpu
+GPU: NVIDIA GeForce RTX 5090/PCIe/SSE2 4.3.0 NVIDIA 616.56
+Passed 12 GPU scenarios: empty captures/image edges, capture A/B, reduction edges, deep/equal-depth lists, cutoff, exact blend/glow, overflow fallback, and staged statistics
+EXIT: 0
+DIAGNOSTIC: SSS mask identity
+Reproduced 18 identity mismatches: tagged/tagged, tagged/untagged, effective fullbright zero; indexed/nonindexed; all three mask shaders.
+EXIT: 0
