@@ -1598,6 +1598,20 @@ function="World.EnvPreset"
                      function="Tools.ShowHiddenSelection" />
                 </menu_item_check>
                 <menu_item_check
+                 label="Show Reflection Probe Icons"
+                 name="Show Reflection Probe Icons">
+                    <menu_item_check.on_check control="RenderReflectionProbeIcons" />
+                    <menu_item_check.on_click function="ToggleControl"
+                     parameter="RenderReflectionProbeIcons" />
+                </menu_item_check>
+                <menu_item_check
+                 label="Show Light Source Icons"
+                 name="Show Light Source Icons">
+                    <menu_item_check.on_check control="RenderLightSourceIcons" />
+                    <menu_item_check.on_click function="ToggleControl"
+                     parameter="RenderLightSourceIcons" />
+                </menu_item_check>
+                <menu_item_check
                  label="Show Light Radius for Selection"
                  name="Show Light Radius for Selection">
                     <menu_item_check.on_check

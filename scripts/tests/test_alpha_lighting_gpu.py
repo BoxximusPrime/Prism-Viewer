@@ -196,6 +196,11 @@ def run(sdl, gl, projectors=False):
                 source += punctual
             prog = program(source)
             gl.UseProgram(prog)
+            # The disabled variant must eliminate projector resources, rather
+            # than retaining the larger shader with a zero light mask.
+            assert (gl.GetUniformLocation(prog, b"alpha_projector_mask") >= 0) == projectors
+            for i in range(6):
+                assert (gl.GetUniformLocation(prog, f"alphaProjectionMap{i}".encode()) >= 0) == projectors
             uniform(prog, "test_position", 0, 0, -5)
             if projectors:
                 for i in range(6):

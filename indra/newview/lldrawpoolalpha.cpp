@@ -145,6 +145,7 @@ extern bool gCubeSnapshot;
 void LLDrawPoolAlpha::renderPostDeferred(S32 pass)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
+    LL_PROFILE_GPU_ZONE("forward alpha");
 
     if (LLPipeline::isWaterClip() && getType() == LLDrawPool::POOL_ALPHA_PRE_WATER)
     { // don't render alpha objects on the other side of the water plane if water is opaque
@@ -219,11 +220,15 @@ void LLDrawPoolAlpha::renderPostDeferred(S32 pass)
         if (!LLPipeline::sRenderingHUDs)
         {
             // first pass, render rigged objects only and render to depth buffer
+            LL_PROFILE_GPU_ZONE("legacy alpha rigged");
             forwardRender(true);
         }
 
         // second pass, regular forward alpha rendering
-        forwardRender();
+        {
+            LL_PROFILE_GPU_ZONE("legacy alpha unrigged");
+            forwardRender();
+        }
     }
 // </AS:Chanayane>
 
@@ -234,6 +239,7 @@ void LLDrawPoolAlpha::renderPostDeferred(S32 pass)
 // </AS:Chanayane>
     {
         //update depth buffer sampler
+        LL_PROFILE_GPU_ZONE("alpha depth of field");
         simple_shader = fullbright_shader = &gDeferredFullbrightAlphaMaskProgram;
 
         simple_shader->bind();
@@ -296,6 +302,7 @@ void LLDrawPoolAlpha::forwardRender(bool rigged)
 
     if (rigged && mType == LLDrawPool::POOL_ALPHA_POST_WATER)
     { // draw GLTF scene to depth buffer before rigged alpha
+        LL_PROFILE_GPU_ZONE("alpha GLTF scene");
         LL::GLTFSceneManager::instance().render(false, false);
         LL::GLTFSceneManager::instance().render(false, true);
         LL::GLTFSceneManager::instance().render(false, false, true);

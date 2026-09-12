@@ -10588,6 +10588,16 @@ const LLVOAvatar::MatrixPaletteCache& LLVOAvatar::updateSkinInfoMatrixPalette(co
     {
         LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
 
+        if (gSavedSettings.getU32("RenderFSAAType") == 3)
+        {
+            entry.mPreviousGLMp = entry.mGLMp;
+            entry.mPreviousFrame = entry.mFrame;
+        }
+        else
+        {
+            entry.mPreviousGLMp.clear();
+            entry.mPreviousFrame = 0;
+        }
         entry.mFrame = gFrameCount;
 
         //build matrix palette

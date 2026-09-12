@@ -28,6 +28,8 @@
 
 // File includes
 #include "lltoolface.h"
+#include "lltoolselect.h"
+#include "llhudicon.h"
 
 // Library includes
 #include "llfloaterreg.h"
@@ -79,6 +81,11 @@ bool LLToolFace::handleMouseDown(S32 x, S32 y, MASK mask)
 
 void LLToolFace::pickCallback(const LLPickInfo& pick_info)
 {
+    if (pick_info.mHUDIcon && pick_info.mHUDIcon->isWorldMarker())
+    {
+        LLToolSelect::handleObjectSelection(pick_info, true, false);
+        return;
+    }
     LLViewerObject* hit_obj = pick_info.getObject();
     if (hit_obj)
     {

@@ -33,6 +33,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llfloaterpreference.h"
+#include "fsexactoit.h"
 
 #include "message.h"
 #include "llfloaterautoreplacesettings.h"
@@ -1275,6 +1276,13 @@ void LLFloaterPreference::buildPopupLists()
 
 void LLFloaterPreference::refreshEnabledState()
 {
+    const bool taa_enabled = gSavedSettings.getU32("RenderFSAAType") == 3;
+    for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAADebug", "TAADebugLabel" })
+        getChildView(control)->setEnabled(taa_enabled);
+    getChild<LLTextBox>("TAAStatus")->setValue(!taa_enabled ? "Choose TAA above to enable temporal antialiasing." :
+        !gPipeline.isTAAAvailable() ? "TAA is waiting for graphics resources. The camera remains unjittered until ready." :
+        "TAA is enabled. Motion protection favors clear moving avatars over long history.");
     const bool gtao_supported = LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred") &&
         LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferredSSAO");
     const bool gtao_enabled = gtao_supported && gSavedSettings.getBOOL("RenderGTAOEnabled");
@@ -2507,6 +2515,13 @@ static LLPanelInjector<LLPanelPreferencePrivacy> t_pref_privacy("panel_preferenc
 
 bool LLPanelPreferenceGraphics::postBuild()
 {
+    if (!FSExactOIT::isSupported())
+    {
+        getChild<LLCheckBoxCtrl>("RenderExactOIT")->setEnabled(false);
+        getChild<LLCheckBoxCtrl>("RenderExactOIT")->setToolTip(
+            std::string("Exact transparency is unavailable on this system. Legacy rendering is used."));
+    }
+
     LLFloaterReg::showInstance("prefs_graphics_advanced");
     LLFloaterReg::hideInstance("prefs_graphics_advanced");
 
@@ -2669,6 +2684,9 @@ void LLPanelPreferenceGraphics::saveSettings()
 }
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
+    for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAADebug" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderGTAOEnabled", "RenderGTAODebug", "RenderGTAORadius",
         "RenderGTAOStrength", "RenderGTAOQuality", "RenderGTAODenoise", "RenderGTAOFalloff", "RenderGTAOThinOccluder" })
     {

@@ -54,6 +54,8 @@ public:
     void setImage(LLViewerTexture* imagep);
     void setScale(F32 fraction_of_fov);
 
+    bool isWorldMarker() const { return mWorldMarker; }
+
     void restartLifeTimer() { mLifeTimer.reset(); }
 
     static LLHUDIcon* lineSegmentIntersectAll(const LLVector4a& start, const LLVector4a& end, LLVector4a* intersection);
@@ -80,6 +82,8 @@ private:
     F32             mDistance;
     F32             mScale;
     bool            mHidden;
+    bool            mWorldMarker = false;
+    bool            mReflectionProbe = false;
 
     typedef std::vector<LLPointer<LLHUDIcon> > icon_instance_t;
     static icon_instance_t sIconInstances;

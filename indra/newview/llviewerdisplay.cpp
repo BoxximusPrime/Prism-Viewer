@@ -972,6 +972,9 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
         gGL.setColorMask(true, true);
 
+        // Cull, shadows, probes and impostors use the unjittered camera. Only the
+        // main world image receives the temporal sample offset.
+        gPipeline.beginTAAFrame(for_snapshot);
         gPipeline.mRT->deferredScreen.bindTarget();
         if (gUseWireframe)
         {
@@ -1496,6 +1499,7 @@ void render_ui(F32 zoom_factor, int subfield)
 
     // apply gamma correction and post effects
     gPipeline.renderFinalize();
+    gPipeline.endTAAFrame();
 
     {
         LLGLState::checkStates();

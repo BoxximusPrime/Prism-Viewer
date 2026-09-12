@@ -194,6 +194,7 @@ public:
     bool hasCachedObjectDescription() const { return mObjectDescriptionValid; }
     const std::string& getCachedObjectDescription() const { return mObjectDescription; }
     void setCachedObjectDescription(const std::string& description);
+    bool hasNoShadowDescriptionTag() const { return mNoShadowDescriptionTag; }
     bool hasCachedObjectName() const { return mObjectNameValid; }
     const std::string& getCachedObjectName() const { return mObjectName; }
     void setCachedObjectName(const std::string& name);
@@ -985,6 +986,7 @@ protected:
 
     std::string             mObjectDescription;
     bool                    mObjectDescriptionValid;
+    bool                    mNoShadowDescriptionTag = false;
     std::string             mObjectName;
     bool                    mObjectNameValid;
 

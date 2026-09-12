@@ -37,6 +37,11 @@
 #include "llviewercamera.h"
 #include "llviewertexture.h"
 #include "llviewerwindow.h"
+#include "llviewercontrol.h"
+#include "llviewerobjectlist.h"
+#include "llvovolume.h"
+#include "llui.h"
+#include "lluiimage.h"
 
 //-----------------------------------------------------------------------------
 // Local consts
@@ -64,6 +69,7 @@ LLHUDIcon::icon_instance_t LLHUDIcon::sIconInstances;
 LLHUDIcon::LLHUDIcon(const U8 type) :
             LLHUDObject(type),
             mImagep(NULL),
+            mDistance(0.f),
             mScale(0.1f),
             mHidden(false)
 {
@@ -78,13 +84,14 @@ LLHUDIcon::~LLHUDIcon()
 void LLHUDIcon::render()
 {
     LLGLSUIDefault texture_state;
-    LLGLDepthTest gls_depth(GL_TRUE);
+    LLGLDepthTest gls_depth(mWorldMarker ? GL_FALSE : GL_TRUE);
     //LLGLDisable gls_stencil(GL_STENCIL_TEST);
 
-    if (mHidden)
+    if (mDead || mHidden)
         return;
 
-    if (mSourceObject.isNull() || mImagep.isNull())
+    if (mSourceObject.isNull() || mSourceObject->isDead() ||
+        mSourceObject->mDrawable.isNull() || mImagep.isNull())
     {
         markDead();
         return;
@@ -107,11 +114,27 @@ void LLHUDIcon::render()
     LLVector3 icon_to_cam = LLViewerCamera::getInstance()->getOrigin() - icon_position;
     icon_to_cam.normVec();
 
-    icon_position += icon_to_cam * mSourceObject->mDrawable->getRadius() * 1.1f;
+    if (mWorldMarker)
+    {
+        // Keep the marker on its source prim, including small linked children.
+        icon_position = obj_position;
+        setPositionAgent(icon_position);
+    }
+    else
+    {
+        icon_position += icon_to_cam * mSourceObject->mDrawable->getRadius() * 1.1f;
+    }
 
     mDistance = dist_vec(icon_position, camera->getOrigin());
 
-    F32 alpha_factor = clamp_rescale(mDistance, DIST_START_FADE, DIST_END_FADE, 1.f, 0.f);
+    if (mWorldMarker && (!gSavedSettings.getBOOL(mReflectionProbe ? "RenderReflectionProbeIcons" : "RenderLightSourceIcons") ||
+        mDistance > llmin(camera->getFar(), 128.f) ||
+        !camera->pointInFrustum(icon_position)))
+    {
+        return;
+    }
+    F32 alpha_factor = mWorldMarker ? 1.f :
+        clamp_rescale(mDistance, DIST_START_FADE, DIST_END_FADE, 1.f, 0.f);
 
     LLVector3 x_pixel_vec;
     LLVector3 y_pixel_vec;
@@ -119,26 +142,26 @@ void LLHUDIcon::render()
     camera->getPixelVectors(icon_position, y_pixel_vec, x_pixel_vec);
 
     F32 scale_factor = 1.f;
-    if (mAnimTimer.getElapsedTimeF32() < ANIM_TIME)
+    if (!mWorldMarker && mAnimTimer.getElapsedTimeF32() < ANIM_TIME)
     {
         scale_factor = llmax(0.f, calc_bouncy_animation(mAnimTimer.getElapsedTimeF32() / ANIM_TIME));
     }
 
     F32 time_elapsed = mLifeTimer.getElapsedTimeF32();
-    if (time_elapsed > MAX_VISIBLE_TIME)
+    if (!mWorldMarker && time_elapsed > MAX_VISIBLE_TIME)
     {
         markDead();
         return;
     }
 
-    if (time_elapsed > MAX_VISIBLE_TIME - FADE_OUT_TIME)
+    if (!mWorldMarker && time_elapsed > MAX_VISIBLE_TIME - FADE_OUT_TIME)
     {
         alpha_factor *= clamp_rescale(time_elapsed, MAX_VISIBLE_TIME - FADE_OUT_TIME, MAX_VISIBLE_TIME, 1.f, 0.f);
     }
 
     F32 image_aspect = (F32)mImagep->getFullWidth() / (F32)mImagep->getFullHeight() ;
-    LLVector3 x_scale = image_aspect * (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor * x_pixel_vec;
-    LLVector3 y_scale = (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor * y_pixel_vec;
+    LLVector3 x_scale = image_aspect * (mWorldMarker ? 32.f : (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor) * x_pixel_vec;
+    LLVector3 y_scale = (mWorldMarker ? 32.f : (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor) * y_pixel_vec;
 
     LLVector3 lower_left = icon_position - (x_scale * 0.5f);
     LLVector3 lower_right = icon_position + (x_scale * 0.5f);
@@ -184,7 +207,7 @@ void LLHUDIcon::setScale(F32 fraction_of_fov)
 
 void LLHUDIcon::markDead()
 {
-    if (mSourceObject)
+    if (mSourceObject && !mWorldMarker)
     {
         mSourceObject->clearIcon();
     }
@@ -193,10 +216,11 @@ void LLHUDIcon::markDead()
 
 bool LLHUDIcon::lineSegmentIntersect(const LLVector4a& start, const LLVector4a& end, LLVector4a* intersection)
 {
-    if (mHidden)
+    if (mDead || mHidden)
         return false;
 
-    if (mSourceObject.isNull() || mImagep.isNull())
+    if (mSourceObject.isNull() || mSourceObject->isDead() ||
+        mSourceObject->mDrawable.isNull() || mImagep.isNull())
     {
         markDead();
         return false;
@@ -219,9 +243,24 @@ bool LLHUDIcon::lineSegmentIntersect(const LLVector4a& start, const LLVector4a& 
     LLVector3 icon_to_cam = LLViewerCamera::getInstance()->getOrigin() - icon_position;
     icon_to_cam.normVec();
 
-    icon_position += icon_to_cam * mSourceObject->mDrawable->getRadius() * 1.1f;
+    if (mWorldMarker)
+    {
+        // Keep the marker on its source prim, including small linked children.
+        icon_position = obj_position;
+        setPositionAgent(icon_position);
+    }
+    else
+    {
+        icon_position += icon_to_cam * mSourceObject->mDrawable->getRadius() * 1.1f;
+    }
 
     mDistance = dist_vec(icon_position, camera->getOrigin());
+    if (mWorldMarker && (!gSavedSettings.getBOOL(mReflectionProbe ? "RenderReflectionProbeIcons" : "RenderLightSourceIcons") ||
+        mDistance > llmin(camera->getFar(), 128.f) ||
+        !camera->pointInFrustum(icon_position)))
+    {
+        return false;
+    }
 
     LLVector3 x_pixel_vec;
     LLVector3 y_pixel_vec;
@@ -229,21 +268,21 @@ bool LLHUDIcon::lineSegmentIntersect(const LLVector4a& start, const LLVector4a& 
     camera->getPixelVectors(icon_position, y_pixel_vec, x_pixel_vec);
 
     F32 scale_factor = 1.f;
-    if (mAnimTimer.getElapsedTimeF32() < ANIM_TIME)
+    if (!mWorldMarker && mAnimTimer.getElapsedTimeF32() < ANIM_TIME)
     {
         scale_factor = llmax(0.f, calc_bouncy_animation(mAnimTimer.getElapsedTimeF32() / ANIM_TIME));
     }
 
     F32 time_elapsed = mLifeTimer.getElapsedTimeF32();
-    if (time_elapsed > MAX_VISIBLE_TIME)
+    if (!mWorldMarker && time_elapsed > MAX_VISIBLE_TIME)
     {
         markDead();
         return false;
     }
 
     F32 image_aspect = (F32)mImagep->getFullWidth() / (F32)mImagep->getFullHeight() ;
-    LLVector3 x_scale = image_aspect * (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor * x_pixel_vec;
-    LLVector3 y_scale = (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor * y_pixel_vec;
+    LLVector3 x_scale = image_aspect * (mWorldMarker ? 32.f : (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor) * x_pixel_vec;
+    LLVector3 y_scale = (mWorldMarker ? 32.f : (F32)gViewerWindow->getWindowHeightScaled() * mScale * scale_factor) * y_pixel_vec;
 
     LLVector4a x_scalea;
     LLVector4a icon_positiona;
@@ -272,6 +311,7 @@ bool LLHUDIcon::lineSegmentIntersect(const LLVector4a& start, const LLVector4a& 
     if (LLTriangleRayIntersect(upper_right, upper_left, lower_right, start, dir, a,b,t) ||
         LLTriangleRayIntersect(upper_left, lower_left, lower_right, start, dir, a,b,t))
     {
+        if (t < 0.f || t > 1.f) return false;
         if (intersection)
         {
             dir.mul(t);
@@ -313,7 +353,57 @@ LLHUDIcon* LLHUDIcon::lineSegmentIntersectAll(const LLVector4a& start, const LLV
  //static
 void LLHUDIcon::updateAll()
 {
+    const bool show_lights = gSavedSettings.getBOOL("RenderLightSourceIcons");
+    const bool show_probes = gSavedSettings.getBOOL("RenderReflectionProbeIcons");
+    auto marker_type = [show_lights, show_probes](LLViewerObject* object)
+    {
+        LLVOVolume* volume = object && object->getPCode() == LL_PCODE_VOLUME ? static_cast<LLVOVolume*>(object) : nullptr;
+        if (!volume || volume->isDead() || volume->isHUDAttachment())
+        {
+            return 0;
+        }
+        if (show_probes && volume->isReflectionProbe()) return 2;
+        if (show_lights && volume->getIsLight()) return 1;
+        return 0;
+    };
+    std::set<LLViewerObject*> marked;
+    for (auto& icon : sIconInstances)
+    {
+        if (!icon->mWorldMarker || icon->mDead) continue;
+        LLViewerObject* object = icon->getSourceObject();
+        if (marker_type(object) != (icon->mReflectionProbe ? 2 : 1))
+        {
+            icon->markDead();
+        }
+        else
+        {
+            marked.insert(object);
+        }
+    }
     cleanupDeadIcons();
+
+    // Discover new sources at most four times a second, or immediately on toggle.
+    static LLFrameTimer discovery_timer;
+    static U32 previous_options = 0;
+    const U32 options = (show_lights ? 1 : 0) | (show_probes ? 2 : 0);
+    const bool changed = options != previous_options;
+    previous_options = options;
+    if (!options || (!changed && discovery_timer.getElapsedTimeF32() < 0.25f)) return;
+    discovery_timer.reset();
+    for (S32 i = 0; i < gObjectList.getNumObjects(); ++i)
+    {
+        LLViewerObject* object = gObjectList.getObject(i);
+        const S32 type = marker_type(object);
+        if (!type || marked.count(object)) continue;
+        LLUIImagePtr image = LLUI::getUIImage(type == 2 ? "Object_Sphere" : "Light_Source_Icon");
+        if (image.isNull()) continue;
+        auto* icon = static_cast<LLHUDIcon*>(addHUDObject(LL_HUD_ICON));
+        icon->mWorldMarker = true;
+        icon->mReflectionProbe = type == 2;
+        icon->setSourceObject(object);
+        icon->setImage(static_cast<LLViewerTexture*>(image->getImage().get()));
+        icon->setPositionAgent(object->getRenderPosition());
+    }
 }
 
 //static

@@ -74,7 +74,9 @@ bool LLFloaterPreferenceGraphicsAdvanced::postBuild()
         if (!gSMAAEdgeDetectProgram[0].isComplete())
             combo->remove("SMAA");
 
-        if (!gFXAAProgram[0].isComplete() && !gSMAAEdgeDetectProgram[0].isComplete())
+        if (!gTAAResolveProgram.isComplete()) combo->remove("TAA");
+
+        if (!gFXAAProgram[0].isComplete() && !gSMAAEdgeDetectProgram[0].isComplete() && !gTAAResolveProgram.isComplete())
         {
             combo->setEnabled(false);
             getChild<LLComboBox>("fsaa quality")->setEnabled(false);
@@ -345,6 +347,9 @@ void LLFloaterPreferenceGraphicsAdvanced::disableUnavailableSettings()
 
 void LLFloaterPreferenceGraphicsAdvanced::refreshEnabledState()
 {
+    const U32 aa = gSavedSettings.getU32("RenderFSAAType");
+    getChildView("fsaa quality")->setEnabled(aa == 1 || aa == 2);
+    getChildView("antialiasing quality label")->setEnabled(aa == 1 || aa == 2);
     bool enabled = true;
 
     LLCheckBoxCtrl* ctrl_ssao = getChild<LLCheckBoxCtrl>("UseSSAO");
