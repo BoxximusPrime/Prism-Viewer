@@ -66,7 +66,7 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Avatar and world interaction
 
-- Refreshed graphics defaults match the supplied SSS, PCSS, GTAO and TAA settings and subsequent GTAO adjustments, with exact transparency (OIT) enabled. Higher automatic quality presets select TAA and Sun/Moon shadows; lower-tier AA/shadow safeguards and existing saved preferences remain intact. (in progress; settings/XML checks passed; Release build and refreshed 0.3.0 installer pending)
+- Refreshed graphics defaults match the supplied SSS, PCSS, GTAO and TAA settings and subsequent GTAO adjustments, with exact transparency (OIT) enabled. Higher automatic quality presets select TAA and Sun/Moon shadows; lower-tier AA/shadow safeguards and existing saved preferences remain intact. (settings/XML, Release 0.3.0.54501 build and installer resource checks passed)
 
 - GTAO ambient occlusion with a Graphics > GTAO tab, immediate toggle, white-geometry debug view, radius, strength, three quality levels, denoising, distance falloff and thin-object compensation. Uses separate full-resolution visibility buffers and Hilbert/R2 sampling, advancing its temporal sample index while TAA is active; takes precedence over legacy SSAO and preserves PCSS filtering. On by default; debug is session-only. (in progress; TAA integration uncommitted; initial in-world appearance confirmed by user; 38 GTAO and 280 PCSS GPU cases passed)
 
@@ -158,7 +158,7 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Interface and preferences
 
-- Graphics options use the shared charcoal-and-amber tab controls, including the raised selected tab, rounded rail, and hover/pressed states. Existing graphics panels and setting bindings are retained. (in progress; XML, binding-preservation, and texture-reference checks passed; visual verification and refreshed 0.3.0 installer pending)
+- Graphics options use the shared charcoal-and-amber tab controls, including the raised selected tab, rounded rail, and hover/pressed states. Existing graphics panels and setting bindings are retained. (XML, binding-preservation, texture-reference, Release 0.3.0.54501 build and installer resource checks passed; in-world visual verification pending)
 
 - Charcoal/amber tabs in avatar profiles, Inventory (My Inventory, Recent, Worn, Favorites), Outfits (Outfit Gallery, My Outfits, Wearing), and Build/Edit (General, Object, Features, Texture, Content), with raised selection, hover/pressed/disabled states, and a rounded panel rail fading to transparent. The frame resizes and hides with its tab container; existing panels, callbacks and localized labels are retained. Mouse-down no longer briefly focuses the departing tab. Includes an isolated XUI specimen and reusable styling. (in progress; uncommitted, Release build and XML preservation/staging checks passed; integrated appearance awaits runtime verification; focus-flash fix accepted without further testing)
 
