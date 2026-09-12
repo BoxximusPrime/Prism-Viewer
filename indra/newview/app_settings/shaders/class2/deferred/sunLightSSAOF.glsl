@@ -30,6 +30,9 @@ out vec4 frag_color;
 
 // Inputs
 in vec2 vary_fragcoord;
+uniform sampler2D gtaoMap;
+uniform int gtao_enabled;
+uniform float gtao_strength;
 
 vec4 getPosition(vec2 pos_screen);
 vec4 getNorm(vec2 pos_screen);
@@ -48,7 +51,12 @@ void main()
 
     vec4 col;
     col.r = sampleDirectionalShadow(pos.xyz, norm.xyz, pos_screen);
-    col.g = calcAmbientOcclusion(pos, norm.xyz, pos_screen);
+    if (gtao_enabled != 0)
+    {
+        float visibility = clamp(texture(gtaoMap, pos_screen).r, 0.0, 1.0);
+        col.g = gtao_strength <= 0.0 ? 1.0 : pow(visibility, gtao_strength);
+    }
+    else col.g = calcAmbientOcclusion(pos, norm.xyz, pos_screen);
     col.b = sampleSpotShadow(pos.xyz, norm.xyz, 0, pos_screen);
     col.a = sampleSpotShadow(pos.xyz, norm.xyz, 1, pos_screen);
 

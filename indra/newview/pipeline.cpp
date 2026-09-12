@@ -553,6 +553,7 @@ void LLPipeline::init()
     connectRefreshCachedSettingsSafe("RenderShadowDetail");
     connectRefreshCachedSettingsSafe("RenderShadowSplits");
     connectRefreshCachedSettingsSafe("RenderDeferredSSAO");
+    connectRefreshCachedSettingsSafe("RenderGTAOEnabled");
     connectRefreshCachedSettingsSafe("RenderShadowResolutionScale");
     connectRefreshCachedSettingsSafe("RenderDelayCreation");
     connectRefreshCachedSettingsSafe("RenderAnimateRes");
@@ -921,6 +922,14 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
 
     if (!gCubeSnapshot) // hack to not re-allocate various targets for cube snapshots
     {
+        mGTAOReady = false;
+        for (auto& target : mGTAO) target.release();
+        if (gSavedSettings.getBOOL("RenderGTAOEnabled") &&
+            (!mGTAO[0].allocate(resX, resY, GL_RG16F) || !mGTAO[1].allocate(resX, resY, GL_RG16F)))
+        {
+            for (auto& target : mGTAO) target.release();
+            LL_WARNS("Render") << "GTAO buffers unavailable; using legacy SSAO." << LL_ENDL;
+        }
         mSSSTransmission.release();
         mSSSDiffuse.release();
         mSSSScratch.release();
@@ -1137,7 +1146,8 @@ void LLPipeline::refreshCachedSettings()
     RenderUIBuffer = gSavedSettings.getBOOL("RenderUIBuffer");
     RenderShadowDetail = gSavedSettings.getS32("RenderShadowDetail");
     RenderShadowSplits = gSavedSettings.getS32("RenderShadowSplits");
-    RenderDeferredSSAO = gSavedSettings.getBOOL("RenderDeferredSSAO");
+    // Common AO light-buffer path. GTAO takes precedence, with legacy fallback.
+    RenderDeferredSSAO = gSavedSettings.getBOOL("RenderDeferredSSAO") || gSavedSettings.getBOOL("RenderGTAOEnabled");
     RenderShadowResolutionScale = gSavedSettings.getF32("RenderShadowResolutionScale");
     RenderDelayCreation = gSavedSettings.getBOOL("RenderDelayCreation");
     RenderAnimateRes = gSavedSettings.getBOOL("RenderAnimateRes");
@@ -1334,6 +1344,8 @@ void LLPipeline::releaseShadowBuffers()
 
 void LLPipeline::releaseScreenBuffers()
 {
+    mGTAOReady = false;
+    for (auto& target : mGTAO) target.release();
     mRT->screen.release();
     mRT->deferredScreen.release();
     mRT->deferredLight.release();
@@ -8210,7 +8222,14 @@ void LLPipeline::renderFinalize()
         std::swap(sourceBuffer, targetBuffer);
     }
 
-     if (RenderFSAAType == 1)
+    // Inspect the AO signal after exposure, tone mapping, glow and DoF. The
+    // geometry mask was captured with GTAO, before transparency changes depth.
+    if (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug"))
+    {
+        renderGTAODebug(sourceBuffer);
+    }
+
+    if (RenderFSAAType == 1)
     {
         applyFXAA(sourceBuffer, targetBuffer);
         std::swap(sourceBuffer, targetBuffer);
@@ -8258,13 +8277,16 @@ void LLPipeline::renderFinalize()
 
     // Present the screen target.
 
-    gDeferredPostNoDoFNoiseProgram.bind(); // Add noise as part of final render to screen pass to avoid damaging other post effects
+    // Keep the diagnostic free of the final presentation noise.
+    LLGLSLShader& final_shader = isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug") ?
+        gDeferredPostNoDoFProgram : gDeferredPostNoDoFNoiseProgram;
+    final_shader.bind();
 
     // Whatever is last in the above post processing chain should _always_ be rendered directly here.  If not, expect problems.
-    gDeferredPostNoDoFNoiseProgram.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, sourceBuffer);
-    gDeferredPostNoDoFNoiseProgram.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true);
+    final_shader.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, sourceBuffer);
+    final_shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true);
 
-    gDeferredPostNoDoFNoiseProgram.uniform2f(LLShaderMgr::DEFERRED_SCREEN_RES, (GLfloat)sourceBuffer->getWidth(), (GLfloat)sourceBuffer->getHeight());
+    final_shader.uniform2f(LLShaderMgr::DEFERRED_SCREEN_RES, (GLfloat)sourceBuffer->getWidth(), (GLfloat)sourceBuffer->getHeight());
 
     {
         LLGLDepthTest depth_test(GL_TRUE, GL_TRUE, GL_ALWAYS);
@@ -8272,7 +8294,7 @@ void LLPipeline::renderFinalize()
         mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
     }
 
-    gDeferredPostNoDoFNoiseProgram.unbind();
+    final_shader.unbind();
 
     gGL.setSceneBlendType(LLRender::BT_ALPHA);
 
@@ -8565,6 +8587,31 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     shader.uniform1f(LLShaderMgr::DEFERRED_SHADOW_NOISE, RenderShadowNoise);
     shader.uniform1f(LLShaderMgr::DEFERRED_BLUR_SIZE, RenderShadowBlurSize);
 
+    static LLCachedControl<F32> gtao_radius(gSavedSettings, "RenderGTAORadius", 0.5f);
+    static LLCachedControl<F32> gtao_falloff(gSavedSettings, "RenderGTAOFalloff", 0.6f);
+    static LLCachedControl<F32> gtao_thin(gSavedSettings, "RenderGTAOThinOccluder", 0.f);
+    static LLCachedControl<F32> gtao_denoise(gSavedSettings, "RenderGTAODenoise", 1.f);
+    static LLCachedControl<F32> gtao_strength(gSavedSettings, "RenderGTAOStrength", 1.f);
+    static LLCachedControl<S32> gtao_quality(gSavedSettings, "RenderGTAOQuality", 1);
+    static const LLStaticHashedString gtaoEnabled("gtao_enabled"), gtaoParams("gtao_params"),
+        gtaoStrength("gtao_strength"), gtaoQuality("gtao_quality"), gtaoNoise("gtao_noise_index");
+    const bool gtao_active = isGTAOActive();
+    shader.uniform1i(gtaoEnabled, gtao_active ? 1 : 0);
+    shader.uniform4f(gtaoParams, llclamp(F32(gtao_radius), 0.05f, 3.f),
+        llclamp(F32(gtao_falloff), 0.1f, 1.f), llclamp(F32(gtao_thin), 0.f, 1.f),
+        llclamp(F32(gtao_denoise), 0.f, 2.f));
+    shader.uniform1f(gtaoStrength, llclamp(F32(gtao_strength), 0.f, 3.f));
+    shader.uniform1i(gtaoQuality, llclamp(S32(gtao_quality), 0, 2));
+    // Future TAA integration: advance this modulo 64 only when the shaded
+    // image has a valid temporal resolve. Keep spatial-only noise fixed now.
+    shader.uniform1i(gtaoNoise, 0);
+    channel = shader.enableTexture(LLShaderMgr::DEFERRED_GTAO);
+    if (channel > -1)
+    {
+        if (gtao_active) mGTAO[0].bindTexture(0, channel, LLTexUnit::TFO_POINT);
+        else gGL.getTexUnit(channel)->bindFast(LLViewerFetchedTexture::sWhiteImagep);
+    }
+
     shader.uniform1f(LLShaderMgr::DEFERRED_SSAO_RADIUS, RenderSSAOScale);
     shader.uniform1f(LLShaderMgr::DEFERRED_SSAO_MAX_RADIUS, (GLfloat)RenderSSAOMaxScale);
 
@@ -8708,6 +8755,8 @@ void LLPipeline::renderDeferredLighting()
         tc_moon = mat * tc_moon;
         mTransformedMoonDir.set(tc_moon);
 
+        renderGTAO();
+
         if ((RenderDeferredSSAO && !gCubeSnapshot) || RenderShadowDetail > 0)
         {
             LL_PROFILE_GPU_ZONE("sun program");
@@ -8737,7 +8786,9 @@ void LLPipeline::renderDeferredLighting()
             deferred_light_target->flush();
         }
 
-        if (RenderDeferredSSAO && !gCubeSnapshot)
+        const bool gtao_needs_shadow_blur = RenderShadowDetail > 0 &&
+            !(gSavedSettings.getBOOL("RenderPCSSEnabled") && gGLManager.mNumTextureImageUnits >= 32);
+        if (RenderDeferredSSAO && !gCubeSnapshot && (!isGTAOActive() || gtao_needs_shadow_blur))
         {
             // soften direct lighting lightmap
             LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("renderDeferredLighting - soften shadow");
@@ -9208,6 +9259,77 @@ void LLPipeline::renderDeferredLighting()
         }
     }
     gGL.setColorMask(true, true);
+}
+
+bool LLPipeline::isGTAOAvailable() const
+{
+    return gSavedSettings.getBOOL("RenderGTAOEnabled") &&
+        gGTAOProgram.isComplete() && gGTAOBlurProgram.isComplete() && gGTAODebugProgram.isComplete() &&
+        mGTAO[0].isComplete() && mGTAO[1].isComplete() &&
+        mGTAO[0].getWidth() == mMainRT.deferredScreen.getWidth() &&
+        mGTAO[0].getHeight() == mMainRT.deferredScreen.getHeight();
+}
+
+bool LLPipeline::isGTAOActive() const
+{
+    return mGTAOReady && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT && isGTAOAvailable();
+}
+
+void LLPipeline::renderGTAO()
+{
+    if (gCubeSnapshot || sImpostorRender || mRT != &mMainRT) return;
+    mGTAOReady = false;
+    if (!isGTAOAvailable()) return;
+
+    LL_PROFILE_GPU_ZONE("GTAO");
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    LLGLDisable cull(GL_CULL_FACE);
+    LLGLDisable blend(GL_BLEND);
+    gGL.setColorMask(true, true);
+    {
+        LL_PROFILE_GPU_ZONE("GTAO horizon search");
+        mGTAO[0].bindTarget();
+        bindDeferredShader(gGTAOProgram);
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mGTAO[0].flush();
+        unbindDeferredShader(gGTAOProgram);
+    }
+    if (gSavedSettings.getF32("RenderGTAODenoise") > 0.f)
+    {
+        LL_PROFILE_GPU_ZONE("GTAO denoise");
+        for (U32 pass = 0; pass < 2; ++pass)
+        {
+            auto& source = mGTAO[pass];
+            auto& dest = mGTAO[1 - pass];
+            dest.bindTarget();
+            bindDeferredShader(gGTAOBlurProgram);
+            gGTAOBlurProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &source, false, LLTexUnit::TFO_POINT);
+            gGTAOBlurProgram.uniform2f(sDelta, pass == 0 ? 1.f : 0.f, pass == 0 ? 0.f : 1.f);
+            mScreenTriangleVB->setBuffer();
+            mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+            dest.flush();
+            gGTAOBlurProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+            unbindDeferredShader(gGTAOBlurProgram);
+        }
+    }
+    mGTAOReady = true;
+}
+
+void LLPipeline::renderGTAODebug(LLRenderTarget* dst)
+{
+    LL_PROFILE_GPU_ZONE("GTAO debug");
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    LLGLDisable cull(GL_CULL_FACE);
+    LLGLDisable blend(GL_BLEND);
+    dst->bindTarget();
+    bindDeferredShader(gGTAODebugProgram);
+    gGTAODebugProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mGTAO[0], false, LLTexUnit::TFO_POINT);
+    mScreenTriangleVB->setBuffer();
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    dst->flush();
+    gGTAODebugProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+    unbindDeferredShader(gGTAODebugProgram);
 }
 
 void LLPipeline::renderSSSDiffusion(bool transmission)
@@ -9695,6 +9817,7 @@ void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
     //shader.disableTexture(LLShaderMgr::DEFERRED_DEPTH, deferred_depth_target->getUsage());
     shader.disableTexture(LLShaderMgr::DEFERRED_DEPTH, deferred_target->getUsage());
     shader.disableTexture(LLShaderMgr::DEFERRED_LIGHT, deferred_light_target->getUsage());
+    shader.disableTexture(LLShaderMgr::DEFERRED_GTAO);
     shader.disableTexture(LLShaderMgr::DIFFUSE_MAP);
     shader.disableTexture(LLShaderMgr::DEFERRED_BLOOM);
     for (U32 i = 0; i < 6; ++i)

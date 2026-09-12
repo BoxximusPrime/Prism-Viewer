@@ -1275,6 +1275,22 @@ void LLFloaterPreference::buildPopupLists()
 
 void LLFloaterPreference::refreshEnabledState()
 {
+    const bool gtao_supported = LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred") &&
+        LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferredSSAO");
+    const bool gtao_enabled = gtao_supported && gSavedSettings.getBOOL("RenderGTAOEnabled");
+    getChildView("RenderGTAOEnabled")->setEnabled(gtao_supported);
+    for (const char* control : { "RenderGTAODebug", "RenderGTAORadius", "RenderGTAOStrength",
+        "RenderGTAOQuality", "GTAOQualityLabel", "RenderGTAODenoise", "RenderGTAOFalloff", "RenderGTAOThinOccluder" })
+    {
+        getChildView(control)->setEnabled(gtao_enabled);
+    }
+    getChild<LLTextBox>("GTAOStatus")->setValue(!gtao_supported ?
+        "GTAO is unavailable with this graphics configuration." :
+        !gtao_enabled ? "GTAO is off. The legacy SSAO setting applies." :
+        gPipeline.mShadersLoaded && gPipeline.mMainRT.deferredScreen.isComplete() && !gPipeline.isGTAOAvailable() ?
+        "GTAO could not initialize. Legacy SSAO is active." :
+        "GTAO is enabled. Adjustments apply immediately.");
+
     const bool pcss_supported = gGLManager.mNumTextureImageUnits >= 32;
     const bool pcss_shadows = gSavedSettings.getS32("RenderShadowDetail") > 0;
     const bool pcss_enabled = pcss_supported && pcss_shadows && gSavedSettings.getBOOL("RenderPCSSEnabled");
@@ -2653,6 +2669,11 @@ void LLPanelPreferenceGraphics::saveSettings()
 }
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
+    for (const char* control : { "RenderGTAOEnabled", "RenderGTAODebug", "RenderGTAORadius",
+        "RenderGTAOStrength", "RenderGTAOQuality", "RenderGTAODenoise", "RenderGTAOFalloff", "RenderGTAOThinOccluder" })
+    {
+        gSavedSettings.getControl(control)->resetToDefault(true);
+    }
     gSavedSettings.getControl("RenderPCSSEnabled")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSLightSize")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSMaxSoftness")->resetToDefault(true);

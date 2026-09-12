@@ -171,6 +171,9 @@ LLGLSLShader            gDeferredSunProbeProgram;
 LLGLSLShader            gHazeProgram;
 LLGLSLShader            gHazeWaterProgram;
 LLGLSLShader            gDeferredBlurLightProgram;
+LLGLSLShader            gGTAOProgram;
+LLGLSLShader            gGTAOBlurProgram;
+LLGLSLShader            gGTAODebugProgram;
 LLGLSLShader            gDeferredSoftenProgram;
 LLGLSLShader            gDeferredShadowProgram;
 LLGLSLShader            gDeferredSkinnedShadowProgram;
@@ -1252,6 +1255,9 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gDeferredMultiSpotLightProgram.unload();
         gDeferredSunProgram.unload();
         gDeferredBlurLightProgram.unload();
+        gGTAOProgram.unload();
+        gGTAOBlurProgram.unload();
+        gGTAODebugProgram.unload();
         gDeferredSoftenProgram.unload();
         gDeferredShadowProgram.unload();
         gDeferredSkinnedShadowProgram.unload();
@@ -1854,7 +1860,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     if (success)
     {
         std::string fragment;
-        bool use_ao = gSavedSettings.getBOOL("RenderDeferredSSAO");
+        bool use_ao = gSavedSettings.getBOOL("RenderDeferredSSAO") || gSavedSettings.getBOOL("RenderGTAOEnabled");
         if (use_ao)
         {
             fragment = "deferred/sunLightSSAOF.glsl";
@@ -2287,7 +2293,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
             gDeferredSoftenProgram.addPermutation("HAS_SUN_SHADOW", "1");
         }
 
-        if (gSavedSettings.getBOOL("RenderDeferredSSAO"))
+        if (gSavedSettings.getBOOL("RenderDeferredSSAO") || gSavedSettings.getBOOL("RenderGTAOEnabled"))
         { //if using SSAO, take screen space light map into account as if shadows are enabled
             gDeferredSoftenProgram.mShaderLevel = llmax(gDeferredSoftenProgram.mShaderLevel, 2);
             gDeferredSoftenProgram.addPermutation("HAS_SSAO", "1");
@@ -3196,6 +3202,44 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gSSSMaskProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
         add_common_permutations(&gSSSMaskProgram);
         success = gSSSMaskProgram.createShader();
+    }
+
+    // Optional AO shaders have a local failure path; legacy SSAO remains usable.
+    if (success && gSavedSettings.getBOOL("RenderGTAOEnabled"))
+    {
+        struct GTAOStage { LLGLSLShader* shader; const char* name; const char* file; };
+        const GTAOStage stages[] = {
+            { &gGTAOProgram, "GTAO Horizon Integration", "deferred/gtaoF.glsl" },
+            { &gGTAOBlurProgram, "GTAO Spatial Denoise", "deferred/gtaoBlurF.glsl" },
+            { &gGTAODebugProgram, "GTAO White Geometry", "deferred/gtaoDebugF.glsl" }
+        };
+        for (const auto& stage : stages)
+        {
+            stage.shader->mName = stage.name;
+            stage.shader->mShaderFiles = {
+                make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+                make_pair(stage.file, GL_FRAGMENT_SHADER)};
+            stage.shader->mFeatures.isDeferred = stage.shader != &gGTAODebugProgram;
+            stage.shader->mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+            stage.shader->clearPermutations();
+            add_common_permutations(stage.shader);
+            if (!stage.shader->createShader())
+            {
+                for (const auto& cleanup : stages) cleanup.shader->unload();
+                LL_WARNS("ShaderLoading") << "GTAO unavailable; using legacy SSAO." << LL_ENDL;
+                break;
+            }
+        }
+        if (gGTAOProgram.isComplete() && gGTAOBlurProgram.isComplete() && gGTAODebugProgram.isComplete())
+        {
+            LL_INFOS() << "Loaded GTAO horizon, spatial denoise and white-geometry debug shaders." << LL_ENDL;
+        }
+    }
+    else
+    {
+        gGTAOProgram.unload();
+        gGTAOBlurProgram.unload();
+        gGTAODebugProgram.unload();
     }
 
     success = FSExactOIT::loadShaders(success, mShaderLevel[SHADER_DEFERRED], use_sun_shadow,

@@ -400,6 +400,19 @@ def run(sdl, gl):
     for channel in (2, 3):
         assert outputs[1][channel::4] == outputs[1][::4]
     assert outputs[0][1::4] == outputs[1][1::4]
+    # With GTAO enabled its separately denoised green channel must survive
+    # either shadow mode, while the other channels behave exactly as before.
+    uniform(blur, "gtao_enabled", 1, integer=True)
+    for enabled in (0, 1):
+        uniform(blur, "pcss_enabled", enabled, integer=True)
+        gl.DrawArrays(4, 0, 3)
+        output = (F * (WIDTH * 4))()
+        gl.ReadPixels(0, 1, WIDTH, 1, RGBA, FLOAT, output)
+        assert list(output)[1::4] == [float(x % 2) for x in range(WIDTH)]
+        for channel in (0, 2, 3):
+            assert list(output)[channel::4] == outputs[enabled][channel::4]
+        assert gl.GetError() == 0
+        cases += 1
     print(f"PASS: {cases} PCSS GPU cases on {gl.GetString(0x1F01).decode()}")
 
 

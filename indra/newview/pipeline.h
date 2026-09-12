@@ -174,6 +174,10 @@ public:
     void copyRenderTarget(LLRenderTarget* src, LLRenderTarget* dst);
     void combineGlow(LLRenderTarget* src, LLRenderTarget* dst);
     void visualizeBuffers(LLRenderTarget* src, LLRenderTarget* dst, U32 bufferIndex);
+    bool isGTAOAvailable() const;
+    bool isGTAOActive() const;
+    void renderGTAO();
+    void renderGTAODebug(LLRenderTarget* dst);
 
     void init();
     void cleanup();
@@ -762,6 +766,8 @@ public:
     // copy of the color/depth buffer just before gamma correction
     // for use by SSR
     LLRenderTarget          mSceneMap;
+    LLRenderTarget          mGTAO[2]; // visibility + geometry mask; spatial ping-pong
+    bool                    mGTAOReady = false;
 
     // exposure map for getting average color in scene
     LLRenderTarget          mLuminanceMap;
