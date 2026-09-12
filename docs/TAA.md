@@ -2,17 +2,17 @@
 
 Select **TAA** in Preferences → Graphics → Advanced Settings → Antialiasing,
 or use the identical AA selector in the new Graphics → TAA tab. Existing AA
-choices and saved defaults are retained. All changes apply immediately; Cancel
+choices and saved preferences are retained. New profiles default to TAA at higher graphics tiers. All changes apply immediately; Cancel
 restores the saved preference values. The old Low–Ultra AA quality selector
 continues to apply only to FXAA/SMAA.
 
 | Control | Default | Effect |
 | --- | --- | --- |
-| History weight | 0.90 | Maximum previous-frame contribution; automatic validation can reduce it to zero. |
+| History weight | 0.97 | Maximum previous-frame contribution; automatic validation can reduce it to zero. |
 | Motion protection | 0.85 | Reduces history during motion and color disagreement. Raise for clearer movement, at the cost of more shimmer. |
-| Color clipping range | 1.00 | YCoCg neighborhood standard deviations. Lower values reject stale colors more tightly. |
-| Transparency protection | 1.00 | Favors the current image where transparency/post-deferred shading changes the opaque image. |
-| Sharpening | 0.20 | Range 0–2. Bounded output sharpening, outside history. Adds to general CAS sharpening. |
+| Color clipping range | 1.20 | YCoCg neighborhood standard deviations. Lower values reject stale colors more tightly. |
+| Transparency protection | 0.00 | Favors the current image where transparency/post-deferred shading changes the opaque image. |
+| Sharpening | 1.50 | Range 0–2. Bounded output sharpening, outside history. Adds to general CAS sharpening. |
 | Stabilize fine static details | On | Retains thin static geometry and small highlights through missing jitter samples while the camera is still. |
 | Debug view | Normal | Motion vectors (R/G direction, blue reactive) or history reuse (red rejected, green reused). Session-only. |
 
@@ -123,7 +123,7 @@ against bilinear neighbors even when they contributed no color. Matching history
 depth to motion ownership and ignoring zero-weight taps fixes these rejection
 errors. The expanded 55 GPU checks include geometry/sky silhouettes across the
 eight jitter phases, fractional-motion disocclusion, and history-weight response.
-At the default 0.90 history weight, mean edge peak-to-peak variation falls from
+At the then-default 0.90 history weight, mean edge peak-to-peak variation falls from
 0.3553 to 0.0364 in the synthetic silhouette test, with rejected samples falling
 from 69.2% to zero; 0.97 history weight reduces variation further to 0.0193.
 Moving-silhouette cleanup still passes. The user confirmed improvement in-world,
@@ -135,7 +135,7 @@ detail stabilization, mean peak-to-peak variation drops from 0.2624 to 0.0312 on
 color-only detail, the disable option, removed-detail expiry, and cancellation
 by avatars, movement, reactivity, occluders, or changed lighting. The original
 TAA GPU suite now has 76 passing checks, including sharpening at 0, 0.2, 1 and 2,
-response, bounded contrast, and unchanged glow alpha. The default sharpening
+response, bounded contrast, and unchanged glow alpha. The then-default 0.20 sharpening
 keeps thin-bar variation at 0.0339 (versus 0.0312 before sharpening), preserving
 the stability improvement. The sharpening algorithm correction was shader-only;
 the subsequent range extension to 2 also updates the renderer's C++ clamp and

@@ -1,7 +1,7 @@
 # GTAO
 
-Initial implementation, uncommitted. Enable it in **Preferences > Graphics > GTAO**.
-It is off by default and takes precedence over the legacy SSAO checkbox. Disabling
+Configure it in **Preferences > Graphics > GTAO**.
+It is on by default and takes precedence over the legacy SSAO checkbox. Disabling
 GTAO restores that checkbox's behavior. Optional shader or render-target failures
 fall back to legacy SSAO and appear in the log and preferences status.
 
@@ -9,11 +9,11 @@ fall back to legacy SSAO and appear in the log and preferences status.
 
 | Control | Default | Effect |
 | --- | --- | --- |
-| Radius | 0.50 m | Size of nearby occluders to consider; range 0.05–3 m. |
+| Radius | 1.00 m | Size of nearby occluders to consider; range 0.05–3 m. |
 | Strength | 1 | Exponent applied to filtered visibility; zero removes darkening. |
-| Quality | Balanced | Performance / Balanced / High use 8 / 18 / 32 depth taps. |
-| Denoising | 1 | Depth/normal-aware spatial smoothing; zero bypasses both filter passes. |
-| Distance falloff | 0.60 | Fraction of the radius over which occlusion fades; larger is gentler. |
+| Quality | High | Performance / Balanced / High use 8 / 18 / 32 depth taps. |
+| Denoising | 0.05 | Depth/normal-aware spatial smoothing; zero bypasses both filter passes. |
+| Distance falloff | 0.10 | Fraction of the radius over which occlusion fades; larger is gentler. |
 | Thin-object compensation | 0 | Reduces the contribution of samples separated in view depth, limiting thick silhouettes. |
 | White geometry debug | Off | White opaque/masked geometry with only GTAO shading, against gray sky. Session-only. |
 

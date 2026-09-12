@@ -29,26 +29,26 @@
     <key>Comment</key><string>Use contact-hardening PCSS for sun, moon and projector shadows. Requires 32 fragment texture units.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>0</integer>
+    <key>Value</key><integer>1</integer>
   </map>
   <key>RenderTAAStaticDetails</key>
   <map><key>Comment</key><string>Retain fine static details across missing jitter samples; movement and avatars use strict rejection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderTAAHistoryWeight</key>
-  <map><key>Comment</key><string>Maximum TAA history weight (0.5 to 0.97). Motion and invalid history lower this automatically.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.9</real></map>
+  <map><key>Comment</key><string>Maximum TAA history weight (0.5 to 0.97). Motion and invalid history lower this automatically.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.97</real></map>
   <key>RenderTAAMotionProtection</key>
   <map><key>Comment</key><string>TAA motion and color-disagreement protection (0 to 1). Higher values reduce trails at the cost of more shimmer in motion.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.85</real></map>
   <key>RenderTAAClipGamma</key>
-  <map><key>Comment</key><string>TAA color clipping standard deviations (0.5 to 2). Lower values reject stale colors more aggressively.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
+  <map><key>Comment</key><string>TAA color clipping standard deviations (0.5 to 2). Lower values reject stale colors more aggressively.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.20</real></map>
   <key>RenderTAATransparency</key>
-  <map><key>Comment</key><string>TAA reactive protection for transparency and post-deferred shading (0 to 1).</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
+  <map><key>Comment</key><string>TAA reactive protection for transparency and post-deferred shading (0 to 1).</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.00</real></map>
   <key>RenderTAASharpen</key>
-  <map><key>Comment</key><string>Bounded TAA output sharpening (0 to 2). Kept outside temporal history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.2</real></map>
+  <map><key>Comment</key><string>Bounded TAA output sharpening (0 to 2). Kept outside temporal history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.50</real></map>
   <key>RenderTAADebug</key>
   <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion vectors (blue = reactive), 2 history rejection (red = rejected, green = reused). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
   <key>RenderGTAOEnabled</key>
   <map>
     <key>Comment</key><string>Enable ground-truth ambient occlusion. Takes precedence over legacy SSAO; falls back to SSAO if GTAO resources are unavailable.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>0</integer>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer>
   </map>
   <key>RenderGTAODebug</key>
   <map>
@@ -58,7 +58,7 @@
   <key>RenderGTAORadius</key>
   <map>
     <key>Comment</key><string>GTAO near-field occlusion radius in metres (0.05 to 3).</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.5</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.00</real>
   </map>
   <key>RenderGTAOStrength</key>
   <map>
@@ -68,12 +68,12 @@
   <key>RenderGTAOQuality</key>
   <map>
     <key>Comment</key><string>GTAO quality: 0 Performance (8 samples), 1 Balanced (18), 2 High (32).</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><integer>1</integer>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><integer>2</integer>
   </map>
   <key>RenderGTAOFalloff</key>
   <map>
     <key>Comment</key><string>Fraction of the GTAO radius over which occlusion fades away (0.1 to 1).</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.6</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.10</real>
   </map>
   <key>RenderGTAOThinOccluder</key>
   <map>
@@ -83,42 +83,42 @@
   <key>RenderGTAODenoise</key>
   <map>
     <key>Comment</key><string>GTAO edge-aware spatial smoothing strength (0 to 2). 0 shows the unfiltered signal, 1 is normal.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.05</real>
   </map>
   <key>RenderPCSSLightSize</key>
   <map>
     <key>Comment</key><string>Sun/moon angular diameter in degrees for PCSS (0.1 to 10). Larger values soften distant shadows more.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.53</real>
+    <key>Value</key><real>1.45</real>
   </map>
   <key>RenderPCSSMaxSoftness</key>
   <map>
     <key>Comment</key><string>Maximum world-space PCSS penumbra radius in metres (0.05 to 3).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.80</real>
   </map>
   <key>RenderPCSSMinSoftness</key>
   <map>
     <key>Comment</key><string>Minimum PCSS penumbra radius in metres (0 to 0.5), limited by maximum softness. Zero preserves physically sharp contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.02</real>
+    <key>Value</key><real>0.01</real>
   </map>
   <key>RenderPCSSProjectorSize</key>
   <map>
     <key>Comment</key><string>Effective projector emitter diameter in metres for PCSS (0.01 to 2). Applies to shadow-casting projectors when Sun/Moon + Projectors is selected.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.1</real>
+    <key>Value</key><real>0.11</real>
   </map>
   <key>RenderPCSSBias</key>
   <map>
     <key>Comment</key><string>PCSS receiver depth bias in millimetres (0 to 30). Raise to reduce self-shadow artifacts; lower to keep close contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>5.0</real>
+    <key>Value</key><real>3.5</real>
   </map>
   <key>RenderPCSSQuality</key>
   <map>
@@ -158,7 +158,7 @@
     <key>Type</key>
     <string>String</string>
     <key>Value</key>
-    <string>body, head, hands, feet, ear, ears, perky, Noelle, eye, eyes</string>
+    <string>body, head, hands, feet, ear, ears, perky, Noelle, eye, eyes, squish</string>
   </map>
   <key>BoxxySSSShowDepth</key>
   <map>
@@ -213,7 +213,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>1.0</real>
+    <real>0.55</real>
   </map>
   <key>BoxxySSSDepth</key>
   <map>
@@ -224,7 +224,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.012000001</real>
+    <real>0.095</real>
   </map>
   <key>BoxxySSSWarmth</key>
   <map>
@@ -235,7 +235,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>1.0</real>
+    <real>0.65</real>
   </map>
   <key>BoxxySSSMaxDistance</key>
   <map>
@@ -246,7 +246,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>43</real>
+    <real>7</real>
   </map>
   <key>BoxxySSSWrapAmount</key>
   <map>
@@ -257,7 +257,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.40</real>
+    <real>0.20</real>
   </map>
   <key>BoxxySSSTransmission</key>
   <map>
@@ -268,7 +268,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>4</real>
+    <real>1.20</real>
   </map>
   <key>BoxxySSSPointTransmissionBoost</key>
   <map>
@@ -276,7 +276,7 @@
     <string>Additional 0-16x brightness multiplier for point-light and projector skin transmission in Combined mode. Applies to measured and estimated transmission without changing front lighting or sun/moon. 1 is neutral.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>9.0</real>
   </map>
   <key>BoxxySSSThickness</key>
   <map>
@@ -287,7 +287,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>9</real>
+    <real>3.5</real>
   </map>
   <key>BoxxySSSTransmissionSmoothing</key>
   <map>
@@ -295,7 +295,7 @@
     <string>Radius in millimeters for a separate depth-aware transmission blur in Combined mode. Zero disables the extra buffer and two filter passes. Does not blur skin textures or specular highlights.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>43</real>
+    <key>Value</key><real>47</real>
   </map>
   <key>BoxxySSSPenetration</key>
   <map>
@@ -303,7 +303,7 @@
     <string>Maximum measured light path through skin in millimeters. Transmission fades across the full measured distance, independently of brightness and absorption. Requires a verified skin entry/exit pair.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>80</real>
+    <key>Value</key><real>75</real>
   </map>
   <key>BoxxySSSShadowThickness</key>
   <map>
@@ -9162,7 +9162,7 @@
       <key>Type</key>
       <string>U32</string>
       <key>Value</key>
-      <integer>2</integer>
+      <integer>3</integer>
     </map>
     <key>RenderFarClip</key>
     <map>
@@ -9798,7 +9798,7 @@
       <key>Type</key>
       <string>S32</string>
       <key>Value</key>
-      <integer>2</integer>
+      <integer>1</integer>
     </map>
   <key>RenderReflectionsEnabled</key>
   <map>
