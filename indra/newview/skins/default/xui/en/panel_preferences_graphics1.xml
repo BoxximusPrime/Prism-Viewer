@@ -778,6 +778,62 @@ Combined: transmitted light from all lights, including blur.</text>
       Start with Balanced quality. Increase the light size for softer distant shadows, or Minimum softness for softer contacts. Very broad shadows may need High quality.
     </text>
   </panel>
+  <panel name="graphics_gtao_panel" label="GTAO" follows="all"
+    layout="topleft" width="517" height="410">
+    <text name="GTAODescription" follows="left|top|right" layout="topleft"
+      left="20" top="8" width="475" height="36" word_wrap="true">
+      Adds soft ambient shadowing in corners and where surfaces meet. GTAO replaces legacy SSAO while enabled and works with shadows off.
+    </text>
+    <check_box name="RenderGTAOEnabled" control_name="RenderGTAOEnabled"
+      label="Enable GTAO ambient occlusion" follows="left|top" layout="topleft"
+      left="30" top="51" width="450" height="20">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <check_box name="RenderGTAODebug" control_name="RenderGTAODebug"
+      label="Debug view: white geometry with GTAO" follows="left|top" layout="topleft"
+      left="30" top="78" width="450" height="20"
+      tool_tip="Shows GTAO on white opaque and alpha-masked surfaces against a gray background. Hides textures, lighting and transparency to isolate occlusion. Resets when the viewer restarts." />
+    <slider name="RenderGTAORadius" control_name="RenderGTAORadius"
+      label="Radius (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="111" width="450" height="20" min_val="0.05" max_val="3"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Reach of nearby ambient shadows. Start at 0.50 m. Larger radii add broad shading but can create halos around thin objects." />
+    <slider name="RenderGTAOStrength" control_name="RenderGTAOStrength"
+      label="Strength:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="142" width="450" height="20" min_val="0" max_val="3"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Shadow intensity. 1.00 is normal, 0 removes GTAO shadowing. Also affects the debug view." />
+    <text name="GTAOQualityLabel" follows="left|top" layout="topleft"
+      left="30" top="176" width="185" height="20">Sampling quality:</text>
+    <combo_box name="RenderGTAOQuality" control_name="RenderGTAOQuality"
+      follows="left|top" layout="topleft" left="220" top="173" width="260" height="23"
+      tool_tip="Higher quality reduces noise and captures small crevices more reliably, at a higher GPU cost.">
+      <combo_box.item label="Performance" value="0" />
+      <combo_box.item label="Balanced" value="1" />
+      <combo_box.item label="High" value="2" />
+    </combo_box>
+    <slider name="RenderGTAODenoise" control_name="RenderGTAODenoise"
+      label="Denoising:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="208" width="450" height="20" min_val="0" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Smooths noise while preserving surface edges. 1.00 is normal; 0 shows the raw samples for inspection." />
+    <slider name="RenderGTAOFalloff" control_name="RenderGTAOFalloff"
+      label="Distance falloff:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="239" width="450" height="20" min_val="0.1" max_val="1"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="How much of the radius fades gradually. Higher values soften the transition and reduce distant occlusion. Start at 0.60." />
+    <slider name="RenderGTAOThinOccluder" control_name="RenderGTAOThinOccluder"
+      label="Thin-object compensation:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="270" width="450" height="20" min_val="0" max_val="1"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Increase to reduce excessive shadowing behind thin objects such as chair legs. High values can weaken real occlusion in deep corners. Start at 0." />
+    <text name="GTAOStatus" follows="left|top|right" layout="topleft"
+      left="30" top="307" width="450" height="38" word_wrap="true" />
+    <text name="GTAOHelp" follows="left|top|right" layout="topleft"
+      left="30" top="353" width="450" height="48" word_wrap="true" text_color="LtGray_50">
+      Start with Balanced quality and a 0.50 m radius. Use the debug view to inspect contact shadows. Transparent surfaces and objects outside the view cannot contribute occlusion.
+    </text>
+  </panel>
   </tab_container>
 
 </panel>

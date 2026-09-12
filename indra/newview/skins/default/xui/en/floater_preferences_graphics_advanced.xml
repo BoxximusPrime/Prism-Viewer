@@ -727,7 +727,7 @@
     control_name="RenderDeferredSSAO"
     height="16"
     initial_value="true"
-    label="Screen Space Ambient Occlusion"
+    label="Legacy SSAO (when GTAO is off)"
     layout="topleft"
     left="420"
     name="UseSSAO"

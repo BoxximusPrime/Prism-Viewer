@@ -1525,6 +1525,7 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("noiseMap");
     mReservedUniforms.push_back("lightFunc");
     mReservedUniforms.push_back("lightMap");
+    mReservedUniforms.push_back("gtaoMap");
     mReservedUniforms.push_back("bloomMap");
     mReservedUniforms.push_back("projectionMap");
     mReservedUniforms.push_back("alphaProjectionMap0");

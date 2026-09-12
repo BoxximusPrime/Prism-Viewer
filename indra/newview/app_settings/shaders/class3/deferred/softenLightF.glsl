@@ -46,6 +46,7 @@ uniform float blur_fidelity;
 #if defined(HAS_SSAO)
 uniform float ssao_irradiance_scale;
 uniform float ssao_irradiance_max;
+uniform int gtao_enabled;
 #endif
 
 // Inputs
@@ -194,6 +195,11 @@ void adjustIrradiance(inout vec3 irradiance, float ambocc)
     //irradiance = max(amblit_linear, irradiance);
 
 #if defined(HAS_SSAO)
+    if (gtao_enabled != 0)
+    {
+        irradiance *= ambocc;
+        return;
+    }
     irradiance = mix(ssao_effect_mat * min(irradiance.rgb*ssao_irradiance_scale, vec3(ssao_irradiance_max)), irradiance.rgb, ambocc);
 #endif
 }

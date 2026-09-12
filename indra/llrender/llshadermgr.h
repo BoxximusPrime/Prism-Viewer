@@ -233,6 +233,7 @@ public:
         DEFERRED_NOISE,                     //  "noiseMap"
         DEFERRED_LIGHTFUNC,                 //  "lightFunc"
         DEFERRED_LIGHT,                     //  "lightMap"
+        DEFERRED_GTAO,                      //  "gtaoMap"
         DEFERRED_BLOOM,                     //  "bloomMap"
         DEFERRED_PROJECTION,                //  "projectionMap"
         ALPHA_PROJECTION0,                  //  "alphaProjectionMap0"

@@ -31,6 +31,46 @@
     <key>Type</key><string>Boolean</string>
     <key>Value</key><integer>0</integer>
   </map>
+  <key>RenderGTAOEnabled</key>
+  <map>
+    <key>Comment</key><string>Enable ground-truth ambient occlusion. Takes precedence over legacy SSAO; falls back to SSAO if GTAO resources are unavailable.</string>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>0</integer>
+  </map>
+  <key>RenderGTAODebug</key>
+  <map>
+    <key>Comment</key><string>Show white opaque/alpha-masked geometry with GTAO only, after exposure and tone mapping. Requires GTAO. Session-only diagnostic.</string>
+    <key>Persist</key><integer>0</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>0</integer>
+  </map>
+  <key>RenderGTAORadius</key>
+  <map>
+    <key>Comment</key><string>GTAO near-field occlusion radius in metres (0.05 to 3).</string>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.5</real>
+  </map>
+  <key>RenderGTAOStrength</key>
+  <map>
+    <key>Comment</key><string>GTAO visibility power applied after denoising (0 to 3). 1 is normal, 0 removes occlusion.</string>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real>
+  </map>
+  <key>RenderGTAOQuality</key>
+  <map>
+    <key>Comment</key><string>GTAO quality: 0 Performance (8 samples), 1 Balanced (18), 2 High (32).</string>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><integer>1</integer>
+  </map>
+  <key>RenderGTAOFalloff</key>
+  <map>
+    <key>Comment</key><string>Fraction of the GTAO radius over which occlusion fades away (0.1 to 1).</string>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.6</real>
+  </map>
+  <key>RenderGTAOThinOccluder</key>
+  <map>
+    <key>Comment</key><string>GTAO thin-occluder compensation (0 to 1). Reduces excess occlusion from large depth discontinuities, at the expense of deep corners.</string>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.0</real>
+  </map>
+  <key>RenderGTAODenoise</key>
+  <map>
+    <key>Comment</key><string>GTAO edge-aware spatial smoothing strength (0 to 2). 0 shows the unfiltered signal, 1 is normal.</string>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real>
+  </map>
   <key>RenderPCSSLightSize</key>
   <map>
     <key>Comment</key><string>Sun/moon angular diameter in degrees for PCSS (0.1 to 10). Larger values soften distant shadows more.</string>

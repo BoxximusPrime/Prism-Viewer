@@ -36,6 +36,7 @@ uniform vec2 screen_res;
 uniform vec3 kern[4];
 uniform float kern_scale;
 uniform int pcss_enabled;
+uniform int gtao_enabled;
 
 in vec2 vary_fragcoord;
 
@@ -110,6 +111,8 @@ void main()
     // PCSS already filters sun and projector shadows by blocker distance.
     // Preserve their chosen contact softness; AO still uses the usual blur.
     if (pcss_enabled != 0) col.rba = ccol.rba;
+    // GTAO already has its own edge-aware spatial denoiser.
+    if (gtao_enabled != 0) col.g = ccol.g;
     //col.y *= col.y;
 
     frag_color = max(col, vec4(0));
