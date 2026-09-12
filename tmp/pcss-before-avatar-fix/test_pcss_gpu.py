@@ -1,7 +1,7 @@
 """Run production PCSS shaders against synthetic blockers on a hidden GL context.
 
 Run: .venv/Scripts/python.exe scripts/tests/test_pcss_gpu.py
-Checks contact hardening, controls, warped cascades, receiver slope/edges, fallback,
+Checks contact hardening, controls, warped cascades, receiver slope, fallback,
 and simultaneous raw/comparison sampling of one depth texture. No login needed.
 """
 import ctypes as C
@@ -44,11 +44,10 @@ def run(sdl, gl):
         vary_fragcoord = p[gl_VertexID] * 0.5 + 0.5;
     }"""
     fragment = """
-        uniform float test_z, test_x, test_y, test_slope, test_view_scale;
+        uniform float test_z, test_y, test_slope, test_view_scale;
         uniform int test_quantized;
         uniform int test_spot;
         uniform int test_discontinuity, test_prepared;
-        uniform float test_depth_step;
         uniform mat4 shadow_matrix[6];
         uniform sampler2DShadow shadowMap0;
         float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 screen);
@@ -57,9 +56,9 @@ def run(sdl, gl):
         float pcfShadow(sampler2DShadow map, vec3 norm, vec4 tc, float bias, vec2 screen, vec3 light);
         void preparePCSSDepth(vec3 pos, vec3 norm, vec2 screen);
         vec4 getPosition(vec2 uv) {
-            float x = test_x + (uv.x - 0.5) * 2.0 * test_view_scale;
-            float z = test_z + test_slope * (x - test_x);
-            if (test_discontinuity != 0 && uv.x * 256.0 < 129.0) z += test_depth_step;
+            float x = (uv.x - 0.5) * 2.0 * test_view_scale;
+            float z = test_z + test_slope * x;
+            if (test_discontinuity != 0 && uv.x * 256.0 < 129.0) z += 2.0;
             float dy = test_quantized != 0 ? 2.0 / 256.0 : 0.001;
             vec3 p = vec3(x, test_y + (uv.y * 256.0 - 1.5) * dy * test_view_scale, z);
             if (test_quantized != 0) {
@@ -145,12 +144,11 @@ def run(sdl, gl):
     def render(gap=1.0, angle=5.0, radius=1.0, quality=1, warp=0.0,
                extent=4.0, z=-4.0, slope=0.0, fill="edge", prog=None, bias=.005,
                minimum=0.0, spot=0, emitter=.1, discontinuity=False, prepared=False,
-               quantized=False, view_scale=1.0, depth_step=2.0, x_offset=0.0, caster_slope=None):
+               quantized=False, view_scale=1.0):
         nonlocal cases
         prog = programs[3 if spot else 0] if prog is None else prog
         gl.UseProgram(prog)
         uniform(prog, "test_z", z)
-        uniform(prog, "test_x", x_offset)
         uniform(prog, "test_y", 0.3)
         uniform(prog, "test_slope", slope)
         uniform(prog, "test_view_scale", view_scale)
@@ -160,7 +158,6 @@ def run(sdl, gl):
         uniform(prog, "shadow_clip", *( (256, 512, 768, 1024) if quantized else (8, 16, 32, 64) ))
         uniform(prog, "test_spot", spot, integer=True)
         uniform(prog, "test_discontinuity", int(discontinuity), integer=True)
-        uniform(prog, "test_depth_step", depth_step)
         uniform(prog, "test_prepared", int(prepared), integer=True)
         uniform(prog, "pcss_params", math.tan(math.radians(angle) * 0.5), radius, bias, min(minimum, radius))
         uniform(prog, "pcss_projector_radius", emitter * .5)
@@ -176,7 +173,6 @@ def run(sdl, gl):
             rows = [[.5, 0, -.5, 0], [0, .5, -.5, 0], [0, 0, -64/63, -64/63], [0, 0, -1, 0]]
             inverse = [[2, 0, 0, -1], [0, 2, 0, -1], [0, 0, 0, -1], [0, 0, -63/64, 1]]
         data = []
-        caster_slope = slope if caster_slope is None else caster_slope
         for iy in range(SIZE):
             v = (iy + .5) / SIZE
             w_inv = 1 - warp * extent * (v - .5)
@@ -184,12 +180,10 @@ def run(sdl, gl):
             w = 1 + warp * y
             for ix in range(SIZE):
                 x = extent * ((ix + .5) / SIZE - .5) * w
-                blocked = fill == "all" or fill == "self" or (fill == "edge" and x < x_offset)
-                caster_z = z + (0 if fill == "self" else gap) + caster_slope * (x - x_offset)
+                blocked = fill == "all" or fill == "self" or (fill == "edge" and x < 0)
+                caster_z = z + (0 if fill == "self" else gap) + slope * x
                 if spot:
-                    caster_z = (z - caster_slope * x_offset + (0 if fill == "self" else gap)) / (1 + caster_slope * 2 * ((ix+.5)/SIZE-.5))
-                    if fill == "edge":
-                        blocked = -caster_z * 2 * ((ix+.5)/SIZE-.5) < x_offset * (z + gap) / z
+                    caster_z = (z + (0 if fill == "self" else gap)) / (1 + slope * 2 * ((ix+.5)/SIZE-.5))
                     data.append(64/63 * (1 + 1/caster_z) if blocked and caster_z < -1 else 1.0)
                 else:
                     data.append(.5 - caster_z/(depth_range*w) if blocked else 1.0)
@@ -292,61 +286,6 @@ def run(sdl, gl):
             row = render(spot=spot, fill="all", gap=.03, minimum=.02, slope=slope,
                          discontinuity=True, prepared=True)[0]
             assert max(row[129:]) < .001, ("silhouette quad leak", spot, slope, max(row[129:]))
-
-    # A nearby overlapping surface can be closer in depth than the next
-    # sample on a sloping face. Nearest-depth normal selection picks it and
-    # tilts the shadow filter, leaking light through an actual close blocker.
-    for spot in (0, 1, 2):
-        for quality in range(3):
-            for slope in (-.4, .4):
-                row = render(spot=spot, fill="all", gap=.03, minimum=.12, slope=slope,
-                             discontinuity=True, depth_step=.01*slope, prepared=True,
-                             quality=quality)[0]
-                assert max(row[129:]) < .001, ("nearby surface contact leak", spot, quality, slope, max(row[129:]))
-
-    # A disk emitter is fixed in the projector's plane. At the same axial
-    # depth its world-space softness must not stretch toward the cone edge.
-    for spot in (1, 2):
-        center = render(spot=spot, gap=2, emitter=.5, quality=2)[0]
-        off_axis = render(spot=spot, gap=2, emitter=.5, quality=2, x_offset=2.0)[0]
-        assert abs(width(center) - width(off_axis)) <= 2, ("projector off-axis stretch", spot, width(center), width(off_axis))
-
-    # A grazing receiver plane can extrapolate beyond the projector far
-    # plane. Clear depth is still empty space, never an occluder.
-    for spot in (1, 2):
-        row = render(spot=spot, fill="empty", slope=20, z=-40, minimum=.5)[0]
-        assert min(row) > .999, ("projector clear-depth shadow", spot, min(row))
-
-    # A steep receiver behind an unrelated wall must stay shadowed. The
-    # receiver's infinite plane used to extrapolate in front of the wall;
-    # changing the sun angle then changed which faces leaked light. Cover
-    # both forward/deferred precision and both supported sampling variants.
-    for spot in (0, 1, 2):
-        for slope in (-200, -20, 20, 200):
-            for prepared in (False, True):
-                for prog in (programs[3], programs[5]):
-                    row = render(spot=spot, fill="all", gap=1, minimum=.02,
-                                 slope=slope, caster_slope=0, view_scale=.001,
-                                 prepared=prepared, quantized=prepared, prog=prog)[0]
-                    assert max(row) < .001, ("wall behind grazing receiver", spot, slope, prepared, max(row))
-
-    # Analytic visibility of a circular emitter behind a straight blocker
-    # edge (the area of a circular segment). The blocker is at z=-2 while
-    # the receiver tilts through z=-4. This independently checks perspective
-    # softness; averaging extrapolated receiver gaps produced up to 39% error.
-    for spot in (0, 1, 2):
-        for slope in (0, .4, 2, 4):
-            expected = []
-            for i in range(WIDTH):
-                x = ((i + .5) / WIDTH - .5) * 2
-                radius = max(2 - slope * x, 0) * (.25 / 2 if spot else math.tan(math.radians(2.5)))
-                q = max(-1, min(1, x / max(radius, .000001)))
-                expected.append(.5 + (math.asin(q) + q * math.sqrt(max(1-q*q, 0))) / math.pi)
-            for prog in (programs[3], programs[5]):
-                row = render(spot=spot, gap=2, emitter=.5, quality=2, slope=slope,
-                             caster_slope=0, prog=prog)[0]
-                error = max(abs(a-b) for a,b in zip(row, expected))
-                assert error < .04, ("tilted shadow receiver", spot, slope, error)
 
     # Camera D24 quantization is separate from shadow-map precision. Small
     # camera moves used to make fully lit far terrain flip to full shadow.

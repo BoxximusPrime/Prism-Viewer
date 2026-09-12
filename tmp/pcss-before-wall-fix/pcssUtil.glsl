@@ -104,35 +104,14 @@ float pcssShadow(sampler2D depthMap,
     bool lightFacing = nl > 0.0;
     vec2 slope = lightFacing && abs(plane.z) > 1e-7 ? -plane.xy / plane.z : vec2(0.0);
 
-    // A receiver plane is only reliable for self-shadow correction where the
-    // map actually contains that receiver. A wall covering the entire center
-    // footprint must not disappear when a grazing face extrapolates through
-    // it. Keep any correction within the occluder's measured depth gradients.
-    ivec2 size = textureSize(depthMap, 0);
-    ivec2 hi = size - 1;
-    ivec2 center = ivec2(floor(tc.xy * vec2(size) - 0.5));
-    vec4 centerDepths = vec4(texelFetch(depthMap, clamp(center, ivec2(0), hi), 0).r,
-                            texelFetch(depthMap, clamp(center + ivec2(1,0), ivec2(0), hi), 0).r,
-                            texelFetch(depthMap, clamp(center + ivec2(0,1), ivec2(0), hi), 0).r,
-                            texelFetch(depthMap, clamp(center + ivec2(1,1), ivec2(0), hi), 0).r);
-
     // Only deferred receivers have camera-depth uncertainty. Project that
     // interval through the receiver plane instead of asking the user to add
     // a large world-space contact bias (which detaches nearby avatar shadows).
     vec4 uncertainty = lightMatrix * vec4(pos * getPCSSDepthError(), 0.0);
     vec3 delta = (uncertainty.xyz - tc * uncertainty.w) / start.w;
-    bool covered = all(lessThan(centerDepths, vec4(tc.z + bias - abs(delta.z))));
-    if (covered)
-    {
-        vec2 casterSlope = vec2(max(abs(centerDepths.y - centerDepths.x), abs(centerDepths.w - centerDepths.z)),
-                                max(abs(centerDepths.z - centerDepths.x), abs(centerDepths.w - centerDepths.y))) * vec2(size);
-        slope = clamp(slope, -casterSlope, casterSlope);
-    }
     float depthError = abs(delta.z - dot(slope, delta.xy));
     bias -= depthError;
-    // The bound above comes from shadow texels, not the reconstructed camera
-    // normal. Its potentially unbounded slope uncertainty no longer applies.
-    vec2 slopeError = lightFacing && !covered ? getPCSSSlopeError(lightMatrix, start, depthError) : vec2(0.0);
+    vec2 slopeError = lightFacing ? getPCSSSlopeError(lightMatrix, start, depthError) : vec2(0.0);
 
     // Sun rays share a perpendicular disk. A projector's emitter instead
     // stays in its own XY plane; rotating it toward each receiver stretches
@@ -157,6 +136,7 @@ float pcssShadow(sampler2D depthMap,
     searchRadius = clamp(searchRadius, pcss_params.w, pcss_params.y);
     int searchCount = pcss_quality == 0 ? 8 : (pcss_quality == 1 ? 16 : 32);
     int filterCount = searchCount * 2;
+    ivec2 size = textureSize(depthMap, 0);
     float blockerDistance = 0.0;
     float blockers = 0.0;
     for (int i = 0; i < searchCount; ++i)

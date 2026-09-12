@@ -317,19 +317,6 @@ def run(sdl, gl):
         row = render(spot=spot, fill="empty", slope=20, z=-40, minimum=.5)[0]
         assert min(row) > .999, ("projector clear-depth shadow", spot, min(row))
 
-    # A steep receiver behind an unrelated wall must stay shadowed. The
-    # receiver's infinite plane used to extrapolate in front of the wall;
-    # changing the sun angle then changed which faces leaked light. Cover
-    # both forward/deferred precision and both supported sampling variants.
-    for spot in (0, 1, 2):
-        for slope in (-200, -20, 20, 200):
-            for prepared in (False, True):
-                for prog in (programs[3], programs[5]):
-                    row = render(spot=spot, fill="all", gap=1, minimum=.02,
-                                 slope=slope, caster_slope=0, view_scale=.001,
-                                 prepared=prepared, quantized=prepared, prog=prog)[0]
-                    assert max(row) < .001, ("wall behind grazing receiver", spot, slope, prepared, max(row))
-
     # Analytic visibility of a circular emitter behind a straight blocker
     # edge (the area of a circular segment). The blocker is at z=-2 while
     # the receiver tilts through z=-4. This independently checks perspective

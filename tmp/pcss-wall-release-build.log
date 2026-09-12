@@ -1,0 +1,58 @@
+MSBuild version 17.14.23+b0019275e for .NET Framework
+
+  1>
+  1>
+  1>Staging viewer resources
+  llwebrtc.vcxproj -> E:\BoxxyViewer\build-vc170-64\llwebrtc\Release\llwebrtc.dll
+  llprecompiled.vcxproj -> E:\BoxxyViewer\build-vc170-64\llprecompiled\Release\llprecompiled.lib
+  Copying PDB for PCH reuse from llprecompiled for llcommon
+  llcommon.vcxproj -> E:\BoxxyViewer\build-vc170-64\llcommon\Release\llcommon.lib
+  Copying PDB for PCH reuse from llprecompiled for llmeshoptimizer
+  llmeshoptimizer.vcxproj -> E:\BoxxyViewer\build-vc170-64\llmeshoptimizer\Release\llmeshoptimizer.lib
+  Copying PDB for PCH reuse from llprecompiled for llmath
+  llmath.vcxproj -> E:\BoxxyViewer\build-vc170-64\llmath\Release\llmath.lib
+  Copying PDB for PCH reuse from llprecompiled for llfilesystem
+  Copying PDB for PCH reuse from llprecompiled for llcorehttp
+  llcorehttp.vcxproj -> E:\BoxxyViewer\build-vc170-64\llcorehttp\Release\llcorehttp.lib
+  llfilesystem.vcxproj -> E:\BoxxyViewer\build-vc170-64\llfilesystem\Release\llfilesystem.lib
+  Copying PDB for PCH reuse from llprecompiled for llmessage
+  Copying PDB for PCH reuse from llprecompiled for llxml
+  llxml.vcxproj -> E:\BoxxyViewer\build-vc170-64\llxml\Release\llxml.lib
+  llmessage.vcxproj -> E:\BoxxyViewer\build-vc170-64\llmessage\Release\llmessage.lib
+  Copying PDB for PCH reuse from llprecompiled for llplugin
+  llplugin.vcxproj -> E:\BoxxyViewer\build-vc170-64\llplugin\Release\llplugin.lib
+  Copying PDB for PCH reuse from llprecompiled for SLPlugin
+  SLPlugin.vcxproj -> E:\BoxxyViewer\build-vc170-64\llplugin\slplugin\Release\SLPlugin.exe
+  media_plugin_base.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\base\Release\media_plugin_base.lib
+  media_plugin_cef.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\cef\Release\media_plugin_cef.dll
+  media_plugin_libvlc.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\libvlc\Release\media_plugin_libvlc.dll
+  media_plugin_example.vcxproj -> E:\BoxxyViewer\build-vc170-64\media_plugins\example\Release\media_plugin_example.dll
+  1>
+  Copying PDB for PCH reuse from llprecompiled for llaudio
+  Copying PDB for PCH reuse from llprecompiled for llcharacter
+  llaudio.vcxproj -> E:\BoxxyViewer\build-vc170-64\llaudio\Release\llaudio.lib
+  llcharacter.vcxproj -> E:\BoxxyViewer\build-vc170-64\llcharacter\Release\llcharacter.lib
+  Copying PDB for PCH reuse from llprecompiled for llimagej2coj
+  Copying PDB for PCH reuse from llprecompiled for llinventory
+  llimagej2coj.vcxproj -> E:\BoxxyViewer\build-vc170-64\llimagej2coj\Release\llimagej2coj.lib
+  Copying PDB for PCH reuse from llprecompiled for llimage
+  llinventory.vcxproj -> E:\BoxxyViewer\build-vc170-64\llinventory\Release\llinventory.lib
+  llimage.vcxproj -> E:\BoxxyViewer\build-vc170-64\llimage\Release\llimage.lib
+  lllogin.vcxproj -> E:\BoxxyViewer\build-vc170-64\viewer_components\login\Release\lllogin.lib
+  Copying PDB for PCH reuse from llprecompiled for llphysicsextensionsos
+  llphysicsextensionsos.vcxproj -> E:\BoxxyViewer\build-vc170-64\llphysicsextensionsos\Release\llphysicsextensionsos.lib
+  Copying PDB for PCH reuse from llprecompiled for llwindow
+  llwindow.vcxproj -> E:\BoxxyViewer\build-vc170-64\llwindow\Release\llwindow.lib
+  Copying PDB for PCH reuse from llprecompiled for llrender
+  llrender.vcxproj -> E:\BoxxyViewer\build-vc170-64\llrender\Release\llrender.lib
+  Copying PDB for PCH reuse from llprecompiled for llprimitive
+  llprimitive.vcxproj -> E:\BoxxyViewer\build-vc170-64\llprimitive\Release\llprimitive.lib
+  Copying PDB for PCH reuse from llprecompiled for llui
+  Copying PDB for PCH reuse from llprecompiled for llappearance
+  llappearance.vcxproj -> E:\BoxxyViewer\build-vc170-64\llappearance\Release\llappearance.lib
+  llui.vcxproj -> E:\BoxxyViewer\build-vc170-64\llui\Release\llui.lib
+  Verifying message template - See http://wiki.secondlife.com/wiki/Template_verifier.py
+  master: https://github.com/secondlife/master-message-template/raw/master/message_template.msg
+  current: E:\BoxxyViewer\scripts\messages\message_template.msg
+  Message template SHA_1 has not changed.
+  secondlife-bin.vcxproj -> E:\BoxxyViewer\build-vc170-64\newview\Release\secondlife-bin.exe

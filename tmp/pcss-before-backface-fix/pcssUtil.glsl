@@ -64,31 +64,6 @@ float pcssShadow(sampler2D depthMap,
     vec4 receiver = inverseMatrix * vec4(tc, 1.0);
     vec3 pos = receiver.xyz / receiver.w;
 
-    // The visible geometric face, rather than its shading/normal-map normal,
-    // determines which part of the emitter is above the surface horizon.
-    // Grazing exit faces may occupy less than a shadow texel: sampling clear
-    // depth there otherwise invents bright triangles that bias cannot remove.
-    if (dot(normal, -pos) < 0.0) normal = -normal;
-    float nl = dot(normal, lightDir);
-    float horizonWidth = pcss_params.x * sqrt(max(1.0 - nl * nl, 0.0));
-    if (sourceRadius > 0.0)
-    {
-        vec4 source = inverseMatrix * vec4(0, 0, 1, 0);
-        float distance = length(source.xyz / source.w - pos);
-        vec2 emitterNormal = vec2(dot(normal, normalize(inverseMatrix[0].xyz)),
-                                  dot(normal, normalize(inverseMatrix[1].xyz)));
-        horizonWidth = sourceRadius * length(emitterNormal) / max(distance, 0.001);
-    }
-    float visibility = 1.0;
-    if (nl <= -horizonWidth) return 0.0;
-    if (nl < horizonWidth)
-    {
-        // Area of the circular emitter above the receiver plane. This keeps
-        // finite lights soft as they cross the horizon instead of a hard cut.
-        float h = clamp(nl / max(horizonWidth, 1e-7), -1.0, 1.0);
-        visibility = 0.5 + (asin(h) + h * sqrt(max(1.0 - h * h, 0.0))) / 3.14159265;
-    }
-
     // The legacy normalized-depth bias grows with cascade depth range. Use
     // metres here to retain close contacts consistently across cascades.
     vec4 biased = start + lightMatrix * vec4(lightDir * pcss_params.z, 0.0);
@@ -97,42 +72,16 @@ float pcssShadow(sampler2D depthMap,
     // Transform the geometric receiver plane, including the cascade's warp.
     // Correct every tap for slope so a broad kernel does not shadow itself.
     vec4 plane = transpose(inverseMatrix) * vec4(normal, -dot(normal, pos));
-    // A back-facing receiver is an exit surface. The shadow map contains a
-    // different, light-facing entry surface, so extrapolating the exit plane
-    // can move comparisons in front of real blockers in triangle-shaped gaps.
-    // It needs ordinary depth comparisons, not self-shadow slope correction.
-    bool lightFacing = nl > 0.0;
-    vec2 slope = lightFacing && abs(plane.z) > 1e-7 ? -plane.xy / plane.z : vec2(0.0);
-
-    // A receiver plane is only reliable for self-shadow correction where the
-    // map actually contains that receiver. A wall covering the entire center
-    // footprint must not disappear when a grazing face extrapolates through
-    // it. Keep any correction within the occluder's measured depth gradients.
-    ivec2 size = textureSize(depthMap, 0);
-    ivec2 hi = size - 1;
-    ivec2 center = ivec2(floor(tc.xy * vec2(size) - 0.5));
-    vec4 centerDepths = vec4(texelFetch(depthMap, clamp(center, ivec2(0), hi), 0).r,
-                            texelFetch(depthMap, clamp(center + ivec2(1,0), ivec2(0), hi), 0).r,
-                            texelFetch(depthMap, clamp(center + ivec2(0,1), ivec2(0), hi), 0).r,
-                            texelFetch(depthMap, clamp(center + ivec2(1,1), ivec2(0), hi), 0).r);
+    vec2 slope = abs(plane.z) > 1e-7 ? -plane.xy / plane.z : vec2(0.0);
 
     // Only deferred receivers have camera-depth uncertainty. Project that
     // interval through the receiver plane instead of asking the user to add
     // a large world-space contact bias (which detaches nearby avatar shadows).
     vec4 uncertainty = lightMatrix * vec4(pos * getPCSSDepthError(), 0.0);
     vec3 delta = (uncertainty.xyz - tc * uncertainty.w) / start.w;
-    bool covered = all(lessThan(centerDepths, vec4(tc.z + bias - abs(delta.z))));
-    if (covered)
-    {
-        vec2 casterSlope = vec2(max(abs(centerDepths.y - centerDepths.x), abs(centerDepths.w - centerDepths.z)),
-                                max(abs(centerDepths.z - centerDepths.x), abs(centerDepths.w - centerDepths.y))) * vec2(size);
-        slope = clamp(slope, -casterSlope, casterSlope);
-    }
     float depthError = abs(delta.z - dot(slope, delta.xy));
     bias -= depthError;
-    // The bound above comes from shadow texels, not the reconstructed camera
-    // normal. Its potentially unbounded slope uncertainty no longer applies.
-    vec2 slopeError = lightFacing && !covered ? getPCSSSlopeError(lightMatrix, start, depthError) : vec2(0.0);
+    vec2 slopeError = getPCSSSlopeError(lightMatrix, start, depthError);
 
     // Sun rays share a perpendicular disk. A projector's emitter instead
     // stays in its own XY plane; rotating it toward each receiver stretches
@@ -157,6 +106,7 @@ float pcssShadow(sampler2D depthMap,
     searchRadius = clamp(searchRadius, pcss_params.w, pcss_params.y);
     int searchCount = pcss_quality == 0 ? 8 : (pcss_quality == 1 ? 16 : 32);
     int filterCount = searchCount * 2;
+    ivec2 size = textureSize(depthMap, 0);
     float blockerDistance = 0.0;
     float blockers = 0.0;
     for (int i = 0; i < searchCount; ++i)
@@ -198,7 +148,7 @@ float pcssShadow(sampler2D depthMap,
     radius = clamp(radius, pcss_params.w, pcss_params.y);
     // Even an empty sparse search needs the contact filter: returning fully
     // lit here popped small blockers and cut off the minimum-softness edge.
-    if (radius <= 0.0) return min(visibility, pcssCompare(depthMap, tc.xy, tc, slope, bias, slopeError));
+    if (radius <= 0.0) return pcssCompare(depthMap, tc.xy, tc, slope, bias, slopeError);
     float shadow = 0.0;
     for (int i = 0; i < filterCount; ++i)
     {
@@ -207,8 +157,6 @@ float pcssShadow(sampler2D depthMap,
         if (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) shadow += 1.0;
         else shadow += pcssCompare(depthMap, uv, tc, slope, bias, slopeError);
     }
-    // The map can already include the same horizon occlusion; cap its
-    // visibility rather than multiplying and counting that shadow twice.
-    return min(visibility, shadow / float(filterCount));
+    return shadow / float(filterCount);
 }
 #endif

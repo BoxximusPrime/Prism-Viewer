@@ -90,45 +90,7 @@ float pcssShadow(sampler2D depthMap,
 // called from divergent light-volume branches, where derivatives are invalid.
 vec3 pcssReceiverNormal = vec3(0,0,1);
 bool pcssDepthPrepared = false;
-float pcssDepthError = 0.0;
-vec3 pcssSurfaceDx = vec3(0.0);
-vec3 pcssSurfaceDy = vec3(0.0);
-
-vec3 pcssGeometricNormal(vec3 dx, vec3 dy, vec3 fallback)
-{
-    vec3 geometric = cross(dx, dy);
-    // Test the angle between the derivatives, not their world-space area.
-    // An absolute area cutoff switched close-up skin to its shading normal,
-    // changing which faces received shadows as the camera approached them.
-    return dot(geometric, geometric) > 1e-8 * dot(dx, dx) * dot(dy, dy) ? normalize(geometric) : fallback;
-}
 #endif
-
-float getPCSSDepthError()
-{
-#if defined(SUN_SHADOW) && defined(PCSS_SHADOW)
-    return pcssDepthError;
-#else
-    return 0.0;
-#endif
-}
-
-vec2 getPCSSSlopeError(mat4 lightMatrix, vec4 start, float depthError)
-{
-#if defined(SUN_SHADOW) && defined(PCSS_SHADOW)
-    vec2 tc = start.xy / start.w;
-    vec4 sx = lightMatrix * vec4(pcssSurfaceDx, 0.0);
-    vec4 sy = lightMatrix * vec4(pcssSurfaceDy, 0.0);
-    vec2 dx = (sx.xy - tc * sx.w) / start.w;
-    vec2 dy = (sy.xy - tc * sy.w) / start.w;
-    float det = abs(dx.x * dy.y - dx.y * dy.x);
-    // Each finite difference contains two uncertain depth samples. Propagate
-    // that interval through the screen-to-shadow Jacobian, per UV axis.
-    return 2.0 * depthError * vec2(abs(dy.y) + abs(dx.y), abs(dx.x) + abs(dy.x)) / max(det, 1e-20);
-#else
-    return vec2(0.0);
-#endif
-}
 
 vec4 getPosition(vec2 pos_screen);
 void preparePCSSDepth(vec3 pos, vec3 normal, vec2 uv)
@@ -136,37 +98,17 @@ void preparePCSSDepth(vec3 pos, vec3 normal, vec2 uv)
 #if defined(SUN_SHADOW) && defined(PCSS_SHADOW)
     if (pcss_params.x <= 0.0) return;
     // Screen-space derivatives span 2x2 quads and can cross hair/body or
-    // triangle edges. The nearest depth can also belong to another surface.
-    // Select the side whose two samples extrapolate back to this receiver;
-    // reciprocal view depth is linear across a perspective-projected plane.
-    // The view depth buffer is D24. Differencing its reconstructed positions
-    // at long range amplifies quantization into large receiver-plane errors.
-    // Allow four depth units for storage and float projection/reconstruction;
-    // widen the normal's baseline when that exceeds the contact tolerance.
-    pcssDepthError = abs(inv_proj[2].w * pos.z) * (8.0 / 16777216.0);
-    float depthError = pcssDepthError * length(pos);
-    float baseline = clamp(ceil(4.0 * depthError / max(pcss_params.z, 0.001)), 1.0, 4.0);
-    vec2 texel = baseline / screen_res;
-    vec3 left = getPosition(uv - vec2(texel.x, 0)).xyz;
-    vec3 right = getPosition(uv + vec2(texel.x, 0)).xyz;
-    vec3 down = getPosition(uv - vec2(0, texel.y)).xyz;
-    vec3 up = getPosition(uv + vec2(0, texel.y)).xyz;
-    vec4 farDepth = vec4(getPosition(uv - vec2(2.0 * texel.x, 0)).z,
-                         getPosition(uv + vec2(2.0 * texel.x, 0)).z,
-                         getPosition(uv - vec2(0, 2.0 * texel.y)).z,
-                         getPosition(uv + vec2(0, 2.0 * texel.y)).z);
-    vec4 error = abs(2.0 / vec4(left.z, right.z, down.z, up.z) - 1.0 / farDepth - 1.0 / pos.z);
-    // Clamped depth fetches outside the viewport do not describe a plane.
-    vec2 edge = 0.5 / screen_res;
-    if (uv.x - 2.0 * texel.x < edge.x) error.x = 1e20;
-    if (uv.x + 2.0 * texel.x > 1.0 - edge.x) error.y = 1e20;
-    if (uv.y - 2.0 * texel.y < edge.y) error.z = 1e20;
-    if (uv.y + 2.0 * texel.y > 1.0 - edge.y) error.w = 1e20;
-    vec3 dx = error.x < error.y ? pos - left : right - pos;
-    vec3 dy = error.z < error.w ? pos - down : up - pos;
-    pcssSurfaceDx = dx;
-    pcssSurfaceDy = dy;
-    pcssReceiverNormal = pcssGeometricNormal(dx, dy, normal);
+    // terrain silhouettes. Use the nearer neighbor on each axis so an
+    // unrelated surface does not tilt the receiver plane of an entire quad.
+    vec2 texel = 1.0 / screen_res;
+    vec3 left = pos - getPosition(uv - vec2(texel.x, 0)).xyz;
+    vec3 right = getPosition(uv + vec2(texel.x, 0)).xyz - pos;
+    vec3 down = pos - getPosition(uv - vec2(0, texel.y)).xyz;
+    vec3 up = getPosition(uv + vec2(0, texel.y)).xyz - pos;
+    vec3 dx = abs(left.z) < abs(right.z) ? left : right;
+    vec3 dy = abs(down.z) < abs(up.z) ? down : up;
+    vec3 geometric = cross(dx, dy);
+    pcssReceiverNormal = dot(geometric, geometric) > 1e-16 ? normalize(geometric) : normal;
     pcssDepthPrepared = true;
 #endif
 }
@@ -219,7 +161,9 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
     // not the receiver plane and must not tilt a wide shadow filter.
     vec3 receiverNormal = norm;
 #if defined(PCSS_SHADOW)
-    receiverNormal = pcssGeometricNormal(dFdx(pos), dFdy(pos), norm);
+    vec3 geometricNormal = cross(dFdx(pos), dFdy(pos));
+    if (dot(geometricNormal, geometricNormal) > 1e-16)
+        receiverNormal = normalize(geometricNormal);
     if (pcssDepthPrepared) receiverNormal = pcssReceiverNormal;
     pcssReceiverNormal = receiverNormal;
 #endif

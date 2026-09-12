@@ -93,15 +93,6 @@ bool pcssDepthPrepared = false;
 float pcssDepthError = 0.0;
 vec3 pcssSurfaceDx = vec3(0.0);
 vec3 pcssSurfaceDy = vec3(0.0);
-
-vec3 pcssGeometricNormal(vec3 dx, vec3 dy, vec3 fallback)
-{
-    vec3 geometric = cross(dx, dy);
-    // Test the angle between the derivatives, not their world-space area.
-    // An absolute area cutoff switched close-up skin to its shading normal,
-    // changing which faces received shadows as the camera approached them.
-    return dot(geometric, geometric) > 1e-8 * dot(dx, dx) * dot(dy, dy) ? normalize(geometric) : fallback;
-}
 #endif
 
 float getPCSSDepthError()
@@ -166,7 +157,8 @@ void preparePCSSDepth(vec3 pos, vec3 normal, vec2 uv)
     vec3 dy = error.z < error.w ? pos - down : up - pos;
     pcssSurfaceDx = dx;
     pcssSurfaceDy = dy;
-    pcssReceiverNormal = pcssGeometricNormal(dx, dy, normal);
+    vec3 geometric = cross(dx, dy);
+    pcssReceiverNormal = dot(geometric, geometric) > 1e-16 ? normalize(geometric) : normal;
     pcssDepthPrepared = true;
 #endif
 }
@@ -219,7 +211,9 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
     // not the receiver plane and must not tilt a wide shadow filter.
     vec3 receiverNormal = norm;
 #if defined(PCSS_SHADOW)
-    receiverNormal = pcssGeometricNormal(dFdx(pos), dFdy(pos), norm);
+    vec3 geometricNormal = cross(dFdx(pos), dFdy(pos));
+    if (dot(geometricNormal, geometricNormal) > 1e-16)
+        receiverNormal = normalize(geometricNormal);
     if (pcssDepthPrepared) receiverNormal = pcssReceiverNormal;
     pcssReceiverNormal = receiverNormal;
 #endif
