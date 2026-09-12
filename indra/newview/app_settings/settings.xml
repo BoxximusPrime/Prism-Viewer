@@ -31,6 +31,20 @@
     <key>Type</key><string>Boolean</string>
     <key>Value</key><integer>0</integer>
   </map>
+  <key>RenderTAAStaticDetails</key>
+  <map><key>Comment</key><string>Retain fine static details across missing jitter samples; movement and avatars use strict rejection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
+  <key>RenderTAAHistoryWeight</key>
+  <map><key>Comment</key><string>Maximum TAA history weight (0.5 to 0.97). Motion and invalid history lower this automatically.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.9</real></map>
+  <key>RenderTAAMotionProtection</key>
+  <map><key>Comment</key><string>TAA motion and color-disagreement protection (0 to 1). Higher values reduce trails at the cost of more shimmer in motion.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.85</real></map>
+  <key>RenderTAAClipGamma</key>
+  <map><key>Comment</key><string>TAA color clipping standard deviations (0.5 to 2). Lower values reject stale colors more aggressively.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
+  <key>RenderTAATransparency</key>
+  <map><key>Comment</key><string>TAA reactive protection for transparency and post-deferred shading (0 to 1).</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
+  <key>RenderTAASharpen</key>
+  <map><key>Comment</key><string>Bounded TAA output sharpening (0 to 2). Kept outside temporal history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.2</real></map>
+  <key>RenderTAADebug</key>
+  <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion vectors (blue = reactive), 2 history rejection (red = rejected, green = reused). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
   <key>RenderGTAOEnabled</key>
   <map>
     <key>Comment</key><string>Enable ground-truth ambient occlusion. Takes precedence over legacy SSAO; falls back to SSAO if GTAO resources are unavailable.</string>
@@ -7750,6 +7764,17 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>RenderAlphaProjectors</key>
+    <map>
+        <key>Comment</key>
+        <string>Render projected light textures on transparent surfaces, with OIT or legacy blending. Disable to compare the simpler legacy spotlight lighting. Reloads shaders when changed.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>Boolean</string>
+        <key>Value</key>
+        <integer>1</integer>
+    </map>
     <key>RenderAttachedLights</key>
         <map>
         <key>Comment</key>
@@ -9131,7 +9156,7 @@
     <key>RenderFSAAType</key>
     <map>
       <key>Comment</key>
-      <string>Type of Antialiasing to use: 0 = None, 1 = FXAA, 2 = SMAA</string>
+      <string>Type of Antialiasing to use: 0 = None, 1 = FXAA, 2 = SMAA, 3 = TAA</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -9547,6 +9572,28 @@
     <map>
       <key>Comment</key>
       <string>Error occured while initializing GL</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>RenderReflectionProbeIcons</key>
+    <map>
+      <key>Comment</key>
+      <string>Show clickable reflection-probe prim icons in world (within 128 meters and draw distance).</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>RenderLightSourceIcons</key>
+    <map>
+      <key>Comment</key>
+      <string>Show clickable light-source prim icons in world (within 128 meters and draw distance).</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>

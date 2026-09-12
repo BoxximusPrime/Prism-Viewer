@@ -102,6 +102,10 @@ public:
     const LLMatrix4* mNormalMapMatrix = nullptr;
     const LLMatrix4* mTextureMatrix = nullptr;
     const LLMatrix4* mModelMatrix = nullptr;
+    // Only the main TAA motion pass updates this; shadow/probe draws cannot age it.
+    LLMatrix4 mTAAModel;
+    U32 mTAAFrame = 0;
+    bool mTAAStatic = false; // All batched faces are static, nonrigged geometry.
     // Non-owning identity of the source geometry; never extends an object's lifetime.
     const LLViewerObject* mSSSObject = nullptr;
 

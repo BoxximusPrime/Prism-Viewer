@@ -460,6 +460,8 @@
           label="SMAA"
           name="SMAA"
           value="2" />
+        <combo_box.item label="TAA" name="TAA" value="3" />
+        <combo_box.commit_callback function="Pref.RenderOptionUpdate" />
     </combo_box>
   <text
     type="string"

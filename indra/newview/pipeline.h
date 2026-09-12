@@ -160,6 +160,15 @@ public:
 
     void bindScreenToTexture();
     void renderFinalize();
+    bool isTAAAvailable() const;
+    void beginTAAFrame(bool for_snapshot);
+    void endTAAFrame();
+    void renderTAAMotion();
+    void captureTAAOpaque();
+    LLRenderTarget* resolveTAA();
+    void copyTAA(LLRenderTarget& src, LLRenderTarget& dst, S32 mode = 0);
+    void renderTAADebug(LLRenderTarget& dst);
+    void resetTAAHistory();
     void copyScreenSpaceReflections(LLRenderTarget* src, LLRenderTarget* dst);
     void generateLuminance(LLRenderTarget* src, LLRenderTarget* dst);
     void generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool use_history = true);
@@ -780,6 +789,21 @@ public:
 
     // FXAA helper target
     LLRenderTarget          mFXAAMap;
+    LLRenderTarget          mTAAHistory[2]; // Color/depth plus static-detail metadata attachment.
+    LLRenderTarget          mTAAMotion;
+    LLRenderTarget          mTAAOpaque;
+    LLRenderTarget          mTAAResolved;
+    bool                   mTAAFrameActive = false;
+    bool                   mTAAHistoryValid = false;
+    bool                   mTAAMotionReady = false;
+    U32                    mTAAIndex = 0;
+    U32                    mTAASequence = 0;
+    U32                    mTAALastFrame = 0;
+    glm::vec2              mTAAJitter = glm::vec2(0.f);
+    glm::mat4              mTAAProjection = glm::mat4(1.f);
+    glm::mat4              mTAAView = glm::mat4(1.f);
+    glm::mat4              mTAAPreviousProjection = glm::mat4(1.f);
+    glm::mat4              mTAAPreviousView = glm::mat4(1.f);
     LLRenderTarget          mSMAABlendBuffer;
 
     // render ui to buffer target

@@ -15,7 +15,7 @@ endif()
 if (USE_TRACY)
   option(USE_TRACY_ON_DEMAND "Use on-demand Tracy profiling." ON)
   option(USE_TRACY_LOCAL_ONLY "Disallow remote Tracy profiling." OFF)
-  option(USE_TRACY_GPU "Use Tracy GPU profiling" OFF)
+  option(USE_TRACY_GPU "Use Tracy GPU profiling" ON)
 
   use_system_binary(tracy)
   use_prebuilt_binary(tracy)

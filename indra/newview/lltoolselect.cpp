@@ -77,7 +77,18 @@ bool LLToolSelect::handleMouseDown(S32 x, S32 y, MASK mask)
 LLObjectSelectionHandle LLToolSelect::handleObjectSelection(const LLPickInfo& pick, bool ignore_group, bool temp_select, bool select_root)
 {
     LLViewerObject* object = pick.getObject();
-    if (select_root)
+    if (pick.mHUDIcon && pick.mHUDIcon->isWorldMarker())
+    {
+        object = pick.mHUDIcon->getSourceObject();
+        if (!object || object->isDead())
+        {
+            return LLSelectMgr::getInstance()->getSelection();
+        }
+        ignore_group = true;
+        select_root = false;
+        gSavedSettings.setBOOL("EditLinkedParts", !object->isRootEdit() || !object->getChildren().empty());
+    }
+    if (select_root && object)
     {
         object = object->getRootEdit();
     }

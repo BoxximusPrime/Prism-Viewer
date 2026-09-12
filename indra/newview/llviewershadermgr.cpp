@@ -218,6 +218,10 @@ LLGLSLShader            gExposureProgram;
 LLGLSLShader            gExposureProgramNoFade;
 LLGLSLShader            gLuminanceProgram;
 LLGLSLShader            gFXAAProgram[4];
+LLGLSLShader            gTAAResolveProgram;
+LLGLSLShader            gTAACameraProgram;
+LLGLSLShader            gTAACopyProgram;
+LLGLSLShader            gTAAMotionProgram[2];
 LLGLSLShader            gSMAAEdgeDetectProgram[4];
 LLGLSLShader            gSMAABlendWeightsProgram[4];
 LLGLSLShader            gSMAANeighborhoodBlendProgram[4];
@@ -946,7 +950,7 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     std::map<std::string, std::string> attribs;
     // Six projector textures and two spot shadows in addition to the existing
     // 16-unit budget. Keep the existing lighting on smaller texture-unit GPUs.
-    if (gGLManager.mNumTextureImageUnits >= 24)
+    if (gSavedSettings.getBOOL("RenderAlphaProjectors") && gGLManager.mNumTextureImageUnits >= 24)
     {
         attribs["ALPHA_PROJECTORS"] = "1";
     }
@@ -1255,6 +1259,10 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gDeferredMultiSpotLightProgram.unload();
         gDeferredSunProgram.unload();
         gDeferredBlurLightProgram.unload();
+        gTAAResolveProgram.unload();
+        gTAACameraProgram.unload();
+        gTAACopyProgram.unload();
+        for (auto& shader : gTAAMotionProgram) shader.unload();
         gGTAOProgram.unload();
         gGTAOBlurProgram.unload();
         gGTAODebugProgram.unload();
@@ -3202,6 +3210,64 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gSSSMaskProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
         add_common_permutations(&gSSSMaskProgram);
         success = gSSSMaskProgram.createShader();
+    }
+
+    // Optional temporal shaders are loaded for the AA menu, independently of the
+    // selected AA mode. A local failure leaves spatial AA and unjittered rendering.
+    if (success)
+    {
+        struct TAAStage
+        {
+            LLGLSLShader* shader;
+            const char* name;
+            const char* vertex;
+            const char* fragment;
+            std::initializer_list<S32> samplers;
+        };
+        const TAAStage stages[] = {
+            { &gTAAResolveProgram, "TAA Resolve", "deferred/postDeferredNoTCV.glsl", "deferred/taaResolveF.glsl",
+                { TAA_CURRENT, TAA_HISTORY, TAA_DETAIL, TAA_MOTION, TAA_OPAQUE, DEFERRED_DEPTH } },
+            { &gTAACameraProgram, "TAA Camera Motion", "deferred/postDeferredNoTCV.glsl", "deferred/taaCameraF.glsl", { DEFERRED_DEPTH } },
+            { &gTAACopyProgram, "TAA Presentation", "deferred/postDeferredNoTCV.glsl", "deferred/taaCopyF.glsl", { TAA_SOURCE, TAA_ORIGINAL } },
+            { &gTAAMotionProgram[0], "TAA Object Motion", "deferred/taaMotionV.glsl", "deferred/taaMotionF.glsl", {} },
+            { &gTAAMotionProgram[1], "TAA Skinned Motion", "deferred/taaMotionV.glsl", "deferred/taaMotionF.glsl", {} }
+        };
+        for (const auto& stage : stages)
+        {
+            auto& shader = *stage.shader;
+            shader.mName = stage.name;
+            shader.mShaderFiles = { make_pair(stage.vertex, GL_VERTEX_SHADER), make_pair(stage.fragment, GL_FRAGMENT_SHADER) };
+            shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+            shader.clearPermutations();
+            if (&shader == &gTAAMotionProgram[1])
+            {
+                shader.mFeatures.hasObjectSkinning = true;
+                shader.addPermutation("HAS_SKIN", "1");
+                // objectSkinV is a separately compiled helper; its defines do
+                // not propagate into the motion shader's previous-pose array.
+                shader.addPermutation("MAX_JOINTS_PER_MESH_OBJECT", std::to_string(LLSkinningUtil::getMaxJointCount()));
+            }
+            bool complete = shader.createShader();
+            if (complete)
+            {
+                // Compilation alone does not prove that the viewer can bind a
+                // sampler. Refuse TAA rather than jitter an image with bad inputs.
+                std::set<S32> channels;
+                for (S32 sampler : stage.samplers)
+                {
+                    S32 channel = shader.getTextureChannel(sampler);
+                    complete &= channel >= 0 && channel < gGLManager.mNumTextureImageUnits && channels.insert(channel).second;
+                }
+            }
+            if (!complete)
+            {
+                for (const auto& cleanup : stages) cleanup.shader->unload();
+                LL_WARNS("ShaderLoading") << "TAA unavailable; leaving the camera unjittered." << LL_ENDL;
+                break;
+            }
+        }
+        if (gTAAResolveProgram.isComplete())
+            LL_INFOS() << "Loaded TAA shaders and validated all scene/history/motion/depth sampler channels." << LL_ENDL;
     }
 
     // Optional AO shaders have a local failure path; legacy SSAO remains usable.

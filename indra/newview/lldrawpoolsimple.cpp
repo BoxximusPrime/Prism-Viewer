@@ -45,6 +45,7 @@ static LLTrace::BlockTimerStatHandle FTM_RENDER_GRASS_DEFERRED("Deferred Grass")
 void LLDrawPoolGlow::renderPostDeferred(S32 pass)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
+    LL_PROFILE_GPU_ZONE("forward glow");
     LLGLSLShader* shader = &gDeferredEmissiveProgram;
 
     LLGLEnable blend(GL_BLEND);
@@ -156,6 +157,7 @@ LLDrawPoolFullbright::LLDrawPoolFullbright() :
 void LLDrawPoolFullbright::renderPostDeferred(S32 pass)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL; //LL_RECORD_BLOCK_TIME(FTM_RENDER_FULLBRIGHT);
+    LL_PROFILE_GPU_ZONE("forward fullbright");
 
     LLGLSLShader* shader = nullptr;
     if (LLPipeline::sRenderingHUDs)
@@ -184,6 +186,7 @@ void LLDrawPoolFullbright::renderPostDeferred(S32 pass)
 void LLDrawPoolFullbrightAlphaMask::renderPostDeferred(S32 pass)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL; //LL_RECORD_BLOCK_TIME(FTM_RENDER_FULLBRIGHT);
+    LL_PROFILE_GPU_ZONE("forward fullbright alpha mask");
 
     // render unrigged unlit GLTF
     LL::GLTFSceneManager::instance().render(true, false, true);
@@ -212,4 +215,3 @@ void LLDrawPoolFullbrightAlphaMask::renderPostDeferred(S32 pass)
         pushRiggedMaskBatches(LLRenderPass::PASS_FULLBRIGHT_ALPHA_MASK_RIGGED, true, true);
     }
 }
-

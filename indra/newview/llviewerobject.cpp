@@ -7651,6 +7651,9 @@ void LLViewerObject::setCachedObjectDescription(const std::string& description)
     const bool changed = !mObjectDescriptionValid || mObjectDescription != description;
     mObjectDescription = description;
     mObjectDescriptionValid = true;
+    std::string tags = description;
+    LLStringUtil::toLower(tags);
+    mNoShadowDescriptionTag = tags.find("[no-shadow]") != std::string::npos;
 
     if (changed)
     {

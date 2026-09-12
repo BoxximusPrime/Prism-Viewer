@@ -282,6 +282,29 @@
 
 <!-- End of Basic Settings block -->
 
+  <check_box
+    control_name="RenderExactOIT"
+    follows="left|top"
+    height="20"
+    label="Use exact transparency (OIT)"
+    layout="topleft"
+    left="30"
+    name="RenderExactOIT"
+    top="230"
+    tool_tip="On: correctly composite overlapping transparent surfaces. Off: use legacy alpha blending, which may be faster in scenes with heavy transparency but can show sorting artifacts. Changes apply immediately."
+    width="440" />
+  <text
+    follows="left|top"
+    height="34"
+    layout="topleft"
+    left="50"
+    name="RenderExactOITDescription"
+    top="254"
+    width="420"
+    word_wrap="true">
+    Turn off to use legacy rendering in scenes with heavy transparency.
+  </text>
+
   <button
     follows="top|left"
     height="23"
@@ -832,6 +855,64 @@ Combined: transmitted light from all lights, including blur.</text>
     <text name="GTAOHelp" follows="left|top|right" layout="topleft"
       left="30" top="353" width="450" height="48" word_wrap="true" text_color="LtGray_50">
       Start with Balanced quality and a 0.50 m radius. Use the debug view to inspect contact shadows. Transparent surfaces and objects outside the view cannot contribute occlusion.
+    </text>
+  </panel>
+  <panel name="graphics_taa_panel" label="TAA" follows="all"
+    layout="topleft" left="0" top="0" width="517" height="410">
+    <text name="TAADescription" follows="left|top|right" layout="topleft"
+      left="30" top="12" width="450" height="40" word_wrap="true">
+      Temporal antialiasing smooths edges across frames. Motion tracking and history rejection help keep dancing avatars clear.
+    </text>
+    <text name="TAAModeLabel" layout="topleft" left="30" top="60" width="185" height="20">Antialiasing:</text>
+    <combo_box name="TAAMode" control_name="RenderFSAAType" follows="left|top"
+      layout="topleft" left="220" top="57" width="260" height="23">
+      <combo_box.item label="Disabled" value="0" />
+      <combo_box.item label="FXAA" value="1" />
+      <combo_box.item label="SMAA" value="2" />
+      <combo_box.item label="TAA" value="3" />
+      <combo_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </combo_box>
+    <slider name="RenderTAAHistoryWeight" control_name="RenderTAAHistoryWeight"
+      label="History weight:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="97" width="450" height="20" min_val="0.5" max_val="0.97"
+      increment="0.01" decimal_digits="2" show_text="true"
+      tool_tip="Maximum contribution of previous frames. Start at 0.90. Lower values respond faster but smooth less. Motion and rejected surfaces automatically use less history." />
+    <slider name="RenderTAAMotionProtection" control_name="RenderTAAMotionProtection"
+      label="Motion protection:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="129" width="450" height="20" min_val="0" max_val="1"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Higher values favor the current image during movement and color changes, reducing trails on dancing avatars. Start at 0.85. May increase shimmer during fast motion." />
+    <slider name="RenderTAAClipGamma" control_name="RenderTAAClipGamma"
+      label="Color clipping range:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="161" width="450" height="20" min_val="0.5" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Lower values reject stale colors more tightly and reduce ghosting. Higher values preserve more history and smooth fine details. Start at 1.00." />
+    <slider name="RenderTAATransparency" control_name="RenderTAATransparency"
+      label="Transparency protection:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="193" width="450" height="20" min_val="0" max_val="1"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Reduces history around hair, transparent clothing, water and particles. Start at 1.00. Lower values smooth more but can leave trails." />
+    <slider name="RenderTAASharpen" control_name="RenderTAASharpen"
+      label="Sharpening:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="225" width="450" height="20" min_val="0" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Restores detail after temporal smoothing. Start at 0.20. This adds to any general graphics sharpening." />
+    <text name="TAADebugLabel" layout="topleft" left="30" top="264" width="185" height="20">Debug view:</text>
+    <combo_box name="RenderTAADebug" control_name="RenderTAADebug" follows="left|top"
+      layout="topleft" left="220" top="261" width="260" height="23">
+      <combo_box.item label="Normal image" value="0" />
+      <combo_box.item label="Motion vectors / reactive areas" value="1" />
+      <combo_box.item label="History: red rejected, green reused" value="2" />
+    </combo_box>
+    <check_box name="RenderTAAStaticDetails" control_name="RenderTAAStaticDetails"
+      label="Stabilize fine static details" follows="left|top" layout="topleft"
+      left="30" top="291" width="450" height="18"
+      tool_tip="Preserves thin static bars and small highlights across jitter samples while the camera is still. Animated avatars and moving objects keep strict history rejection. Removed static details can linger for up to eight frames." />
+    <text name="TAAStatus" follows="left|top|right" layout="topleft"
+      left="30" top="316" width="450" height="32" word_wrap="true" />
+    <text name="TAAHelp" follows="left|top|right" layout="topleft"
+      left="30" top="352" width="450" height="48" word_wrap="true" text_color="LtGray_50">
+      Start with the defaults. If motion leaves trails, raise motion protection or lower history weight. HUDs stay sharp. TAA pauses for snapshots and GTAO / skin debug views.
     </text>
   </panel>
   </tab_container>

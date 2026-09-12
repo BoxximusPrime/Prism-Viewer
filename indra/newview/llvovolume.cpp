@@ -112,20 +112,21 @@ extern bool gCubeSnapshot;
 
 namespace
 {
-struct SSSPropertyRequest
+struct RenderPropertyRequest
 {
     LLUUID mObjectID;
     LLUUID mRelevanceObjectID;
     F64 mNotBefore = 0.0;
     U8 mAttempts = 0;
+    bool mProjector = false;
 };
 
-std::deque<SSSPropertyRequest> sSSSPropertyRequests;
-std::unordered_set<LLUUID> sSSSQueuedObjectIDs;
-F64 sNextSSSPropertyRequestTime = 0.0;
-std::unordered_map<LLUUID, F64> sSSSTransientSelections;
+std::deque<RenderPropertyRequest> sRenderPropertyRequests;
+std::unordered_set<LLUUID> sRenderQueuedObjectIDs;
+F64 sNextRenderPropertyRequestTime = 0.0;
+std::unordered_map<LLUUID, F64> sRenderTransientSelections;
 
-void sendSSSSelection(LLViewerObject* object, bool select)
+void sendRenderPropertySelection(LLViewerObject* object, bool select)
 {
     gMessageSystem->newMessageFast(select ? _PREHASH_ObjectSelect : _PREHASH_ObjectDeselect);
     gMessageSystem->nextBlockFast(_PREHASH_AgentData);
@@ -3436,6 +3437,20 @@ void LLVOVolume::updateSpotLightPriority()
 }
 
 
+bool LLVOVolume::projectorShadowsDisabled() const
+{
+    // Descriptions are not part of ordinary object updates. Refresh active
+    // projectors periodically so script/remote edits are eventually observed.
+    const F64 now = LLFrameTimer::getElapsedSeconds();
+    if (!gCubeSnapshot && now >= mNextProjectorDescriptionRequest &&
+        sRenderQueuedObjectIDs.insert(getID()).second)
+    {
+        sRenderPropertyRequests.push_back({ getID(), getID(), 0.0, 0, true });
+        mNextProjectorDescriptionRequest = now + 60.0;
+    }
+    return hasNoShadowDescriptionTag();
+}
+
 bool LLVOVolume::isLightSpotlight() const
 {
     const LLLightImageParams* params = getLightImageParams();
@@ -3795,21 +3810,21 @@ bool LLVOVolume::isSSSEnabled() const
         if (getRegion() && request_relevant)
         {
             if (linkset_root && (!root_description_available || (detect_name && !root_name_available)) &&
-                sSSSQueuedObjectIDs.insert(linkset_root->getID()).second)
+                sRenderQueuedObjectIDs.insert(linkset_root->getID()).second)
             {
                 if (detect_name && !root_name_available)
                 {
                     // Identify nearby bodies before background prim-description queries.
-                    sSSSPropertyRequests.push_front({ linkset_root->getID(), getID() });
+                    sRenderPropertyRequests.push_front({ linkset_root->getID(), getID() });
                 }
                 else
                 {
-                    sSSSPropertyRequests.push_back({ linkset_root->getID(), getID() });
+                    sRenderPropertyRequests.push_back({ linkset_root->getID(), getID() });
                 }
             }
-            if (!own_description_available && sSSSQueuedObjectIDs.insert(getID()).second)
+            if (!own_description_available && sRenderQueuedObjectIDs.insert(getID()).second)
             {
-                sSSSPropertyRequests.push_back({ getID(), getID() });
+                sRenderPropertyRequests.push_back({ getID(), getID() });
             }
         }
     }
@@ -4649,60 +4664,63 @@ void LLVOVolume::preUpdateGeom()
     const F64 now = LLFrameTimer::getElapsedSeconds();
     // Release simulator-only selections after their full properties arrive, or
     // on timeout. Always clean up, including after the user disables SSS.
-    for (auto it = sSSSTransientSelections.begin(); it != sSSSTransientSelections.end(); )
+    for (auto it = sRenderTransientSelections.begin(); it != sRenderTransientSelections.end(); )
     {
         LLViewerObject* object = gObjectList.findObject(it->first);
-        if (!object || object->isDead() || !sss_enabled || now >= it->second ||
+        if (!object || object->isDead() || now >= it->second ||
             (object->hasCachedObjectName() && object->hasCachedObjectDescription()))
         {
             if (object && !object->isDead() && object->getRegion() && !object->isSelected())
             {
-                sendSSSSelection(object, false);
+                sendRenderPropertySelection(object, false);
             }
-            it = sSSSTransientSelections.erase(it);
+            it = sRenderTransientSelections.erase(it);
         }
         else
         {
             ++it;
         }
     }
-    if (!sss_enabled || now < sNextSSSPropertyRequestTime)
+    if (now < sNextRenderPropertyRequestTime)
     {
         return;
     }
 
     // Bound both network traffic and queue maintenance in crowded scenes. An
     // attachment's object position may be joint-local; use its rendered position.
-    sNextSSSPropertyRequestTime = now + 0.1;
-    const size_t requests_to_check = llmin(sSSSPropertyRequests.size(), size_t(64));
+    sNextRenderPropertyRequestTime = now + 0.1;
+    const size_t requests_to_check = llmin(sRenderPropertyRequests.size(), size_t(64));
     for (size_t i = 0; i < requests_to_check; ++i)
     {
-        SSSPropertyRequest request = sSSSPropertyRequests.front();
-        sSSSPropertyRequests.pop_front();
+        RenderPropertyRequest request = sRenderPropertyRequests.front();
+        sRenderPropertyRequests.pop_front();
 
         LLViewerObject* object = gObjectList.findObject(request.mObjectID);
         LLVOVolume* volume = dynamic_cast<LLVOVolume*>(object);
-        if (!volume || volume->isDead() || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))
+        if (!volume || volume->isDead() || (!request.mProjector &&
+            (!sss_enabled || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))))
         {
-            sSSSQueuedObjectIDs.erase(request.mObjectID);
+            sRenderQueuedObjectIDs.erase(request.mObjectID);
             continue;
         }
 
         LLViewerObject* relevance_object = gObjectList.findObject(request.mRelevanceObjectID);
         LLVOVolume* relevance_volume = dynamic_cast<LLVOVolume*>(relevance_object);
         const bool relevant = volume->getRegion() && relevance_volume &&
-            !relevance_volume->isDead() && relevance_volume->isVisible() &&
+            !relevance_volume->isDead() &&
+            (request.mProjector ? (relevance_volume->getIsLight() && relevance_volume->isLightSpotlight()) :
+                                 relevance_volume->isVisible()) &&
             (LLViewerCamera::instance().getOrigin() - relevance_volume->getRenderPosition()).magVec() <=
-                llmax(F32(sss_max_distance), 1.f);
+                (request.mProjector ? LLViewerCamera::instance().getFar() : llmax(F32(sss_max_distance), 1.f));
         if (!relevant)
         {
             // Visible volumes enqueue again when they return to range.
-            sSSSQueuedObjectIDs.erase(request.mObjectID);
+            sRenderQueuedObjectIDs.erase(request.mObjectID);
             continue;
         }
         if (now < request.mNotBefore)
         {
-            sSSSPropertyRequests.push_back(request);
+            sRenderPropertyRequests.push_back(request);
             continue;
         }
 
@@ -4710,24 +4728,24 @@ void LLVOVolume::preUpdateGeom()
         {
             // Match Worn Attachments: remote attachments need the full property
             // request. Do not change the viewer's visible selection.
-            sendSSSSelection(volume, true);
+            sendRenderPropertySelection(volume, true);
             if (!volume->isSelected())
             {
-                sSSSTransientSelections[volume->getID()] = now + 5.0;
+                sRenderTransientSelections[volume->getID()] = now + 5.0;
             }
         }
         else
         {
             LLSelectMgr::instance().requestObjectPropertiesFamily(volume);
         }
-        if (++request.mAttempts < 2)
+        if (!request.mProjector && ++request.mAttempts < 2)
         {
             request.mNotBefore = now + 30.0;
-            sSSSPropertyRequests.push_back(request);
+            sRenderPropertyRequests.push_back(request);
         }
         else
         {
-            sSSSQueuedObjectIDs.erase(request.mObjectID);
+            sRenderQueuedObjectIDs.erase(request.mObjectID);
         }
         break;
     }
@@ -5735,6 +5753,9 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
     LLDrawInfo* info = idx >= 0 ? draw_vec[idx] : nullptr;
     LLVOVolume* volume = facep->getDrawable()->getVOVolume();
     const bool sss = volume && volume->isSSSEnabled();
+    const bool taa_static = !rigged && drawable->isStatic() &&
+        !drawable->isState(LLDrawable::ANIMATED_CHILD) &&
+        !facep->isState(LLFace::TEXTURE_ANIM) && volume && !volume->isFlexible();
 
     if (info &&
         info->mVertexBuffer == facep->getVertexBuffer() &&
@@ -5758,6 +5779,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
     {
         info->mCount += facep->getIndicesCount();
         info->mEnd += facep->getGeomCount();
+        info->mTAAStatic &= taa_static;
 
         if (index < FACE_DO_NOT_BATCH_TEXTURES && index >= info->mTextureList.size())
         {
@@ -5780,6 +5802,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_vec.push_back(draw_info);
         draw_info->mTextureMatrix = tex_mat;
         draw_info->mModelMatrix = model_mat;
+        draw_info->mTAAStatic = taa_static;
 
         draw_info->mBump  = bump;
         draw_info->mShiny = shiny;
@@ -6707,7 +6730,9 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
 
                             tex = facep->getTexture();
 
-                            if (texture_count < MAX_TEXTURE_COUNT)
+                            // Reused alpha textures already have a slot. Counting them
+                            // again needlessly splits distance-sorted batches (Firestorm).
+                            if (cur_tex == texture_count && texture_count < MAX_TEXTURE_COUNT && tex)
                             {
                                 texture_list[texture_count++] = tex;
                             }

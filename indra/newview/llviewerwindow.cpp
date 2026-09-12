@@ -6390,11 +6390,13 @@ void LLPickInfo::fetchResults()
     delta.setSub(origin, intersection);
 
     if (hit_icon &&
-        (!objectp ||
+        (hit_icon->isWorldMarker() || !objectp ||
         icon_dist < delta.getLength3().getF32()))
     {
         // was this name referring to a hud icon?
         mHUDIcon = hit_icon;
+        mPickNameTag = false;
+        mObjectID.setNull();
         mPickType = PICK_ICON;
         mPosGlobal = mHUDIcon->getPositionGlobal();
 

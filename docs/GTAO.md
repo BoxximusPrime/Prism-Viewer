@@ -46,21 +46,21 @@ blur preserves GTAO green and runs only when the remaining shadow filtering need
 it. PCSS keeps its existing contact softness. Direct light, emission and specular
 lighting retain their existing behavior.
 
-## Later TAA integration
+## TAA integration
 
 The shader reconstructs positions using the actual inverse projection matrix,
-including jitter. `gtao_noise_index` is deliberately held at zero in
-`bindDeferredShader()` and already supports a 64-frame sampling cycle. Once a valid
-TAA resolve exists, advance this index with that resolve's frame sequence and tune
-the spatial filter/sample count with moving-scene tests. Reset temporal history on
-camera cuts, projection/render-size changes, and AO setting changes.
+including jitter. `gtao_noise_index` advances through its 64-frame sampling cycle
+while the main image uses [TAA](TAA.md), and stays at zero otherwise. The shaded AO
+result participates in the main HDR temporal resolve. TAA history resets on camera
+cuts, projection/render-size changes, and AO setting changes. The existing spatial
+filter remains enabled; reducing its cost needs moving-scene validation.
 
-TAA still needs the renderer's motion vectors, history validation, disocclusion
-handling and suitable clamping. If AO gets its own temporal resolve, insert it
+The main TAA implementation provides motion, history validation, disocclusion
+handling and color clipping. If AO gets its own temporal resolve, insert it
 between raw visibility and lighting composition; keep strength outside history so
 changes do not accumulate stale darkening. A filtered view-depth mip chain can
 replace the isolated depth-fetch helper separately to improve larger-radius cost
-and sampling. Neither depth mips nor temporal accumulation is implemented here.
+and sampling. Depth mips and independent AO temporal history remain future work.
 
 ## Validation
 

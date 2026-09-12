@@ -270,6 +270,7 @@ public:
 
     bool getIsLight() const;
     bool getIsLightFast() const;
+    bool projectorShadowsDisabled() const;
 
 
     // Get the light color in sRGB color space NOT scaled by intensity.
@@ -479,6 +480,7 @@ private:
     // cached value of getIsLight to avoid redundant map lookups
     // accessed by getIsLightFast
     mutable bool mIsLight = false;
+    mutable F64 mNextProjectorDescriptionRequest = 0.0;
 
     // cached value of getIsAnimatedObject to avoid redundant map lookups
     // accessed by getIsAnimatedObjectFast

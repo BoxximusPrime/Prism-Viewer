@@ -255,6 +255,12 @@ static bool handleWindowResized(const LLSD& newvalue)
     return true;
 }
 
+static bool handleTAAHistoryChanged(const LLSD&)
+{
+    gPipeline.resetTAAHistory();
+    return true;
+}
+
 static bool handleReleaseGLBufferChanged(const LLSD& newvalue)
 {
     if (gPipeline.isInit())
@@ -836,6 +842,10 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "RenderUIBuffer", handleWindowResized);
     setting_setup_signal_listener(gSavedSettings, "RenderDepthOfField", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderFSAAType", handleReleaseGLBufferChanged);
+    for (const char* setting : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
+        "RenderTAATransparency", "RenderTAAStaticDetails", "RenderGTAORadius", "RenderGTAOStrength", "RenderGTAOQuality",
+        "RenderGTAOFalloff", "RenderGTAOThinOccluder", "RenderGTAODenoise" })
+        setting_setup_signal_listener(gSavedSettings, setting, handleTAAHistoryChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderHighPrecisionPostProcess", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "BoxxySSSEnabled", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "BoxxySSSMode", handleReleaseGLBufferChanged);
@@ -880,6 +890,7 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "RenderMirrors", handleReflectionProbeDetailChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderHeroProbeResolution", handleHeroProbeResolutionChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderShadowDetail", handleSetShaderChanged);
+    setting_setup_signal_listener(gSavedSettings, "RenderAlphaProjectors", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderDeferredSSAO", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderGTAOEnabled", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderPerformanceTest", handleRenderPerfTestChanged);

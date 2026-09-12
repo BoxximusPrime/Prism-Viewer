@@ -29,6 +29,7 @@ with the same filename but different name
 -->
 
 <textures version="101">
+  <texture name="Light_Source_Icon" file_name="icons/light_source.png" preload="false" />
   <!-- Please add new files alphabetically to prevent merge conflicts. JC -->
   <texture name="Accordion_ArrowClosed_Off" file_name="containers/Accordion_ArrowClosed_Off.png" preload="false" />
   <texture name="Accordion_ArrowClosed_Press" file_name="containers/Accordion_ArrowClosed_Press.png" preload="false" />

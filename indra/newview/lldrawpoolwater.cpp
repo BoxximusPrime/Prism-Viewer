@@ -138,6 +138,7 @@ void LLDrawPoolWater::beginPostDeferredPass(S32 pass)
 void LLDrawPoolWater::renderPostDeferred(S32 pass)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
+    LL_PROFILE_GPU_ZONE("forward water");
     LLGLDisable blend(GL_BLEND);
 
     gGL.setColorMask(true, true);

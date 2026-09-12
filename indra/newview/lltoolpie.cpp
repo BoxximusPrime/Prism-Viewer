@@ -444,6 +444,12 @@ bool LLToolPie::handleLeftClickPick()
     LLHUDIcon* last_hit_hud_icon = mPick.mHUDIcon;
     if (!object && last_hit_hud_icon && last_hit_hud_icon->getSourceObject())
     {
+        if (last_hit_hud_icon->isWorldMarker())
+        {
+            LLToolSelect::handleObjectSelection(mPick, true, false);
+            mMouseButtonDown = false;
+            return true;
+        }
         LLFloaterScriptDebug::show(last_hit_hud_icon->getSourceObject()->getID());
     }
 
