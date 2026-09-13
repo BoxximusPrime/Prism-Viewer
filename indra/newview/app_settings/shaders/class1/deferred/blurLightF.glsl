@@ -37,11 +37,52 @@ uniform vec3 kern[4];
 uniform float kern_scale;
 uniform int pcss_enabled;
 uniform int gtao_enabled;
+uniform float pcss_cleanup;
+uniform int pcss_cleanup_only;
+uniform mat4 inv_proj;
 
 in vec2 vary_fragcoord;
 
 vec4 getPosition(vec2 pos_screen);
 vec4 getNorm(vec2 pos_screen);
+
+vec3 cleanupShadow(vec2 tc, vec3 pos, vec3 normal, vec3 center)
+{
+    // Keep pixel cleanup at distance, but cover a small surface footprint
+    // up close. A fixed pixel radius becomes invisible as the camera zooms
+    // in. Integer taps keep depth, normal and visibility on the same surface.
+    vec3 dx = dFdx(pos), dy = dFdy(pos);
+    vec3 plane = cross(dx, dy);
+    plane = dot(plane, plane) > 1e-20 ? normalize(plane) : normal;
+    float depthError = abs(inv_proj[2].w * pos.z) * length(pos) * (8.0 / 16777216.0);
+    float tolerance = max(0.002, 0.25 * min(length(dx), length(dy))) + depthError;
+    float amount = clamp(pcss_cleanup, 0.0, 3.0);
+    float metresPerPixel = length(dx * delta.x + dy * delta.y);
+    // One unit supplies a 4 mm surface sigma as well as a one-pixel minimum.
+    // Bound work for extreme closeups; dense sampling avoids sparse blur bands.
+    float sigma = min(max(amount, amount * 0.004 / max(metresPerPixel, 1e-6)), 12.0);
+    int radius = int(ceil(2.0 * sigma));
+    vec3 sum = center;
+    float total = 1.0;
+    ivec2 size = textureSize(lightMap, 0);
+    ivec2 origin = ivec2(tc * vec2(size));
+    for (int i = -radius; i <= radius; ++i)
+    {
+        if (i == 0) continue;
+        ivec2 tap = origin + ivec2(delta) * i;
+        if (any(lessThan(tap, ivec2(0))) || any(greaterThanEqual(tap, size))) continue;
+        vec2 uv = (vec2(tap) + 0.5) / vec2(size);
+        vec3 otherNormal = getNorm(uv).xyz;
+        float agreement = max(dot(normal, otherNormal), 0.0);
+        vec3 difference = getPosition(uv).xyz - pos;
+        float separation = max(abs(dot(plane, difference)), abs(dot(otherNormal, difference)));
+        float weight = exp(-0.5 * float(i*i) / max(sigma*sigma, 1e-6)) * pow(agreement, 8.0);
+        weight *= 1.0 - smoothstep(tolerance, 2.0*tolerance, separation);
+        sum += texelFetch(lightMap, tap, 0).rba * weight;
+        total += weight;
+    }
+    return sum / total;
+}
 
 void main()
 {
@@ -49,6 +90,16 @@ void main()
     vec4 norm = getNorm(tc);
     vec3 pos = getPosition(tc).xyz;
     vec4 ccol = texture(lightMap, tc).rgba;
+    vec3 shadows = ccol.rba;
+    if (pcss_enabled != 0)
+    {
+        if (pcss_cleanup > 0.0) shadows = cleanupShadow(tc, pos, norm.xyz, shadows);
+        if (pcss_cleanup_only != 0)
+        {
+            frag_color = vec4(shadows.x, ccol.g, shadows.yz);
+            return;
+        }
+    }
 
     vec2 dlt = kern_scale * delta / (1.0+norm.xy*norm.xy);
     dlt /= max(-pos.z*dist_factor, 1.0);
@@ -108,9 +159,8 @@ void main()
     }
 
     col /= defined_weight.xyxx;
-    // PCSS already filters sun and projector shadows by blocker distance.
-    // Preserve their chosen contact softness; AO still uses the usual blur.
-    if (pcss_enabled != 0) col.rba = ccol.rba;
+    // Keep PCSS cleanup separate from the broader legacy AO filter.
+    if (pcss_enabled != 0) col.rba = shadows;
     // GTAO already has its own edge-aware spatial denoiser.
     if (gtao_enabled != 0) col.g = ccol.g;
     //col.y *= col.y;

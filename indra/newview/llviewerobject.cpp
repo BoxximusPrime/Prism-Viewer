@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llvolumefog.h"
 
 #include "llviewerobject.h"
 #include "llscripteditorws.h"
@@ -7657,6 +7658,7 @@ void LLViewerObject::setCachedObjectDescription(const std::string& description)
 
     if (changed)
     {
+        LLVolumeFog::descriptionChanged(*this, description);
         // A description marker can change the render batch this object belongs
         // to, so rebuild its draw info when fresh properties arrive.
         markDescriptionRenderStateChanged();

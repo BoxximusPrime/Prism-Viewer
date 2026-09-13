@@ -97,6 +97,7 @@ float getSSSStrength(float mask, vec3 positionEye);
 bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
+vec3 capSSSTransmission(vec3 transmission);
 vec3 getSSSTransmission(float nl, float nv, float strength);
 bool useSSSShadowThickness(float nl, float strength);
 void prepareSSSDepth(vec3 pos);
@@ -157,8 +158,8 @@ void main()
     float sssPath = -1.0;
     if (useSSSShadowThickness(rawNl, wrapStrength))
         sssPath = sampleLocalSSSPath(pos, proj_origin);
-    vec3 transmission = getSSSTransmissionWithDepth(rawNl, dot(n, v), wrapStrength, sssPath, shadow)
-        * sss_point_transmission_boost;
+    vec3 transmission = capSSSTransmission(getSSSTransmissionWithDepth(rawNl, dot(n, v), wrapStrength, sssPath, shadow)
+        * sss_point_transmission_boost);
 
     vec3 diffuse = gb.albedo.rgb;
     vec4 spec    = gb.specular;

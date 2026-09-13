@@ -299,6 +299,11 @@ extern LLGLSLShader         gNormalMapGenProgram;
 extern LLGLSLShader         gDeferredGenBrdfLutProgram;
 extern LLGLSLShader         gDeferredBufferVisualProgram;
 extern LLGLSLShader         gSSSDiffusionProgram;
+extern LLGLSLShader         gSSSOverlayProgram[6]; // indexed / material / PBR, static + rigged
+extern LLGLSLShader         gSSSOverlayCompositeProgram;
+extern LLGLSLShader         gVolumeFogProgram;
+extern LLGLSLShader         gVolumeFogLitProgram;
+extern LLGLSLShader         gVolumeFogCompositeProgram;
 extern LLGLSLShader         gSSSMaskProgram;
 
 // Deferred materials shaders

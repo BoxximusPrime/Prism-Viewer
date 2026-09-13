@@ -84,6 +84,9 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen);
 float getAmbientClamp();
 
 void mirrorClip(vec3 pos);
+#if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
+bool isSSSOverlay(vec3 positionEye);
+#endif
 
 void sampleReflectionProbesLegacy(inout vec3 ambenv, inout vec3 glossenv, inout vec3 legacyenv,
         vec2 tc, vec3 pos, vec3 norm, float glossiness, float envIntensity, bool transparent, vec3 amblit_linear);
@@ -190,6 +193,9 @@ vec3 calcPointLightOrSpotLight(int light_index, vec3 light_col, vec3 diffuse, ve
 void main()
 {
     mirrorClip(vary_position);
+#if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
+    if (isSSSOverlay(vary_position)) discard;
+#endif
 
     float final_scale = 1.0;
 #ifndef IS_HUD

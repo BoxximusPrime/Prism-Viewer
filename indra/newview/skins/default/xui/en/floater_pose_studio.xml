@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="pose_studio" title="Pose Studio" width="480" height="700"
+         layout="topleft" legacy_header_height="18" save_rect="true" single_instance="true">
+  <string name="ready">Start posing to hold your current pose.</string>
+  <string name="unavailable">Your avatar must be in world and ready to pose.</string>
+  <string name="capture_failed">Your pose could not be captured. Let your avatar finish loading, then try again.</string>
+  <string name="posing">Pose held. End posing to return to normal animation.</string>
+  <string name="posing_frozen">Pose held. Animation freeze is also on; it will stay on when you end posing.</string>
+  <string name="skeleton_changed">Your avatar's skeleton changed. Start posing to capture it again.</string>
+  <string name="teleported">Posing ended for teleport. Start posing to capture a new pose.</string>
+  <string name="select_bone">Select a bone</string>
+  <string name="no_matches">No matching bones</string>
+  <string name="body">Body</string>
+  <string name="left_arm">Left arm</string>
+  <string name="right_arm">Right arm</string>
+  <string name="left_leg">Left leg</string>
+  <string name="right_leg">Right leg</string>
+  <string name="left_hand">Left hand</string>
+  <string name="right_hand">Right hand</string>
+  <string name="face">Face &amp; eyes</string>
+  <string name="wings">Wings</string>
+  <string name="tail">Tail</string>
+  <string name="hind_legs">Hind legs</string>
+  <string name="other">Other bones</string>
+  <text name="subject" left="12" top="28" width="456" height="22" font="SansSerifMedium" font.style="BOLD">Me</text>
+  <text name="scope" left="12" top="53" width="456" height="20" text_color="LabelTextColor">Local preview — only you see these edits</text>
+  <button name="start" label="Start posing" left="12" top="82" width="222" height="28" />
+  <button name="end" label="End posing" left="246" top="82" width="222" height="28" />
+  <filter_editor name="bone_search" label="Search bones" left="12" top="118" width="456" height="24" />
+  <scroll_list name="joints" left="12" top="148" width="456" height="336"
+               multi_select="false" draw_heading="true" heading_height="24"
+               can_sort="false" sort_column="-1" draw_stripes="false" row_padding="4"
+               commit_on_selection_change="true" commit_on_keyboard_movement="true">
+    <scroll_list.columns name="bone" label="Bone" dynamic_width="true" />
+    <scroll_list.columns name="x" label="Rot X" width="64" />
+    <scroll_list.columns name="y" label="Rot Y" width="64" />
+    <scroll_list.columns name="z" label="Rot Z" width="64" />
+  </scroll_list>
+  <text name="selected_bone" left="12" top="496" width="456" height="20" font.style="BOLD" text_color="PoseStudioBoneColor">Select a bone</text>
+  <slider name="rotation_x" label="X" label_width="18" left="12" top="524" width="456" height="24"
+          decimal_digits="1" min_val="-180" max_val="180" increment="0.1" initial_value="0"
+          can_edit_text="true" show_text="true" text_width="64" />
+  <slider name="rotation_y" label="Y" label_width="18" left="12" top="556" width="456" height="24"
+          decimal_digits="1" min_val="-180" max_val="180" increment="0.1" initial_value="0"
+          can_edit_text="true" show_text="true" text_width="64" />
+  <slider name="rotation_z" label="Z" label_width="18" left="12" top="588" width="456" height="24"
+          decimal_digits="1" min_val="-180" max_val="180" increment="0.1" initial_value="0"
+          can_edit_text="true" show_text="true" text_width="64" />
+  <button name="reset_joint" label="Reset bone" left="12" top="624" width="222" height="26" />
+  <button name="reset_pose" label="Reset pose" left="246" top="624" width="222" height="26" />
+  <text name="status" left="12" top="662" width="456" height="32" word_wrap="true" text_color="LabelTextColor" />
+</floater>

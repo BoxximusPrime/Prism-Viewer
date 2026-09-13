@@ -116,6 +116,7 @@ float getSSSStrength(float mask, vec3 positionEye);
 bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
+vec3 capSSSTransmission(vec3 transmission);
 vec3 getSSSTransmission(float nl, float nv, float strength);
 bool useSSSShadowThickness(float nl, float strength);
 void prepareSSSDepth(vec3 pos);
@@ -144,7 +145,7 @@ vec3 pbrBaseLightSSS(vec3 diffuseColor, vec3 specularColor, float metallic, vec3
 
     float diffuseNl = sssStrength > 0.0 ? dot(norm, normalize(light_dir)) : nl;
     vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, sssStrength);
-    vec3 transmission = getSSSTransmissionWithDepth(diffuseNl, nv, sssStrength, sssPath, 1.0);
+    vec3 transmission = capSSSTransmission(getSSSTransmissionWithDepth(diffuseNl, nv, sssStrength, sssPath, 1.0));
     vec3 result;
     if (classic_mode > 0)
     {
@@ -341,8 +342,8 @@ void main()
         // apply lambertian IBL only (see pbrIbl)
         color.rgb = irradiance;
 
-        vec3 transmission = getSSSTransmissionWithDepth(raw_da, dot(gb.normal, -normalize(pos.xyz)),
-                                                       wrapStrength, sssPath, 1.0);
+        vec3 transmission = capSSSTransmission(getSSSTransmissionWithDepth(raw_da, dot(gb.normal, -normalize(pos.xyz)),
+                                                       wrapStrength, sssPath, 1.0));
         if (classic_mode > 0)
         {
             vec3 diffuse_factor = getSSSDiffuseFactor(raw_da, wrapStrength);

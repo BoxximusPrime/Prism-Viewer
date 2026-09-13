@@ -83,7 +83,8 @@ void main() {
 def run(sdl, gl, projectors=False):
     for name, args in {"Uniform2f": [I, F, F], "Uniform3f": [I, F, F, F],
                        "Uniform4f": [I, F, F, F, F], "DeleteProgram": [U],
-                       "ActiveTexture": [U], "UniformMatrix4fv": [I, I, C.c_ubyte, C.POINTER(F)]}.items():
+                       "ActiveTexture": [U], "UniformMatrix4fv": [I, I, C.c_ubyte, C.POINTER(F)],
+                       "ClearColor": [F,F,F,F], "Clear": [U]}.items():
         setattr(gl, name, C.WINFUNCTYPE(None, *args)(sdl.SDL_GL_GetProcAddress(("gl" + name).encode())))
 
     def obj(generator):
@@ -192,6 +193,7 @@ def run(sdl, gl, projectors=False):
             if projectors:
                 stubs = stubs.replace("float sampleDirectionalShadow(vec3 p, vec3 n, vec2 tc) { return 1.0; }", "")
             source = defines + (SHADERS / path).read_text() + stubs + half_vectors + attenuation
+            source += (SHADERS / "class1/deferred/sssOverlayUtil.glsl").read_text()
             if name == "pbr":
                 source += punctual
             prog = program(source)
@@ -327,9 +329,27 @@ def run(sdl, gl, projectors=False):
                     expected_blue = coefficient * (2 / 9) * 0.75 * 0.5 * 0.7
                     assert abs(lit[2] - dark[2] - expected_blue) < 2e-5, (name, oit, "ambiance", normal_length, lit, dark)
                     projector_checks += 1
+            # Both normal and OIT fragment entry points must omit accepted skin
+            # overlays, and retain their original lighting over distant receivers.
+            gl.ActiveTexture(0x84C0 + 9)
+            texture([-5.01, 0, 0, 0])
+            gl.ActiveTexture(0x84C0)
+            uniform(prog, "sssOverlayGuide", 9, integer=True)
+            uniform(prog, "test_position", 0, 0, -5)
+            uniform(prog, "sss_overlay", 0, integer=True)
+            reference = pixel()
+            sentinel = (0.125, 0.25, 0.375, 0.5)
+            gl.ClearColor(*sentinel); gl.Clear(0x4000)
+            uniform(prog, "sss_overlay", 1, integer=True)
+            assert pixel() == sentinel, (name, oit, "overlay drawn twice")
+            gl.ActiveTexture(0x84C0 + 9)
+            gl.TexImage2D(TEXTURE, 0, 0x8814, 1, 1, 0, RGBA, FLOAT, (F*4)(-6,0,0,0))
+            gl.ActiveTexture(0x84C0)
+            assert max(abs(a-b) for a,b in zip(pixel(),reference)) < 2e-5, (name, oit, "overlay fallback")
             gl.DeleteProgram(prog)
     assert gl.GetError() == 0
     print(f"Passed {checks} GPU lighting cases: OIT/fallback, Classic/modern, interpolated normals, PBR intensity, fog/base preservation, alpha preservation")
+    print("Passed skin-overlay double-draw rejection and distant-skin fallback for all six transparency variants")
     if projectors:
         print(f"Passed {projector_checks} GPU projector cases: texture color/alpha, beam/near/radius clipping, receiver-depth shadows, both shadow maps/fading, light slots, origin offset, focus/mips/soft edges, ambiance")
 

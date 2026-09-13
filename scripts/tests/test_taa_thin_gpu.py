@@ -24,6 +24,8 @@ def run(sdl, gl):
         gpu.uniform(prog,'taa_rcp_res',1/W,1/H)
     gpu.matrix(camera,'taa_previous_projection',projection)
     gpu.matrix(camera,'taa_previous_from_view',identity)
+    gpu.matrix(resolve,'taa_previous_inv_projection',inverse(projection))
+    gpu.matrix(resolve,'taa_current_from_previous',identity)
     for name,value in [('taa_history_weight',.9),('taa_motion_protection',.85),('taa_clip_gamma',1),('taa_transparency',1)]:
         gpu.uniform(resolve,name,value)
     gpu.uniform(resolve,'taa_static_details',1,integer=True)
@@ -106,7 +108,7 @@ def run(sdl, gl):
     gpu.uniform(resolve,'taa_jitter',0,0)
     gpu.matrix(resolve,'taa_inv_projection',inverse(projection))
     for label,speed,alpha,z,color in (
-        ('tracked avatar',0,0,8,black),('moving world',.1,-1,8,black),
+        ('tracked avatar',0,0,8,black),('fast camera motion',4.1,-1,8,black),
         ('reactive surface',0,1,8,black),('new occluder',0,-1,1,black),
         ('changed lighting',0,-1,8,(.8,.8,.8,.37))):
         gpu.upload(current,list(color)*(W*H)); gpu.upload(opaque,list(color)*(W*H))

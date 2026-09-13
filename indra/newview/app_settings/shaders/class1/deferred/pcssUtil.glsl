@@ -11,6 +11,11 @@
 // z: receiver bias toward the light (m); w: minimum penumbra radius (m).
 uniform vec4 pcss_params;
 uniform int pcss_quality;
+uniform float pcss_raster_error;
+// World axes transformed into the receiver's camera space. A fixed camera
+// axis rotates the finite sample pattern over the scene when the view turns.
+uniform vec3 pcss_world_up;
+uniform vec3 pcss_world_north;
 float getPCSSDepthError();
 vec2 getPCSSSlopeError(mat4 lightMatrix, vec4 start, float depthError);
 
@@ -22,7 +27,10 @@ vec2 pcssDisk(int i, int count)
     return vec2(cos(angle), sin(angle)) * radius;
 }
 
-float pcssCompare(sampler2D depthMap, vec2 uv, vec3 receiver, vec2 slope, float bias, vec2 slopeError)
+// Return guarded visibility, visibility with receiver texels restored, and
+// evidence that a complete bilinear footprint belongs to the receiver plane.
+vec3 pcssCompare(sampler2D depthMap, vec2 uv, vec3 receiver, vec2 slope, float bias, vec2 slopeError,
+                 vec2 receiverSlope)
 {
     vec2 size = vec2(textureSize(depthMap, 0));
     vec2 grid = uv * size - 0.5;
@@ -50,7 +58,14 @@ float pcssCompare(sampler2D depthMap, vec2 uv, vec3 receiver, vec2 slope, float 
     // A receiver plane may extrapolate beyond the shadow frustum at grazing
     // angles. Clear texels still mean no blocker, even when reference > 1.
     vec4 lit = max(step(reference, depths), step(vec4(1.0), depths));
-    return mix(mix(lit.w, lit.z, f.x), mix(lit.x, lit.y, f.x), f.y);
+    vec4 receiverPlane = receiver.z + receiverSlope.x * (x - receiver.x) + receiverSlope.y * (y - receiver.y);
+    vec4 receiverTolerance = -bias + slopeError.x * abs(x-receiver.x) + slopeError.y * abs(y-receiver.y);
+    vec4 onReceiver = step(abs(depths-receiverPlane), receiverTolerance);
+    vec4 restored = max(lit, onReceiver);
+    return vec3(mix(mix(lit.w, lit.z, f.x), mix(lit.x, lit.y, f.x), f.y),
+                mix(mix(restored.w, restored.z, f.x), mix(restored.x, restored.y, f.x), f.y),
+                all(greaterThanEqual(base, vec2(0.0))) && all(lessThan(base+1.0, size)) &&
+                all(greaterThan(onReceiver, vec4(0.5))) ? 1.0 : 0.0);
 }
 
 float pcssShadow(sampler2D depthMap,
@@ -103,6 +118,7 @@ float pcssShadow(sampler2D depthMap,
     // It needs ordinary depth comparisons, not self-shadow slope correction.
     bool lightFacing = nl > 0.0;
     vec2 slope = lightFacing && abs(plane.z) > 1e-7 ? -plane.xy / plane.z : vec2(0.0);
+    vec2 receiverSlope = slope;
 
     // A receiver plane is only reliable for self-shadow correction where the
     // map actually contains that receiver. A wall covering the entire center
@@ -110,6 +126,10 @@ float pcssShadow(sampler2D depthMap,
     // it. Keep any correction within the occluder's measured depth gradients.
     ivec2 size = textureSize(depthMap, 0);
     ivec2 hi = size - 1;
+    // Rasterized shadow vertices have finite subpixel precision. Even an
+    // exact receiver plane can differ from their stored depth by a small
+    // fraction of a texel's slope, especially on coarse, grazing cascades.
+    bias -= dot(abs(slope), 1.0 / vec2(size)) * pcss_raster_error;
     ivec2 center = ivec2(floor(tc.xy * vec2(size) - 0.5));
     vec4 centerDepths = vec4(texelFetch(depthMap, clamp(center, ivec2(0), hi), 0).r,
                             texelFetch(depthMap, clamp(center + ivec2(1,0), ivec2(0), hi), 0).r,
@@ -137,7 +157,7 @@ float pcssShadow(sampler2D depthMap,
     // Sun rays share a perpendicular disk. A projector's emitter instead
     // stays in its own XY plane; rotating it toward each receiver stretches
     // the penumbra off axis and changes the sampling pattern across the cone.
-    vec3 axis = abs(lightDir.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0);
+    vec3 axis = abs(dot(lightDir, pcss_world_up)) < 0.9 ? pcss_world_up : pcss_world_north;
     vec3 tangent = sourceRadius > 0.0 ? normalize(inverseMatrix[0].xyz) : normalize(cross(lightDir, axis));
     vec3 bitangent = sourceRadius > 0.0 ? normalize(inverseMatrix[1].xyz) : cross(lightDir, tangent);
     vec4 du = lightMatrix * vec4(tangent, 0.0);
@@ -159,10 +179,18 @@ float pcssShadow(sampler2D depthMap,
     int filterCount = searchCount * 2;
     float blockerDistance = 0.0;
     float blockers = 0.0;
+    // No certification is needed if the occluder guard left the plane intact.
+    float receiverFound = all(equal(slope, receiverSlope)) ? 1.0 : 0.0;
     for (int i = 0; i < searchCount; ++i)
     {
         // Always test the center to preserve narrow, fully shadowed contacts.
-        vec2 offset = i == 0 ? vec2(0.0) : footprint * pcssDisk(i - 1, searchCount - 1) * searchRadius;
+        int halfCount = searchCount / 2;
+        bool local = i < halfCount;
+        vec2 disk = local ? pcssDisk(max(i - 1, 0), halfCount - 1) : pcssDisk(i - halfCount, halfCount);
+        // Search at two scales. The full cascade search alone leaves large
+        // holes near the receiver, missing narrow casters in their penumbra.
+        float searchScale = local ? 0.125 : 1.0;
+        vec2 offset = i == 0 ? vec2(0.0) : footprint * disk * searchRadius * searchScale;
         vec2 uv = tc.xy + offset;
         if (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) continue;
         ivec2 texel = ivec2(uv * vec2(size));
@@ -170,7 +198,18 @@ float pcssShadow(sampler2D depthMap,
         float depth = texelFetch(depthMap, texel, 0).r;
         float receiverDepth = tc.z + dot(slope, uv - tc.xy);
         float tapBias = bias - dot(slopeError, abs(uv - tc.xy));
-        if (depth < receiverDepth + tapBias && depth < 1.0)
+        float surfaceDepth = tc.z + dot(receiverSlope, uv - tc.xy);
+        float surfaceTolerance = -tapBias;
+        if (receiverFound == 0.0 && depth < 1.0 && abs(depth-surfaceDepth) <= surfaceTolerance)
+        {
+            // A small contact filter may contain only mixed edge quads.
+            // Certify the receiver in the wider search too, stopping once
+            // a complete patch is found. Reuse the same comparison helper.
+            receiverFound = pcssCompare(depthMap, uv, tc, slope, bias, slopeError, receiverSlope).z;
+        }
+        // The receiver remains the receiver even when a caster covers the
+        // centre and forces bounded comparisons elsewhere in the kernel.
+        if (depth < receiverDepth + tapBias && depth < 1.0 && abs(depth-surfaceDepth) > surfaceTolerance)
         {
             vec4 blocker = inverseMatrix * vec4(uv, depth, 1.0);
             if (sourceRadius > 0.0)
@@ -198,17 +237,25 @@ float pcssShadow(sampler2D depthMap,
     radius = clamp(radius, pcss_params.w, pcss_params.y);
     // Even an empty sparse search needs the contact filter: returning fully
     // lit here popped small blockers and cut off the minimum-softness edge.
-    if (radius <= 0.0) return min(visibility, pcssCompare(depthMap, tc.xy, tc, slope, bias, slopeError));
-    float shadow = 0.0;
+    if (radius <= 0.0)
+    {
+        vec3 contact = pcssCompare(depthMap, tc.xy, tc, slope, bias, slopeError, receiverSlope);
+        return min(visibility, receiverFound + contact.z > 0.0 ? contact.y : contact.x);
+    }
+    vec3 shadow = vec3(0.0, 0.0, receiverFound);
     for (int i = 0; i < filterCount; ++i)
     {
         vec2 offset = footprint * pcssDisk(i, filterCount) * radius;
         vec2 uv = tc.xy + offset;
-        if (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) shadow += 1.0;
-        else shadow += pcssCompare(depthMap, uv, tc, slope, bias, slopeError);
+        if (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) shadow.xy += 1.0;
+        else shadow += pcssCompare(depthMap, uv, tc, slope, bias, slopeError, receiverSlope);
     }
     // The map can already include the same horizon occlusion; cap its
     // visibility rather than multiplying and counting that shadow twice.
-    return min(visibility, shadow / float(filterCount));
+    // A grazing tangent can merely cross a wall at one texel. Require a
+    // matching 2x2 patch in the search/filter before exempting receiver
+    // texels; otherwise retain the wall guard. This also handles mixed
+    // caster/floor bilinear taps without adding a dark border to the floor.
+    return min(visibility, (shadow.z > 0.0 ? shadow.y : shadow.x) / float(filterCount));
 }
 #endif

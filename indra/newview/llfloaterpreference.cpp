@@ -328,6 +328,7 @@ LLFloaterPreference::LLFloaterPreference(const LLSD& key)
     mCommitCallbackRegistrar.add("Pref.RenderExceptions",       boost::bind(&LLFloaterPreference::onClickRenderExceptions, this));
     mCommitCallbackRegistrar.add("Pref.AutoAdjustments",         boost::bind(&LLFloaterPreference::onClickAutoAdjustments, this));
     mCommitCallbackRegistrar.add("Pref.HardwareDefaults",       boost::bind(&LLFloaterPreference::setHardwareDefaults, this));
+    mCommitCallbackRegistrar.add("Pref.GraphicsCategoryDefaults", boost::bind(&LLFloaterPreference::resetGraphicsCategory, this, _2));
     mCommitCallbackRegistrar.add("Pref.AvatarImpostorsEnable",  boost::bind(&LLFloaterPreference::onAvatarImpostorsEnable, this));
     mCommitCallbackRegistrar.add("Pref.UpdateIndirectMaxNonImpostors", boost::bind(&LLFloaterPreference::updateMaxNonImpostors, this));
     mCommitCallbackRegistrar.add("Pref.UpdateIndirectMaxComplexity",    boost::bind(&LLFloaterPreference::updateMaxComplexity, this));
@@ -866,6 +867,33 @@ void LLFloaterPreference::updateShowFavoritesCheckbox(bool val)
     }
 }
 
+void LLFloaterPreference::resetGraphicsCategory(const LLSD& data)
+{
+    // Match the settings covered by preference save/cancel, scoped to this page.
+    std::list<LLView*> views{ getChild<LLPanel>(data.asString()) };
+    while (!views.empty())
+    {
+        LLView* view = views.front();
+        views.pop_front();
+        if (LLUICtrl* ctrl = dynamic_cast<LLUICtrl*>(view))
+        {
+            if (LLControlVariable* control = ctrl->getControlVariable())
+            {
+                control->resetToDefault(true);
+            }
+        }
+        for (LLView* child : *view->getChildList())
+        {
+            views.push_back(child);
+        }
+    }
+
+    // Clearing the preset before notifying avoids replacing the Cancel snapshot.
+    gSavedSettings.setString("PresetGraphicActive", "");
+    LLPresetsManager::getInstance()->triggerChangeSignal();
+    refreshEnabledGraphics();
+}
+
 void LLFloaterPreference::setHardwareDefaults()
 {
     std::string preset_graphic_active = gSavedSettings.getString("PresetGraphicActive");
@@ -1276,6 +1304,15 @@ void LLFloaterPreference::buildPopupLists()
 
 void LLFloaterPreference::refreshEnabledState()
 {
+    const bool fog_enabled = gSavedSettings.getBOOL("RenderVolumeFog");
+    for (const char* control : { "RenderVolumeFogIntensity", "RenderVolumeFogQuality", "VolumeFogQualityLabel",
+        "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
+        getChildView(control)->setEnabled(fog_enabled);
+    getChild<LLTextBox>("VolumeFogStatus")->setValue(!fog_enabled ? "Volumetric fog is off." :
+        gSavedSettings.getF32("RenderVolumeFogIntensity") <= 0.f ? "Intensity is zero. Fog rendering is skipped." :
+        !gSavedSettings.getBOOL("RenderVolumeFogLighting") ? "Fog lighting is disabled in Debug Settings. Fog renders with its original unlit appearance." :
+        gSavedSettings.getS32("RenderVolumeFogSteps") > 0 ? "A custom sample count is set in Debug Settings (RenderVolumeFogSteps). Set it to 0 to follow the quality preset." :
+        "Changes apply immediately. Quality keeps your selected light limit and shadow setting.");
     const bool taa_enabled = gSavedSettings.getU32("RenderFSAAType") == 3;
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
         "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAADebug", "TAADebugLabel" })
@@ -1309,6 +1346,7 @@ void LLFloaterPreference::refreshEnabledState()
     getChildView("RenderPCSSProjectorSize")->setEnabled(pcss_enabled && gSavedSettings.getS32("RenderShadowDetail") > 1);
     getChildView("RenderPCSSBias")->setEnabled(pcss_enabled);
     getChildView("RenderPCSSQuality")->setEnabled(pcss_enabled);
+    getChildView("RenderPCSSCleanup")->setEnabled(pcss_enabled);
     getChildView("PCSSQualityLabel")->setEnabled(pcss_enabled);
     getChild<LLTextBox>("PCSSStatus")->setValue(!pcss_supported ?
         "PCSS is unavailable on this graphics device (32 texture units required)." :
@@ -1321,7 +1359,9 @@ void LLFloaterPreference::refreshEnabledState()
     const bool sss_combined = gSavedSettings.getBOOL("BoxxySSSEnabled") &&
         gSavedSettings.getS32("BoxxySSSMode") == 2;
     getChildView("BoxxySSSWrapAmount")->setEnabled(sss_combined);
+    getChildView("BoxxySSSGrazingStrength")->setEnabled(sss_combined);
     getChildView("BoxxySSSTransmission")->setEnabled(sss_combined);
+    getChildView("BoxxySSSMaxTransmission")->setEnabled(sss_combined);
     getChildView("BoxxySSSPointTransmissionBoost")->setEnabled(sss_combined);
     getChildView("BoxxySSSThickness")->setEnabled(sss_combined);
     getChildView("BoxxySSSTransmissionSmoothing")->setEnabled(sss_combined);
@@ -2684,6 +2724,9 @@ void LLPanelPreferenceGraphics::saveSettings()
 }
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
+    for (const char* control : { "RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogQuality",
+        "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
         "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAADebug" })
         gSavedSettings.getControl(control)->resetToDefault(true);
@@ -2699,9 +2742,11 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("RenderPCSSProjectorSize")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSBias")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSQuality")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSCleanup")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSEnabled")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSAutoDetect")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWhitelist")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSOverlayNames")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSShowMask")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSShowDepth")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSDebugLight")->resetToDefault(true);
@@ -2712,7 +2757,9 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSWarmth")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSMaxDistance")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWrapAmount")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSGrazingStrength")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSTransmission")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSMaxTransmission")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSPointTransmissionBoost")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSPenetration")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSTransmissionSmoothing")->resetToDefault(true);

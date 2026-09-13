@@ -193,6 +193,8 @@ def run(sdl,gl):
             'mTAAMotion':vectors,'mTAAOpaque':opaque,'mRT->deferredScreen':depth})
     bind_resolve()
     gpu.matrix(resolve,'taa_inv_projection',inv_proj)
+    gpu.matrix(resolve,'taa_previous_inv_projection',inv_proj)
+    gpu.matrix(resolve,'taa_current_from_previous',identity)
     gpu.uniform(resolve,'taa_rcp_res',1/W,1/H); gpu.uniform(resolve,'taa_jitter',0,0)
     for name,value in [('taa_history_weight',.9),('taa_motion_protection',.85),('taa_clip_gamma',1),('taa_transparency',1)]:
         gpu.uniform(resolve,name,value)
@@ -225,7 +227,7 @@ def run(sdl,gl):
     for offset in (.25,.75):
         gpu.upload(vectors,constant((offset/W,0,2,0)))
         bind_resolve(); gpu.draw(resolve,output); pixel=gpu.read(output)[hp*4:hp*4+4]
-        check(pixel[3]<0,f'contributing mismatched depth must reject history at fraction {offset}')
+        check(pixel[3]>0,f'valid background taps should survive a mismatched neighbor at fraction {offset}')
         check(max(abs(a-b) for a,b in zip(pixel[:3],(.2,.4,.6)))<.001,
               f'foreground history must not bleed through at fraction {offset}')
 

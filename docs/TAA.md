@@ -13,8 +13,8 @@ continues to apply only to FXAA/SMAA.
 | Color clipping range | 1.20 | YCoCg neighborhood standard deviations. Lower values reject stale colors more tightly. |
 | Transparency protection | 0.00 | Favors the current image where transparency/post-deferred shading changes the opaque image. |
 | Sharpening | 1.50 | Range 0–2. Bounded output sharpening, outside history. Adds to general CAS sharpening. |
-| Stabilize fine static details | On | Retains thin static geometry and small highlights through missing jitter samples while the camera is still. |
-| Debug view | Normal | Motion vectors (R/G direction, blue reactive) or history reuse (red rejected, green reused). Session-only. |
+| Stabilize fine static details | On | Retains thin static geometry and highlights through jitter and gentle camera motion. |
+| Debug view | Normal | Motion/reactivity, actual history weight, clipping amount, detail protection, or rejection reasons. Session-only. |
 
 ## Rendering
 
@@ -53,9 +53,10 @@ The HDR resolve runs before exposure, tone mapping, CAS, glow, and depth of fiel
 It reconstructs the current unjittered image, dilates closest-surface motion and
 reactive coverage, rejects offscreen history and mismatching history depths,
 clips compressed HDR history against a 3×3 YCoCg variance/min-max box, and lowers
-history weight for fast movement and color disagreement. Every bilinear history
-depth tap with nonzero contribution is validated independently to prevent
-foreground depth from being averaged into background depth. History stores the
+history weight for fast movement and color disagreement. Every contributing
+history tap is validated before filtering. Invalid colors are discarded, valid
+colors are renormalized, and missing support reduces history weight. A wholly
+invalid footprint still rejects history. History stores the
 depth of the same nearest surface used for motion dilation, so jitter does not
 invalidate stationary silhouettes by mixing foreground and background ownership.
 The output is sharpened only for presentation;
@@ -65,13 +66,33 @@ Static details receive up to one eight-frame jitter cycle of protection from
 color clipping and depth changes between the same foreground/background pair.
 The resolve records lifetime, the two surface depths, and a background luminance
 anchor in a second history attachment. It refreshes protection only when it
-sees contrast again; a removed detail clears within nine frames. Camera/surface
-motion, changed background shading, new occluders, and reactive shading cancel
-protection. Static eligibility is tracked when batching geometry; rigged,
+sees contrast again; a removed detail clears within nine frames. Metadata follows
+reprojected color, with per-tap surface and background validation. Stored surface
+depths are transformed into the current camera's view space when a missing
+feature retains its previous depth pair. The old 0.01-pixel motion cutoff is
+replaced by graded confidence: coherent motion up to 0.5 pixels/frame retains
+full protection, which fades to zero by 4 pixels/frame; differing neighboring
+velocities reduce protection too. Changed background shading, new occluders,
+and reactive shading cancel protection. Static eligibility is tracked when batching geometry; rigged,
 active, flexible, texture-animated, and newly rebuilt batches retain strict
 history rejection. The option can be disabled in Graphics > TAA. This adds no
 geometry pass. Shader-only changes can be tested using the viewer's shader reload;
 changes to resources or geometry classification require restarting a new executable.
+
+Depth of field reconstructs circle-of-confusion values at jitter-adjusted
+coordinates matching resolved color. It filters blur radii rather than blending
+physical foreground/background depths. Presentation uses a corresponding point
+depth sample; material previews and non-TAA copies explicitly clear the offset.
+The temporally dilated/signed history depth is never used as physical scene depth.
+
+History diagnostics report actual blend weight (red low, green high), clipping
+amount (white high), and detail protection (green protected, blue unprotected).
+Rejection reasons distinguish reset (gray), offscreen (blue), no matching depth
+(red), partial depth support (yellow), and reactivity (magenta); green is valid.
+These views rerun the resolve on demand after presentation consumes its output,
+using the same inputs and uniforms. Diagnostic colors never enter history and
+no extra persistent buffers are allocated. Sharpening settings and filters are
+unchanged by the September stability fixes.
 
 A pre-transparency HDR color snapshot provides conservative reactive detection
 for blended hair, clothing, particles, water, and other post-deferred shading,
@@ -95,6 +116,19 @@ There is an additional untextured geometry pass; total cost depends on visible
 draw calls and skinned geometry as well as image resolution.
 
 ## Validation and remaining limits
+
+September 12 stability fixes are in progress/uncommitted. The 76 general TAA,
+23 thin-detail, 25 motion/history, and 20 post-TAA depth GPU checks pass on the
+RTX 5090. With repository defaults, the 0.65-pixel bar test at 0.012 pixels/frame
+camera motion falls from 0.30155 to 0.01319 mean peak-to-peak variation before
+sharpening (about 96% lower), and history rejection falls from 59.2% to zero.
+The new suites are `scripts/tests/test_taa_stability_gpu.py` and
+`scripts/tests/test_taa_post_depth_gpu.py`. They also verify reprojected metadata,
+view-depth rebasing, partial-depth color exclusion, sky diagnostics, CoC edge
+coverage and presentation depth. The Release build, staged shader/XML resource
+verification, and startup TAA shader/sampler validation passed; in-world retest
+is pending. These fixes do not add independent transparency-layer or classic
+avatar deformation vectors; their conservative fallback remains in use.
 
 The Release build and startup passed. The Graphics → TAA tab was checked at
 runtime, including selecting TAA and confirming that all programs and render

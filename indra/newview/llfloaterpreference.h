@@ -129,6 +129,7 @@ protected:
     void updateMeterText(LLUICtrl* ctrl);
     // callback for defaults
     void setHardwareDefaults();
+    void resetGraphicsCategory(const LLSD& data);
     void setRecommended();
     // callback for when client modifies a render option
     void onRenderOptionEnable();

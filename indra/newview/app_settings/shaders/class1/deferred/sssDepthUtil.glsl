@@ -89,6 +89,20 @@ bool sssIsEntrySurface(vec3 pos, vec3 lightDir)
     return dot(normal, lightDir) >= 0.0;
 }
 
+// A smooth shading normal can remain backlit across the geometric horizon.
+// The entry/exit test above must still reject light-facing geometry, but its
+// binary transition must not expose a bright polygon beside a PCSS shadow.
+// Match the optical model's grazing fade using the actual receiver plane.
+float sssGeometricBacklight(vec3 pos, vec3 lightDir)
+{
+    vec3 normal = cross(sssSurfaceDx, sssSurfaceDy);
+    float area = dot(normal, normal);
+    if (area <= 1e-20) return 1.0;
+    normal *= inversesqrt(area);
+    if (dot(normal, -pos) < 0.0) normal = -normal;
+    return smoothstep(0.0, 0.25, -dot(normal, lightDir));
+}
+
 // -1 means unavailable; 0.08 means opaque or no reliable light-facing entry.
 float sampleSSSShadowPath(sampler2DShadow depthMap, mat4 lightMatrix, vec3 pos, vec3 lightDir)
 {
@@ -160,6 +174,7 @@ float sampleFilteredSSSPath(sampler2D depthMap, mat4 lightMatrix, vec3 pos, vec3
     vec3 tc = start.xyz / start.w;
     if (any(lessThanEqual(tc, vec3(0.0))) || any(greaterThanEqual(tc, vec3(1.0)))) return -1.0;
     if (sssIsEntrySurface(pos, lightDir)) return 0.3;
+    sssDepthCoverage *= sssGeometricBacklight(pos, lightDir);
     vec4 step = lightMatrix * vec4(lightDir, 0.0);
     vec2 slope = sssReceiverSlope(lightMatrix, start);
     ivec2 size = textureSize(depthMap, 0);

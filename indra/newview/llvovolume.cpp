@@ -27,6 +27,7 @@
 // A "volume" is a box, cylinder, sphere, or other primitive shape.
 
 #include "llviewerprecompiledheaders.h"
+#include "llvolumefog.h"
 
 #include "llvovolume.h"
 
@@ -119,6 +120,7 @@ struct RenderPropertyRequest
     F64 mNotBefore = 0.0;
     U8 mAttempts = 0;
     bool mProjector = false;
+    bool mFog = false;
 };
 
 std::deque<RenderPropertyRequest> sRenderPropertyRequests;
@@ -143,12 +145,15 @@ bool hasSSSTag(std::string value)
     return value.find("[sss]") != std::string::npos;
 }
 
-bool matchesSSSWhitelist(std::string name)
+bool matchesSSSWhitelist(std::string name, bool overlay = false)
 {
     static LLCachedControl<std::string> whitelist(gSavedSettings, "BoxxySSSWhitelist");
-    static std::string cached_setting;
-    static std::vector<std::string> terms;
-    const std::string& setting = whitelist;
+    static LLCachedControl<std::string> overlays(gSavedSettings, "BoxxySSSOverlayNames");
+    static std::string cached_settings[2];
+    static std::vector<std::string> cached_terms[2];
+    auto& cached_setting = cached_settings[overlay];
+    auto& terms = cached_terms[overlay];
+    const std::string& setting = overlay ? overlays : whitelist;
     if (setting != cached_setting)
     {
         cached_setting = setting;
@@ -802,8 +807,10 @@ void LLVOVolume::updateTextures()
         mSSSUpdateTimer.reset();
         const bool state_initialized = mSSSStateInitialized;
         const bool previous_state = mLastSSSState;
+        const bool previous_overlay = mLastSSSOverlayState;
         const bool enabled = isSSSEnabled();
-        if (state_initialized && enabled != previous_state && mDrawable.notNull())
+        const bool overlay = isSSSOverlayEnabled();
+        if (state_initialized && (enabled != previous_state || overlay != previous_overlay) && mDrawable.notNull())
         {
             // The SSS flag belongs to draw batches. Updating vertex data alone
             // leaves existing batches with the previous eligibility flag.
@@ -3451,6 +3458,19 @@ bool LLVOVolume::projectorShadowsDisabled() const
     return hasNoShadowDescriptionTag();
 }
 
+void LLVOVolume::requestVolumeFogDescription()
+{
+    const F64 now = LLFrameTimer::getElapsedSeconds();
+    // Share the existing ten-requests/second metadata budget. Keep discovery
+    // from growing an unbounded queue in a region full of phantom prims.
+    if (now >= mNextVolumeFogDescriptionRequest && sRenderPropertyRequests.size() < 512 &&
+        sRenderQueuedObjectIDs.insert(getID()).second)
+    {
+        sRenderPropertyRequests.push_back({getID(), getID(), 0.0, 0, false, true});
+        mNextVolumeFogDescriptionRequest = now + 60.0;
+    }
+}
+
 bool LLVOVolume::isLightSpotlight() const
 {
     const LLLightImageParams* params = getLightImageParams();
@@ -3761,6 +3781,30 @@ bool LLVOVolume::isMesh() const
     }
 
     return false;
+}
+
+bool LLVOVolume::isSSSOverlayEnabled() const
+{
+    mLastSSSOverlayState = false;
+    static LLCachedControl<std::string> names(gSavedSettings, "BoxxySSSOverlayNames");
+    const LLViewerObject* root = getRootEdit();
+    if (std::string(names).empty() || !root || !root->isAttachment() || root->isHUDAttachment())
+        return false;
+
+    if (!root->hasCachedObjectName())
+    {
+        static LLCachedControl<bool> enabled(gSavedSettings, "BoxxySSSEnabled", true);
+        static LLCachedControl<F32> range(gSavedSettings, "BoxxySSSMaxDistance", 43.f);
+        if (enabled && isVisible() && getRegion() &&
+            (LLViewerCamera::instance().getOrigin() - getRenderPosition()).magVec() <= F32(range) &&
+            sRenderQueuedObjectIDs.insert(root->getID()).second)
+            sRenderPropertyRequests.push_front({ root->getID(), getID() });
+    }
+    // Server root names work for no-mod attachments and for other avatars.
+    // Own inventory supplies an immediate fallback while properties arrive.
+    mLastSSSOverlayState = matchesSSSWhitelist(root->hasCachedObjectName() ?
+        root->getCachedObjectName() : root->getAttachmentItemName(), true);
+    return mLastSSSOverlayState;
 }
 
 bool LLVOVolume::isSSSEnabled() const
@@ -4658,6 +4702,7 @@ U32 LLVOVolume::getHighLODTriangleCount()
 void LLVOVolume::preUpdateGeom()
 {
     sNumLODChanges = 0;
+    LLVolumeFog::discover();
 
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 36.0f);
@@ -4697,7 +4742,8 @@ void LLVOVolume::preUpdateGeom()
 
         LLViewerObject* object = gObjectList.findObject(request.mObjectID);
         LLVOVolume* volume = dynamic_cast<LLVOVolume*>(object);
-        if (!volume || volume->isDead() || (!request.mProjector &&
+        if (!volume || volume->isDead() || (request.mFog && !gSavedSettings.getBOOL("RenderVolumeFog")) ||
+            (!request.mProjector && !request.mFog &&
             (!sss_enabled || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))))
         {
             sRenderQueuedObjectIDs.erase(request.mObjectID);
@@ -4708,10 +4754,11 @@ void LLVOVolume::preUpdateGeom()
         LLVOVolume* relevance_volume = dynamic_cast<LLVOVolume*>(relevance_object);
         const bool relevant = volume->getRegion() && relevance_volume &&
             !relevance_volume->isDead() &&
-            (request.mProjector ? (relevance_volume->getIsLight() && relevance_volume->isLightSpotlight()) :
+            (request.mFog ? (LLVolumeFog::isCandidate(*relevance_volume) && LLVolumeFog::isInRange(*relevance_volume)) :
+            ((request.mProjector ? (relevance_volume->getIsLight() && relevance_volume->isLightSpotlight()) :
                                  relevance_volume->isVisible()) &&
             (LLViewerCamera::instance().getOrigin() - relevance_volume->getRenderPosition()).magVec() <=
-                (request.mProjector ? LLViewerCamera::instance().getFar() : llmax(F32(sss_max_distance), 1.f));
+                (request.mProjector ? LLViewerCamera::instance().getFar() : llmax(F32(sss_max_distance), 1.f))));
         if (!relevant)
         {
             // Visible volumes enqueue again when they return to range.
@@ -4738,7 +4785,7 @@ void LLVOVolume::preUpdateGeom()
         {
             LLSelectMgr::instance().requestObjectPropertiesFamily(volume);
         }
-        if (!request.mProjector && ++request.mAttempts < 2)
+        if (!request.mProjector && !request.mFog && ++request.mAttempts < 2)
         {
             request.mNotBefore = now + 30.0;
             sRenderPropertyRequests.push_back(request);
@@ -5753,6 +5800,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
     LLDrawInfo* info = idx >= 0 ? draw_vec[idx] : nullptr;
     LLVOVolume* volume = facep->getDrawable()->getVOVolume();
     const bool sss = volume && volume->isSSSEnabled();
+    const bool sss_overlay = volume && volume->isSSSOverlayEnabled();
     const bool taa_static = !rigged && drawable->isStatic() &&
         !drawable->isState(LLDrawable::ANIMATED_CHILD) &&
         !facep->isState(LLFace::TEXTURE_ANIM) && volume && !volume->isFlexible();
@@ -5773,6 +5821,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         info->mModelMatrix == model_mat &&
         info->mShaderMask == shader_mask &&
         info->mSSS == sss &&
+        info->mSSSOverlay == sss_overlay &&
         info->mSSSObject == (sss ? volume : nullptr) &&
         info->mAvatar == facep->mAvatar &&
         info->getSkinHash() == facep->getSkinHash())
@@ -5823,6 +5872,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_info->mGLTFMaterial = gltf_mat;
         draw_info->mShaderMask = shader_mask;
         draw_info->mSSS = sss;
+        draw_info->mSSSOverlay = sss_overlay;
         draw_info->mSSSObject = sss ? volume : nullptr;
         draw_info->mAvatar = facep->mAvatar;
         draw_info->mSkinInfo = facep->mSkinInfo;

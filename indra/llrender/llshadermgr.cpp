@@ -1652,6 +1652,7 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("areaTex");
     mReservedUniforms.push_back("searchTex");
     mReservedUniforms.push_back("blendTex");
+    mReservedUniforms.push_back("sssOverlayGuide");
 
     llassert(mReservedUniforms.size() == END_RESERVED_UNIFORMS);
 

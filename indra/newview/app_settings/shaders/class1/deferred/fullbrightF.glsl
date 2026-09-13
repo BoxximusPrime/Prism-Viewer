@@ -58,10 +58,16 @@ vec4 applySkyAndWaterFog(vec3 pos, vec3 additive, vec3 atten, vec4 color);
 #endif
 
 void mirrorClip(vec3 pos);
+#if defined(IS_ALPHA) && !defined(IS_HUD)
+bool isSSSOverlay(vec3 positionEye);
+#endif
 
 void main()
 {
     mirrorClip(vary_position);
+#if defined(IS_ALPHA) && !defined(IS_HUD)
+    if (isSSSOverlay(vary_position)) discard;
+#endif
 #ifdef IS_ALPHA
     waterClip(vary_position.xyz);
 #endif

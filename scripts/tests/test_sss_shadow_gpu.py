@@ -216,6 +216,46 @@ def run(sdl, gl):
     flags = "#define SUN_SHADOW 1\n#define SPOT_SHADOW 1\n#define HAS_SUN_SHADOW 1\n"
     prog = program(PROBE, flags)
     checks = 0
+    depth_prog = prog
+    grazing_probe = """
+    uniform float test_nl, test_strength;
+    vec3 getSSSDiffuseFactor(float nl, float strength);
+    bool useSSSWrappedDiffuse(float strength);
+    out vec4 frag_color;
+    void main() { frag_color=vec4(getSSSDiffuseFactor(test_nl,test_strength),
+        useSSSWrappedDiffuse(test_strength) ? 1.0 : 0.0); }
+    """
+    prog = program(grazing_probe, "")
+    uniform(prog,"sss_lighting",0,0,8.5)
+    uniform(prog,"test_strength",1)
+    for nl in (-1,-0.2,0,0.001,0.15,0.4,0.7,1):
+        uniform(prog,"test_nl",nl)
+        uniform(prog,"sss_grazing_strength",0)
+        baseline=pixel()
+        uniform(prog,"sss_grazing_strength",1)
+        boosted=pixel()
+        if 0 < nl < 0.7:
+            assert boosted[0]>baseline[0], ('Missing grazing light',nl,boosted)
+            assert boosted[0]>boosted[1]>boosted[2], 'Lost skin warmth'
+        else:
+            assert boosted[:3]==baseline[:3], ('Grazing affected backside or face-on',nl)
+        assert boosted[3]==1, 'Grazing alone did not activate skin lighting'
+        checks+=2
+    uniform(prog,"test_nl",0.15)
+    uniform(prog,"test_strength",0)
+    assert abs(pixel()[0]-0.15)<1e-6 and pixel()[3]==0
+    uniform(prog,"test_strength",1)
+    for mode in (0,1):
+        uniform(prog,"sss_params",1,mode,0.75,44)
+        uniform(prog,"sss_grazing_strength",0)
+        baseline=pixel()
+        uniform(prog,"sss_grazing_strength",2)
+        assert pixel()==baseline, 'Grazing leaked out of Combined mode'
+        checks+=1
+    checks+=1
+    gl.DeleteProgram(prog)
+    prog=depth_prog
+    gl.UseProgram(prog)
     for index in (-2,0,1):
         uniform(prog, "test_index", index, integer=True)
         for perspective in (False, True):
@@ -693,6 +733,15 @@ def run(sdl, gl):
         neutral=pixel(2)
         uniform(prog,"sss_point_transmission_boost",16)
         bright=pixel(2)
+        uniform(prog,"sss_max_transmission",0.5)
+        capped=pixel(2)
+        assert 0 < capped[0] < bright[0], ('Transmission cap failed',capped,bright)
+        uniform(prog,"sss_point_transmission_boost",8)
+        assert abs(pixel(2)[0]-capped[0])<1e-4, 'Boost exceeded transmission cap'
+        uniform(prog,"sss_max_transmission",0)
+        uniform(prog,"sss_point_transmission_boost",16)
+        assert abs(pixel(2)[0]-bright[0])<1e-4, 'Unlimited changed original lighting'
+        checks+=3
         assert bright[0]>6, ('High settings lost a valid 200 mm path',bright)
         assert max(bright[:3])-min(bright[:3])<1e-5, ('Zero absorption still attenuated colors',bright)
         assert max(abs(bright[i]-16*neutral[i]) for i in range(3))<1e-5
@@ -1034,6 +1083,57 @@ def run(sdl, gl):
         gl.DeleteProgram(prog)
     gl.Disable(0x0B71)
     gl.FramebufferTexture2D(FRAMEBUFFER,0x8D00,TEXTURE,0,0)
+    # Smooth/normal-mapped skin can stay backlit while adjacent geometric
+    # faces cross the light horizon. Certified transmission must approach
+    # zero continuously there, rather than exposing a hard polygon edge.
+    prog = program(PROBE, flags)
+    uniform(prog,"test_index",-3,integer=True)
+    uniform(prog,"test_light",1,0,0)
+    uniform(prog,"sss_depth_valid",1,1,1)
+    uniform(prog,"sss_depth_focus",0,0,-5,2.5)
+    setup_depth(prog,.004)
+    matrix(prog,"sss_depth_matrix[0]",[[0,1,0,.5],[0,0,1,5.5],[-1,0,0,.5],[0,0,0,1]])
+    responses = []
+    for nl in (-.3,-.125,-.01,-.0001,.0001):
+        uniform(prog,"test_surface_dx",math.sqrt(1-nl*nl)*.01,0,-nl*.01)
+        uniform(prog,"test_surface_dy",0,.01,0)
+        responses.append(pixel()[0])
+        checks += 1
+    assert responses[0]>.01, ('strong geometric backlighting lost',responses)
+    assert responses[2]<responses[0]*.01, ('geometric grazing hotspot',responses)
+    assert abs(responses[-1]-responses[-2])<1e-5, ('hard SSS geometric horizon',responses)
+    gl.DeleteProgram(prog)
+    # Repeat through the production sun lighting and MRT split with the
+    # PCSS visibility input fully shadowed, partial, and clear. Both material
+    # paths must lose the polygon edge before transmission smoothing runs.
+    prog = program((SHADERS / 'class3/deferred/softenLightF.glsl').read_text(), flags)
+    color_texture(0,[1,1,1,0])
+    color_texture(2,[0,.5,0,0])
+    uniform(prog,"sun_dir",1,0,0)
+    uniform(prog,"test_normal",-1,0,0)
+    uniform(prog,"sss_depth_valid",1,1,1)
+    uniform(prog,"sss_depth_focus",0,0,-5,2.5)
+    uniform(prog,"sss_transmission_smoothing",1,integer=True)
+    setup_depth(prog,.004)
+    matrix(prog,"sss_depth_matrix[0]",[[0,1,0,.5],[0,0,1,5.5],[-1,0,0,.5],[0,0,0,1]])
+    for flag in (.46,.79):
+        uniform(prog,"test_flag",flag)
+        for classic in (0,1):
+            uniform(prog,"classic_mode",classic,integer=True)
+            for visibility in (0,.5,1):
+                color_texture(3,[visibility,1,0,0])
+                values=[]
+                for nl in (-.3,-.125,-.01,-.0001,.0001):
+                    uniform(prog,"test_surface_dx",math.sqrt(1-nl*nl)*.01,0,-nl*.01)
+                    uniform(prog,"test_surface_dy",0,.01,0)
+                    values.append(pixel()[0])
+                    assert abs(pixel(2)[0]-values[-1])<1e-6, 'Transmission capture disagrees with scene'
+                    assert abs(pixel(1)[0])<1e-6, 'Transmission contaminated surface-diffusion input'
+                    checks += 1
+                assert values[0]>.01, ('thin skin lost',flag,classic,visibility,values)
+                assert values[2]<values[0]*.01, ('sun geometric grazing hotspot',values)
+                assert abs(values[-1]-values[-2])<1e-5, ('sun geometric horizon edge',values)
+    gl.DeleteProgram(prog)
     assert gl.GetError() == 0
     print(f"Passed {checks} SSS GPU checks: paths, explicit estimates, sun/spot/point composition, matched layers, coverage fades and real shadow capture fragments.")
 

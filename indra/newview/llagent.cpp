@@ -28,6 +28,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llagent.h"
+#include "llposestudio.h"
 
 #include "pipeline.h"
 
@@ -4563,6 +4564,9 @@ void LLAgent::setTeleportState(ETeleportState state)
                           << teleportStateName(mTeleportState) << "(" << mTeleportState << ")"
                           << LL_ENDL;
     mTeleportState = state;
+    if (state != TELEPORT_NONE && LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().end(LLPoseStudio::EndReason::TELEPORT);
+
     if (mTeleportState > TELEPORT_NONE && gSavedSettings.getBOOL("FreezeTime"))
     {
         LLFloaterReg::hideInstance("snapshot");

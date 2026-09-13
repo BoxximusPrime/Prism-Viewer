@@ -536,6 +536,7 @@ bool LLGLTFPreviewTexture::render()
     // From LLPipeline::renderFinalize: "Whatever is last in the above post processing chain should _always_ be rendered directly here.  If not, expect problems."
     gDeferredPostNoDoFProgram.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, &screen);
     gDeferredPostNoDoFProgram.bindTexture(LLShaderMgr::DEFERRED_DEPTH, mBoundTarget, true);
+    gDeferredPostNoDoFProgram.uniform2f(LLStaticHashedString("taa_depth_jitter"), 0.f, 0.f);
 
     {
         LLGLDepthTest depth_test(GL_TRUE, GL_TRUE, GL_ALWAYS);

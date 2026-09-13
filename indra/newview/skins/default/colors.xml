@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <colors>
 
+    <color name="PoseStudioBoneColor" value="0.90 0.92 0.94 1" />
+    <color name="PoseStudioEditedBoneColor" value="0.64 0.86 0.73 1" />
+    <color name="PoseStudioGroupColor" value="0.66 0.72 0.75 1" />
+
     <!-- Build/Edit section surfaces. Rounded_Rect supplies the corner mask. -->
     <color name="EditSectionBackground" value="0.133 0.169 0.188 1" />
     <color name="EditDockBackground" value="0.055 0.067 0.075 1" />

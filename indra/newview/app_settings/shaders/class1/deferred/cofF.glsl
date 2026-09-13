@@ -40,6 +40,7 @@ uniform float max_cof;
 
 uniform mat4 inv_proj;
 uniform vec2 screen_res;
+uniform vec2 taa_depth_jitter;
 
 in vec2 vary_fragcoord;
 
@@ -58,21 +59,25 @@ float calc_cof(float depth)
     return sc;
 }
 
-void main()
+float sample_cof(ivec2 pixel, ivec2 size)
 {
-    vec2 tc = vary_fragcoord.xy;
-
-    float z = texture(depthMap, tc).r;
-    z = z*2.0-1.0;
+    float z = texelFetch(depthMap,clamp(pixel,ivec2(0),size-1),0).r*2.0-1.0;
     vec4 ndc = vec4(0.0, 0.0, z, 1.0);
     vec4 p = inv_proj*ndc;
-    float depth = p.z/p.w;
+    return clamp(calc_cof(p.z/p.w),-max_cof,max_cof);
+}
+void main()
+{
+    // Filter blur radii on the same unjittered grid as TAA color, rather than
+    // interpolating physical depths across a foreground/background boundary.
+    ivec2 size=textureSize(depthMap,0);
+    vec2 pos=(vary_fragcoord.xy+taa_depth_jitter)*vec2(size)-.5;
+    ivec2 pixel=ivec2(floor(pos));
+    vec2 f=fract(pos);
+    float sc=mix(mix(sample_cof(pixel,size),sample_cof(pixel+ivec2(1,0),size),f.x),
+                 mix(sample_cof(pixel+ivec2(0,1),size),sample_cof(pixel+ivec2(1,1),size),f.x),f.y);
 
     vec4 diff = texture(diffuseRect, vary_fragcoord.xy);
-
-    float sc = calc_cof(depth);
-    sc = min(sc, max_cof);
-    sc = max(sc, -max_cof);
 
     frag_color.rgb = diff.rgb;
     frag_color.a = sc/max_cof*0.5+0.5;

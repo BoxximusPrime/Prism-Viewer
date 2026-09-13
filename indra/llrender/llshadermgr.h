@@ -364,6 +364,7 @@ public:
         SMAA_SEARCH_TEX,                    //  "searchTex"
         SMAA_BLEND_TEX,                     //  "blendTex"
 
+        SSS_OVERLAY_GUIDE,                  //  "sssOverlayGuide"
         END_RESERVED_UNIFORMS
     } eGLSLReservedUniforms;
     // clang-format on

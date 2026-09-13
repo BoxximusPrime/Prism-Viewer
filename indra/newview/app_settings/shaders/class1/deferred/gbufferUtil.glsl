@@ -35,7 +35,18 @@ uniform sampler2D emissiveRect;
 uniform vec4 sss_params;
 // Combined mode: wrap amount, transmission amount, optical absorption (8.5 = neutral).
 uniform vec3 sss_lighting;
+uniform float sss_grazing_strength;
 uniform int sss_shadow_thickness;
+uniform float sss_max_transmission;
+
+// Cap after artistic multipliers, scaling all channels together to retain tint.
+vec3 capSSSTransmission(vec3 transmission)
+{
+    float peak = max(transmission.r, max(transmission.g, transmission.b));
+    if (sss_max_transmission > 0.0 && peak > sss_max_transmission)
+        transmission *= sss_max_transmission / peak;
+    return transmission;
+}
 
 vec4 getNormRaw(vec2 screenpos);
 vec4 decodeNormal(vec4 norm);
@@ -80,7 +91,7 @@ float getSSSStrength(float mask, vec3 positionEye)
 bool useSSSWrappedDiffuse(float strength)
 {
     return strength > 0.0 && (sss_params.y < 0.5 ||
-        (sss_params.y > 1.5 && max(sss_lighting.x, sss_lighting.y) > 0.0));
+        (sss_params.y > 1.5 && max(max(sss_lighting.x, sss_lighting.y), sss_grazing_strength) > 0.0));
 }
 
 bool useSSSScreenDiffusion(float strength)
@@ -95,10 +106,18 @@ vec3 getSSSWarmTint()
 
 vec3 getSSSDiffuseFactor(float nl, float strength)
 {
-    if (sss_params.y > 1.5) strength *= sss_lighting.x;
+    float grazing = 0.0;
+    if (sss_params.y > 1.5)
+    {
+        // Light-facing grazing angles only. Fade to zero at the terminator
+        // and toward face-on lighting, without adding backside transmission.
+        grazing = smoothstep(0.0, 0.15, nl) * (1.0 - smoothstep(0.15, 0.7, nl))
+            * sss_grazing_strength * strength;
+        strength *= sss_lighting.x;
+    }
     float lambert = max(nl, 0.0);
     float wrapped = clamp((nl + 0.5) / 1.5, 0.0, 1.0);
-    return vec3(lambert) + (wrapped - lambert) * getSSSWarmTint() * strength;
+    return vec3(lambert) + ((wrapped - lambert) * strength + grazing) * getSSSWarmTint();
 }
 
 bool useSSSShadowThickness(float nl, float strength)
