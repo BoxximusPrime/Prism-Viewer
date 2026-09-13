@@ -271,6 +271,7 @@ public:
     bool getIsLight() const;
     bool getIsLightFast() const;
     bool projectorShadowsDisabled() const;
+    void requestVolumeFogDescription();
 
 
     // Get the light color in sRGB color space NOT scaled by intensity.
@@ -319,6 +320,7 @@ public:
     virtual bool isSculpted() const override;
     virtual bool isMesh() const override;
     bool isSSSEnabled() const;
+    bool isSSSOverlayEnabled() const;
     virtual bool isRiggedMesh() const override;
     virtual bool hasLightTexture() const override;
 
@@ -481,12 +483,14 @@ private:
     // accessed by getIsLightFast
     mutable bool mIsLight = false;
     mutable F64 mNextProjectorDescriptionRequest = 0.0;
+    F64 mNextVolumeFogDescriptionRequest = 0.0;
 
     // cached value of getIsAnimatedObject to avoid redundant map lookups
     // accessed by getIsAnimatedObjectFast
     mutable bool mIsAnimatedObject = false;
     mutable bool mSSSStateInitialized = false;
     mutable bool mLastSSSState = false;
+    mutable bool mLastSSSOverlayState = false;
     LLFrameTimer mSSSUpdateTimer;
     bool mResetDebugText;
 

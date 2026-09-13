@@ -67,6 +67,9 @@ public:
     void renderGroupAlpha(LLSpatialGroup* group, U32 type, U32 mask, bool texture = true);
     void renderAlpha(U32 mask, bool depth_only = false, bool rigged = false);
     void renderAlphaHighlight();
+    static bool hasSSSOverlays();
+    static bool isSSSOverlayDraw(const LLDrawInfo& draw);
+    void renderSSSOverlays();
 
     static bool sShowDebugAlpha;
 

@@ -16,6 +16,10 @@ SHADERS = ROOT / "indra/newview/app_settings/shaders/class1/deferred"
 WIDTH, SIZE = 256, 256
 
 
+def multiply(a, b):
+    return [[sum(a[r][k]*b[k][c] for k in range(4)) for c in range(4)] for r in range(4)]
+
+
 def run(sdl, gl):
     for name, args in {
         "ActiveTexture": [U], "GenSamplers": [I, C.POINTER(U)],
@@ -50,6 +54,9 @@ def run(sdl, gl):
         uniform int test_discontinuity, test_prepared;
         uniform float test_depth_step;
         uniform mat4 shadow_matrix[6];
+        uniform mat4 test_camera;
+        uniform mat4 test_camera_inverse;
+        uniform int test_perspective;
         uniform sampler2DShadow shadowMap0;
         float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 screen);
         float sampleSpotShadow(vec3 pos, vec3 norm, int index, vec2 screen);
@@ -62,18 +69,25 @@ def run(sdl, gl):
             if (test_discontinuity != 0 && uv.x * 256.0 < 129.0) z += test_depth_step;
             float dy = test_quantized != 0 ? 2.0 / 256.0 : 0.001;
             vec3 p = vec3(x, test_y + (uv.y * 256.0 - 1.5) * dy * test_view_scale, z);
+            if (test_perspective != 0) {
+                vec3 origin = test_camera_inverse[3].xyz;
+                vec3 ray = mat3(test_camera_inverse) * vec3((uv*2.0-1.0)*0.26794919, -1.0);
+                float t = (test_z + test_slope*(origin.x-test_x) - origin.z) / (ray.z-test_slope*ray.x);
+                p = (test_camera * vec4(origin+t*ray,1.0)).xyz;
+                z = p.z;
+            }
             if (test_quantized != 0) {
                 float d = (1.0 + 0.25 / z) * (1024.0 / 1023.75);
                 d = floor(d * 16777215.0 + 0.5) / 16777215.0;
                 float reconstructed = -256.0 / (1024.0 - d * 1023.75);
                 p *= reconstructed / z;
             }
-            return vec4(p, 1);
+            return test_perspective != 0 ? vec4(p,1) : test_camera * vec4(p, 1);
         }
         out vec4 frag_color;
         void main() {
             vec3 pos = getPosition(gl_FragCoord.xy / 256.0).xyz;
-            vec3 normal = normalize(vec3(-test_slope, 0, 1));
+            vec3 normal = mat3(test_camera) * normalize(vec3(-test_slope, 0, 1));
             if (test_prepared != 0) preparePCSSDepth(pos, normal, gl_FragCoord.xy / 256.0);
             float shadow = sampleDirectionalShadow(pos, normal, gl_FragCoord.xy / 256.0);
             float old = pcfShadow(shadowMap0, normal, shadow_matrix[0]*vec4(pos,1), 1.0, gl_FragCoord.xy/256.0, vec3(0,0,1));
@@ -116,6 +130,7 @@ def run(sdl, gl):
         uniform(prog, "shadow_res", SIZE, SIZE)
         uniform(prog, "proj_shadow_res", SIZE, SIZE)
         uniform(prog, "screen_res", 256, 256)
+        uniform(prog, "pcss_raster_error", 1/256)
         uniform(prog, "shadow_bias", -0.002)
         uniform(prog, "spot_shadow_bias", -0.002)
         return prog
@@ -130,7 +145,7 @@ def run(sdl, gl):
     gl.ActiveTexture(0x84C0 + 12)
     target = obj(gl.GenTextures)
     gl.BindTexture(TEXTURE, target)
-    gl.TexImage2D(TEXTURE, 0, 0x8814, WIDTH, 3, 0, RGBA, FLOAT, None)
+    gl.TexImage2D(TEXTURE, 0, 0x8814, WIDTH, WIDTH, 0, RGBA, FLOAT, None)
     gl.BindFramebuffer(FRAMEBUFFER, obj(gl.GenFramebuffers))
     gl.FramebufferTexture2D(FRAMEBUFFER, COLOR_ATTACHMENT, TEXTURE, target, 0)
     assert gl.CheckFramebufferStatus(FRAMEBUFFER) == 0x8CD5
@@ -145,10 +160,30 @@ def run(sdl, gl):
     def render(gap=1.0, angle=5.0, radius=1.0, quality=1, warp=0.0,
                extent=4.0, z=-4.0, slope=0.0, fill="edge", prog=None, bias=.005,
                minimum=0.0, spot=0, emitter=.1, discontinuity=False, prepared=False,
-               quantized=False, view_scale=1.0, depth_step=2.0, x_offset=0.0, caster_slope=None):
+               quantized=False, view_scale=1.0, depth_step=2.0, x_offset=0.0, caster_slope=None, camera_angle=0,
+               camera_pitch=False, strip_half_width=.015625, receiver_floor=False, perspective=False):
         nonlocal cases
         prog = programs[3 if spot else 0] if prog is None else prog
         gl.UseProgram(prog)
+        c, s = math.cos(camera_angle), math.sin(camera_angle)
+        camera = [[c,-s,0,0],[s,c,0,0],[0,0,1,0],[0,0,0,1]]
+        if camera_pitch:
+            camera = [[c,0,s,0],[0,1,0,0],[-s,0,c,0],[0,0,0,1]]
+        camera_inverse = [list(row) for row in zip(*camera)]
+        if perspective:
+            target = [x_offset, .3, z]
+            for r in range(3):
+                camera[r][3] = (-4 if r == 2 else 0) - sum(camera[r][k]*target[k] for k in range(3))
+            for r in range(3):
+                camera_inverse[r][3] = -sum(camera_inverse[r][k]*camera[k][3] for k in range(3))
+        matrix(prog, 'test_camera', camera)
+        matrix(prog, 'test_camera_inverse', camera_inverse)
+        uniform(prog, 'test_perspective', int(perspective), integer=True)
+        gl.Viewport(0, 0, WIDTH, WIDTH if perspective else 3)
+        uniform(prog,'pcss_world_up',*(camera[r][2] for r in range(3)))
+        uniform(prog,'pcss_world_north',*(camera[r][1] for r in range(3)))
+        uniform(prog,'sun_dir',*(camera[r][2] for r in range(3)))
+        uniform(prog,'moon_dir',*(camera[r][2] for r in range(3)))
         uniform(prog, "test_z", z)
         uniform(prog, "test_x", x_offset)
         uniform(prog, "test_y", 0.3)
@@ -184,19 +219,22 @@ def run(sdl, gl):
             w = 1 + warp * y
             for ix in range(SIZE):
                 x = extent * ((ix + .5) / SIZE - .5) * w
-                blocked = fill == "all" or fill == "self" or (fill == "edge" and x < x_offset)
+                blocked = fill == "all" or fill == "self" or (fill == "edge" and x < x_offset) or (fill == "strip" and abs(x-x_offset) < strip_half_width)
                 caster_z = z + (0 if fill == "self" else gap) + caster_slope * (x - x_offset)
                 if spot:
                     caster_z = (z - caster_slope * x_offset + (0 if fill == "self" else gap)) / (1 + caster_slope * 2 * ((ix+.5)/SIZE-.5))
                     if fill == "edge":
                         blocked = -caster_z * 2 * ((ix+.5)/SIZE-.5) < x_offset * (z + gap) / z
-                    data.append(64/63 * (1 + 1/caster_z) if blocked and caster_z < -1 else 1.0)
+                    receiver_z = (z-slope*x_offset) / (1+slope*2*((ix+.5)/SIZE-.5))
+                    floor_depth = 64/63*(1+1/receiver_z) if receiver_floor and receiver_z < -1 else 1.0
+                    data.append(min(64/63 * (1 + 1/caster_z), floor_depth) if blocked and caster_z < -1 else floor_depth)
                 else:
-                    data.append(.5 - caster_z/(depth_range*w) if blocked else 1.0)
+                    floor_depth = .5 - (z + slope * (x-x_offset))/(depth_range*w) if receiver_floor else 1.0
+                    data.append(min(.5 - caster_z/(depth_range*w), floor_depth) if blocked else floor_depth)
         pixels = (F * len(data))(*data)
         for i, texture in enumerate(depths):
-            matrix(prog, f"shadow_matrix[{i}]", rows)
-            matrix(prog, f"pcss_inverse_matrix[{i}]", inverse)
+            matrix(prog, f"shadow_matrix[{i}]", multiply(rows,camera_inverse))
+            matrix(prog, f"pcss_inverse_matrix[{i}]", multiply(camera,inverse))
             gl.ActiveTexture(0x84C0 + i)
             gl.BindTexture(TEXTURE, texture)
             # Match the viewer's DEPTH_COMPONENT24 sun and projector maps.
@@ -209,7 +247,7 @@ def run(sdl, gl):
             gl.BindSampler(i + 6, raw_sampler)
         gl.DrawArrays(4, 0, 3)
         output = (F * (WIDTH * 4))()
-        gl.ReadPixels(0, 1, WIDTH, 1, RGBA, FLOAT, output)
+        gl.ReadPixels(0, WIDTH//2 if perspective else 1, WIDTH, 1, RGBA, FLOAT, output)
         assert gl.GetError() == 0
         result = list(output)[::4]
         assert all(math.isfinite(v) and -.001 <= v <= 1.001 for v in result), result
@@ -218,6 +256,41 @@ def run(sdl, gl):
 
     def width(row):
         return sum(.08 < value < .92 for value in row)
+
+    # Adding the receiving plane to an otherwise identical shadow map must
+    # not darken its penumbra. The centre occluder guard previously changed
+    # slope correction for floor taps, adding up to 50% false visibility loss.
+    floor_error = 0.0
+    def check_floor(args, label):
+        nonlocal floor_error
+        empty = render(**args)[0]
+        floor = render(**args, receiver_floor=True)[0]
+        error = max(abs(a-b) for a,b in zip(empty,floor))
+        floor_error = max(floor_error, error)
+        assert error < .001, (label, args, 'receiver added false shadow', error)
+
+    for tilt in (-.4, .4, 2, 8):
+        for warp in (0, .7):
+            args = dict(gap=1, slope=tilt, caster_slope=0, z=-16, quality=2,
+                        minimum=.14, angle=1.45, warp=warp)
+            check_floor(args, 'sloping floor')
+    for spot in (0, 1, 2):
+        for minimum in (.01, .03, .14):
+            for quality in range(3):
+                args = dict(gap=1, slope=.4, caster_slope=0, z=-4, quality=quality,
+                            minimum=minimum, angle=1.45, spot=spot, emitter=.5)
+                check_floor(args, 'contact floor')
+    # Perspective rays actually change the sampled part of the plane and
+    # its screen-space derivative lengths. D24 rounding happens in camera
+    # depth before production normal reconstruction, unlike coordinate-only
+    # rotations. The light and shadow map remain fixed in world space.
+    for pitch in (0, -.7, -1.0):
+        for quality in range(3):
+            args = dict(gap=1, slope=.4, caster_slope=0, z=-16, quality=quality,
+                        minimum=.14, angle=1.45, perspective=True, camera_angle=pitch,
+                        camera_pitch=True, quantized=True, prepared=True)
+            check_floor(args, 'perspective floor')
+    print(f'Receiver-floor visibility difference: {floor_error:.6f}')
 
     for quality in range(3):
         assert min(render(fill="empty", quality=quality)[0]) == 1.0
@@ -366,13 +439,69 @@ def run(sdl, gl):
                      bias=.004, quantized=True, prepared=True)[0]
         assert max(row) < .001, ("near contact lost to precision correction", z, max(row))
 
+    # Off-axis distant receivers: camera depth error also moves shadow UV.
+    # Sweep camera phase and coarse cascade texels on an unobstructed plane.
+    for distance in (40, 80, 160):
+        for phase in (-.005, 0, .005):
+            for slope in (-20, -2, 2, 20):
+                row = render(fill="self", z=-distance+phase, slope=slope,
+                             extent=128, minimum=.01, bias=.0035, angle=1.45, quantized=True,
+                             view_scale=.1, x_offset=math.copysign(40, slope), prepared=True)[0]
+                assert min(row) > .999, ("off-axis plane acne", distance, phase, slope, min(row))
+
+    # A narrow blocker should still cast a broad penumbra outside its hard
+    # silhouette. Compare against disk-emitter integration, not PCSS itself.
+    def disk_cdf(x):
+        q = max(-1, min(1, x))
+        return .5 + (math.asin(q) + q*math.sqrt(max(0,1-q*q))) / math.pi
+    row = render(fill="strip", gap=3, extent=1, view_scale=.125,
+                 angle=1.45, minimum=.01, quality=1)[0]
+    radius = 3*math.tan(math.radians(1.45)*.5)
+    expected = [1-(disk_cdf((.015625-x)/radius)-disk_cdf((-.015625-x)/radius))
+                for x in (((i+.5)/WIDTH-.5)*.25 for i in range(WIDTH))]
+    error = max(abs(a-b) for a,b in zip(row,expected))
+    assert error < .08, ('narrow blocker penumbra collapse',error)
+    print(f'Narrow blocker visibility error: {error:.4f}')
+    camera_error = 0.0
+    for quality in (0,1,2):
+        reference = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,quality=quality)[0]
+        for pitch in (False,True):
+            for angle in (.2,.7,1.1):
+                rotated = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,
+                                 quality=quality,camera_angle=angle,camera_pitch=pitch)[0]
+                error = max(abs(a-b) for a,b in zip(reference,rotated))
+                camera_error = max(camera_error,error)
+                assert error < .002, ('camera rotated PCSS disk',quality,angle,pitch,error)
+    print(f'Camera rotation visibility difference: {camera_error:.6f}')
+    worst_penumbra_error = 0.0
+    for gap in (.5,1,3):
+        for angular_size in (.53,1.45,5):
+            for warp in (-.07,0,.07):
+                row = render(fill="strip",gap=gap,extent=1,view_scale=.25,angle=angular_size,
+                             minimum=.01,quality=1,warp=warp,strip_half_width=.03125)[0]
+                radius = max(.01,gap*math.tan(math.radians(angular_size)*.5))
+                expected = [1-(disk_cdf((.03125-x)/radius)-disk_cdf((-.03125-x)/radius))
+                            for x in (((i+.5)/WIDTH-.5)*.5 for i in range(WIDTH))]
+                error = max(abs(a-b) for a,b in zip(row,expected))
+                worst_penumbra_error = max(worst_penumbra_error,error)
+                assert error < .1, ('strip penumbra',gap,angular_size,warp,error)
+    print(f'Worst strip penumbra visibility error: {worst_penumbra_error:.4f}')
+
     for i in range(6, 12):
         gl.BindSampler(i, 0)
 
     # Preserve PCSS contacts in RBA while continuing to blur AO in G.
     blur = program("", (SHADERS / "blurLightF.glsl").read_text() + """
-        vec4 getPosition(vec2 tc) { return vec4(tc, -4, 1); }
-        vec4 getNorm(vec2 tc) { return vec4(0,0,1,0); }
+        uniform int test_surface;
+        uniform float test_scale;
+        vec4 getPosition(vec2 tc) {
+            return vec4(tc*test_scale, -4.0 + (test_surface == 1 && tc.x >= 0.5 ? 2.0 : 0.0)
+                + (test_surface == 3 ? 0.4*tc.x*test_scale : 0.0), 1);
+        }
+        vec4 getNorm(vec2 tc) {
+            if (test_surface == 2 && tc.x >= 0.5) return vec4(0,1,0,0);
+            return vec4(normalize(vec3(test_surface == 3 ? -0.4 : 0.0,0,1)),0);
+        }
     """, helpers=())
     gl.ActiveTexture(0x84C0 + 13)
     gl.BindTexture(TEXTURE, obj(gl.GenTextures))
@@ -381,6 +510,7 @@ def run(sdl, gl):
     for param, value in ((0x2801, 0x2600), (0x2800, 0x2600), (0x2802, 0x812F), (0x2803, 0x812F)):
         gl.TexParameteri(TEXTURE, param, value)
     uniform(blur, "lightMap", 13, integer=True)
+    uniform(blur, 'test_scale', 1.024)
     uniform(blur, "screen_res", WIDTH, 3)
     uniform(blur, "delta", 1, 0)
     uniform(blur, "kern_scale", 1)
@@ -413,6 +543,70 @@ def run(sdl, gl):
             assert list(output)[channel::4] == outputs[enabled][channel::4]
         assert gl.GetError() == 0
         cases += 1
+    # Cleanup filters shadow visibility only. A/B off, normalization, rough
+    # sampling, sloping planes, depth silhouettes and sharp normal boundaries.
+    uniform(blur, 'pcss_enabled', 1, integer=True)
+    uniform(blur, 'pcss_cleanup_only', 1, integer=True)
+    def cleanup(pattern, sigma=1.5, surface=0, vertical=False, ao=False, scale=1.024):
+        nonlocal cases
+        pixels = [v for y in range(3) for x in range(WIDTH) for v in pattern(x,y)]
+        gl.TexImage2D(TEXTURE, 0, 0x8814, WIDTH, 3, 0, RGBA, FLOAT, (F*len(pixels))(*pixels))
+        uniform(blur, 'pcss_cleanup', sigma)
+        uniform(blur, 'test_surface', surface, integer=True)
+        uniform(blur, 'test_scale', scale)
+        uniform(blur, 'pcss_cleanup_only', int(not ao), integer=True)
+        uniform(blur, 'gtao_enabled', int(not ao), integer=True)
+        uniform(blur, 'delta', 0 if vertical else 1, 1 if vertical else 0)
+        gl.DrawArrays(4,0,3)
+        output = (F*(WIDTH*4))()
+        gl.ReadPixels(0,1,WIDTH,1,RGBA,FLOAT,output)
+        assert gl.GetError() == 0
+        assert all(math.isfinite(v) and -1e-6 <= v <= 1+1e-6 for v in output), (min(output),max(output))
+        cases += 1
+        return [list(output)[i::4] for i in range(4)]
+
+    stripes = lambda x,y: (float(x%2), .37, float(x%2), float(x%2))
+    off = cleanup(stripes, 0)
+    assert off[0] == [float(x%2) for x in range(WIDTH)]
+    smooth = cleanup(stripes)
+    assert max(smooth[0][8:-8])-min(smooth[0][8:-8]) < .02
+    for channel in (0,2,3):
+        assert smooth[channel] == smooth[0]
+    assert max(abs(v-.37) for v in smooth[1]) < 1e-6
+    for sigma in (.25,1.5,3):
+        for vertical in (False,True):
+            constant = cleanup(lambda x,y: (.2,.37,.7,.4),sigma,vertical=vertical)
+            for channel, expected in enumerate((.2,.37,.7,.4)):
+                assert max(abs(v-expected) for v in constant[channel]) < 1e-6
+    step = lambda x,y: (float(x>=WIDTH//2), .37, float(x>=WIDTH//2), float(x>=WIDTH//2))
+    flat = cleanup(step)
+    assert 0 < flat[0][127] < flat[0][128] < 1
+    assert abs(sum(flat[0])-WIDTH/2) < .001
+    tilted = cleanup(step,surface=3)
+    assert max(abs(a-b) for a,b in zip(flat[0],tilted[0])) < 1e-5
+    for surface in (1,2):
+        for sigma in (1.5,3):
+            edge = cleanup(step,sigma,surface)
+            assert max(abs(v-float(x>=WIDTH//2)) for x,v in enumerate(edge[0])) < 1e-6, ('cleanup crossed surface',surface,sigma)
+    vertical = cleanup(lambda x,y: (float(y==1),.37,float(y==1),float(y==1)),vertical=True)
+    assert .3 < vertical[0][128] < .5
+    old_ao = cleanup(lambda x,y: (float(x%2),float(x%2),0,1),0,ao=True)
+    new_ao = cleanup(lambda x,y: (float(x%2),float(x%2),0,1),1.5,ao=True)
+    assert old_ao[1] == new_ao[1], 'cleanup must not change legacy AO filtering'
+    # At 2x/4x/8x magnification the cleanup must retain its physical spread,
+    # until the bounded screen-space kernel is reached. Measure an impulse's
+    # second moment in metres, independently of how the shader picks taps.
+    spreads = []
+    for scale in (1.024,.512,.256,.128):
+        impulse = cleanup(lambda x,y: (float(x==128),.37,0,1),scale=scale)[0]
+        spread = math.sqrt(sum((x-128)**2*v for x,v in enumerate(impulse))/sum(impulse))*scale/WIDTH
+        spreads.append(spread)
+        for surface in (1,2):
+            edge = cleanup(step,3,surface,scale=scale)[0]
+            assert max(abs(v-float(x>=128)) for x,v in enumerate(edge)) < 1e-6, ('zoomed cleanup crossed surface',scale,surface)
+    assert max(spreads)/min(spreads) < 1.08, ('cleanup vanished with magnification',spreads)
+    print('Cleanup world spread over 1x/2x/4x/8x zoom (mm):', [round(v*1000,3) for v in spreads])
+    print('Cleanup: sampling steps smoothed; constants, depth/normal edges and AO preserved')
     print(f"PASS: {cases} PCSS GPU cases on {gl.GetString(0x1F01).decode()}")
 
 
@@ -423,7 +617,7 @@ if __name__ == "__main__":
     keys = [element.text for element in settings if element.tag == "key"]
     assert len(keys) == len(set(keys)), "duplicate saved setting"
     panel = ET.parse(ROOT / "indra/newview/skins/default/xui/en/panel_preferences_graphics1.xml")
-    for name in ("RenderPCSSEnabled", "RenderPCSSLightSize", "RenderPCSSMaxSoftness", "RenderPCSSMinSoftness", "RenderPCSSProjectorSize", "RenderPCSSBias", "RenderPCSSQuality"):
+    for name in ("RenderPCSSEnabled", "RenderPCSSLightSize", "RenderPCSSMaxSoftness", "RenderPCSSMinSoftness", "RenderPCSSProjectorSize", "RenderPCSSBias", "RenderPCSSQuality", "RenderPCSSCleanup"):
         assert name in keys and panel.find(f".//*[@control_name='{name}']") is not None
     sdl, window, ctx, gl = context()
     try:

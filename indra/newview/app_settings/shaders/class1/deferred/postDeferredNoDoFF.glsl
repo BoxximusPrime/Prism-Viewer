@@ -31,6 +31,7 @@ uniform sampler2D diffuseRect;
 uniform sampler2D depthMap;
 
 uniform vec2 screen_res;
+uniform vec2 taa_depth_jitter;
 in vec2 vary_fragcoord;
 
 //=================================
@@ -88,6 +89,7 @@ void main()
     diff.rgb = clampHDRRange(diff.rgb);
     frag_color = diff;
 
-    gl_FragDepth = texture(depthMap, vary_fragcoord.xy).r;
+    ivec2 depth_size=textureSize(depthMap,0);
+    ivec2 depth_pixel=clamp(ivec2((vary_fragcoord.xy+taa_depth_jitter)*vec2(depth_size)),ivec2(0),depth_size-1);
+    gl_FragDepth = texelFetch(depthMap, depth_pixel, 0).r;
 }
-

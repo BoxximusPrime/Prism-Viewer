@@ -99,6 +99,9 @@ void sampleReflectionProbes(inout vec3 ambenv, inout vec3 glossenv,
         vec2 tc, vec3 pos, vec3 norm, float glossiness, bool transparent, vec3 amblit_linear);
 
 void mirrorClip(vec3 pos);
+#if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
+bool isSSSOverlay(vec3 positionEye);
+#endif
 void waterClip(vec3 pos);
 
 void calcDiffuseSpecular(vec3 baseColor, float metallic, inout vec3 diffuseColor, inout vec3 specularColor);
@@ -133,6 +136,9 @@ vec3 pbrCalcPointLightOrSpotLight(int light_index, vec3 diffuseColor, vec3 specu
 void main()
 {
     mirrorClip(vary_position);
+#if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
+    if (isSSSOverlay(vary_position)) discard;
+#endif
 
     vec3 color = vec3(0,0,0);
 

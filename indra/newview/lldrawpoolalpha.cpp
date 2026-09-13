@@ -110,6 +110,7 @@ static void prepare_alpha_shader(LLGLSLShader* shader, bool deferredEnvironment,
     }
 
     shader->bind();
+    gPipeline.bindSSSOverlay(*shader);
     shader->uniform1f(LLShaderMgr::DISPLAY_GAMMA, (gamma > 0.1f) ? 1.0f / gamma : (1.0f / 2.2f));
 
     if (LLPipeline::sRenderingHUDs)
@@ -610,6 +611,77 @@ void LLDrawPoolAlpha::renderRiggedPbrEmissives(std::vector<LLDrawInfo*>& emissiv
     }
 }
 
+bool LLDrawPoolAlpha::isSSSOverlayDraw(const LLDrawInfo& draw)
+{
+    // Additive surfaces and glow retain their ordinary transparency path.
+    return draw.mSSSOverlay && !draw.mHasGlow &&
+        draw.mBlendFuncSrc == LLRender::BF_SOURCE_ALPHA &&
+        draw.mBlendFuncDst == LLRender::BF_ONE_MINUS_SOURCE_ALPHA;
+}
+
+bool LLDrawPoolAlpha::hasSSSOverlays()
+{
+    for (bool rigged : { false, true })
+    {
+        auto begin = rigged ? gPipeline.beginRiggedAlphaGroups() : gPipeline.beginAlphaGroups();
+        auto end = rigged ? gPipeline.endRiggedAlphaGroups() : gPipeline.endAlphaGroups();
+        for (auto i = begin; i != end; ++i)
+        {
+            auto* group = *i;
+            if (group->isDead() || !group->getSpatialPartition()->mRenderByGroup) continue;
+            auto found = group->mDrawMap.find(rigged ? PASS_ALPHA_RIGGED : PASS_ALPHA);
+            if (found == group->mDrawMap.end()) continue;
+            for (auto& draw : found->second)
+                if (isSSSOverlayDraw(*draw)) return true;
+        }
+    }
+    return false;
+}
+
+void LLDrawPoolAlpha::renderSSSOverlays()
+{
+    const LLVOAvatar* last_avatar = nullptr;
+    U64 last_mesh = 0;
+    const LLGLSLShader* last_shader = nullptr;
+    bool skip_skin = false;
+    for (bool rigged : { false, true })
+    {
+        auto begin = rigged ? gPipeline.beginRiggedAlphaGroups() : gPipeline.beginAlphaGroups();
+        auto end = rigged ? gPipeline.endRiggedAlphaGroups() : gPipeline.endAlphaGroups();
+        for (auto i = begin; i != end; ++i)
+        {
+            auto* group = *i;
+            if (group->isDead() || !group->getSpatialPartition()->mRenderByGroup) continue;
+            auto found = group->mDrawMap.find(rigged ? PASS_ALPHA_RIGGED : PASS_ALPHA);
+            if (found == group->mDrawMap.end()) continue;
+            for (auto& entry : found->second)
+            {
+                LLDrawInfo& draw = *entry;
+                if (!isSSSOverlayDraw(draw) || bool(draw.mAvatar) != rigged) continue;
+                LLRenderPass::applyModelMatrix(draw);
+                U32 material = draw.mGLTFMaterial ? 2 : draw.mMaterial ? 1 : 0;
+                auto& shader = gSSSOverlayProgram[material * 2 + U32(rigged)];
+                shader.bind();
+                shader.bindTexture(LLShaderMgr::SSS_OVERLAY_GUIDE, &gPipeline.mSSSOverlayBase,
+                    false, LLTexUnit::TFO_POINT, 1);
+                shader.uniform1i(LLStaticHashedString("sss_overlay"), 1);
+                if (rigged && !uploadMatrixPalette(draw.mAvatar, draw.mSkinInfo,
+                    last_avatar, last_mesh, last_shader, skip_skin)) continue;
+                LLGLDisable cull(draw.mGLTFMaterial && draw.mGLTFMaterial->mDoubleSided ? GL_CULL_FACE : 0);
+                if (draw.mGLTFMaterial) draw.mGLTFMaterial->bind(draw.mTexture);
+                bool texture_setup = TexSetup(&draw, material == 1);
+                draw.mVertexBuffer->setBuffer();
+                draw.mVertexBuffer->drawRange(LLRender::TRIANGLES, draw.mStart, draw.mEnd, draw.mCount, draw.mOffset);
+                RestoreTexSetup(texture_setup);
+                draw.mSSSOverlayFrameTag = gPipeline.mSSSFrameTag;
+            }
+        }
+    }
+    LLRenderPass::applyModelMatrix(nullptr);
+    LLGLSLShader::unbind();
+    LLVertexBuffer::unbind();
+}
+
 void LLDrawPoolAlpha::renderAlpha(U32 mask, bool depth_only, bool rigged)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
@@ -835,6 +907,11 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, bool depth_only, bool rigged)
                 }
 
                 bool tex_setup = TexSetup(&params, (mat != nullptr));
+                current_shader->uniform1i(LLStaticHashedString("sss_overlay"),
+                    gPipeline.mSSSOverlayReady && !depth_only && !gCubeSnapshot &&
+                    !LLPipeline::sImpostorRender && !LLPipeline::sRenderingHUDs &&
+                    gPipeline.mRT == &gPipeline.mMainRT &&
+                    params.mSSSOverlayFrameTag == gPipeline.mSSSFrameTag ? 1 : 0);
 
                 {
 // <AS:Chanayane> Upload original per-draw blend factors into exact OIT nodes.

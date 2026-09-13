@@ -189,6 +189,9 @@
      label="Avatar"
      name="Avatar"
      tear_off="true">
+       <menu_item_call label="Pose Studio..." name="Pose Studio">
+         <menu_item_call.on_click function="Floater.ToggleOrBringToFront" parameter="pose_studio" />
+       </menu_item_call>
        <menu_item_call
          label="Now wearing..."
          name="NowWearing"

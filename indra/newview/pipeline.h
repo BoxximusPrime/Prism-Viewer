@@ -57,6 +57,7 @@ class LLDrawPoolAlpha;
 class FSExactOIT;
 // </AS:Chanayane>
 class LLSettingsSky;
+namespace LLVolumeFog { struct Volume; }
 
 typedef enum e_avatar_skinning_method
 {
@@ -350,6 +351,8 @@ public:
     void unbindReflectionProbes(LLGLSLShader& shader);
 
     void renderDeferredLighting();
+    void renderVolumeFog();
+    void bindVolumeFogLighting(LLGLSLShader& shader, const std::vector<LLVolumeFog::Volume>& volumes);
 
     // apply atmospheric haze based on contents of color and depth buffer
     // should be called just before rendering water when camera is under water
@@ -768,6 +771,11 @@ public:
     LLRenderTarget          mSSSWideScratch;
     LLRenderTarget          mSSSWideResult;
     void renderSSSDiffusion(bool transmission = false);
+    LLRenderTarget          mSSSOverlayBase; // original albedo + frozen opaque skin depth
+    LLRenderTarget          mSSSOverlayColor; // premultiplied linear overlay colour
+    bool                    mSSSOverlayReady = false;
+    void renderSSSOverlays();
+    void bindSSSOverlay(LLGLSLShader& shader);
 
     LLRenderTarget          mPbrBrdfLut;
     LLRenderTarget          mWaterExclusionMask;
@@ -775,6 +783,8 @@ public:
     // copy of the color/depth buffer just before gamma correction
     // for use by SSR
     LLRenderTarget          mSceneMap;
+    LLRenderTarget          mVolumeFog;
+    LLRenderTarget          mVolumeFogComposite;
     LLRenderTarget          mGTAO[2]; // visibility + geometry mask; spatial ping-pong
     bool                    mGTAOReady = false;
 

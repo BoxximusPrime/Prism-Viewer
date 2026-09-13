@@ -225,6 +225,8 @@ set(viewer_SOURCE_FILES
     llfloaterboxxyao.cpp
     llfloaterboxxyradar.cpp
     llfloaterboxxytpose.cpp
+    llfloaterposestudio.cpp
+    llposestudio.cpp
     llfloaterconversationpreview.cpp
     llfloatercreatelandmark.cpp
     llfloaterdeleteprefpreset.cpp
@@ -748,6 +750,7 @@ set(viewer_SOURCE_FILES
     llvosurfacepatch.cpp
     llvotree.cpp
     llvovolume.cpp
+    llvolumefog.cpp
     llvowater.cpp
     llvowlsky.cpp
     llwearableitemslist.cpp
@@ -922,6 +925,8 @@ set(viewer_HEADER_FILES
     llfloaterboxxyao.h
     llfloaterboxxyradar.h
     llfloaterboxxytpose.h
+    llfloaterposestudio.h
+    llposestudio.h
     llfloaterconversationpreview.h
     llfloatercreatelandmark.h
     llfloaterdeleteprefpreset.h
@@ -1440,6 +1445,8 @@ set(viewer_HEADER_FILES
     llvosurfacepatch.h
     llvotree.h
     llvovolume.h
+    llvolumefog.h
+    llvolumefogparams.h
     llvowater.h
     llvowlsky.h
     llwearableitemslist.h

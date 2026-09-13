@@ -59,6 +59,7 @@
 #include "llfloaterboxxyao.h"
 #include "llfloaterboxxyradar.h"
 #include "llfloaterboxxytpose.h"
+#include "llfloaterposestudio.h"
 #include "llfloatercamera.h"
 #include "llfloatercamerapresets.h"
 #include "llfloaterchangeitemthumbnail.h"
@@ -362,6 +363,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("boxxy_radar", "floater_boxxy_radar.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyRadar>);
     LLFloaterReg::add("boxxy_radar_simple", "floater_boxxy_radar_simple.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyRadarSimple>);
     LLFloaterReg::add("boxxy_tpose", "floater_boxxy_tpose.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyTPose>);
+    LLFloaterReg::add("pose_studio", "floater_pose_studio.xml", &LLFloaterReg::build<LLFloaterPoseStudio>);
 
     LLFloaterReg::add("camera", "floater_camera.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterCamera>);
     LLFloaterReg::add("camera_presets", "floater_camera_presets.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterCameraPresets>);

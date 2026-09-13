@@ -52,6 +52,9 @@ uniform mat3 normal_matrix;
 in vec3 vary_position;
 
 void mirrorClip(vec3 pos);
+#if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
+bool isSSSOverlay(vec3 positionEye);
+#endif
 vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
 
 #if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
@@ -312,6 +315,9 @@ float getShadow(vec3 pos, vec3 norm)
 void main()
 {
     mirrorClip(vary_position);
+#if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
+    if (isSSSOverlay(vary_position)) discard;
+#endif
     applyWaterClip();
 
     // diffcol == diffuse map combined with vertex color

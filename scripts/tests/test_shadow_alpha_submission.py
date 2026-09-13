@@ -15,13 +15,22 @@ STUBS = r'''
 #include <cstdint>
 #include <vector>
 #include <cstddef>
+#include <string>
 using U32 = uint32_t;
 using U64 = uint64_t;
 using S32 = int32_t;
 #define LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE
 constexpr float ALPHA_BLEND_CUTOFF = 0.598f;
 struct LLVOAvatar {};
-struct LLDrawInfo { int id; bool mGLTFMaterial; const LLVOAvatar* mAvatar; bool mSkinInfo = true; };
+struct LLDrawInfo { int id; bool mGLTFMaterial; const LLVOAvatar* mAvatar; bool mSkinInfo = true; bool mSSSOverlay = false; };
+struct LLDrawPoolAlpha { static bool isSSSOverlayDraw(const LLDrawInfo& p) { return p.mSSSOverlay; } };
+struct Settings {
+    bool overlays = false;
+    float strength = 1;
+    bool getBOOL(const char*) { return overlays; }
+    float getF32(const char*) { return strength; }
+    std::string getString(const char*) { return "neck fade"; }
+} gSavedSettings;
 struct LLShaderMgr { enum { SUN_UP_FACTOR, DEFERRED_SHADOW_TARGET_WIDTH }; };
 struct LLRenderTarget { inline static U32 sCurResX = 2048; };
 struct LLEnvironment {
@@ -109,6 +118,22 @@ int main() {
     draws.clear();
     gPipeline.renderAlphaObjects(false);
     assert((draws == std::vector<int>{1, 2, 3, 4, 5}));
+    // Selected sleeves are colour layers in ordinary shadows AND measured
+    // transmission. Test static/rigged and legacy/PBR submission together.
+    for (int index : {0,2,5,7}) input[index].mSSSOverlay = true;
+    gSavedSettings.overlays = true;
+    for (int pass : {0,1}) {
+        gPipeline.mSSSDepthPass = pass;
+        draws.clear();
+        gPipeline.renderAlphaObjects(false); gPipeline.renderAlphaObjects(true);
+        assert((draws == std::vector<int>{2,4,5,7,9}));
+    }
+    gSavedSettings.strength = 0;
+    draws.clear();
+    gPipeline.renderAlphaObjects(false);
+    assert((draws == std::vector<int>{1,2,3,4,5}));
+    gSavedSettings.overlays = false;
+    gSavedSettings.strength = 1;
     for (bool opaque : {false, true}) {
         gPipeline.mSSSDepthOpaque = opaque;
         gPipeline.mSSSDepthPass = 1;

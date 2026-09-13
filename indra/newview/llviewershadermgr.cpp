@@ -245,6 +245,11 @@ LLGLSLShader            gNormalMapGenProgram;
 LLGLSLShader            gDeferredGenBrdfLutProgram;
 LLGLSLShader            gDeferredBufferVisualProgram;
 LLGLSLShader            gSSSDiffusionProgram;
+LLGLSLShader            gSSSOverlayProgram[6];
+LLGLSLShader            gSSSOverlayCompositeProgram;
+LLGLSLShader            gVolumeFogProgram;
+LLGLSLShader            gVolumeFogLitProgram;
+LLGLSLShader            gVolumeFogCompositeProgram;
 LLGLSLShader            gSSSMaskProgram;
 
 // Deferred materials shaders
@@ -443,6 +448,8 @@ void LLViewerShaderMgr::finalizeShaderList()
     mShaderList.push_back(&gHazeWaterProgram);
     mShaderList.push_back(&gDeferredSoftenProgram);
     mShaderList.push_back(&gSSSDiffusionProgram);
+    for (auto& shader : gSSSOverlayProgram) mShaderList.push_back(&shader);
+    mShaderList.push_back(&gSSSOverlayCompositeProgram);
     mShaderList.push_back(&gSSSMaskProgram);
     mShaderList.push_back(&gDeferredAlphaProgram);
     mShaderList.push_back(&gHUDAlphaProgram);
@@ -1339,6 +1346,11 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gDeferredGenBrdfLutProgram.unload();
         gDeferredBufferVisualProgram.unload();
         gSSSDiffusionProgram.unload();
+        for (auto& shader : gSSSOverlayProgram) shader.unload();
+        gSSSOverlayCompositeProgram.unload();
+        gVolumeFogProgram.unload();
+        gVolumeFogLitProgram.unload();
+        gVolumeFogCompositeProgram.unload();
         gSSSMaskProgram.unload();
 
         for (U32 i = 0; i < LLMaterial::SHADER_COUNT*2; ++i)
@@ -1468,6 +1480,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
             gDeferredMaterialProgram[i].mShaderFiles.clear();
             gDeferredMaterialProgram[i].mShaderFiles.push_back(make_pair("deferred/materialV.glsl", GL_VERTEX_SHADER));
             gDeferredMaterialProgram[i].mShaderFiles.push_back(make_pair("deferred/materialF.glsl", GL_FRAGMENT_SHADER));
+            gDeferredMaterialProgram[i].mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
             gDeferredMaterialProgram[i].mShaderLevel = mShaderLevel[SHADER_DEFERRED];
 
             gDeferredMaterialProgram[i].clearPermutations();
@@ -1636,6 +1649,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         shader->mShaderFiles.clear();
         shader->mShaderFiles.push_back(make_pair("deferred/pbralphaV.glsl", GL_VERTEX_SHADER));
         shader->mShaderFiles.push_back(make_pair("deferred/pbralphaF.glsl", GL_FRAGMENT_SHADER));
+        shader->mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
 
         shader->clearPermutations();
 
@@ -1680,6 +1694,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         shader->mShaderFiles.clear();
         shader->mShaderFiles.push_back(make_pair("deferred/pbralphaV.glsl", GL_VERTEX_SHADER));
         shader->mShaderFiles.push_back(make_pair("deferred/pbralphaF.glsl", GL_FRAGMENT_SHADER));
+        shader->mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
 
         shader->clearPermutations();
 
@@ -1967,6 +1982,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
             shader->mShaderFiles.clear();
             shader->mShaderFiles.push_back(make_pair("deferred/alphaV.glsl", GL_VERTEX_SHADER));
             shader->mShaderFiles.push_back(make_pair("deferred/alphaF.glsl", GL_FRAGMENT_SHADER));
+            shader->mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
 
             shader->clearPermutations();
             shader->addPermutation("USE_VERTEX_COLOR", "1");
@@ -2027,6 +2043,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
             shader->mShaderFiles.clear();
             shader->mShaderFiles.push_back(make_pair("deferred/alphaV.glsl", GL_VERTEX_SHADER));
             shader->mShaderFiles.push_back(make_pair("deferred/alphaF.glsl", GL_FRAGMENT_SHADER));
+            shader->mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
 
             shader->clearPermutations();
             shader->addPermutation("USE_INDEXED_TEX", "1");
@@ -2092,6 +2109,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gDeferredFullbrightProgram.mShaderFiles.clear();
         gDeferredFullbrightProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightV.glsl", GL_VERTEX_SHADER));
         gDeferredFullbrightProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightF.glsl", GL_FRAGMENT_SHADER));
+        gDeferredFullbrightProgram.mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
         gDeferredFullbrightProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
 
         add_common_permutations(&gDeferredFullbrightProgram);
@@ -2112,6 +2130,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gHUDFullbrightProgram.mShaderFiles.clear();
         gHUDFullbrightProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightV.glsl", GL_VERTEX_SHADER));
         gHUDFullbrightProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightF.glsl", GL_FRAGMENT_SHADER));
+        gHUDFullbrightProgram.mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
         gHUDFullbrightProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
         gHUDFullbrightProgram.clearPermutations();
         gHUDFullbrightProgram.addPermutation("IS_HUD", "1");
@@ -2133,6 +2152,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gDeferredFullbrightAlphaMaskProgram.mShaderFiles.clear();
         gDeferredFullbrightAlphaMaskProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightV.glsl", GL_VERTEX_SHADER));
         gDeferredFullbrightAlphaMaskProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightF.glsl", GL_FRAGMENT_SHADER));
+        gDeferredFullbrightAlphaMaskProgram.mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
         gDeferredFullbrightAlphaMaskProgram.clearPermutations();
         gDeferredFullbrightAlphaMaskProgram.addPermutation("HAS_ALPHA_MASK","1");
         gDeferredFullbrightAlphaMaskProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
@@ -2155,6 +2175,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gHUDFullbrightAlphaMaskProgram.mShaderFiles.clear();
         gHUDFullbrightAlphaMaskProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightV.glsl", GL_VERTEX_SHADER));
         gHUDFullbrightAlphaMaskProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightF.glsl", GL_FRAGMENT_SHADER));
+        gHUDFullbrightAlphaMaskProgram.mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
         gHUDFullbrightAlphaMaskProgram.clearPermutations();
         gHUDFullbrightAlphaMaskProgram.addPermutation("HAS_ALPHA_MASK", "1");
         gHUDFullbrightAlphaMaskProgram.addPermutation("IS_HUD", "1");
@@ -2178,6 +2199,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gDeferredFullbrightAlphaMaskAlphaProgram.mShaderFiles.clear();
         gDeferredFullbrightAlphaMaskAlphaProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightV.glsl", GL_VERTEX_SHADER));
         gDeferredFullbrightAlphaMaskAlphaProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightF.glsl", GL_FRAGMENT_SHADER));
+        gDeferredFullbrightAlphaMaskAlphaProgram.mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
         gDeferredFullbrightAlphaMaskAlphaProgram.clearPermutations();
         gDeferredFullbrightAlphaMaskAlphaProgram.addPermutation("HAS_ALPHA_MASK", "1");
         gDeferredFullbrightAlphaMaskAlphaProgram.addPermutation("IS_ALPHA", "1");
@@ -2202,6 +2224,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gHUDFullbrightAlphaMaskAlphaProgram.mShaderFiles.clear();
         gHUDFullbrightAlphaMaskAlphaProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightV.glsl", GL_VERTEX_SHADER));
         gHUDFullbrightAlphaMaskAlphaProgram.mShaderFiles.push_back(make_pair("deferred/fullbrightF.glsl", GL_FRAGMENT_SHADER));
+        gHUDFullbrightAlphaMaskAlphaProgram.mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
         gHUDFullbrightAlphaMaskAlphaProgram.clearPermutations();
         gHUDFullbrightAlphaMaskAlphaProgram.addPermutation("HAS_ALPHA_MASK", "1");
         gHUDFullbrightAlphaMaskAlphaProgram.addPermutation("IS_ALPHA", "1");
@@ -2565,6 +2588,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gDeferredAvatarAlphaProgram.mShaderFiles.clear();
         gDeferredAvatarAlphaProgram.mShaderFiles.push_back(make_pair("deferred/alphaV.glsl", GL_VERTEX_SHADER));
         gDeferredAvatarAlphaProgram.mShaderFiles.push_back(make_pair("deferred/alphaF.glsl", GL_FRAGMENT_SHADER));
+        gDeferredAvatarAlphaProgram.mShaderFiles.emplace_back("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER);
 
         gDeferredAvatarAlphaProgram.clearPermutations();
         gDeferredAvatarAlphaProgram.addPermutation("USE_DIFFUSE_TEX", "1");
@@ -3210,6 +3234,120 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gSSSMaskProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
         add_common_permutations(&gSSSMaskProgram);
         success = gSSSMaskProgram.createShader();
+    }
+
+    for (U32 i = 0; i < 6 && success; ++i)
+    {
+        auto& shader = gSSSOverlayProgram[i];
+        U32 material = i / 2;
+        bool rigged = (i & 1) != 0;
+        shader.mName = llformat("Skin Colour Overlay %u", i);
+        shader.mFeatures.isDeferred = true;
+        shader.mFeatures.hasSrgb = true;
+        shader.mFeatures.hasObjectSkinning = rigged;
+        shader.mFeatures.mIndexedTextureChannels = material == 0 ? LLGLSLShader::sIndexedTextureChannels : 0;
+        shader.mShaderFiles = {
+            make_pair(material == 2 ? "deferred/pbralphaV.glsl" : "deferred/alphaV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/sssOverlayF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("deferred/sssOverlayUtil.glsl", GL_FRAGMENT_SHADER)};
+        shader.clearPermutations();
+        shader.addPermutation("USE_VERTEX_COLOR", "1");
+        if (rigged) shader.addPermutation("HAS_SKIN", "1");
+        if (material == 0) shader.addPermutation("USE_INDEXED_TEX", "1");
+        if (material == 2) shader.addPermutation("SSS_OVERLAY_PBR", "1");
+        shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        add_common_permutations(&shader);
+        success = shader.createShader();
+    }
+    if (success)
+    {
+        auto& shader = gSSSOverlayCompositeProgram;
+        shader.mName = "Skin Overlay Albedo Composite";
+        shader.mFeatures.isDeferred = true;
+        shader.mFeatures.hasSrgb = true;
+        shader.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/sssOverlayCompositeF.glsl", GL_FRAGMENT_SHADER)};
+        shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        add_common_permutations(&shader);
+        success = shader.createShader();
+    }
+
+    // Optional unlit box fog: shader failure must not disable deferred rendering.
+    if (success)
+    {
+        auto& shader = gVolumeFogProgram;
+        shader.mName = "Volume Fog";
+        shader.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/volumeFogF.glsl", GL_FRAGMENT_SHADER)};
+        shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        shader.clearPermutations();
+        if (!shader.createShader() || shader.getTextureChannel(DEFERRED_DEPTH) < 0)
+        {
+            shader.unload();
+            LL_WARNS("ShaderLoading") << "Volume fog unavailable; continuing without fog boxes." << LL_ENDL;
+        }
+        else
+            LL_INFOS("VolumeFog") << "Loaded volume fog shader." << LL_ENDL;
+    }
+    if (success && gVolumeFogProgram.isComplete())
+    {
+        auto& shader = gVolumeFogLitProgram;
+        shader.mName = "Lit Volume Fog";
+        shader.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/volumeFogF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("deferred/volumeFogLightF.glsl", GL_FRAGMENT_SHADER)};
+        shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        shader.clearPermutations();
+        shader.addPermutation("VF_LIGHTING", "1");
+        bool complete = shader.createShader();
+        if (complete)
+        {
+            std::set<S32> channels;
+            for (S32 sampler : { DEFERRED_DEPTH,
+                PCSS_DEPTH0, PCSS_DEPTH1, PCSS_DEPTH2, PCSS_DEPTH3, PCSS_DEPTH4, PCSS_DEPTH5,
+                ALPHA_PROJECTION0, ALPHA_PROJECTION1, ALPHA_PROJECTION2, ALPHA_PROJECTION3 })
+            {
+                const S32 channel = shader.getTextureChannel(sampler);
+                complete &= channel >= 0 && channel < gGLManager.mNumTextureImageUnits && channels.insert(channel).second;
+            }
+        }
+        if (!complete)
+        {
+            shader.unload();
+            LL_WARNS("VolumeFog") << "Fog lighting unavailable; retaining unlit fog." << LL_ENDL;
+        }
+        else
+            LL_INFOS("VolumeFog") << "Loaded lit volume fog and validated 11 depth/projector/shadow samplers." << LL_ENDL;
+    }
+
+    if (success && gVolumeFogProgram.isComplete())
+    {
+        auto& shader = gVolumeFogCompositeProgram;
+        shader.mName = "Volume Fog Composite";
+        shader.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/volumeFogCompositeF.glsl", GL_FRAGMENT_SHADER)};
+        shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        shader.clearPermutations();
+        bool complete = shader.createShader();
+        if (complete)
+        {
+            std::set<S32> channels;
+            for (S32 sampler : { DEFERRED_DIFFUSE, DEFERRED_DEPTH, DIFFUSE_MAP })
+            {
+                const S32 channel = shader.getTextureChannel(sampler);
+                complete &= channel >= 0 && channel < gGLManager.mNumTextureImageUnits && channels.insert(channel).second;
+            }
+        }
+        if (!complete)
+        {
+            shader.unload();
+            LL_WARNS("VolumeFog") << "Fog composite unavailable; continuing without fog boxes." << LL_ENDL;
+        }
+        else LL_INFOS("VolumeFog") << "Loaded volume fog composite and validated 3 texture samplers." << LL_ENDL;
     }
 
     // Optional temporal shaders are loaded for the AA menu, independently of the

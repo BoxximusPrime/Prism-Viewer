@@ -31,6 +31,7 @@
 // </AS:Chanayane>
 
 #include "llappviewer.h"
+#include "llposestudio.h"
 
 // Viewer includes
 #include "llversioninfo.h"
@@ -6145,6 +6146,9 @@ void LLAppViewer::disconnectViewer()
     // Save snapshot for next time, if we made it through initialization
 
     LL_INFOS() << "Disconnecting viewer!" << LL_ENDL;
+
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().end(LLPoseStudio::EndReason::DISCONNECTED);
 
     // Dump our frame statistics
 

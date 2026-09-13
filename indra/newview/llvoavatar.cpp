@@ -28,6 +28,7 @@
 
 #include "llboxxyao.h"
 #include "llboxxyvip.h"
+#include "llposestudio.h"
 #include "llvoavatar.h"
 
 #include <stdio.h>
@@ -862,6 +863,9 @@ void LLVOAvatar::debugAvatarRezTime(std::string notification_name, std::string c
 //------------------------------------------------------------------------
 LLVOAvatar::~LLVOAvatar()
 {
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::TARGET_LOST, false);
+
     sInstances.remove(this);
 
     if (!mFullyLoaded)
@@ -900,6 +904,9 @@ LLVOAvatar::~LLVOAvatar()
 
 void LLVOAvatar::markDead()
 {
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::TARGET_LOST, false);
+
     if (mNameText)
     {
         mNameText->markDead();
@@ -2366,6 +2373,9 @@ void LLVOAvatar::startDefaultMotions()
 // virtual
 void LLVOAvatar::buildCharacter()
 {
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::SKELETON_CHANGED);
+
     LLAvatarAppearance::buildCharacter();
 
     // Not done building yet; more to do.
@@ -2499,6 +2509,9 @@ void LLVOAvatar::resetSkeleton(bool reset_animations)
     }
 
     // Save mPelvis state
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::SKELETON_CHANGED);
+
     //LLVector3 pelvis_pos = getJoint("mPelvis")->getPosition();
     //LLQuaternion pelvis_rot = getJoint("mPelvis")->getRotation();
 
@@ -5130,6 +5143,9 @@ bool LLVOAvatar::computeNeedsUpdate()
 //------------------------------------------------------------------------
 bool LLVOAvatar::updateCharacter(LLAgent &agent)
 {
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().beforeUpdate(*this);
+
     static LLCachedControl<bool> freeze_animations(gSavedSettings, "BoxxyFreezeAvatarAnimations", false);
     mMotionController.setFrozen(freeze_animations);
 
@@ -5265,6 +5281,10 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
             mRoot->setWorldPosition(pos);
         }
     }
+
+    // Pose Studio owns local joint presentation after all normal motion work.
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().afterUpdate(*this);
 
     // update head position
     updateHeadOffset();
@@ -6933,6 +6953,8 @@ bool LLVOAvatar::jointIsRiggedTo(const LLJoint *joint) const
 
 void LLVOAvatar::clearAttachmentOverrides()
 {
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::SKELETON_CHANGED);
 
     for (S32 i=0; i<LL_CHARACTER_MAX_ANIMATED_JOINTS; i++)
     {
@@ -7220,6 +7242,10 @@ void LLVOAvatar::addAttachmentOverridesForObject(LLViewerObject *vo, std::set<LL
             bool fullRig = jointCnt >= JOINT_COUNT_REQUIRED_FOR_FULLRIG;
             if ( fullRig && !mesh_overrides_loaded )
             {
+                // Loading a new mesh can change the rig without a skeleton rebuild.
+                if (LLPoseStudio::instanceExists())
+                    LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::SKELETON_CHANGED);
+
                 for (unsigned int i = 0; i < jointCnt; ++i)
                 {
                     std::string lookingForJoint = pSkinData->mJointNames[i].c_str();
@@ -7426,6 +7452,9 @@ void LLVOAvatar::removeAttachmentOverridesForObject(LLViewerObject *vo)
 //-----------------------------------------------------------------------------
 void LLVOAvatar::removeAttachmentOverridesForObject(const LLUUID& mesh_id)
 {
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::SKELETON_CHANGED);
+
     LLJoint* pJointPelvis = getJoint("mPelvis");
     const std::string av_string = avString();
     for (S32 joint_num = 0; joint_num < LL_CHARACTER_MAX_ANIMATED_JOINTS; joint_num++)
@@ -7669,6 +7698,11 @@ void LLVOAvatar::initAttachmentPoints(bool ignore_hud_joints)
 //-----------------------------------------------------------------------------
 void LLVOAvatar::updateVisualParams()
 {
+    // Appearance changes must see the underlying animation pose. A changed
+    // skeleton serial will then invalidate the session before it writes again.
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().beforeUpdate(*this);
+
     ESex avatar_sex = (getVisualParamWeight("male") > 0.5f) ? SEX_MALE : SEX_FEMALE;
     if (getSex() != avatar_sex)
     {
@@ -11300,6 +11334,9 @@ void LLVOAvatar::cullAvatarsByPixelArea()
 
 void LLVOAvatar::startAppearanceAnimation()
 {
+    if (LLPoseStudio::instanceExists())
+        LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::SKELETON_CHANGED);
+
     if(!mAppearanceAnimating)
     {
         mAppearanceAnimating = true;

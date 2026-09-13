@@ -179,12 +179,32 @@ def run(sdl, gl):
         for distance in (3.0,1.3):
             for wall_slope in (0,.5):
                 scenarios.append((1,distance,angle,wall_slope,.02 if index%2 else 0,index%3,index%2))
-    for scale, distance, angle, wall_slope, minimum, quality, sun_up in scenarios:
+    sphere_points = points
+    scenarios = [(*case, None) for case in scenarios]
+    # A single large square, viewed obliquely: actual rasterized camera and
+    # shadow depth, including subpixel camera movement and coarse cascades.
+    for distance in (4, 40, 160):
+        for tilt in (0, 4, 20):
+            for phase in (-.25, 0, .25):
+                scenarios.append((1,distance,55,None,.01,1,1,(tilt,phase)))
+    for scale, distance, angle, wall_slope, minimum, quality, sun_up, floor in scenarios:
+        points = sphere_points
+        if floor is not None:
+            tilt, phase = floor
+            points = [v for x,y in ((-256,-256),(256,-256),(-256,256),(256,-256),(256,256),(-256,256))
+                      for v in (x,y,-tilt*y)]
+        values = (F*len(points))(*points)
+        gl.BufferData(0x8892, C.sizeof(values), values, 0x88E4)
         near, far = .1*scale, 1024
         f = 2.5
         proj = [[f,0,0,0],[0,f,0,0],[0,0,-(far+near)/(far-near),-2*far*near/(far-near)],[0,0,-1,0]]
+        if floor is not None:
+            proj[0][2] = phase / SIZE
+            proj[1][2] = -phase / SIZE
         lx,lz=math.sin(math.radians(angle)),math.cos(math.radians(angle))
         extent, depth_range=(4*scale,32*scale) if wall_slope is None else (32,128)
+        if floor is not None:
+            extent, depth_range = 512, 4096
         light = [[lz/extent,0,-lx/extent,.5-lx*distance/extent],
                  [0,1/extent,0,.5],[-lx/depth_range,0,-lz/depth_range,.5-lz*distance/depth_range],[0,0,0,1]]
         clip_light = [[2*a-b for a,b in zip(row,light[3])] for row in light[:3]]+[light[3]]
@@ -221,10 +241,13 @@ def run(sdl, gl):
             uniform(prog,'sun_dir',lx if sun_up else -lx,0,lz if sun_up else -lz)
             uniform(prog,'moon_dir',-lx if sun_up else lx,0,-lz if sun_up else lz)
             uniform(prog,'sun_up_factor',sun_up,integer=True)
-            uniform(prog,'shadow_clip',8,16,32,64)
+            uniform(prog,'shadow_clip',*( (64,128,256,512) if floor is not None else (8,16,32,64) ))
             uniform(prog,'shadow_res',SIZE,SIZE)
             uniform(prog,'screen_res',SIZE,SIZE)
-            uniform(prog,'pcss_params',math.tan(math.radians(.53)*.5),scale,.005*scale,minimum)
+            uniform(prog,'pcss_params',math.tan(math.radians(1.45 if floor is not None else .53)*.5),scale,.0035*scale if floor is not None else .005*scale,minimum)
+            uniform(prog,'pcss_raster_error',1/256)
+            uniform(prog,'pcss_world_up',0,0,1)
+            uniform(prog,'pcss_world_north',0,1,0)
             uniform(prog,'pcss_quality',quality,integer=True)
             matrix(prog,'inv_proj',inverse(proj))
             matrix(prog,'projection',proj)
@@ -245,7 +268,14 @@ def run(sdl, gl):
             gl.ReadPixels(0,0,SIZE,SIZE,0x1908,0x1406,output)
             assert gl.GetError()==0
             assert all(math.isfinite(v) for v in output)
-            if wall_slope is not None:
+            if floor is not None:
+                # Avoid silhouette/viewport boundaries; the interior of an
+                # unobstructed, light-facing square should remain fully lit.
+                visible=[output[(y*SIZE+x)*4] for y in range(16,SIZE-16) for x in range(16,SIZE-16)
+                         if output[(y*SIZE+x)*4+3]>.5 and output[(y*SIZE+x)*4+1]>.01]
+                assert len(visible)>1000
+                assert min(visible)>.99, ('square floor acne',mode,distance,tilt,phase,min(visible),sum(v<.99 for v in visible)/len(visible))
+            elif wall_slope is not None:
                 visible=[output[i] for i in range(0,len(output),4) if output[i+3]>.5]
                 assert len(visible)>10000
                 assert max(visible)<.001, (mode,distance,angle,wall_slope,'light through solid wall',max(visible))
@@ -270,6 +300,8 @@ def run(sdl, gl):
                 directory=ROOT/'tmp'
                 directory.mkdir(exist_ok=True)
                 suffix='' if wall_slope is None else f'-wall-{angle}-{wall_slope}'
+                if floor is not None:
+                    suffix=f'-floor-{tilt}-{phase}'
                 png(directory/f'pcss-mesh-{distance}-{mode}{suffix}.png',pixels)
 
     for mode in ('deferred','forward'):
@@ -304,6 +336,8 @@ def run(sdl, gl):
     uniform(horizon,'rawDepth',1,integer=True)
     uniform(horizon,'pcss_params',math.tan(math.radians(5)),1,.005,0)
     uniform(horizon,'pcss_quality',2,integer=True)
+    uniform(horizon,'pcss_world_up',0,0,1)
+    uniform(horizon,'pcss_world_north',0,1,0)
     disk=[(x/64,y/64) for y in range(-64,65) for x in range(-64,65) if x*x+y*y<=64*64]
     for source_radius in (0,.5):
         # The source lies along +X while the camera sees a +Z-facing plane.

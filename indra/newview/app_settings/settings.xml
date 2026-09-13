@@ -2,6 +2,80 @@
 <llsd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="llsd.xsd">
 <map>
+  <key>RenderVolumeFogIntensity</key>
+  <map>
+    <key>Comment</key><string>Global multiplier for density in all tagged fog boxes (0-2). One uses authored density; zero skips rendering. Does not edit prim descriptions.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>RenderVolumeFogQuality</key>
+  <map>
+    <key>Comment</key><string>Fog quality: 0 Performance (half resolution, 16 samples), 1 Balanced (half resolution, 24), 2 High (full resolution, 32), 3 Ultra (full resolution, 64). Local light limit and shadow switch are independent. Changes apply immediately.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>RenderVolumeFogShadows</key>
+  <map>
+    <key>Comment</key><string>Sample available sun/moon and projector shadows inside fog. Disable to reduce fog GPU cost; surface shadows are unchanged.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>RenderVolumeFogLighting</key>
+  <map>
+    <key>Comment</key><string>Illuminate tagged fog volumes with the sun/moon and nearby point/projector lights. Off restores unlit stage-one fog.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>RenderVolumeFogLightCount</key>
+  <map>
+    <key>Comment</key><string>Maximum nearby lights affecting fog (0-8), including up to four textured projectors. Shadowed projectors have priority.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>8</integer>
+  </map>
+  <key>RenderVolumeFogSteps</key>
+  <map>
+    <key>Comment</key><string>Advanced override for fog lighting samples: 0 follows RenderVolumeFogQuality; positive values use 8-64. Box/light boundaries add a bounded minimum per segment.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>RenderVolumeFogAmbient</key>
+  <map>
+    <key>Comment</key><string>Minimum ambient illumination for lit fog (0-2), in addition to a small EEP ambient contribution. Zero permits dark fog when the environment is also dark.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.15</real>
+  </map>
+  <key>RenderVolumeFogLightStrength</key>
+  <map>
+    <key>Comment</key><string>Direct light scattering strength in fog (0-8). Does not change surface lighting or fog density.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>RenderVolumeFogAnisotropy</key>
+  <map>
+    <key>Comment</key><string>Fog scattering direction (-0.8 to 0.8). Zero is isotropic; positive values brighten beams viewed toward their light source.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.2</real>
+  </map>
+  <key>RenderVolumeFog</key>
+  <map>
+    <key>Comment</key>
+    <string>Render fog inside phantom box prims tagged [vfog:density,&lt;r,g,b&gt;,softness] in their descriptions. Density is per metre, RGB is 0-255, optional softness is metres. Blended transparency uses scene depth.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
   <key>BoxxyFreezeAvatarAnimations</key>
   <map>
     <key>Comment</key>
@@ -32,7 +106,7 @@
     <key>Value</key><integer>1</integer>
   </map>
   <key>RenderTAAStaticDetails</key>
-  <map><key>Comment</key><string>Retain fine static details across missing jitter samples; movement and avatars use strict rejection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
+  <map><key>Comment</key><string>Retain fine static details through jitter and gentle camera motion; fast motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderTAAHistoryWeight</key>
   <map><key>Comment</key><string>Maximum TAA history weight (0.5 to 0.97). Motion and invalid history lower this automatically.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.97</real></map>
   <key>RenderTAAMotionProtection</key>
@@ -44,7 +118,7 @@
   <key>RenderTAASharpen</key>
   <map><key>Comment</key><string>Bounded TAA output sharpening (0 to 2). Kept outside temporal history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.50</real></map>
   <key>RenderTAADebug</key>
-  <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion vectors (blue = reactive), 2 history rejection (red = rejected, green = reused). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
+  <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion/reactive, 2 history weight (red low, green high), 3 clipping (white high), 4 detail protection (green high), 5 rejection reason (gray reset, blue offscreen, red depth, yellow partial depth, magenta reactive, green valid). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
   <key>RenderGTAOEnabled</key>
   <map>
     <key>Comment</key><string>Enable ground-truth ambient occlusion. Takes precedence over legacy SSAO; falls back to SSAO if GTAO resources are unavailable.</string>
@@ -127,6 +201,13 @@
     <key>Type</key><string>S32</string>
     <key>Value</key><integer>1</integer>
   </map>
+  <key>RenderPCSSCleanup</key>
+  <map>
+    <key>Comment</key><string>Surface-aware cleanup amount for opaque PCSS shadows (0 to 3). Each unit supplies a 4 mm surface radius plus a one-pixel minimum; closeup filtering is bounded. Zero disables cleanup; larger values also soften small contacts.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.5</real>
+  </map>
   <key>BoxxySSSEnabled</key>
   <map>
     <key>Comment</key>
@@ -159,6 +240,14 @@
     <string>String</string>
     <key>Value</key>
     <string>body, head, hands, feet, ear, ears, perky, Noelle, eye, eyes, squish</string>
+  </map>
+  <key>BoxxySSSOverlayNames</key>
+  <map>
+    <key>Comment</key>
+    <string>Comma-separated attachment root-name matches for transparent skin colour overlays, independent of automatic skin detection. Empty disables overlays.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>String</string>
+    <key>Value</key><string></string>
   </map>
   <key>BoxxySSSShowDepth</key>
   <map>
@@ -224,7 +313,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.095</real>
+    <real>0.012</real>
   </map>
   <key>BoxxySSSWarmth</key>
   <map>
@@ -246,7 +335,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>7</real>
+    <real>43</real>
   </map>
   <key>BoxxySSSWrapAmount</key>
   <map>
@@ -259,6 +348,13 @@
     <key>Value</key>
     <real>0.20</real>
   </map>
+  <key>BoxxySSSGrazingStrength</key>
+  <map>
+    <key>Comment</key><string>Additional warm diffuse scattering at light-facing grazing angles in Combined mode. Independent of wrap and transmission; zero preserves existing lighting.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
+  </map>
   <key>BoxxySSSTransmission</key>
   <map>
     <key>Comment</key>
@@ -268,7 +364,14 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>1.20</real>
+    <real>4</real>
+  </map>
+  <key>BoxxySSSMaxTransmission</key>
+  <map>
+    <key>Comment</key><string>Maximum per-light skin transmission response after brightness and local boost, preserving color. Zero is unlimited. Light color and intensity still apply.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
   </map>
   <key>BoxxySSSPointTransmissionBoost</key>
   <map>
@@ -287,7 +390,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>3.5</real>
+    <real>9</real>
   </map>
   <key>BoxxySSSTransmissionSmoothing</key>
   <map>
@@ -295,7 +398,7 @@
     <string>Radius in millimeters for a separate depth-aware transmission blur in Combined mode. Zero disables the extra buffer and two filter passes. Does not blur skin textures or specular highlights.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>47</real>
+    <key>Value</key><real>43</real>
   </map>
   <key>BoxxySSSPenetration</key>
   <map>
@@ -303,7 +406,7 @@
     <string>Maximum measured light path through skin in millimeters. Transmission fades across the full measured distance, independently of brightness and absorption. Requires a verified skin entry/exit pair.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>75</real>
+    <key>Value</key><real>80</real>
   </map>
   <key>BoxxySSSShadowThickness</key>
   <map>
@@ -9798,7 +9901,7 @@
       <key>Type</key>
       <string>S32</string>
       <key>Value</key>
-      <integer>1</integer>
+      <integer>2</integer>
     </map>
   <key>RenderReflectionsEnabled</key>
   <map>
