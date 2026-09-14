@@ -75,6 +75,8 @@ vec3 srgb_to_linear(vec3 c);
 vec3 linear_to_srgb(vec3 c);
 
 vec4 applySkyAndWaterFog(vec3 pos, vec3 additive, vec3 atten, vec4 color);
+vec3 waterLitSun(vec3 pos, vec3 light_dir, vec3 sunlit, int classic);
+vec3 waterLitAmbient(vec3 pos, vec3 ambient, int classic);
 void calcAtmosphericVarsLinear(vec3 inPositionEye, vec3 norm, vec3 light_dir, out vec3 sunlit, out vec3 amblit, out vec3 atten, out vec3 additive);
 
 #ifdef HAS_SUN_SHADOW
@@ -283,6 +285,7 @@ void main()
     calcAtmosphericVarsLinear(pos.xyz, norm, light_dir, sunlit, amblit, additive, atten);
     if (classic_mode > 0)
         sunlit *= 1.35;
+    sunlit = waterLitSun(pos.xyz, light_dir, sunlit, classic_mode);
     vec3 sunlit_linear = sunlit;
     vec3 amblit_linear = amblit;
 
@@ -290,6 +293,7 @@ void main()
     vec3 glossenv = vec3(0.0);
     vec3 legacyenv = vec3(0.0);
     sampleReflectionProbesLegacy(irradiance, glossenv, legacyenv, frag, pos.xyz, norm.xyz, 0.0, 0.0, true, amblit_linear);
+        irradiance = waterLitAmbient(pos.xyz, irradiance, classic_mode);
 
 
     float da = dot(norm.xyz, light_dir.xyz);

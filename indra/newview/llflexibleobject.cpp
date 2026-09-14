@@ -94,6 +94,13 @@ void LLVolumeImplFlexible::updateClass()
 {
     LL_PROFILE_ZONE_SCOPED;
 
+    static LLCachedControl<bool> photo_freeze(gSavedSettings, "PhotoFreezeVisuals", false);
+    if (photo_freeze)
+    {
+        for (auto* object : sInstanceList) object->mTimer.reset();
+        return;
+    }
+
     U64 virtual_frame_num = (U64)(LLTimer::getElapsedSeconds() / SEC_PER_FLEXI_FRAME);
     for (std::vector<LLVolumeImplFlexible*>::iterator iter = sInstanceList.begin();
             iter != sInstanceList.end();
@@ -428,6 +435,12 @@ inline S32 log2(S32 x)
 
 void LLVolumeImplFlexible::doFlexibleUpdate()
 {
+    static LLCachedControl<bool> photo_freeze(gSavedSettings, "PhotoFreezeVisuals", false);
+    if (photo_freeze)
+    {
+        mTimer.reset();
+        return;
+    }
     LL_PROFILE_ZONE_SCOPED;
     LLVolume* volume = mVO->getVolume();
     LLPath *path = &volume->getPath();

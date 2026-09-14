@@ -42,13 +42,19 @@ ordinary transparent phantom prim.
 ## Graphics preferences
 
 Open **Preferences > Graphics > Volumetric Fog**. Changes apply immediately;
-Cancel restores the values from when Preferences opened, and the five controls
+Cancel restores the values from when Preferences opened, and the six controls
 participate in graphics preset saving and hardware-default reset.
 
 - **Enable volumetric fog** turns the entire effect on/off.
 - **Global intensity** multiplies every box's authored density, from 0 to 2.
   One preserves authored density. Zero skips fog rendering and releases its
   targets. It does not alter descriptions or independently brighten lights.
+- **Light effect** multiplies direct-light scattering from 0 to 8, independently
+  of density and ambient illumination. One preserves the original appearance;
+  raise it to show stronger spotlight beams in subtle fog. It affects point
+  lights, projectors and sun/moon, without changing surface lighting or adding
+  rendering samples. Zero leaves the ambient fog contribution. This exposes
+  the existing `RenderVolumeFogLightStrength` setting.
 - **Quality** controls spatial resolution and light integration sampling.
 - **Maximum local lights** limits point lights/projectors to 0–8. Sun/moon and
   ambient illumination remain available even at zero.
@@ -220,7 +226,7 @@ projector clipping/alpha/focus, all six shadow slots, shadow fades, disabled
 shadows, cascade overlap, out-of-map coordinates and comparison-before-filtering.
 The lit suite has 88 checks, including the global intensity and thin-beam checks
 at all quality settings; the unlit suite has 46; the parser has 26. The settings
-test checks the five UI bindings and four quality choices. Fourteen composite
+test checks the six UI bindings and four quality choices. Fourteen composite
 GPU checks cover depth edges, thin occluders, sky, odd dimensions, a one-pixel
 target, full-resolution scene/glow preservation and HDR limits. All pass.
 The Release build, source/staged resource hashes and startup validation of the
@@ -229,7 +235,8 @@ The Release build, source/staged resource hashes and startup validation of the
 `scripts/tests/test_volume_fog_preferences.py` runs through the viewer's `--leap`
 API with separate smoke-test settings. It exercises the live controls, enable
 dependencies, quality choices and Cancel restore, and saves a tab screenshot.
-The live UI run passed and exited normally. To run it on Windows, use separate
+The live UI run passed, including independent light-effect/density adjustment,
+enable dependencies and Cancel restoration, and exited normally. To run it on Windows, use separate
 settings and two LEAP arguments (the no-op avoids the command-line parser's
 single-LLSD-value conversion):
 

@@ -56,12 +56,19 @@ void LLDrawPoolWaterExclusion::render(S32 pass)
     LLDrawPoolWater* pwaterpool = (LLDrawPoolWater*)gPipeline.getPool(LLDrawPool::POOL_WATER);
     if (pwaterpool)
     {
+        // Use exactly the same displaced surface/depth as the visible pass.
+        // Flat mask geometry would misclassify exclusions around wave crests.
+        gWaterDisplacementMaskProgram.bind();
+        LLDrawPoolWater::bindWaveField(gWaterDisplacementMaskProgram);
+        gWaterDisplacementMaskProgram.uniform4f(LLShaderMgr::DIFFUSE_COLOR, 1, 1, 1, 1);
         // Just treat our water planes as double sided for the purposes of generating the exclusion mask.
         LLGLDisable cullface(GL_CULL_FACE);
+        // The pool now draws region and edge tiles together in one pass.
         pwaterpool->pushWaterPlanes(0);
-
-        // Take care of the edge water tiles.
-        pwaterpool->pushWaterPlanes(1);
+        gWaterDisplacementMaskProgram.unbindTexture(LLShaderMgr::WATER_WAVE_HEIGHTS);
+        gWaterDisplacementMaskProgram.unbindTexture(LLShaderMgr::WATER_GEOMETRY_DEPTH);
+        gWaterDisplacementMaskProgram.unbind();
+        gDrawColorProgram.bind();
     }
 
     gDrawColorProgram.uniform4f(LLShaderMgr::DIFFUSE_COLOR, 0, 0, 0, 1);

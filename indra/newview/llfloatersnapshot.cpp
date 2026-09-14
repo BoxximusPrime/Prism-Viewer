@@ -40,8 +40,16 @@
 #include "llspinctrl.h"
 #include "llviewercontrol.h"
 #include "lltoolfocus.h"
+#include "lltool.h"
+#include "llkeyboard.h"
+#include "llvovolume.h"
+#include "llviewerobjectlist.h"
 #include "lltoolmgr.h"
 #include "llwebprofile.h"
+#include "llagentcamera.h"
+#include "llviewercamera.h"
+#include "llmoveview.h"
+#include "pipeline.h"
 
 ///----------------------------------------------------------------------------
 /// Local function declarations, constants, enums, and typedefs
@@ -188,7 +196,7 @@ void LLFloaterSnapshotBase::ImplBase::updateLayout(LLFloaterSnapshotBase* floate
     {
         floaterp->getChild<LLUICtrl>("360_label")->setVisible(mAdvanced);
     }
-    if (!mSkipReshaping)
+    if (!mSkipReshaping && !floaterp->hasChild("photo_tabs", true))
     {
         thumbnail_placeholder->reshape((S32)panel_width, thumbnail_placeholder->getRect().getHeight());
         if (!floaterp->isMinimized())
@@ -1003,6 +1011,115 @@ LLFloaterSnapshot::~LLFloaterSnapshot()
 // virtual
 bool LLFloaterSnapshot::postBuild()
 {
+    if (hasChild("photo_tabs", true))
+    {
+        gSavedSettings.getControl("PhotoFreezeVisuals")->getSignal()->connect([](LLControlVariable*, const LLSD& value, const LLSD&) {
+            if (!value.asBoolean())
+                for (S32 i = 0; i < gObjectList.getNumObjects(); ++i)
+                    if (auto* volume = dynamic_cast<LLVOVolume*>(gObjectList.getObject(i)))
+                        volume->resumePhotoAppearance();
+        });
+        getChild<LLButton>("photo_pick_focus")->setCommitCallback([this](LLUICtrl*, const LLSD&) {
+            mPhotoPickFocus = !mPhotoPickFocus;
+            getChild<LLButton>("photo_pick_focus")->setToggleState(mPhotoPickFocus);
+        });
+        getChild<LLButton>("photo_lock_focus")->setCommitCallback([this](LLUICtrl*, const LLSD&) {
+            mPhotoLockFocus = !mPhotoLockFocus;
+            if (mPhotoLockFocus)
+            {
+                if (mPhotoFocusPoint.isExactlyZero())
+                    mPhotoFocusPoint = gAgentCamera.getFocusTargetGlobal();
+                gAgentCamera.setFocusOnAvatar(false, false);
+                gAgentCamera.setFocusGlobal(mPhotoFocusPoint);
+            }
+            getChild<LLButton>("photo_lock_focus")->setToggleState(mPhotoLockFocus);
+        });
+        getChild<LLUICtrl>("photo_focus_distance")->setCommitCallback([this](LLUICtrl* ctrl, const LLSD&) {
+            mPhotoManualFocus = true;
+            mPhotoFocusDistance = (F32)ctrl->getValue().asReal();
+            if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+        });
+        getChild<LLButton>("photo_fov_reset")->setCommitCallback([this](LLUICtrl*, const LLSD&) {
+            gSavedSettings.getControl("CameraAngle")->resetToDefault(true);
+            if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+        });
+        for (const auto& reset : {std::pair{"photo_dutch_reset", "photo_dutch"},
+                                  std::pair{"photo_yaw_reset", "photo_yaw"},
+                                  std::pair{"photo_pitch_reset", "photo_pitch"}})
+        {
+            getChild<LLButton>(reset.first)->setCommitCallback([this, control = reset.second](LLUICtrl*, const LLSD&) {
+                getChild<LLUICtrl>(control)->setValue(0.f);
+                if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+            });
+        }
+        getChild<LLButton>("photo_grade_reset")->setCommitCallback([this](LLUICtrl*, const LLSD&) {
+            for (const char* name : {"PhotoGradeContrast", "PhotoGradeSaturation", "PhotoGradeWarmth",
+                                    "PhotoGradeTint", "PhotoGradeLift", "PhotoGradeGamma", "PhotoGradeGain"})
+                gSavedSettings.getControl(name)->resetToDefault(true);
+            if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+        });
+        getChild<LLSideTrayPanelContainer>("panel_container")->selectTabByName("panel_snapshot_local");
+        getChild<LLUICtrl>("photo_show_ui")->setCommitCallback([](LLUICtrl* ctrl, const LLSD&) {
+            const bool visible = ctrl->getValue().asBoolean();
+            gViewerWindow->setUIVisibility(visible);
+            LLPanelStandStopFlying::getInstance()->setVisible(visible);
+            gSavedSettings.setBOOL("HideUIControls", !visible);
+        });
+        getChild<LLUICtrl>("photo_show_huds")->setCommitCallback([](LLUICtrl* ctrl, const LLSD&) {
+            LLPipeline::sShowHUDAttachments = ctrl->getValue().asBoolean();
+        });
+        const std::pair<const char*, std::function<void()>> camera_actions[] = {
+            {"photo_orbit_left", [] { gAgentCamera.cameraOrbitAround(0.08f); }},
+            {"photo_orbit_right", [] { gAgentCamera.cameraOrbitAround(-0.08f); }},
+            {"photo_orbit_up", [] { gAgentCamera.cameraOrbitOver(0.08f); }},
+            {"photo_orbit_down", [] { gAgentCamera.cameraOrbitOver(-0.08f); }},
+            {"photo_pan_left", [] { gAgentCamera.cameraPanLeft(0.25f); }},
+            {"photo_pan_right", [] { gAgentCamera.cameraPanLeft(-0.25f); }},
+            {"photo_pan_up", [] { gAgentCamera.cameraPanUp(0.25f); }},
+            {"photo_pan_down", [] { gAgentCamera.cameraPanUp(-0.25f); }},
+            {"photo_dolly_in", [] { gAgentCamera.cameraOrbitIn(0.5f); }},
+            {"photo_dolly_out", [] { gAgentCamera.cameraOrbitIn(-0.5f); }}
+        };
+        for (const auto& action : camera_actions)
+        {
+            auto move = [this, callback = action.second](LLUICtrl*, const LLSD&) {
+                gAgentCamera.setFocusOnAvatar(false, false);
+                callback();
+                if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+            };
+            getChild<LLButton>(action.first)->setCommitCallback(move);
+            getChild<LLButton>(action.first)->setHeldDownCallback(move);
+        }
+        getChild<LLButton>("photo_camera_reset")->setCommitCallback([this](LLUICtrl*, const LLSD&) {
+            for (const char* name : {"photo_dutch", "photo_yaw", "photo_pitch"})
+                getChild<LLUICtrl>(name)->setValue(0.f);
+            gAgentCamera.resetView(true, true);
+            gSavedSettings.getControl("CameraAngle")->resetToDefault(true);
+            if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+        });
+        getChild<LLUICtrl>("photo_fov")->setCommitCallback([this](LLUICtrl* ctrl, const LLSD&) {
+            gSavedSettings.setF32("CameraAngle", (F32)ctrl->getValue().asReal() * DEG_TO_RAD);
+            if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+        });
+        for (const char* name : {"photo_dof", "photo_aperture", "photo_focus_speed",
+                                "photo_exposure", "photo_tonemap", "photo_glow",
+                                "photo_sunrise", "photo_noon", "photo_sunset", "photo_midnight",
+                                "photo_shared", "photo_clouds", "photo_freeze_visuals",
+                                "photo_dutch", "photo_yaw", "photo_pitch", "photo_grade_enabled",
+                                "photo_grade_contrast", "photo_grade_saturation", "photo_grade_warmth",
+                                "photo_grade_tint", "photo_grade_lift", "photo_grade_gamma", "photo_grade_gain"})
+        {
+            getChild<LLUICtrl>(name)->setCommitCallback([this](LLUICtrl*, const LLSD&) {
+                if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+            });
+        }
+        getChild<LLButton>("photo_destinations")->setCommitCallback([this](LLUICtrl*, const LLSD&) {
+            auto* panels = getChild<LLSideTrayPanelContainer>("panel_container");
+            panels->openPanel("panel_snapshot_options");
+            panels->getCurrentPanel()->onOpen(LLSD());
+            postPanelSwitch();
+        });
+    }
     mRefreshBtn = getChild<LLUICtrl>("new_snapshot_btn");
     childSetAction("new_snapshot_btn", ImplBase::onClickNewSnapshot, this);
     mRefreshLabel = getChild<LLUICtrl>("refresh_lbl");
@@ -1020,7 +1137,7 @@ bool LLFloaterSnapshot::postBuild()
     getChildView("layer_types")->setEnabled(false);
 
     mFreezeFrameCheck = getChild<LLUICtrl>("freeze_frame_check");
-    mFreezeFrameCheck->setValue(gSavedSettings.getBOOL("UseFreezeFrame"));
+    mFreezeFrameCheck->setValue(!hasChild("photo_tabs", true) && gSavedSettings.getBOOL("UseFreezeFrame"));
     mFreezeFrameCheck->setCommitCallback(&ImplBase::onCommitFreezeFrame, this);
 
     getChild<LLUICtrl>("auto_snapshot_check")->setValue(gSavedSettings.getBOOL("AutoSnapshot"));
@@ -1076,7 +1193,7 @@ bool LLFloaterSnapshot::postBuild()
     impl->mPreviewHandle = previewp->getHandle();
     previewp->setContainer(this);
     impl->updateControls(this);
-    impl->setAdvanced(gSavedSettings.getBOOL("AdvanceSnapshot"));
+    impl->setAdvanced(hasChild("photo_tabs", true) || gSavedSettings.getBOOL("AdvanceSnapshot"));
     impl->updateLayout(this);
 
 
@@ -1096,6 +1213,32 @@ void LLFloaterSnapshotBase::draw()
         return;
     }
 
+    // Minimizing reshapes followed children to the title-bar dimensions. Keep
+    // the last usable preview geometry until restored; never render that size.
+    if (isMinimized())
+    {
+        LLFloater::draw();
+        return;
+    }
+
+    if (hasChild("photo_tabs", true))
+    {
+        getChild<LLUICtrl>("photo_show_ui")->setValue(gViewerWindow->getUIVisibility());
+        getChild<LLUICtrl>("photo_show_huds")->setValue(LLPipeline::sShowHUDAttachments);
+        LLFloaterSnapshot::photoFocusDistance(LLViewerCamera::getInstance()->getAtAxis() *
+            (gAgent.getPosAgentFromGlobal(gAgentCamera.getFocusGlobal()) - LLViewerCamera::getInstance()->getOrigin()));
+        auto* fov = getChild<LLUICtrl>("photo_fov");
+        if (!fov->hasFocus())
+            fov->setValue(LLViewerCamera::getInstance()->getDefaultFOV() * RAD_TO_DEG);
+        if (previewp && (getThumbnailPlaceholderRect().getWidth() != mPhotoPreviewWidth ||
+                         getThumbnailPlaceholderRect().getHeight() != mPhotoPreviewHeight))
+        {
+            mPhotoPreviewWidth = getThumbnailPlaceholderRect().getWidth();
+            mPhotoPreviewHeight = getThumbnailPlaceholderRect().getHeight();
+            previewp->setThumbnailPlaceholderRect(getThumbnailPlaceholderRect());
+            previewp->updateSnapshot(false, true);
+        }
+    }
     LLFloater::draw();
 
     if (previewp && !isMinimized() && mThumbnailPlaceholder->getVisible())
@@ -1141,7 +1284,8 @@ void LLFloaterSnapshot::onOpen(const LLSD& key)
     if(preview)
     {
         LL_DEBUGS() << "opened, updating snapshot" << LL_ENDL;
-        preview->setAllowFullScreenPreview(true);
+        if (hasChild("photo_tabs", true)) preview->setFilter("");
+        preview->setAllowFullScreenPreview(!hasChild("photo_tabs", true));
         preview->updateSnapshot(true);
     }
     focusFirstItem(false);
@@ -1150,7 +1294,7 @@ void LLFloaterSnapshot::onOpen(const LLSD& key)
     gSnapshotFloaterView->adjustToFitScreen(this, false);
 
     impl->updateControls(this);
-    impl->setAdvanced(gSavedSettings.getBOOL("AdvanceSnapshot"));
+    impl->setAdvanced(hasChild("photo_tabs", true) || gSavedSettings.getBOOL("AdvanceSnapshot"));
     impl->updateLayout(this);
 
     // Initialize default tab.
@@ -1171,6 +1315,8 @@ void LLFloaterSnapshot::on360Snapshot()
 //virtual
 void LLFloaterSnapshotBase::onClose(bool app_quitting)
 {
+    if (hasChild("photo_tabs", true))
+        gSavedSettings.setBOOL("PhotoFreezeVisuals", false);
     getParent()->setMouseOpaque(false);
 
     //unfreeze everything, hide fullscreen preview
@@ -1360,7 +1506,11 @@ void LLFloaterSnapshot::saveLocal(const snapshot_saved_signal_t::slot_type& succ
     llassert(previewp != NULL);
     if (previewp)
     {
-        previewp->saveLocal(success_cb, failure_cb);
+        previewp->updateSnapshot(true, true, 0.f);
+        LLSnapshotLivePreview::onIdle(previewp);
+        if (previewp->getSnapshotUpToDate())
+            previewp->saveLocal(success_cb, failure_cb);
+        else failure_cb();
     }
 }
 
@@ -1510,4 +1660,134 @@ bool LLSnapshotFloaterView::handleHover(S32 x, S32 y, MASK mask)
         LLToolMgr::getInstance()->getCurrentTool()->handleHover( x, y, mask );
     }
     return true;
+}
+
+namespace
+{
+// Capture only a world drag; normal floater controls retain first refusal.
+class LLPhotoOrbitTool final : public LLTool
+{
+public:
+    LLPhotoOrbitTool() : LLTool("Photo orbit") {}
+    S32 mX = 0, mY = 0;
+    bool handleMouseDown(S32 x, S32 y, MASK) override
+    {
+        mX = x; mY = y;
+        gFocusMgr.setKeyboardFocus(nullptr);
+        if (auto* photo = LLFloaterSnapshot::findInstance(); photo && photo->mPhotoLockFocus)
+        {
+            gAgentCamera.setFocusOnAvatar(false, false);
+            gAgentCamera.setFocusGlobal(photo->mPhotoFocusPoint);
+        }
+        setMouseCapture(true);
+        return true;
+    }
+    bool handleMouseUp(S32, S32, MASK) override
+    {
+        setMouseCapture(false);
+        return true;
+    }
+    bool handleHover(S32 x, S32 y, MASK) override
+    {
+        auto* photo = LLFloaterSnapshot::findInstance();
+        if (!LLFloaterSnapshot::photoActive())
+        {
+            setMouseCapture(false);
+            return true;
+        }
+        if (!photo->mPhotoLockFocus) return true;
+        gAgentCamera.cameraOrbitAround((mX - x) * 0.002f);
+        gAgentCamera.cameraOrbitOver((mY - y) * 0.002f);
+        mX = x; mY = y;
+        return true;
+    }
+};
+LLPhotoOrbitTool sPhotoOrbit;
+}
+
+bool LLFloaterSnapshot::photoActive()
+{
+    auto* photo = findInstance();
+    return photo && photo->getVisible() && photo->hasChild("photo_tabs", true);
+}
+
+bool LLFloaterSnapshot::photoWorldClick(S32 x, S32 y, MASK mask)
+{
+    if (!photoActive() || mask != MASK_NONE || gDisconnected) return false;
+    auto* photo = findInstance();
+    if (photo->mPhotoPickFocus)
+    {
+        const LLPickInfo pick = gViewerWindow->pickImmediate(x, y, false, true);
+        if (pick.isValid() && !pick.mPosGlobal.isExactlyZero())
+        {
+            photo->mPhotoFocusPoint = pick.mPosGlobal;
+            // Picking the lens focus must not reframe the photograph.
+            photo->mPhotoManualFocus = false;
+            photo->mPhotoPickFocus = false;
+            photo->getChild<LLButton>("photo_pick_focus")->setToggleState(false);
+            if (auto* preview = photo->getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+        }
+        // Consume the matching release too, so picking never clicks the subject.
+        sPhotoOrbit.handleMouseDown(x, y, mask);
+        return true;
+    }
+    if (photo->mPhotoLockFocus) return sPhotoOrbit.handleMouseDown(x, y, mask);
+    return false;
+}
+
+bool LLFloaterSnapshot::photoKey(KEY key, MASK mask)
+{
+    if (!photoActive() || mask != MASK_NONE || key != 'F') return false;
+    auto* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
+    if (focus && focus->acceptsTextInput()) return false;
+    if (!gKeyboard->getKeyRepeated(key))
+        gSavedSettings.setBOOL("PhotoFreezeVisuals", !gSavedSettings.getBOOL("PhotoFreezeVisuals"));
+    return true;
+}
+
+void LLFloaterSnapshot::photoCamera(LLVector3& position, LLVector3& up, LLVector3& focus)
+{
+    if (!photoActive()) return;
+    auto* photo = findInstance();
+    LLVector3 direction = focus - position;
+    const F32 distance = direction.normalize();
+    if (distance < 0.001f) return;
+    const F32 yaw = (F32)photo->getChild<LLUICtrl>("photo_yaw")->getValue().asReal() * DEG_TO_RAD;
+    const F32 pitch = (F32)photo->getChild<LLUICtrl>("photo_pitch")->getValue().asReal() * DEG_TO_RAD;
+    const F32 dutch = (F32)photo->getChild<LLUICtrl>("photo_dutch")->getValue().asReal() * DEG_TO_RAD;
+    direction = direction * LLQuaternion(yaw, up);
+    LLVector3 left = up % direction;
+    left.normalize();
+    const LLQuaternion tilt(pitch, left);
+    direction = direction * tilt;
+    up = up * tilt;
+    up = up * LLQuaternion(dutch, direction);
+    focus = position + direction * distance;
+}
+
+F32 LLFloaterSnapshot::photoFocusDistance(F32 automatic_distance)
+{
+    if (!photoActive()) return automatic_distance;
+    auto* photo = findInstance();
+    if (photo->mPhotoManualFocus) return photo->mPhotoFocusDistance;
+    if (!photo->mPhotoFocusPoint.isExactlyZero())
+        automatic_distance = LLViewerCamera::getInstance()->getAtAxis() *
+            (gAgent.getPosAgentFromGlobal(photo->mPhotoFocusPoint) - LLViewerCamera::getInstance()->getOrigin());
+    photo->mPhotoFocusDistance = llmax(0.01f, automatic_distance);
+    auto* control = photo->getChild<LLUICtrl>("photo_focus_distance");
+    if (!control->hasFocus()) control->setValue(photo->mPhotoFocusDistance);
+    return photo->mPhotoFocusDistance;
+}
+
+void LLFloaterSnapshot::onClose(bool app_quitting)
+{
+    mPhotoPickFocus = mPhotoLockFocus = mPhotoManualFocus = false;
+    mPhotoFocusPoint.clear();
+    sPhotoOrbit.setMouseCapture(false);
+    getChild<LLButton>("photo_pick_focus")->setToggleState(false);
+    getChild<LLButton>("photo_lock_focus")->setToggleState(false);
+    for (const char* name : {"photo_dutch", "photo_yaw", "photo_pitch"})
+        getChild<LLUICtrl>(name)->setValue(0.f);
+    gSavedSettings.getControl("CameraAngle")->resetToDefault(true);
+    LLFloaterSnapshotBase::onClose(app_quitting);
 }

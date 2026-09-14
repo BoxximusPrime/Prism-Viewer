@@ -26,6 +26,7 @@
 
 #include "llviewerprecompiledheaders.h"
 #include "llagentcamera.h"
+#include "llfloatersnapshot.h"
 
 #include "pipeline.h"
 
@@ -1471,6 +1472,8 @@ void LLAgentCamera::updateCamera()
 
     LLVector3 focus_agent = gAgent.getPosAgentFromGlobal(mFocusGlobal);
     LLVector3 position_agent = gAgent.getPosAgentFromGlobal(camera_pos_global);
+
+    LLFloaterSnapshot::photoCamera(position_agent, mCameraUpVector, focus_agent);
 
     // Try to move the camera
 

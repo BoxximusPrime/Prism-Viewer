@@ -76,6 +76,69 @@
     <key>Value</key>
     <integer>0</integer>
   </map>
+  <key>PhotoGradeEnabled</key>
+  <map>
+    <key>Comment</key><string>Enable final scene color grading. Does not alter exposure metering.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>PhotoGradeContrast</key>
+  <map>
+    <key>Comment</key><string>Final scene contrast around display mid-grey.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>PhotoGradeSaturation</key>
+  <map>
+    <key>Comment</key><string>Final scene color saturation.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>PhotoGradeWarmth</key>
+  <map>
+    <key>Comment</key><string>Final scene warm/cool color balance.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0</real>
+  </map>
+  <key>PhotoGradeTint</key>
+  <map>
+    <key>Comment</key><string>Final scene green/magenta color balance.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0</real>
+  </map>
+  <key>PhotoGradeLift</key>
+  <map>
+    <key>Comment</key><string>Final scene shadow lift.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0</real>
+  </map>
+  <key>PhotoGradeGamma</key>
+  <map>
+    <key>Comment</key><string>Final scene midtone gamma.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>PhotoGradeGain</key>
+  <map>
+    <key>Comment</key><string>Final scene highlight gain.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>PhotoFreezeVisuals</key>
+  <map>
+    <key>Comment</key><string>Hold avatar animations, animated textures, particles and flexible objects for photography. Camera and network updates remain live.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
   <key>BoxxyFreezeAvatarAnimations</key>
   <map>
     <key>Comment</key>
@@ -8175,7 +8238,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>2.0</real>
+    <real>1.3</real>
   </map>
   <key>RenderShadowSlopeThreshold</key>
   <map>
@@ -9515,7 +9578,7 @@
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>1.3</real>
+    <real>2.0</real>
     </map>
     <key>RenderGlowNoise</key>
     <map>
@@ -9957,6 +10020,83 @@
     <string>U32</string>
     <key>Value</key>
     <integer>128</integer>
+  </map>
+  <key>RenderEyeAdaptationEnabled</key>
+  <map>
+    <key>Comment</key>
+    <string>Enable advanced eye adaptation, independently of sky HDR scale and legacy exposure controls.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
+  <key>RenderEyeAdaptationMaxBoost</key>
+  <map>
+    <key>Comment</key>
+    <string>Maximum automatic brightening in exposure stops (0-4). 1 stop = 2x, 2 stops = 4x.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>1.3</real>
+  </map>
+  <key>RenderEyeAdaptationMaxDarken</key>
+  <map>
+    <key>Comment</key>
+    <string>Maximum automatic darkening in exposure stops (0-4). 2 stops permits 0.25x exposure.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>2.7</real>
+  </map>
+  <key>RenderEyeAdaptationCompensation</key>
+  <map>
+    <key>Comment</key>
+    <string>Eye adaptation target brightness adjustment in exposure stops (-2 to 2), within the automatic limits.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>-0.05</real>
+  </map>
+  <key>RenderEyeAdaptationHighlights</key>
+  <map>
+    <key>Comment</key>
+    <string>Bright-region weighting in eye adaptation (0-1). Higher values protect highlights by reducing exposure.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>0.65</real>
+  </map>
+  <key>RenderEyeAdaptationDarkTime</key>
+  <map>
+    <key>Comment</key>
+    <string>Seconds to complete 90 percent of adaptation when entering darkness (0.05-10).</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>2.0</real>
+  </map>
+  <key>RenderEyeAdaptationLightTime</key>
+  <map>
+    <key>Comment</key>
+    <string>Seconds to complete 90 percent of adaptation when entering bright light (0.05-10).</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>0.6</real>
   </map>
   <key>RenderExposure</key>
   <map>
@@ -10768,6 +10908,164 @@
       <string>Boolean</string>
       <key>Value</key>
       <integer>1</integer>
+    </map>
+    <key>RenderWaterProceduralWaves</key>
+    <map>
+      <key>Comment</key><string>Generate evolving swell and chop. Disable to compare with the previous scrolling normal-map water.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+  <key>RenderWaterWaveStrength</key>
+    <map>
+      <key>Comment</key><string>Procedural water slope strength (0-3). Does not change wave speeds or fine normal-map detail.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.2</real>
+    </map>
+  <key>RenderWaterCrossSwellStrength</key>
+    <map>
+      <key>Comment</key><string>Secondary crossing swell strength (0-3). Zero leaves only the dominant swell and wind chop.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>1.2</real>
+    </map>
+  <key>RenderWaterWaveScale</key>
+    <map>
+      <key>Comment</key><string>Water wavelength multiplier (0.01-2). Scales wave domains and travel speeds while preserving slope strength. 1 uses the current swell and chop sizes.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.08</real>
+    </map>
+    <key>RenderWaterDisplacementEnabled</key>
+    <map>
+      <key>Comment</key><string>Enable experimental geometric waves without changing the selected height. Disabling uses the inexpensive flat water mesh.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><boolean>true</boolean>
+    </map>
+    <key>RenderWaterDisplacementDistance</key>
+    <map>
+      <key>Comment</key><string>Detailed wave surface radius in metres (8-128). Displacement fades across the outer 35 percent. Larger distances increase geometry and GPU cost.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>64.0</real>
+    </map>
+  <key>RenderWaterWindSpeed</key>
+    <map>
+      <key>Comment</key><string>Wave animation speed multiplier (0-3). Zero pauses waves and fine ripples; one follows the environment speed. Changing speed preserves wave phase.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.95</real>
+    </map>
+    <key>RenderWaterShallowDamping</key>
+    <map>
+      <key>Comment</key><string>Shallow-water displacement damping (0-1). Zero preserves wave height; one flattens waves at the bank and restores full height by 1.5 m depth. Uses visible opaque terrain and mesh depth.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>1.0</real>
+    </map>
+  <key>RenderWaterDisplacement</key>
+    <map>
+      <key>Comment</key><string>Experimental geometric wave-height multiplier (0-5). Zero keeps the surface flat. Uses the same evolving waves, size and strength as surface lighting; does not change the simulator water level.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>5.0</real>
+    </map>
+    <key>RenderWaterReflectionStrength</key>
+    <map>
+      <key>Comment</key><string>Water surface reflection and sun-glint multiplier (0-1). 1 uses normal water reflectance.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>1.0</real>
+    </map>
+  <key>RenderWaterRoughnessScale</key>
+    <map>
+      <key>Comment</key><string>Water surface roughness adjustment (0-3). Below 1 sharpens the environment preset; 1 preserves it; above 1 blends toward full roughness at 3.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.0</real>
+    </map>
+    <key>RenderWaterDensityScale</key>
+    <map>
+      <key>Comment</key><string>Water absorption/scattering density multiplier (0-4) relative to the environment preset.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>1.2</real>
+    </map>
+    <key>RenderWaterSunScatteringScale</key>
+    <map>
+      <key>Comment</key><string>Sun/moon light strength inside the water (0-3). Surface glints use reflection strength.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>1.0</real>
+    </map>
+  <key>RenderWaterSkyScatteringScale</key>
+    <map>
+      <key>Comment</key><string>Ambient sky light strength inside the water (0-3).</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.95</real>
+    </map>
+    <key>RenderWaterLocalReflections</key>
+    <map>
+      <key>Comment</key>
+      <string>Reflect nearby visible land and objects on transparent water. Uses a bounded current-frame screen trace independently of general screen-space reflections.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
+    <key>RenderWaterRefractionStrength</key>
+    <map>
+      <key>Comment</key><string>Strength of depth-aware wave refraction (0-2). Zero disables distortion.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>2.0</real>
+    </map>
+  <key>RenderWaterCausticsStrength</key>
+    <map>
+      <key>Comment</key><string>Sun/moon caustic concentration on submerged surfaces (0-3). Driven by the evolving wave slopes; zero disables caustics.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>2.05</real>
+    </map>
+    <key>RenderWaterClarity</key>
+    <map>
+      <key>Comment</key><string>Water visibility-distance multiplier (0.25-8). 1 preserves the environment and density settings; 2 allows twice the viewing distance.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.45</real>
+    </map>
+    <key>RenderWaterSubmergedLighting</key>
+    <map>
+      <key>Comment</key><string>Attenuate sun and sky illumination before it reaches submerged terrain and objects.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>RenderWaterCustomColors</key>
+    <map>
+      <key>Comment</key><string>Use separate local transmission and scattering tints instead of the environment water colour.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>0</integer>
+    </map>
+    <key>RenderWaterAbsorptionColor</key>
+    <map>
+      <key>Comment</key><string>Transmission tint in sRGB. Channels closer to the strongest channel survive farther into the water.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Color4</string>
+      <key>Value</key><array><real>0.0156</real><real>0.149</real><real>0.2509</real><real>1</real></array>
+    </map>
+    <key>RenderWaterScatteringColor</key>
+    <map>
+      <key>Comment</key><string>Colour of sun and sky light scattered inside the water, in sRGB.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Color4</string>
+      <key>Value</key><array><real>0.0156</real><real>0.149</real><real>0.2509</real><real>1</real></array>
     </map>
     <key>RenderWaterRefResolution</key>
     <map>

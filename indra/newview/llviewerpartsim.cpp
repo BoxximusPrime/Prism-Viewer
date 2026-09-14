@@ -664,6 +664,21 @@ void LLViewerPartSim::updateSimulation()
 
     const F32 dt = llmin(update_timer.getElapsedTimeAndResetF32(), 0.1f);
 
+    // Keep consuming wall time while frozen so resuming cannot age or burst
+    // particles for the time spent composing the photograph.
+    static LLCachedControl<bool> photo_freeze(gSavedSettings, "PhotoFreezeVisuals", false);
+    if (photo_freeze)
+    {
+        // Particle quads still need camera-facing geometry when orbiting.
+        for (auto* group : mViewerPartGroups)
+        {
+            LLViewerObject* object = group->mVOPartGroupp;
+            if (object && !object->isDead() && object->mDrawable)
+                gPipeline.markRebuild(object->mDrawable, LLDrawable::REBUILD_ALL);
+        }
+        return;
+    }
+
     if (!(gPipeline.hasRenderType(LLPipeline::RENDER_TYPE_PARTICLES)))
     {
         return;

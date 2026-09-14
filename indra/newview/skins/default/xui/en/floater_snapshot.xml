@@ -1,468 +1,201 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<floater
- positioning="cascading"
- legacy_header_height="18"
- can_minimize="true"
- can_resize="false"
- can_close="true"
- height="475"
- layout="topleft"
- name="Snapshot"
- single_instance="true"
- help_topic="snapshot"
- save_rect="true"
- save_visibility="false"
- title="SNAPSHOT"
- width="624"
- min_height="455">
-    <floater.string
-     name="unknown">
+<?xml version='1.0' encoding='utf-8'?>
+<floater positioning="cascading" legacy_header_height="18" can_minimize="true" can_resize="true" can_close="true" height="600" layout="topleft" name="Snapshot" single_instance="true" help_topic="snapshot" save_rect="true" save_visibility="false" title="PHOTO TOOLS" width="800" min_height="600" min_width="800">
+    <floater.string name="unknown">
         unknown
     </floater.string>
-    <string
-     name="postcard_progress_str">
+    <string name="postcard_progress_str">
         Sending Email
     </string>
-    <string
-        name="profile_progress_str">
+    <string name="profile_progress_str">
         Posting
     </string>
-    <string
-     name="inventory_progress_str">
+    <string name="inventory_progress_str">
         Saving to Inventory
     </string>
-    <string
-     name="local_progress_str">
+    <string name="local_progress_str">
         Saving to Computer
     </string>
- 	<string
-        name="profile_succeeded_str">
+    <string name="profile_succeeded_str">
  	    Image uploaded
  	</string>
- 	<string
- 	 name="postcard_succeeded_str">
+    <string name="postcard_succeeded_str">
  	    Email Sent!
  	</string>
- 	<string
- 	 name="inventory_succeeded_str">
+    <string name="inventory_succeeded_str">
  	    Saved to Inventory!
  	</string>
- 	<string
- 	 name="local_succeeded_str">
+    <string name="local_succeeded_str">
  	    Saved to Computer!
  	</string>
- 	<string
-     name="profile_failed_str">
+    <string name="profile_failed_str">
  	    Failed to upload image to your Profile Feed.
  	</string>
- 	<string
- 	 name="postcard_failed_str">
+    <string name="postcard_failed_str">
  	    Failed to send email.
  	</string>
- 	<string
- 	 name="inventory_failed_str">
+    <string name="inventory_failed_str">
  	    Failed to save to inventory.
  	</string>
- 	<string
- 	 name="local_failed_str">
+    <string name="local_failed_str">
  	    Failed to save to computer.
  	</string>
-    <button
-     follows="left|top"
-     height="25"
-     image_overlay="Refresh_Off"
-	 image_hover_unselected="Toolbar_Middle_Over"
-     image_selected="Toolbar_Middle_Selected"
-     image_unselected="Toolbar_Middle_Off"
-     image_overlay_alignment="left"
-     imgoverlay_label_space="5"
-	 pad_bottom="0"
-	 halign="left"
-     layout="topleft"
-     left="10"
-	 label="REFRESH"
-     name="new_snapshot_btn"
-     top_pad="26"
-     width="167" />
-	<button
-       follows="left|top"
-	   control_name="AdvanceSnapshot"
-	   invisibility_control="AdvanceSnapshot"
-       height="25"
-	   is_toggle="true"
-       layout="topleft"
-	   image_hover_unselected="Toolbar_Middle_Over"
-	   image_selected="Toolbar_Middle_Off"
-	   image_unselected="Toolbar_Middle_Off"
-	   image_overlay="Conv_toolbar_expand"
-       name="retract_btn"
-       left_pad="1"
-	   top_delta="0"
-       width="31" />
-   <button
-       follows="left|top"
-	   control_name="AdvanceSnapshot"
-	   visibility_control="AdvanceSnapshot"
-       height="25"
-	   is_toggle="true"
-       layout="topleft"
-	   image_overlay="Conv_toolbar_collapse"
-	   image_hover_unselected="Toolbar_Middle_Over"
-	   image_selected="Toolbar_Middle_Off"
-	   image_unselected="Toolbar_Middle_Off"
-       name="extend_btn"
-       left_delta="0"
-	   top_delta="0"
-       width="31" />
-	<panel
-     height="179"
-     layout="topleft"
-	 follows="top|left"
-     left="0"
-     name="advanced_options_panel"
-     top_pad="-6"
-     width="210">
-        <view_border 
-         bevel_style="in"
-         follows="left|top|right" 
-         height="1"
-         left="10"
-         layout="topleft"
-         name="advanced_options_hr"
-         right="-1"
-         top_pad="5"
-         />
-        <text
-         type="string"
-         length="1"
-         follows="left|top"
-         height="13"
-         layout="topleft"
-         left="10"
-         name="layer_type_label"
-         top_pad="10"
-         width="100">
+    <button follows="left|top" height="25" image_overlay="Refresh_Off" image_hover_unselected="Toolbar_Middle_Over" image_selected="Toolbar_Middle_Selected" image_unselected="Toolbar_Middle_Off" image_overlay_alignment="left" imgoverlay_label_space="5" pad_bottom="0" halign="left" layout="topleft" left="10" label="Refresh Photo" name="new_snapshot_btn" width="200" top="30" />
+    <button follows="left|top" control_name="AdvanceSnapshot" height="25" is_toggle="true" layout="topleft" image_hover_unselected="Toolbar_Middle_Over" image_selected="Toolbar_Middle_Off" image_unselected="Toolbar_Middle_Off" image_overlay="Conv_toolbar_expand" name="retract_btn" left_pad="1" top_delta="0" width="31" visible="false" />
+    <button follows="left|top" control_name="AdvanceSnapshot" height="25" is_toggle="true" layout="topleft" image_overlay="Conv_toolbar_collapse" image_hover_unselected="Toolbar_Middle_Over" image_selected="Toolbar_Middle_Off" image_unselected="Toolbar_Middle_Off" name="extend_btn" left_delta="0" top_delta="0" width="31" visible="false" />
+    <panel height="195" layout="topleft" follows="left|top" left="0" name="advanced_options_panel" width="215" top="60">
+        <view_border bevel_style="in" follows="left|top|right" height="1" left="10" layout="topleft" name="advanced_options_hr" right="-1" top_pad="5" />
+        <text type="string" length="1" follows="left|top" height="13" layout="topleft" left="10" name="layer_type_label" width="100" top="10">
             Capture:
         </text>
-        <combo_box
-         follows="left|top|right"
-         height="23"
-         label="Image Layers"
-         layout="topleft"
-         left="30"
-         name="layer_types"
-         right="-2">
-            <combo_box.item
-             label="Colors"
-             name="Colors"
-             value="colors" />
-            <combo_box.item
-             label="Depth"
-             name="Depth"
-             value="depth" />
+        <combo_box follows="left|top|right" height="23" label="Image Layers" layout="topleft" left="30" name="layer_types" right="-2" top="28">
+            <combo_box.item label="Colors" name="Colors" value="colors" />
+            <combo_box.item label="Depth" name="Depth" value="depth" />
         </combo_box>
-        <check_box
-         label="Interface"
-         layout="topleft"
-         left="30"
-		 height="16"
-         top_pad="8"
-         width="80"
-         control_name="RenderUIInSnapshot"
-         name="ui_check" />
-       <check_box
-         label="L$ Balance"
-         layout="topleft"
-         left_pad="16"
-         height="16"
-         top_delta="0"
-         width="80"
-         control_name="RenderBalanceInSnapshot"
-         enabled_control="RenderUIInSnapshot"
-         name="balance_check" />
-        <check_box
-         label="HUDs"
-         layout="topleft"
-		 height="16"
-         left="30"
-         top_pad="1"
-         width="180"
-         control_name="RenderHUDInSnapshot"
-         name="hud_check" />
-        <check_box
-         label="Freeze frame (fullscreen)"
-         layout="topleft"
-		 height="16"
-         left="10"
-         top_pad="1"
-         width="180"
-         name="freeze_frame_check" />
-        <check_box
-         label="Auto-refresh"
-         layout="topleft"
-		 height="16"
-         left="10"
-         top_pad="1"
-         width="180"
-         name="auto_snapshot_check" />
-        <check_box
-         label="No post-processing"
-         layout="topleft"
-         height="16"
-         left="10"
-         top_pad="1"
-         width="180"
-         name="no_post_check" />
-        <text
-         type="string"
-         length="1"
-         follows="left|top"
-         height="13"
-         layout="topleft"
-         left="10"
-         name="filter_list_label"
-         top_pad="10"
-         width="50">
-            Filter:
-        </text>
-        <combo_box
-            follows="left|right|top"
-            name="filters_combobox"
-            tool_tip="Image filters"
-            top_delta="-3"
-            left="50"
-			right="-1"
-            height="21"
-            width="135">
-            <combo_box.item
-            label="No Filter"
-            name="NoFilter"
-            value="NoFilter" />
-        </combo_box>
-		 <view_border 
-         bevel_style="in"
-         follows="left|top|right" 
-         height="1"
-         left="10"
-         layout="topleft"
-         name="advanced_options_hr1"
-         right="-1"
-         top_pad="7"
-         />
+        <check_box label="Interface" layout="topleft" left="10" height="16" width="80" control_name="RenderUIInSnapshot" name="ui_check" top="58" />
+        <check_box label="L$ Balance" layout="topleft" height="16" width="80" control_name="RenderBalanceInSnapshot" enabled_control="RenderUIInSnapshot" name="balance_check" top="58" left="110" />
+        <check_box label="HUDs" layout="topleft" height="16" left="10" width="180" control_name="RenderHUDInSnapshot" name="hud_check" top="78" />
+        <check_box label="Freeze frame (fullscreen)" layout="topleft" height="16" left="10" top_pad="1" width="180" name="freeze_frame_check" visible="false" />
+        <check_box label="Auto-refresh" layout="topleft" height="16" left="10" width="180" name="auto_snapshot_check" top="98" />
+        <view_border bevel_style="in" follows="left|top|right" height="1" left="10" layout="topleft" name="advanced_options_hr1" right="-1" top="187" />
+        <check_box name="photo_freeze_visuals" label="Freeze visual effects (F)" top="122" left="10" width="200" height="18" layout="topleft" follows="left|top" tool_tip="Hold avatar animations, animated textures, scripted prim alpha/textures, particles and flexible objects. Press F while Photo Tools is open. Move the camera freely; incoming world updates continue. Closing Photo Tools or teleporting resumes effects." control_name="PhotoFreezeVisuals" />
+        <check_box name="photo_show_ui" label="Show UI (Ctrl+Shift+U)" top="144" left="10" width="200" height="18" layout="topleft" follows="left|top" tool_tip="Show or hide the normal game interface. Ctrl+Shift+U restores it while hidden." />
+        <check_box name="photo_show_huds" label="Show HUDs (Alt+Shift+H)" top="166" left="10" width="200" height="18" layout="topleft" follows="left|top" tool_tip="Show or hide worn HUD attachments in the world view. Alt+Shift+H restores them while hidden." />
     </panel>
-	<panel_container
-     follows="left|top"
-     height="230"
-     layout="topleft"
-     left="0"
-     name="panel_container"
-     default_panel_name="panel_snapshot_options"
-     top_pad="5"
-     width="215">
-      <panel
-       class="llpanelsnapshotoptions"
-       filename="panel_snapshot_options.xml"
-       follows="all"
-       layout="topleft"
-       left="0"
-       name="panel_snapshot_options"
-       top="0" />
-      <panel
-       class="llpanelsnapshotprofile"
-       follows="all"
-       layout="topleft"
-       name="panel_snapshot_profile"
-       filename="panel_snapshot_profile.xml" />
-      <panel
-       class="llpanelsnapshotpostcard"
-       follows="all"
-       layout="topleft"
-       name="panel_snapshot_postcard"
-       filename="panel_snapshot_postcard.xml" />
-      <panel
-       class="llpanelsnapshotinventory"
-       follows="all"
-       layout="topleft"
-       name="panel_snapshot_inventory"
-       filename="panel_snapshot_inventory.xml" />
-      <panel
-       class="llpanelsnapshotlocal"
-       follows="all"
-       layout="topleft"
-       name="panel_snapshot_local"
-       filename="panel_snapshot_local.xml" />
+    <panel_container follows="left|top" height="285" layout="topleft" left="0" name="panel_container" default_panel_name="panel_snapshot_local" width="215" top="260">
+        <panel class="llpanelsnapshotoptions" filename="panel_snapshot_options.xml" follows="all" layout="topleft" left="0" name="panel_snapshot_options" top="0" />
+        <panel class="llpanelsnapshotprofile" follows="all" layout="topleft" name="panel_snapshot_profile" filename="panel_snapshot_profile.xml" />
+        <panel class="llpanelsnapshotpostcard" follows="all" layout="topleft" name="panel_snapshot_postcard" filename="panel_snapshot_postcard.xml" />
+        <panel class="llpanelsnapshotinventory" follows="all" layout="topleft" name="panel_snapshot_inventory" filename="panel_snapshot_inventory.xml" />
+        <panel class="llpanelsnapshotlocal" follows="all" layout="topleft" name="panel_snapshot_local" filename="panel_photo_capture.xml" />
     </panel_container>
-	<view_border 
-         bevel_style="in"
-         follows="left|top" 
-         height="1"
-         left="10"
-         layout="topleft"
-         name="status_hr"
-         width="199"
-         top_pad="-16"/>
-	<panel
-       background_visible="false"
-       follows="left|top"
-       font="SansSerifLarge"
-       halign="center"
-       height="20"
-       layout="topleft"
-       left="10"
-       length="1"
-       name="succeeded_panel"
-	   width="198"
-       top_pad="1"
-       type="string"
-       visible="false">
-          <text
-           follows="all"
-           font="SansSerif"
-           halign="center"
-           height="18"
-           layout="topleft"
-           left="1"
-           length="1"
-           name="succeeded_lbl"
-           right="-1"
-           text_color="0.2 0.85 0.2 1"
-           top="4"
-           translate="false"
-           type="string">
+    <view_border bevel_style="in" follows="left|bottom" height="1" left="10" layout="topleft" name="status_hr" width="200" top="551" />
+    <panel background_visible="false" follows="left|bottom" font="SansSerifLarge" halign="center" height="28" layout="topleft" left="10" length="1" name="succeeded_panel" width="200" type="string" visible="false" top="557">
+        <text follows="all" font="SansSerif" halign="center" height="18" layout="topleft" left="1" length="1" name="succeeded_lbl" right="-1" text_color="0.2 0.85 0.2 1" top="4" translate="false" type="string">
               Succeeded
           </text>
-      </panel>
-      <panel
-       background_visible="false"
-       follows="left|top"
-       font="SansSerifLarge"
-       halign="center"
-       height="20"
-       layout="topleft"
-       left="10"
-       length="1"
-       name="failed_panel"
-	   width="198"
-       top_delta="0"
-       type="string"
-       visible="false">
-          <text
-           follows="all"
-           font="SansSerif"
-           halign="center"
-           height="18"
-           layout="topleft"
-           left="1"
-           length="1"
-           name="failed_lbl"
-           right="-1"
-           text_color="0.95 0.4 0.4 1"
-           top="4"
-           translate="false"
-           type="string">
+    </panel>
+    <panel background_visible="false" follows="left|bottom" font="SansSerifLarge" halign="center" height="28" layout="topleft" left="10" length="1" name="failed_panel" width="200" type="string" visible="false" top="557">
+        <text follows="all" font="SansSerif" halign="center" height="18" layout="topleft" left="1" length="1" name="failed_lbl" right="-1" text_color="0.95 0.4 0.4 1" top="4" translate="false" type="string">
               Failed
           </text>
-      </panel>
-      <loading_indicator
-       follows="left|top"
-       height="24"
-       layout="topleft"
-       name="working_indicator"
-       left="10"
-       top_delta="0"
-       visible="false"
-       width="24" />
-      <text
-       follows="left|top"
-       font="SansSerifBold"
-       height="14"
-       layout="topleft"
-       left_pad="3"
-       length="1"
-       halign="left"
-       name="working_lbl"
-       top_delta="5"
-       translate="false"
-       type="string"
-       visible="false"
-       width="162">
+    </panel>
+    <loading_indicator follows="left|bottom" height="24" layout="topleft" name="working_indicator" left="10" visible="false" width="24" top="557" />
+    <text follows="left|bottom" font="SansSerifBold" height="18" layout="topleft" length="1" halign="left" name="working_lbl" translate="false" type="string" visible="false" width="172" left="38" top="562">
           Working
       </text>
-      <text
-       follows="left|top"
-       font="SansSerifBold"
-       halign="left"
-       height="18"
-       layout="topleft"
-       left="10"
-       length="1"
-       name="refresh_lbl"
-       text_color="0.95 0.4 0.4 1"
-       top_delta="0"
-       translate="false"
-       type="string"
-       visible="false"
-       width="130">
+    <text follows="left|bottom" font="SansSerifBold" halign="left" height="18" layout="topleft" left="10" length="1" name="refresh_lbl" text_color="0.95 0.4 0.4 1" translate="false" type="string" visible="false" width="200" top="562">
           Refresh to save.
       </text>
-  <ui_ctrl 
-    layout="topleft"
-    name="thumbnail_placeholder"
-    top="23"
-	left="215"
-	width="420"
-	height="420"
-    follows="top|left"/>
-  <view_border 
-   bevel_style="in" 
-   height="21"
-   layout="topleft"
-   name="img_info_border"
-   top_pad="0"
-   right="-130"
-   follows="left|top|right"
-   left_delta="0"/>
-   <text
-    type="string"
-    font="SansSerifSmall"
-    length="1"
-    follows="left|top|right"
-    height="14"
-    layout="topleft"
-    left="220"
-    halign="left"
-    name="image_res_text"
-    top_delta="5"
-    width="250">
+    <ui_ctrl layout="topleft" name="thumbnail_placeholder" top="375" left="230" width="555" height="175" follows="all" />
+    <view_border bevel_style="in" height="24" layout="topleft" name="img_info_border" follows="left|right|bottom" left="230" top="557" width="555" />
+    <text type="string" font="SansSerifSmall" length="1" follows="left|bottom" height="18" layout="topleft" left="235" halign="left" name="image_res_text" width="330" top="562">
        [WIDTH]px (width) x [HEIGHT]px (height)
    </text>
-   <text
-    follows="right|top"
-    font="SansSerifSmall"
-    height="14"
-    layout="topleft"
-    left="-185"
-    length="1"
-    halign="right"
-    name="file_size_label"
-    top_delta="0"
-    type="string"
-    width="50">
+    <text follows="right|bottom" font="SansSerifSmall" height="18" layout="topleft" left="560" length="1" halign="right" name="file_size_label" type="string" width="75" top="562">
        [SIZE] KB
    </text>
-   <text
-    follows="right|top"
-    font="SansSerifSmall"
-    height="14"
-    layout="topleft"
-    left="-130"
-    length="1"
-    halign="right"
-    name="360_label"
-    text_color="HTMLLinkColor"
-    top_delta="0"
-    type="string"
-    width="115">
+    <text follows="right|bottom" font="SansSerifSmall" height="18" layout="topleft" left="645" length="1" halign="right" name="360_label" text_color="HTMLLinkColor" type="string" width="135" top="562">
     Take a 360 snapshot
    </text>
+    <tab_container name="photo_tabs" layout="topleft" left="230" top="30" width="555" height="330" follows="left|right|top" tab_position="top" tab_height="32" tab_min_width="80" tab_max_width="120" tab_top_frame="Prism_Tab_Frame" label_pad_bottom="1" background_visible="false" border="false" font="DejaVu" font.size="LSmall">
+    <tab_button image_hover_unselected="Prism_Tab_Hover"
+                image_hover_selected="Prism_Tab_Selected_Hover"
+                image_pressed="Prism_Tab_Pressed"
+                image_pressed_selected="Prism_Tab_Pressed"
+                image_disabled="Prism_Tab_Disabled"
+                image_disabled_selected="Prism_Tab_Selected_Disabled"
+                image_color="White" image_color_disabled="White"
+                label_color="0.76 0.77 0.81 1"
+                label_color_selected="0.96 0.83 0.64 1"
+                label_color_disabled="0.39 0.39 0.43 1"
+                label_color_disabled_selected="0.49 0.44 0.36 1"
+                hover_glow_amount="0" label_shadow="false" />
+    <first_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+    <middle_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+    <last_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+
+        <panel name="photo_camera" label="Camera" layout="topleft" follows="all" width="555" height="300">
+            <text name="camera_hint" layout="topleft" left="12" top="8" width="520" height="36" word_wrap="true" follows="left|right|top">Compose in the live world view. Save Photo takes a fresh capture; the thumbnail is a reference.</text>
+            <button name="photo_orbit_left" label="Orbit Left" layout="topleft" left="12" top="48" width="120" height="25" follows="left|top" />
+            <button name="photo_orbit_right" label="Orbit Right" layout="topleft" left="142" top="48" width="120" height="25" follows="left|top" />
+            <button name="photo_orbit_up" label="Orbit Up" layout="topleft" left="272" top="48" width="120" height="25" follows="left|top" />
+            <button name="photo_orbit_down" label="Orbit Down" layout="topleft" left="402" top="48" width="120" height="25" follows="left|top" />
+            <button name="photo_pan_left" label="Pan Left" layout="topleft" left="12" top="81" width="120" height="25" follows="left|top" />
+            <button name="photo_pan_right" label="Pan Right" layout="topleft" left="142" top="81" width="120" height="25" follows="left|top" />
+            <button name="photo_pan_up" label="Pan Up" layout="topleft" left="272" top="81" width="120" height="25" follows="left|top" />
+            <button name="photo_pan_down" label="Pan Down" layout="topleft" left="402" top="81" width="120" height="25" follows="left|top" />
+            <button name="photo_dolly_in" label="Dolly In" layout="topleft" left="12" top="114" width="120" height="25" follows="left|top" />
+            <button name="photo_dolly_out" label="Dolly Out" layout="topleft" left="142" top="114" width="120" height="25" follows="left|top" />
+            <button name="photo_camera_reset" label="Reset Camera" layout="topleft" left="272" top="114" width="150" height="25" follows="left|top" />
+            <slider name="photo_fov" label="Field of view (degrees)" layout="topleft" left="12" top="154" width="420" height="22" label_width="185" min_val="10" max_val="120" increment="1" decimal_digits="2" follows="left|right|top" initial_value="60" />
+            <button name="photo_fov_reset" label="Default" layout="topleft" right="-12" top="154" width="75" height="22" follows="right|top" />
+            <slider name="photo_dutch" label="Dutch offset (degrees)" layout="topleft" left="12" top="195" width="420" height="22" label_width="185" min_val="-180" max_val="180" increment="0.1" decimal_digits="1" initial_value="0" follows="left|right|top" />
+            <button name="photo_dutch_reset" label="Reset" layout="topleft" right="-12" top="195" width="75" height="22" follows="right|top" />
+            <slider name="photo_yaw" label="Yaw offset (degrees)" layout="topleft" left="12" top="228" width="420" height="22" label_width="185" min_val="-90" max_val="90" increment="0.1" decimal_digits="1" initial_value="0" follows="left|right|top" />
+            <button name="photo_yaw_reset" label="Reset" layout="topleft" right="-12" top="228" width="75" height="22" follows="right|top" />
+            <slider name="photo_pitch" label="Pitch offset (degrees)" layout="topleft" left="12" top="261" width="420" height="22" label_width="185" min_val="-89" max_val="89" increment="0.1" decimal_digits="1" initial_value="0" follows="left|right|top" />
+            <button name="photo_pitch_reset" label="Reset" layout="topleft" right="-12" top="261" width="75" height="22" follows="right|top" />
+        </panel>
+        <panel name="photo_focus" label="Focus" layout="topleft" follows="all" width="555" height="300">
+            <text name="focus_hint" layout="topleft" left="12" top="8" width="520" height="36" word_wrap="true" follows="left|right|top">Pick Focus, then click the world. Lock Focus enables slow left-drag orbiting around that point.</text>
+            <check_box name="photo_dof" label="Depth of field" control_name="RenderDepthOfField" left="12" top="50" height="22" width="250" layout="topleft" follows="left|top" />
+            <slider name="photo_aperture" label="Aperture (f-number)" layout="topleft" left="12" top="85" width="510" height="22" label_width="185" min_val="1" max_val="32" increment="0.1" decimal_digits="2" follows="left|right|top" control_name="CameraFNumber" enabled_control="RenderDepthOfField" />
+            <slider name="photo_focus_speed" label="Focus transition (seconds)" layout="topleft" left="12" top="120" width="510" height="22" label_width="185" min_val="0.05" max_val="3" increment="0.05" decimal_digits="2" follows="left|right|top" control_name="CameraFocusTransitionTime" enabled_control="RenderDepthOfField" />
+            <button name="photo_pick_focus" label="Pick Focus" label_selected="Click the world..." is_toggle="true" layout="topleft" left="12" top="160" width="180" height="25" follows="left|top" />
+            <button name="photo_lock_focus" label="Lock Focus" label_selected="Focus Locked" is_toggle="true" label_color_selected="Green" layout="topleft" left="202" top="160" width="180" height="25" follows="left|top" />
+            <spinner name="photo_focus_distance" label="Focus distance (metres)" layout="topleft" left="12" top="202" width="320" height="22" label_width="185" min_val="0.01" max_val="4096" increment="0.1" decimal_digits="2" initial_value="16" follows="left|top" />
+            <text name="photo_focus_hint" layout="topleft" left="12" top="238" width="510" height="44" word_wrap="true" follows="left|right|top">Entering a distance sets manual lens focus. Pick Focus returns to the world point. Depth of field must be enabled to see lens blur.</text>
+        </panel>
+        <panel name="photo_lighting" label="Lighting" layout="topleft" follows="all" width="555" height="300">
+            <text name="lighting_hint" layout="topleft" left="12" top="8" width="520" height="36" word_wrap="true" follows="left|right|top">Choose local lighting for your shot. Shared Environment restores the location lighting.</text>
+            <button name="photo_sunrise" label="Sunrise" layout="topleft" left="12" top="50" width="120" height="25" follows="left|top">
+                <button.commit_callback function="World.EnvSettings" parameter="sunrise" />
+            </button>
+            <button name="photo_noon" label="Noon" layout="topleft" left="142" top="50" width="120" height="25" follows="left|top">
+                <button.commit_callback function="World.EnvSettings" parameter="noon" />
+            </button>
+            <button name="photo_sunset" label="Sunset" layout="topleft" left="272" top="50" width="120" height="25" follows="left|top">
+                <button.commit_callback function="World.EnvSettings" parameter="sunset" />
+            </button>
+            <button name="photo_midnight" label="Midnight" layout="topleft" left="402" top="50" width="120" height="25" follows="left|top">
+                <button.commit_callback function="World.EnvSettings" parameter="midnight" />
+            </button>
+            <button name="photo_shared" label="Shared Environment" layout="topleft" left="12" top="88" width="180" height="25" follows="left|top">
+                <button.commit_callback function="World.EnvSettings" parameter="region" />
+            </button>
+            <button name="photo_clouds" label="Pause / Resume Clouds" layout="topleft" left="202" top="88" width="200" height="25" follows="left|top">
+                <button.commit_callback function="World.EnvSettings" parameter="pause_clouds" />
+            </button>
+            <text name="lighting_exposure_hint" layout="topleft" left="12" top="174" width="520" height="36" word_wrap="true" follows="left|right|top">Lighting changes remain active after closing Photo Tools. Exposure and finishing controls are in the Color tab.</text>
+        </panel>
+        <panel name="photo_adjustments" label="Adjustments" layout="topleft" follows="all" width="555" height="300">
+            <text name="adjust_hint" layout="topleft" left="12" top="8" width="520" height="36" word_wrap="true" follows="left|right|top">Tone mapping and glow update the world view and saved photo. Use Color for the finishing grade.</text>
+            <combo_box name="photo_tonemap" control_name="RenderTonemapType" layout="topleft" left="12" top="52" width="260" height="23" follows="left|top">
+                <combo_box.item label="Neutral tone mapping" value="0" />
+                <combo_box.item label="ACES tone mapping" value="1" />
+            </combo_box>
+            <slider name="photo_glow" label="Glow strength" layout="topleft" left="12" top="90" width="510" height="22" label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2" follows="left|right|top" control_name="RenderGlowStrength" />
+            <text name="photo_live_effects_hint" layout="topleft" left="12" top="135" width="510" height="44" word_wrap="true" follows="left|right|top">Adjustments apply to the live world view and the capture. Export dimensions and UI/HUD inclusion are controlled on the left.</text>
+            <text type="string" length="1" follows="left|top" height="20" layout="topleft" left="12" name="filter_list_label" visible="false" width="90" top="135">
+            Filter:
+        </text>
+            <combo_box follows="left|top" name="filters_combobox" visible="false" tool_tip="Image filters" left="110" height="23" width="320" top="132">
+                <combo_box.item label="No Filter" name="NoFilter" value="NoFilter" />
+            </combo_box>
+            <check_box label="Capture without post-processing" layout="topleft" height="22" left="12" width="480" name="no_post_check" visible="false" top="175" follows="left|top" />
+        </panel>
+        <panel name="photo_color" label="Color" layout="topleft" follows="all" width="555" height="300">
+            <check_box name="photo_grade_enabled" label="Enable finishing grade" control_name="PhotoGradeEnabled" layout="topleft" left="12" top="8" width="260" height="24" follows="left|top" />
+            <button name="photo_grade_reset" label="Reset grade" layout="topleft" right="-12" top="8" width="120" height="24" follows="right|top" tool_tip="Reset finishing controls to neutral. Exposure remains unchanged." />
+            <text name="photo_grade_hint" layout="topleft" left="12" top="37" width="510" height="32" word_wrap="true" follows="left|right|top">Grading changes the live scene and photo, after eye adaptation. It stays active until disabled, reset or the viewer restarts.</text>
+            <slider name="photo_exposure" label="Exposure multiplier (HDR)" layout="topleft" left="12" top="72" width="510" height="22" label_width="185" min_val="0.5" max_val="4" increment="0.05" decimal_digits="2" follows="left|right|top" control_name="RenderExposure" enabled_control="RenderHDREnabled" tool_tip="Multiplies adapted HDR exposure before tone mapping. Independent of the finishing-grade checkbox." />
+            <slider name="photo_grade_contrast" label="Contrast" control_name="PhotoGradeContrast" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="99" width="510" height="22" label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2" follows="left|right|top" />
+            <slider name="photo_grade_saturation" label="Saturation" control_name="PhotoGradeSaturation" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="126" width="510" height="22" label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2" follows="left|right|top" />
+            <slider name="photo_grade_warmth" label="Warmth (cool / warm)" control_name="PhotoGradeWarmth" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="153" width="510" height="22" label_width="185" min_val="-1" max_val="1" increment="0.05" decimal_digits="2" follows="left|right|top" />
+            <slider name="photo_grade_tint" label="Tint (magenta / green)" control_name="PhotoGradeTint" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="180" width="510" height="22" label_width="185" min_val="-1" max_val="1" increment="0.05" decimal_digits="2" follows="left|right|top" />
+            <slider name="photo_grade_lift" label="Shadows (lift)" control_name="PhotoGradeLift" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="207" width="510" height="22" label_width="185" min_val="-0.25" max_val="0.25" increment="0.01" decimal_digits="2" follows="left|right|top" />
+            <slider name="photo_grade_gamma" label="Midtones (gamma)" control_name="PhotoGradeGamma" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="234" width="510" height="22" label_width="185" min_val="0.5" max_val="2" increment="0.05" decimal_digits="2" follows="left|right|top" />
+            <slider name="photo_grade_gain" label="Highlights (gain)" control_name="PhotoGradeGain" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="261" width="510" height="22" label_width="185" min_val="0.5" max_val="1.5" increment="0.05" decimal_digits="2" follows="left|right|top" />
+        </panel>
+    </tab_container>
 </floater>

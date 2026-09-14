@@ -462,7 +462,7 @@
   <panel
     follows="all"
     height="410"
-    label="Skin Scattering"
+    label="SSS"
     layout="topleft"
     name="graphics_skin_scattering_panel"
     width="517">
@@ -994,6 +994,227 @@ Combined: transmitted light from all lights, including blur.</text>
       Start with the defaults. If motion leaves trails, raise motion protection or lower history weight. HUDs stay sharp. TAA pauses for snapshots and GTAO / skin debug views.
     </text>
   </panel>
+  <panel name="graphics_eye_adaptation_panel" label="EyeAd" follows="all"
+    layout="topleft" left="0" top="0" width="517" height="410">
+    <text name="EyeAdaptationDescription" follows="left|top|right" layout="topleft"
+      left="30" top="12" width="355" height="40" word_wrap="true">
+      Balance dark and bright views without changing the sky's lighting settings.
+    </text>
+    <button name="EyeAdaptationDefaults" label="Default" follows="right|top"
+      layout="topleft" left="400" top="8" width="80" height="23"
+      tool_tip="Restore this page's settings to their defaults.">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults"
+        parameter="graphics_eye_adaptation_panel" />
+    </button>
+    <check_box name="RenderEyeAdaptationEnabled" control_name="RenderEyeAdaptationEnabled"
+      label="Enable advanced eye adaptation" follows="left|top" layout="topleft"
+      left="30" top="60" width="450" height="20"
+      tool_tip="Use independent exposure limits and highlight-aware brightness metering. Works with legacy skies, including Sunset. Turning this off restores the standard viewer behavior.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <slider name="RenderEyeAdaptationMaxBoost" control_name="RenderEyeAdaptationMaxBoost"
+      label="Maximum brightening:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="96" width="450" height="20" min_val="0" max_val="4"
+      increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
+      tool_tip="Maximum boost in stops: 0 = none, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x. Does not raise sky intensity." />
+    <slider name="RenderEyeAdaptationMaxDarken" control_name="RenderEyeAdaptationMaxDarken"
+      label="Maximum darkening:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="128" width="450" height="20" min_val="0" max_val="4"
+      increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
+      tool_tip="Maximum reduction in stops: 0 = none, 1 = half, 2 = one quarter. Independent of maximum brightening." />
+    <slider name="RenderEyeAdaptationCompensation" control_name="RenderEyeAdaptationCompensation"
+      label="Target brightness:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="160" width="450" height="20" min_val="-2" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Adjust target brightness in stops. Positive values favor a brighter view while respecting the exposure limits and highlight protection." />
+    <slider name="RenderEyeAdaptationHighlights" control_name="RenderEyeAdaptationHighlights"
+      label="Highlight protection:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="192" width="450" height="20" min_val="0" max_val="1"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Higher values give bright regions more influence and reduce exposure to retain highlights. Lower values favor visibility in dark areas." />
+    <slider name="RenderEyeAdaptationDarkTime" control_name="RenderEyeAdaptationDarkTime"
+      label="Adapt into darkness:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="224" width="450" height="20" min_val="0.1" max_val="10"
+      increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
+      tool_tip="Seconds to complete 90 percent of the brightness adjustment when entering a dark area." />
+    <slider name="RenderEyeAdaptationLightTime" control_name="RenderEyeAdaptationLightTime"
+      label="Adapt into light:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="256" width="450" height="20" min_val="0.1" max_val="10"
+      increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
+      tool_tip="Seconds to complete 90 percent of the brightness adjustment when entering a bright area." />
+    <text name="EyeAdaptationStatus" follows="left|top|right" layout="topleft"
+      left="30" top="292" width="450" height="40" word_wrap="true" />
+    <text name="EyeAdaptationHelp" follows="left|top|right" layout="topleft"
+      left="30" top="342" width="450" height="58" word_wrap="true" text_color="LtGray_50">
+      Brightness limits use stops: +1 doubles exposure. Start with the defaults and keep sky HDR Scale unchanged. Highlight protection balances bright windows against dark rooms; it does not brighten shadows separately.
+    </text>
+  </panel>
+  <panel name="graphics_water_panel" label="Water" follows="all"
+    layout="topleft" left="0" top="0" width="517" height="410">
+    <scroll_container name="WaterScroll" follows="all" layout="topleft"
+      left="0" top="0" width="517" height="410" reserve_scroll_corner="false">
+    <panel name="WaterContent" follows="left|top" layout="topleft"
+      left="0" top="0" width="495" height="794">
+    <text name="WaterDescription" follows="left|top|right" layout="topleft"
+      left="30" top="10" width="355" height="34" word_wrap="true">
+      Live adjustments to waves, reflections and light within the water.
+    </text>
+    <button name="WaterDefaults" label="Default" follows="right|top"
+      layout="topleft" left="400" top="8" width="80" height="23"
+      tool_tip="Restore this page's settings to their defaults.">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_water_panel" />
+    </button>
+    <check_box name="RenderWaterProceduralWaves" control_name="RenderWaterProceduralWaves"
+      label="Evolving waves" follows="left|top" layout="topleft"
+      left="30" top="52" width="450" height="20"
+      tool_tip="Enable evolving swell and chop. Turn off to compare with the scrolling wave texture.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <slider name="RenderWaterWaveStrength" control_name="RenderWaterWaveStrength" label="Wave strength:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="78"
+      width="450" height="20" min_val="0" max_val="3" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Makes wave slopes gentler or stronger. 1.00 uses the current wave strength.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterWaveScale" control_name="RenderWaterWaveScale" label="Wave size:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="104"
+      width="450" height="20" min_val="0.01" max_val="2" increment="0.01"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Scales the spacing of wave crests from 0.01 to 2.00. 0.50 is half size. Travel speed follows wavelength.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterCrossSwellStrength" control_name="RenderWaterCrossSwellStrength" label="Crossing swell:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="130"
+      width="450" height="20" min_val="0" max_val="3" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Adds waves moving across the main swell, up to 3.00 strength. Try 0.50 for a more noticeable secondary direction.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterWindSpeed" control_name="RenderWaterWindSpeed" label="Wind / wave speed:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="156"
+      width="450" height="20" min_val="0" max_val="3" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Wave animation speed: 0 pauses, 1 follows the environment, 3 is triple speed. Adjusts swell, chop, caustics and fine ripples without resetting their phase.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <check_box name="RenderWaterDisplacementEnabled" control_name="RenderWaterDisplacementEnabled"
+      label="Displace the water surface" follows="left|top" layout="topleft"
+      left="30" top="182" width="450" height="20"
+      tool_tip="Enable geometric wave height. Turning this off keeps the selected height and distance, and returns to a flat mesh.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <slider name="RenderWaterDisplacement" control_name="RenderWaterDisplacement" label="Surface displacement:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="208"
+      width="450" height="20" min_val="0" max_val="5" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Moves the surface using the evolving waves. 0 is flat; 1 follows Wave size and Wave strength; higher values exaggerate height. Small waves have small physical heights. Experimental; the simulator water level stays unchanged.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterDisplacementDistance" control_name="RenderWaterDisplacementDistance" label="Detailed surface distance:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="234"
+      width="450" height="20" min_val="8" max_val="128" increment="1"
+      decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="Radius in metres around the camera with detailed wave geometry. Waves fade gradually at the edge. Larger distances use more GPU time; the water surface itself still extends to the horizon.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterShallowDamping" control_name="RenderWaterShallowDamping" label="Shallow-wave damping:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="260"
+      width="450" height="20" min_val="0" max_val="1" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Reduces geometric wave height near banks and shallow bottoms. 0 keeps full height; 1 settles the water at the edge, reaching full height at 1.5 m depth. Uses visible terrain and mesh depth.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterReflectionStrength" control_name="RenderWaterReflectionStrength" label="Reflection strength:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="312"
+      width="450" height="20" min_val="0" max_val="1" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Controls sky and object reflections and sun glints. 1.00 uses normal water reflectance; 0 removes surface reflections.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterRoughnessScale" control_name="RenderWaterRoughnessScale" label="Surface roughness:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="338"
+      width="450" height="20" min_val="0" max_val="3" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Lower values sharpen reflections; higher values soften them and broaden sun glints. 1.00 follows the preset; 3.00 is fully rough. For calmer waves, lower Wave strength.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterDensityScale" control_name="RenderWaterDensityScale" label="Water density:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="364"
+      width="450" height="20" min_val="0" max_val="4" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Higher values hide submerged objects sooner. 1.00 follows the water preset; 0 removes absorption and light scattering.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterSunScatteringScale" control_name="RenderWaterSunScatteringScale" label="Sun / moon in water:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="390"
+      width="450" height="20" min_val="0" max_val="3" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Controls sunlight or moonlight scattered inside the water. 1.00 is normal strength. Surface glints use Reflection strength.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterSkyScatteringScale" control_name="RenderWaterSkyScatteringScale" label="Sky light in water:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="416"
+      width="450" height="20" min_val="0" max_val="3" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Controls ambient sky light scattered inside the water. 1.00 is normal strength.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <text name="WaterAppearanceLabel" follows="left|top" layout="topleft"
+      left="30" top="288" width="450" height="18" font.style="BOLD">Appearance</text>
+    <check_box name="RenderWaterLocalReflections" control_name="RenderWaterLocalReflections"
+      label="Reflect nearby land and objects" follows="left|top" layout="topleft"
+      left="30" top="446" width="450" height="20"
+      tool_tip="Adds reflections of nearby objects visible on screen. Disable to reduce rendering cost.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <text name="WaterDepthLabel" follows="left|top" layout="topleft"
+      left="30" top="480" width="450" height="18" font.style="BOLD">Below the surface</text>
+    <slider name="RenderWaterRefractionStrength" control_name="RenderWaterRefractionStrength" label="Refraction strength:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="506"
+      width="450" height="20" min_val="0" max_val="2" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Bends the view of submerged objects through the waves. 1.00 uses water refraction; 0 disables distortion. Requires transparent water.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <slider name="RenderWaterClarity" control_name="RenderWaterClarity" label="Clarity:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="532"
+      width="450" height="20" min_val="0.25" max_val="8" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Visibility-distance multiplier. 1.00 keeps the current density; 2.00 lets you see twice as far through the water.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <check_box name="RenderWaterSubmergedLighting" control_name="RenderWaterSubmergedLighting"
+      label="Filter sunlight and sky light on submerged objects" follows="left|top" layout="topleft"
+      left="30" top="560" width="450" height="20"
+      tool_tip="Sun and sky illumination lose strength and colour on the way down. Local lights and object emission retain their own lighting.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <check_box name="RenderWaterCustomColors" control_name="RenderWaterCustomColors"
+      label="Use custom water colours" follows="left|top" layout="topleft"
+      left="30" top="588" width="450" height="20"
+      tool_tip="Use separate transmission and scattering tints. Turn off to follow your environment's water colour.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <text name="WaterTransmissionLabel" follows="left|top" layout="topleft"
+      left="30" top="620" width="190" height="20">Transmission tint:</text>
+    <color_swatch name="RenderWaterAbsorptionColor" control_name="RenderWaterAbsorptionColor"
+      can_apply_immediately="true" follows="left|top" layout="topleft" left="224" top="616"
+      width="48" height="24" label_height="0" tool_tip="Controls which colours survive farther into the water. Clarity controls the overall viewing distance.">
+      <color_swatch.commit_callback function="Pref.RenderOptionUpdate" />
+    </color_swatch>
+    <text name="WaterScatteringLabel" follows="left|top" layout="topleft"
+      left="30" top="654" width="190" height="20">Scattered light tint:</text>
+    <color_swatch name="RenderWaterScatteringColor" control_name="RenderWaterScatteringColor"
+      can_apply_immediately="true" follows="left|top" layout="topleft" left="224" top="650"
+      width="48" height="24" label_height="0" tool_tip="Colour of light scattered inside the water. Independent of the transmission tint.">
+      <color_swatch.commit_callback function="Pref.RenderOptionUpdate" />
+    </color_swatch>
+    <slider name="RenderWaterCausticsStrength" control_name="RenderWaterCausticsStrength" label="Caustics strength:"
+      label_width="190" follows="left|top" layout="topleft" left="30" top="686"
+      width="450" height="20" min_val="0" max_val="3" increment="0.05"
+      decimal_digits="2" show_text="true" can_edit_text="true" tool_tip="Concentrates sunlight on submerged objects using the evolving surface waves. Zero disables caustics. Requires evolving waves.">
+      <slider.commit_callback function="Pref.RenderOptionUpdate" />
+    </slider>
+    <text name="WaterStatus" follows="left|top|right" layout="topleft"
+      left="30" top="718" width="450" height="20" />
+    <text name="WaterHelp" follows="left|top|right" layout="topleft"
+      left="30" top="748" width="450" height="38" word_wrap="true" text_color="LtGray_50">
+      Wave direction and colour follow your environment. Enable custom colours to override the water tint.
+    </text>
+    </panel>
+    </scroll_container>
+  </panel>
   <panel name="graphics_volume_fog_panel" label="Volumetric Fog" follows="all"
     layout="topleft" left="0" top="0" width="517" height="410">
     <text name="VolumeFogDescription" follows="left|top|right" layout="topleft"
@@ -1018,10 +1239,15 @@ Combined: transmitted light from all lights, including blur.</text>
       tool_tip="Multiplies every fog volume's density. 1.00 uses the prim's authored density, 0 removes fog, and 2.00 doubles density. Changes apply immediately.">
       <slider.commit_callback function="Pref.RenderOptionUpdate" />
     </slider>
+    <slider name="RenderVolumeFogLightStrength" control_name="RenderVolumeFogLightStrength"
+      label="Light effect:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="128" width="450" height="20" min_val="0" max_val="8"
+      increment="0.25" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Boosts light scattering in fog without increasing its density. 1.00 is normal; raise it to make spotlight beams stand out in subtle fog. Affects point lights, projectors and sun/moon. Zero leaves ambient fog. Does not change surface lighting or add rendering samples." />
     <text name="VolumeFogQualityLabel" follows="left|top" layout="topleft"
-      left="30" top="133" width="185" height="20">Quality:</text>
+      left="30" top="165" width="185" height="20">Quality:</text>
     <combo_box name="RenderVolumeFogQuality" control_name="RenderVolumeFogQuality"
-      follows="left|top" layout="topleft" left="220" top="130" width="260" height="23"
+      follows="left|top" layout="topleft" left="220" top="162" width="260" height="23"
       tool_tip="Performance and Balanced render fog at reduced resolution. High sharpens fine beams and volume edges; Ultra samples light and shadow detail more densely. Higher quality costs more GPU time.">
       <combo_box.item label="Performance" value="0" />
       <combo_box.item label="Balanced (recommended)" value="1" />
@@ -1030,18 +1256,18 @@ Combined: transmitted light from all lights, including blur.</text>
     </combo_box>
     <slider name="RenderVolumeFogLightCount" control_name="RenderVolumeFogLightCount"
       label="Maximum local lights:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="170" width="450" height="20" min_val="0" max_val="8"
+      left="30" top="202" width="450" height="20" min_val="0" max_val="8"
       increment="1" decimal_digits="0" show_text="true"
       tool_tip="Limits point lights and projectors affecting fog. Lower values reduce GPU cost in scenes with many lights. Sun and moon do not use this budget; 0 keeps celestial and ambient lighting." />
     <check_box name="RenderVolumeFogShadows" control_name="RenderVolumeFogShadows"
       label="Receive sun, moon and projector shadows" follows="left|top" layout="topleft"
-      left="30" top="211" width="450" height="20"
+      left="30" top="243" width="450" height="20"
       tool_tip="Uses shadows enabled in Graphics. Disable for faster fog lighting, allowing light through blockers in fog. Does not change surface shadows." />
     <text name="VolumeFogStatus" follows="left|top|right" layout="topleft"
-      left="30" top="254" width="450" height="48" word_wrap="true" />
+      left="30" top="278" width="450" height="48" word_wrap="true" />
     <text name="VolumeFogHelp" follows="left|top|right" layout="topleft"
-      left="30" top="320" width="450" height="72" word_wrap="true" text_color="LtGray_50">
-      Start with Balanced. For more speed, choose Performance, reduce local lights or disable fog shadows. Choose High if fine beams or edges look soft. Prim descriptions still control each volume's density, color and edge softness.
+      left="30" top="334" width="450" height="66" word_wrap="true" text_color="LtGray_50">
+      Raise Light effect for stronger beams in subtle fog. Start with Balanced quality; reduce local lights or disable fog shadows for more speed. Choose High if fine beams or edges look soft.
     </text>
   </panel>
   </tab_container>

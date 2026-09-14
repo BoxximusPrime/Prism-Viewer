@@ -1550,6 +1550,10 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("translationPalette");
 
     mReservedUniforms.push_back("screenTex");
+    mReservedUniforms.push_back("waterWaveSlopes");
+    mReservedUniforms.push_back("waterWaveHeights");
+    mReservedUniforms.push_back("waterGeometryDepth");
+    mReservedUniforms.push_back("waterWaveSpectrum");
     mReservedUniforms.push_back("screenDepth");
     mReservedUniforms.push_back("refTex");
     mReservedUniforms.push_back("exclusionTex");
@@ -1564,6 +1568,11 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("waterFogColorLinear");
     mReservedUniforms.push_back("waterFogDensity");
     mReservedUniforms.push_back("waterFogKS");
+    mReservedUniforms.push_back("waterFogSunColor");
+    mReservedUniforms.push_back("waterFogSkyColor");
+    mReservedUniforms.push_back("waterFogLightDir");
+    mReservedUniforms.push_back("waterAbsorptionColor");
+    mReservedUniforms.push_back("waterScatteringColor");
     mReservedUniforms.push_back("refScale");
     mReservedUniforms.push_back("waterHeight");
     mReservedUniforms.push_back("waterPlane");

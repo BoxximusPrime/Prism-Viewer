@@ -4564,6 +4564,8 @@ void LLAgent::setTeleportState(ETeleportState state)
                           << teleportStateName(mTeleportState) << "(" << mTeleportState << ")"
                           << LL_ENDL;
     mTeleportState = state;
+    if (state != TELEPORT_NONE)
+        gSavedSettings.setBOOL("PhotoFreezeVisuals", false);
     if (state != TELEPORT_NONE && LLPoseStudio::instanceExists())
         LLPoseStudio::instance().end(LLPoseStudio::EndReason::TELEPORT);
 

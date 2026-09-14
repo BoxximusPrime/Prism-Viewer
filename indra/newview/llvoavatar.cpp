@@ -5147,7 +5147,8 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
         LLPoseStudio::instance().beforeUpdate(*this);
 
     static LLCachedControl<bool> freeze_animations(gSavedSettings, "BoxxyFreezeAvatarAnimations", false);
-    mMotionController.setFrozen(freeze_animations);
+    static LLCachedControl<bool> photo_freeze(gSavedSettings, "PhotoFreezeVisuals", false);
+    mMotionController.setFrozen(freeze_animations || photo_freeze);
 
     updateDebugText();
 

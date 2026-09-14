@@ -50,7 +50,7 @@ fog_tab = panel.find(".//panel[@name='graphics_volume_fog_panel']")
 assert fog_tab is not None and fog_tab.get("label") == "Volumetric Fog"
 controls = {node.get("control_name"): node for node in fog_tab if node.get("control_name")}
 assert set(controls) == {"RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogQuality",
-                         "RenderVolumeFogLightCount", "RenderVolumeFogShadows"}
+                         "RenderVolumeFogLightCount", "RenderVolumeFogShadows", "RenderVolumeFogLightStrength"}
 assert all(name in keys for name in controls)
 assert [item.get("value") for item in controls["RenderVolumeFogQuality"].findall("combo_box.item")] == ["0","1","2","3"]
 all_names = [node.get("name") for node in panel.iter() if node.get("name")]

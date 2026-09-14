@@ -26,6 +26,7 @@
 */
 
 #include "llviewerprecompiledheaders.h"
+#include "llfloatersnapshot.h"
 
 #include "llagent.h"
 #include "llagentbenefits.h"
@@ -474,14 +475,17 @@ bool LLSnapshotLivePreview::setThumbnailImageSize()
     {
         return false ;
     }
+    if (mThumbnailSubsampled && !mPreviewImage) return false;
     S32 width  = (mThumbnailSubsampled ? mPreviewImage->getWidth()  : gViewerWindow->getWindowWidthRaw());
     S32 height = (mThumbnailSubsampled ? mPreviewImage->getHeight() : gViewerWindow->getWindowHeightRaw()) ;
 
+    if (width < 1 || height < 1) return false;
     F32 aspect_ratio = ((F32)width) / ((F32)height);
 
     // UI size for thumbnail
     S32 max_width  = mThumbnailPlaceholderRect.getWidth();
     S32 max_height = mThumbnailPlaceholderRect.getHeight();
+    if (max_width < 1 || max_height < 1) return false;
 
     if (aspect_ratio > (F32)max_width / (F32)max_height)
     {
@@ -496,7 +500,8 @@ bool LLSnapshotLivePreview::setThumbnailImageSize()
         mThumbnailWidth = ll_round((F32)max_height * aspect_ratio);
     }
 
-    if (mThumbnailWidth > width || mThumbnailHeight > height)
+    if (mThumbnailWidth < 1 || mThumbnailHeight < 1 ||
+        mThumbnailWidth > width || mThumbnailHeight > height)
     {
         return false ;//if the window is too small, ignore thumbnail updating.
     }
@@ -668,6 +673,13 @@ LLViewerTexture* LLSnapshotLivePreview::getBigThumbnailImage()
 bool LLSnapshotLivePreview::onIdle( void* snapshot_preview )
 {
     LLSnapshotLivePreview* previewp = (LLSnapshotLivePreview*)snapshot_preview;
+    if (auto* floater = dynamic_cast<LLFloater*>(previewp->mViewContainer);
+        floater && floater->isMinimized())
+    {
+        // Keep pending refreshes for restore rather than rendering hidden previews.
+        return false;
+    }
+
     if (previewp->getWidth() == 0 || previewp->getHeight() == 0)
     {
         LL_WARNS("Snapshot") << "Incorrect dimensions: " << previewp->getWidth() << "x" << previewp->getHeight() << LL_ENDL;
@@ -749,7 +761,7 @@ bool LLSnapshotLivePreview::onIdle( void* snapshot_preview )
                 previewp->mAllowRenderUI && render_ui,
                 render_hud,
                 false,
-                render_no_post,
+                LLFloaterSnapshot::photoActive() ? false : (bool)render_no_post,
                 render_balance,
                 previewp->mSnapshotBufferType,
                 previewp->getMaxImageSize()))

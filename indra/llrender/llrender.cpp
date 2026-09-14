@@ -482,6 +482,9 @@ void LLTexUnit::setTextureFilteringOption(LLTexUnit::eTextureFilterOptions optio
     if (mIndex < 0 || mCurrTexture == 0 || mCurrTexType == LLTexUnit::TT_MULTISAMPLE_TEXTURE) return;
 
     gGL.flush();
+    // A cached bind may leave another unit active. Apply filtering to this
+    // unit's texture, especially when only this texture has a mip chain.
+    activate();
 
     setTextureFilteringOptionFast(option, mCurrTexType);
 }

@@ -75,8 +75,15 @@ public:
     void setNormalMaps(const LLUUID& normalMapId, const LLUUID& nextNormalMapId);
 
     void pushWaterPlanes(int pass);
+    void pushFaceGeometry() override { pushWaterPlanes(0); }
+    void updateWaveField();
+    void prepareDisplacementDepth();
+    static void bindWaveField(LLGLSLShader& shader);
 
 protected:
+    F64 mWaveTime = 0.0;
+    F64 mWaveDetailTime = 0.0;
+    F64 mWaveLastTime = -1.0;
     void renderOpaqueLegacyWater();
 };
 

@@ -81,6 +81,7 @@
 #include "llsky.h"
 #include "lltracker.h"
 #include "lltool.h"
+#include "llfloatersnapshot.h"
 #include "lltoolmgr.h"
 #include "llviewercamera.h"
 #include "llviewermediafocus.h"
@@ -1007,7 +1008,16 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
         }
 
         //water reflection texture (always needed as scratch space whether or not transparent water is enabled)
-        mWaterDis.allocate(resX, resY, screenFormat, true);
+        if (!mWaterDis.allocate(resX, resY, GL_RGBA16F, true)) return false;
+        if (!mWaterWaves.allocate(256, 256, GL_RGBA16F, false,
+                LLTexUnit::TT_TEXTURE, LLTexUnit::TMG_AUTO)) return false;
+        if (!mWaterHeights.allocate(256, 256, GL_RG16F, false,
+                LLTexUnit::TT_TEXTURE, LLTexUnit::TMG_AUTO)) return false;
+        if (!mWaterGeometryDepth.allocate(resX, resY, GL_R32F, false)) return false;
+        mWaterGeometryDepthFrame = ~0U;
+        for (auto& target : mWaterWaveScratch)
+            if (!target.allocate(256, 256, GL_RGBA32F, false)) return false;
+        mWaterWavesFrame = ~0U;
 
         if(RenderScreenSpaceReflections)
         {
@@ -1302,6 +1312,12 @@ void LLPipeline::releaseGLBuffers()
     releaseLUTBuffers();
 
     mWaterDis.release();
+    mWaterWaves.release();
+    mWaterHeights.release();
+    mWaterGeometryDepth.release();
+    mWaterGeometryDepthFrame = ~0U;
+    for (auto& target : mWaterWaveScratch) target.release();
+    mWaterWavesFrame = ~0U;
 
     mSceneMap.release();
     mVolumeFog.release();
@@ -1661,16 +1677,19 @@ void LLPipeline::createLUTBuffers()
     gDeferredGenBrdfLutProgram.unbind();
     mPbrBrdfLut.flush();
 
-    mExposureMap.allocate(1, 1, GL_R16F);
+    // Single-precision history avoids cumulative rounding during small EV
+    // updates at high frame rates (only two one-pixel textures).
+    mExposureMap.allocate(1, 1, GL_R32F);
     mExposureMap.bindTarget();
     glClearColor(1, 1, 1, 0);
     mExposureMap.clear();
     glClearColor(0, 0, 0, 0);
     mExposureMap.flush();
 
-    mLuminanceMap.allocate(256, 256, GL_R16F, false, LLTexUnit::TT_TEXTURE, LLTexUnit::TMG_AUTO);
+    // Stock exposure still uses red; EyeAd reduces four weighted statistics.
+    mLuminanceMap.allocate(256, 256, GL_RGBA16F, false, LLTexUnit::TT_TEXTURE, LLTexUnit::TMG_AUTO);
 
-    mLastExposure.allocate(1, 1, GL_R16F);
+    mLastExposure.allocate(1, 1, GL_R32F);
 }
 
 
@@ -4143,6 +4162,7 @@ U32 LLPipeline::sCurRenderPoolType = 0 ;
 
 void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
 {
+    mWaterLightingReady = false;
     if (!gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
     {
         mHasSSSGeometry = false;
@@ -4305,7 +4325,7 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
 
     bool done_atmospherics = LLPipeline::sRenderingHUDs; //skip atmospherics on huds
     bool done_water_haze = done_atmospherics;
-    bool done_water_exclusion = false;
+    bool done_water_exclusion = mWaterLightingReady;
 
     // do water exclusion just before water pass.
     U32 water_exclusion_pass = LLDrawPool::POOL_WATEREXCLUSION;
@@ -7250,7 +7270,16 @@ void LLPipeline::visualizeBuffers(LLRenderTarget* src, LLRenderTarget* dst, U32 
     dst->flush();
 }
 
-void LLPipeline::generateLuminance(LLRenderTarget* src, LLRenderTarget* dst)
+bool LLPipeline::isEyeAdaptationEnabled() const
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "RenderEyeAdaptationEnabled", false);
+    static LLCachedControl<bool> hdr(gSavedSettings, "RenderHDREnabled", true);
+    static LLCachedControl<bool> build_no_post(gSavedSettings, "RenderDisablePostProcessing", false);
+    return enabled && hdr && gGLManager.mGLVersion > 4.05f && !gSnapshotNoPost &&
+        !(build_no_post && gFloaterTools && gFloaterTools->isAvailable());
+}
+
+void LLPipeline::generateLuminance(LLRenderTarget* src, LLRenderTarget* dst, bool eye_adaptation)
 {
     // luminance sample and mipmap generation
     {
@@ -7261,6 +7290,8 @@ void LLPipeline::generateLuminance(LLRenderTarget* src, LLRenderTarget* dst)
         LLGLDepthTest depth(GL_FALSE, GL_FALSE);
 
         gLuminanceProgram.bind();
+        // Explicit per-call selection keeps material previews on stock metering.
+        gLuminanceProgram.uniform1i(LLStaticHashedString("eye_adaptation"), eye_adaptation ? 1 : 0);
 
         static LLCachedControl<F32> diffuse_luminance_scale(gSavedSettings, "RenderDiffuseLuminanceScale", 1.0f);
 
@@ -7297,7 +7328,7 @@ void LLPipeline::generateLuminance(LLRenderTarget* src, LLRenderTarget* dst)
     }
 }
 
-void LLPipeline::generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool use_history) {
+void LLPipeline::generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool use_history, bool eye_adaptation) {
     // exposure sample
     {
         LL_PROFILE_GPU_ZONE("exposure sample");
@@ -7350,7 +7381,18 @@ void LLPipeline::generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool
         static LLStaticHashedString noiseVec("noiseVec");
         static LLStaticHashedString dynamic_exposure_params("dynamic_exposure_params");
         static LLStaticHashedString dynamic_exposure_params2("dynamic_exposure_params2");
-        static LLStaticHashedString dynamic_exposure_e("dynamic_exposure_enabled");
+        static LLCachedControl<F32> eye_max_boost(gSavedSettings, "RenderEyeAdaptationMaxBoost", 2.f);
+        static LLCachedControl<F32> eye_max_darken(gSavedSettings, "RenderEyeAdaptationMaxDarken", 2.f);
+        static LLCachedControl<F32> eye_compensation(gSavedSettings, "RenderEyeAdaptationCompensation", 0.25f);
+        static LLCachedControl<F32> eye_highlights(gSavedSettings, "RenderEyeAdaptationHighlights", 0.65f);
+        static LLCachedControl<F32> eye_dark_time(gSavedSettings, "RenderEyeAdaptationDarkTime", 2.f);
+        static LLCachedControl<F32> eye_light_time(gSavedSettings, "RenderEyeAdaptationLightTime", 0.6f);
+        shader->uniform1i(LLStaticHashedString("eye_adaptation"), eye_adaptation ? 1 : 0);
+        shader->uniform4f(LLStaticHashedString("eye_adaptation_limits"),
+            -llclamp(eye_max_darken(), 0.f, 4.f), llclamp(eye_max_boost(), 0.f, 4.f),
+            llclamp(eye_compensation(), -2.f, 2.f), llclamp(eye_highlights(), 0.f, 1.f));
+        shader->uniform2f(LLStaticHashedString("eye_adaptation_times"),
+            llclamp(eye_dark_time(), 0.05f, 10.f), llclamp(eye_light_time(), 0.05f, 10.f));
         static LLCachedControl<bool> should_auto_adjust(gSavedSettings, "RenderSkyAutoAdjustLegacy", false);
         static LLCachedControl<bool> dynamic_exposure_enabled(gSavedSettings, "RenderDynamicExposureEnabled", true);
         static LLCachedControl<F32> dynamic_exposure_coefficient(gSavedSettings, "RenderDynamicExposureCoefficient", 0.175f);
@@ -7412,7 +7454,7 @@ void LLPipeline::generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool
 
 extern LLPointer<LLImageGL> gEXRImage;
 
-void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_correct)
+void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_correct, bool eye_adaptation)
 {
     LL_PROFILE_GPU_ZONE("tonemap");
 
@@ -7429,11 +7471,15 @@ void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_co
 
         LLSettingsSky::ptr_t psky = LLEnvironment::instance().getCurrentSky();
 
-        bool no_post = gSnapshotNoPost || psky->getReflectionProbeAmbiance(should_auto_adjust) == 0.f || (buildNoPost && gFloaterTools && gFloaterTools->isAvailable());
+        // EyeAd is a local post effect, including for legacy skies. It does not
+        // rewrite the sky's ambiance, lighting, or reflection probe settings.
+        const bool legacy_gamma = psky->getReflectionProbeAmbiance(should_auto_adjust) == 0.f;
+        bool no_post = gSnapshotNoPost ||
+            (!eye_adaptation && legacy_gamma) ||
+            (buildNoPost && gFloaterTools && gFloaterTools->isAvailable());
         LLGLSLShader* shader = nullptr;
         if(gamma_correct)
         {
-            bool legacy_gamma = psky->getReflectionProbeAmbiance(should_auto_adjust) == 0.f;
             if(legacy_gamma)
             {
                 shader = no_post ? &gNoPostTonemapLegacyGammaCorrectProgram : &gDeferredPostTonemapLegacyGammaCorrectProgram;
@@ -7470,7 +7516,10 @@ void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_co
 
         static LLCachedControl<U32> tonemap_type_setting(gSavedSettings, "RenderTonemapType", 0U);
         shader->uniform1i(tonemap_type, tonemap_type_setting);
-        shader->uniform1f(tonemap_mix, psky->getTonemapMix(should_auto_adjust()));
+        // Preserve the environment's curve, including skies that normally
+        // bypass tonemapping. EyeAd adds only a shoulder to the unmapped portion.
+        shader->uniform1f(tonemap_mix, legacy_gamma ? 0.f : psky->getTonemapMix(should_auto_adjust()));
+        shader->uniform1i(LLStaticHashedString("eye_adaptation"), eye_adaptation ? 1 : 0);
 
         mScreenTriangleVB->setBuffer();
         mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
@@ -8080,6 +8129,8 @@ void LLPipeline::renderDoF(LLRenderTarget* src, LLRenderTarget* dst)
                 target_distance = LLViewerCamera::getInstance()->getAtAxis() * (focus_point - eye);
             }
 
+            target_distance = LLFloaterSnapshot::photoFocusDistance(target_distance);
+
             if (transition_time >= 1.f && fabsf(current_distance - target_distance) / current_distance > 0.01f)
             { // large shift happened, interpolate smoothly to new target distance
                 transition_time = 0.f;
@@ -8553,14 +8604,15 @@ void LLPipeline::renderFinalize()
     {
         copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
 
-        generateLuminance(antialiased, &mLuminanceMap);
+        const bool eye_adaptation = isEyeAdaptationEnabled();
+        generateLuminance(antialiased, &mLuminanceMap, eye_adaptation);
 
-        generateExposure(&mLuminanceMap, &mExposureMap);
+        generateExposure(&mLuminanceMap, &mExposureMap, true, eye_adaptation);
 
         static LLCachedControl<F32> cas_sharpness(gSavedSettings, "RenderCASSharpness", 0.4f);
         bool apply_cas = cas_sharpness != 0.0f && gCASProgram.isComplete() && gCASLegacyGammaProgram.isComplete();
 
-        tonemap(antialiased, apply_cas ? &mRT->deferredLight : &mPostPingMap, !apply_cas);
+        tonemap(antialiased, apply_cas ? &mRT->deferredLight : &mPostPingMap, !apply_cas, eye_adaptation);
 
         if (apply_cas)
         {
@@ -8658,6 +8710,27 @@ void LLPipeline::renderFinalize()
     LLGLSLShader& final_shader = isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug") ?
         gDeferredPostNoDoFProgram : gDeferredPostNoDoFNoiseProgram;
     final_shader.bind();
+    static LLCachedControl<bool> photo_grade(gSavedSettings, "PhotoGradeEnabled", false);
+    static LLCachedControl<F32> photo_contrast(gSavedSettings, "PhotoGradeContrast", 1.f);
+    static LLCachedControl<F32> photo_saturation(gSavedSettings, "PhotoGradeSaturation", 1.f);
+    static LLCachedControl<F32> photo_warmth(gSavedSettings, "PhotoGradeWarmth", 0.f);
+    static LLCachedControl<F32> photo_tint(gSavedSettings, "PhotoGradeTint", 0.f);
+    static LLCachedControl<F32> photo_lift(gSavedSettings, "PhotoGradeLift", 0.f);
+    static LLCachedControl<F32> photo_gamma(gSavedSettings, "PhotoGradeGamma", 1.f);
+    static LLCachedControl<F32> photo_gain(gSavedSettings, "PhotoGradeGain", 1.f);
+    // Leave diagnostic views ungraded. This stage is downstream of exposure and
+    // temporal history, and runs for both the live scene and snapshot renders.
+    const bool grade = photo_grade && RenderBufferVisualization < 0 &&
+        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) &&
+        gSavedSettings.getS32("RenderTAADebug") == 0;
+    final_shader.uniform1i(LLStaticHashedString("photo_grade_enabled"), grade ? 1 : 0);
+    final_shader.uniform4f(LLStaticHashedString("photo_grade_color"),
+        llclamp(F32(photo_contrast), 0.f, 2.f), llclamp(F32(photo_saturation), 0.f, 2.f),
+        llclamp(F32(photo_warmth), -1.f, 1.f), llclamp(F32(photo_tint), -1.f, 1.f));
+    final_shader.uniform3f(LLStaticHashedString("photo_grade_curve"),
+        llclamp(F32(photo_lift), -0.25f, 0.25f), llclamp(F32(photo_gamma), 0.5f, 2.f),
+        llclamp(F32(photo_gain), 0.5f, 1.5f));
+
 
     // Whatever is last in the above post processing chain should _always_ be rendered directly here.  If not, expect problems.
     final_shader.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, sourceBuffer);
@@ -8779,11 +8852,34 @@ void LLPipeline::bindShadowMaps(LLGLSLShader& shader)
 
 }
 
+static void bindWaterLighting(LLGLSLShader& shader)
+{
+    static LLCachedControl<bool> water_lighting(gSavedSettings, "RenderWaterSubmergedLighting", true);
+    static LLCachedControl<F32> caustics(gSavedSettings, "RenderWaterCausticsStrength", 1.f);
+    const bool ready = gPipeline.mWaterLightingReady && !LLPipeline::sImpostorRender &&
+        !LLPipeline::sRenderingHUDs && !gCubeSnapshot && gSavedSettings.getBOOL("RenderWater");
+    shader.uniform1i(LLStaticHashedString("water_lighting_enabled"), ready && water_lighting ? 1 : 0);
+    shader.bindTexture(LLShaderMgr::WATER_EXCLUSIONTEX, &gPipeline.mWaterExclusionMask, false, LLTexUnit::TFO_POINT);
+    if (shader.getUniformLocation(LLStaticHashedString("water_caustics_strength")) >= 0)
+    {
+        const bool waves = ready && gSavedSettings.getBOOL("RenderWaterProceduralWaves") &&
+            gPipeline.mWaterWavesFrame == LLFrameTimer::getFrameCount();
+        shader.uniform1f(LLStaticHashedString("water_caustics_strength"), waves ? llclamp(caustics(), 0.f, 3.f) : 0.f);
+        LLDrawPoolWater::bindWaveField(shader);
+        const auto water = LLEnvironment::instance().getCurrentWater();
+        shader.uniform3fv(LLStaticHashedString("water_caustics_normal_scale"), 1, water->getNormalScale().mV);
+        // Camera view only: model matrices vary between receiver draw calls.
+        const glm::mat4 inverse_view = glm::inverse(glm::make_mat4(gGLModelView));
+        shader.uniformMatrix4fv(LLStaticHashedString("water_inverse_view"), 1, GL_FALSE, glm::value_ptr(inverse_view));
+    }
+}
+
 void LLPipeline::bindDeferredShaderFast(LLGLSLShader& shader)
 {
     if (shader.mCanBindFast)
     { // was previously fully bound, use fast path
         shader.bind();
+        bindWaterLighting(shader);
         bindSSSOverlay(shader);
         bindLightFunc(shader);
         bindShadowMaps(shader);
@@ -8806,6 +8902,7 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
 
     shader.bind();
     bindSSSOverlay(shader);
+    bindWaterLighting(shader);
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<S32> sss_mode(gSavedSettings, "BoxxySSSMode", 2);
     static LLCachedControl<F32> sss_strength(gSavedSettings, "BoxxySSSStrength", 1.0f);
@@ -9112,6 +9209,19 @@ void LLPipeline::renderDeferredLighting()
     LLRenderTarget* deferred_light_target = &mRT->deferredLight;
 
     renderSSSOverlays();
+
+    // Submerged surface lighting needs the current exclusion mask before the
+    // deferred light pass. Reuse it for water haze/surface rendering afterwards.
+    if (!sImpostorRender && !gCubeSnapshot && gSavedSettings.getBOOL("RenderWater"))
+    {
+        if (mWaterPool)
+        {
+            static_cast<LLDrawPoolWater*>(mWaterPool)->updateWaveField();
+            static_cast<LLDrawPoolWater*>(mWaterPool)->prepareDisplacementDepth();
+        }
+        doWaterExclusionMask();
+        mWaterLightingReady = true;
+    }
 
     const bool sss_diffusion = mHasSSSGeometry && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
         gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getS32("BoxxySSSMode") >= 1 &&
@@ -10107,7 +10217,9 @@ void LLPipeline::doWaterHaze()
 
     if (RenderDeferredAtmospheric)
     {
-        // copy depth buffer for use in haze shader (use water displacement map as temp storage)
+        LLGLDisable blend(GL_BLEND);
+        // Save colour and depth: water haze composites RGB absorption against
+        // this snapshot, before pre-water transparency is rendered.
         {
             LLGLDepthTest depth(GL_TRUE, GL_TRUE, GL_ALWAYS);
 
@@ -10125,16 +10237,13 @@ void LLPipeline::doWaterHaze()
             gGL.getTexUnit(diff_map)->bind(&src);
             gGL.getTexUnit(depth_map)->bind(&depth_src, true);
 
-            gGL.setColorMask(false, false);
+            gGL.setColorMask(true, true);
             gPipeline.mScreenTriangleVB->setBuffer();
             gPipeline.mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
 
             dst.flush();
             mRT->screen.bindTarget();
         }
-
-        LLGLEnable blend(GL_BLEND);
-        gGL.blendFunc(LLRender::BF_ONE, LLRender::BF_SOURCE_ALPHA, LLRender::BF_ZERO, LLRender::BF_SOURCE_ALPHA);
 
         gGL.setColorMask(true, true);
 
@@ -10143,6 +10252,8 @@ void LLPipeline::doWaterHaze()
 
         LL_PROFILE_GPU_ZONE("haze");
         bindDeferredShader(haze_shader, nullptr, &mWaterDis);
+
+        haze_shader.bindTexture(LLShaderMgr::WATER_SCREENTEX, &mWaterDis);
 
         haze_shader.uniform4fv(LLShaderMgr::WATER_WATERPLANE, 1, LLDrawPoolAlpha::sWaterPlane.mV);
 
@@ -10610,6 +10721,10 @@ void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
     LLRenderTarget* deferred_light_target = &mRT->deferredLight;
 
     stop_glerror();
+    shader.disableTexture(LLShaderMgr::WATER_EXCLUSIONTEX);
+    shader.disableTexture(LLShaderMgr::WATER_WAVE_SLOPES);
+    shader.disableTexture(LLShaderMgr::WATER_WAVE_HEIGHTS);
+    shader.disableTexture(LLShaderMgr::WATER_GEOMETRY_DEPTH);
     shader.disableTexture(LLShaderMgr::NORMAL_MAP, deferred_target->getUsage());
     shader.disableTexture(LLShaderMgr::DEFERRED_DIFFUSE, deferred_target->getUsage());
     shader.disableTexture(LLShaderMgr::DEFERRED_SPECULAR, deferred_target->getUsage());

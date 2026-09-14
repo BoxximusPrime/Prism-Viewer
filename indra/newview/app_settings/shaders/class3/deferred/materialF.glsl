@@ -40,6 +40,8 @@ uniform int classic_mode;
 
 vec4 applySkyAndWaterFog(vec3 pos, vec3 additive, vec3 atten, vec4 color);
 vec3 scaleSoftClipFragLinear(vec3 l);
+vec3 waterLitSun(vec3 pos, vec3 light_dir, vec3 sunlit, int classic);
+vec3 waterLitAmbient(vec3 pos, vec3 ambient, int classic);
 void calcAtmosphericVarsLinear(vec3 inPositionEye, vec3 norm, vec3 light_dir, out vec3 sunlit, out vec3 amblit, out vec3 atten, out vec3 additive);
 void calcHalfVectors(vec3 lv, vec3 n, vec3 v, out vec3 h, out vec3 l, out float nh, out float nl, out float nv, out float vh, out float lightDist);
 
@@ -357,6 +359,7 @@ void main()
     calcAtmosphericVarsLinear(pos.xyz, norm.xyz, light_dir, sunlit, amblit, additive, atten);
     if (classic_mode > 0)
         sunlit *= 1.35;
+    sunlit = waterLitSun(pos.xyz, light_dir, sunlit, classic_mode);
     vec3 sunlit_linear = sunlit;
     vec3 amblit_linear = amblit;
 
@@ -364,6 +367,7 @@ void main()
     vec3 glossenv = vec3(0.0);
     vec3 legacyenv = vec3(0.0);
     sampleReflectionProbesLegacy(ambenv, glossenv, legacyenv, pos.xy*0.5+0.5, pos.xyz, norm.xyz, glossiness, env, true, amblit_linear);
+        ambenv = waterLitAmbient(pos.xyz, ambenv, classic_mode);
 
     color = ambenv;
 

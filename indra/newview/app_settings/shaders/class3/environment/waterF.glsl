@@ -23,325 +23,307 @@
  * $/LicenseInfo$
  */
 
-// class3/environment/waterF.glsl
-
-#define WATER_MINIMAL 1
-
+// Water is a dielectric interface over the already-fogged scene colour.
 out vec4 frag_color;
-
-#ifdef HAS_SUN_SHADOW
-float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen);
-#endif
-
-vec3 scaleSoftClipFragLinear(vec3 l);
-void calcAtmosphericVarsLinear(vec3 inPositionEye, vec3 norm, vec3 light_dir, out vec3 sunlit, out vec3 amblit, out vec3 atten, out vec3 additive);
-vec4 applyWaterFogViewLinear(vec3 pos, vec4 color);
-
-void mirrorClip(vec3 pos);
-
-// PBR interface
-vec2 BRDF(float NoV, float roughness);
-
-void calcDiffuseSpecular(vec3 baseColor, float metallic, inout vec3 diffuseColor, inout vec3 specularColor);
-
-void pbrIbl(vec3 diffuseColor,
-    vec3 specularColor,
-    vec3 radiance, // radiance map sample
-    vec3 irradiance, // irradiance map sample
-    float ao,       // ambient occlusion factor
-    float nv,       // normal dot view vector
-    float perceptualRoughness,
-    out vec3 diffuse,
-    out vec3 specular);
-
-void pbrPunctual(vec3 diffuseColor, vec3 specularColor,
-                    float perceptualRoughness,
-                    float metallic,
-                    vec3 n, // normal
-                    vec3 v, // surface point to camera
-                    vec3 l, // surface point to light
-                    out float nl,
-                    out vec3 diff,
-                    out vec3 spec);
-
-vec3 pbrBaseLight(vec3 diffuseColor,
-                  vec3 specularColor,
-                  float metallic,
-                  vec3 pos,
-                  vec3 norm,
-                  float perceptualRoughness,
-                  vec3 light_dir,
-                  vec3 sunlit,
-                  float scol,
-                  vec3 radiance,
-                  vec3 irradiance,
-                  vec3 colorEmissive,
-                  float ao,
-                  vec3 additive,
-                  vec3 atten);
 
 uniform sampler2D bumpMap;
 uniform sampler2D bumpMap2;
-uniform float     blend_factor;
-#ifdef TRANSPARENT_WATER
-uniform sampler2D screenTex;
-uniform sampler2D depthMap;
-#endif
-
 uniform sampler2D exclusionTex;
-
-uniform int classic_mode;
-uniform vec3 lightDir;
-uniform vec3 specular;
+uniform float blend_factor;
 uniform float blurMultiplier;
+uniform float water_reflection_strength;
+uniform float water_roughness_scale;
 uniform float refScale;
-uniform float kd;
 uniform vec3 normScale;
 uniform float fresnelScale;
 uniform float fresnelOffset;
+uniform vec4 waterPlane;
+#ifdef TRANSPARENT_WATER
+uniform sampler2D screenTex;
+uniform sampler2D depthMap;
+uniform mat4 projection_matrix;
+uniform int water_local_reflections;
+uniform int cube_snapshot;
+uniform float water_refraction_strength;
+uniform int water_refraction_fog;
+#endif
 
-//bigWave is (refCoord.w, view.w);
 in vec4 refCoord;
 in vec4 littleWave;
-in vec4 view;
 in vec3 vary_position;
 in vec3 vary_normal;
 in vec3 vary_tangent;
 in vec3 vary_light_dir;
+in vec4 view;
+in vec2 water_position;
+in vec2 crossingWave;
 
-vec3 BlendNormal(vec3 bump1, vec3 bump2)
-{
-    vec3 n = mix(bump1, bump2, blend_factor);
-    return n;
-}
-
-vec3 srgb_to_linear(vec3 col);
-vec3 linear_to_srgb(vec3 col);
-
-vec3 atmosLighting(vec3 light);
-vec3 scaleSoftClip(vec3 light);
-vec3 toneMapNoExposure(vec3 color);
-
-vec3 transform_normal(vec3 vN, vec3 vT, vec3 vB, vec3 vNt)
-{
-    return normalize(vNt.x * vT + vNt.y * vB + vNt.z * vN);
-}
-
-void sampleReflectionProbesWater(inout vec3 ambenv, inout vec3 glossenv,
-        vec2 tc, vec3 pos, vec3 norm, float glossiness, vec3 amblit_linear);
-
-void sampleReflectionProbes(inout vec3 ambenv, inout vec3 glossenv,
-        vec2 tc, vec3 pos, vec3 norm, float glossiness, bool transparent, vec3 amblit_linear);
-
-void sampleReflectionProbesLegacy(inout vec3 ambenv, inout vec3 glossenv, inout vec3 legacyenv,
-        vec2 tc, vec3 pos, vec3 norm, float glossiness, float envIntensity, bool transparent, vec3 amblit);
-
-
+void mirrorClip(vec3 pos);
 vec3 getPositionWithNDC(vec3 ndc);
+vec4 applyWaterFogViewLinear(vec3 pos, vec4 color);
+vec3 waterRefractTransport(vec3 color, vec3 surface, vec3 receiver);
+void calcAtmosphericVarsLinear(vec3 pos, vec3 norm, vec3 light_dir,
+    out vec3 sunlit, out vec3 amblit, out vec3 additive, out vec3 atten);
+void sampleReflectionProbesWater(inout vec3 ambenv, inout vec3 glossenv,
+    vec2 tc, vec3 pos, vec3 norm, float glossiness, vec3 amblit);
+vec2 BRDF(float NoV, float roughness);
+#ifdef HAS_SUN_SHADOW
+float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen);
+#endif
 
-void generateWaveNormals(out vec3 wave1, out vec3 wave2, out vec3 wave3)
+vec2 waterSurfaceSlope(vec2 position, vec2 broad_uv, vec2 crossing_uv,
+                       vec4 detail_uv, float distance_to_eye);
+
+float waterFresnel(float cosine, float f0)
 {
-    // Generate all of our wave normals.
-    // We layer these back and forth.
-
-    vec2 bigwave = vec2(refCoord.w, view.w);
-
-    vec3 wave1_a = texture(bumpMap, bigwave).xyz * 2.0 - 1.0;
-    vec3 wave2_a = texture(bumpMap, littleWave.xy).xyz * 2.0 - 1.0;
-    vec3 wave3_a = texture(bumpMap, littleWave.zw).xyz * 2.0 - 1.0;
-
-    vec3 wave1_b = texture(bumpMap2, bigwave).xyz * 2.0 - 1.0;
-    vec3 wave2_b = texture(bumpMap2, littleWave.xy).xyz * 2.0 - 1.0;
-    vec3 wave3_b = texture(bumpMap2, littleWave.zw).xyz * 2.0 - 1.0;
-
-    wave1 = BlendNormal(wave1_a, wave1_b);
-    wave2 = BlendNormal(wave2_a, wave2_b);
-    wave3 = BlendNormal(wave3_a, wave3_b);
+    return f0 + (1.0 - f0) * pow(1.0 - clamp(cosine, 0.0, 1.0), 5.0);
 }
 
-void calculateFresnelFactors(out vec3 df3, out vec2 df2, vec3 viewVec, vec3 wave1, vec3 wave2, vec3 wave3, vec3 wavef)
+#ifdef TRANSPARENT_WATER
+bool waterProject(vec3 pos, out vec2 uv)
 {
-    // We calculate the fresnel here.
-    // We do this by getting the dot product for each sets of waves, and applying scale and offset.
+    vec4 clip = projection_matrix * vec4(pos, 1.0);
+    uv = clip.xy / max(clip.w, 0.000001) * 0.5 + 0.5;
+    return clip.w > 0.0 && all(greaterThan(uv, vec2(0.001))) &&
+                           all(lessThan(uv, vec2(0.999)));
+}
 
-    df3 = max(vec3(0), vec3(
-        dot(viewVec, wave1),
-        dot(viewVec, (wave2 + wave3) * 0.5),
-        dot(viewVec, wave3)
-    ) * fresnelScale + fresnelOffset);
+vec3 waterScenePosition(vec2 uv)
+{
+    return getPositionWithNDC(vec3(uv * 2.0 - 1.0, texture(depthMap, uv).r * 2.0 - 1.0));
+}
 
-    df3 *= df3;
+// Screen-space wave refraction, relative to the flat interface. Applying the
+// entire flat-interface Snell shift to a single colour/depth layer exposes holes
+// and lifts a second silhouette out of the unwarped scene. Keep that baseline
+// registered, and use the difference in refracted directions for wave distortion.
+vec4 waterRefractedScene(vec3 pos, vec3 n, vec2 screen_uv, float mask, float water_depth)
+{
+    vec4 original = texture(screenTex, screen_uv);
+    float strength = clamp(water_refraction_strength * refScale / 0.03, 0.0, 2.0);
+    float confidence = mask * smoothstep(0.02, 0.5, water_depth);
+    if (strength <= 0.0 || confidence <= 0.0 || cube_snapshot != 0)
+        return original;
+    vec3 incident = normalize(pos);
+    vec3 bend = refract(incident, n, 1.0 / 1.333) -
+                refract(incident, normalize(waterPlane.xyz), 1.0 / 1.333);
+    vec3 direction = normalize(incident + bend * strength * confidence);
+    if (direction.z >= -0.01 || dot(direction, waterPlane.xyz) >= -0.01)
+        return original;
 
-    df2 = max(vec2(0), vec2(
-        df3.x + df3.y + df3.z,
-        dot(viewVec, wavef) * fresnelScale + fresnelOffset
-    ));
+    vec3 receiver = waterScenePosition(screen_uv);
+    vec2 uv = screen_uv;
+    // Limit distortion in screen space, independently of resolution. Deep water
+    // cannot supply newly exposed geometry from this single scene layer.
+    vec2 size = vec2(textureSize(screenTex, 0));
+    float max_pixels = 20.0 * size.y / 1080.0;
+    for (int i = 0; i < 3; ++i)
+    {
+        float distance_to_receiver = max((receiver.z - pos.z) / direction.z, 0.0);
+        vec2 candidate;
+        waterProject(pos + direction * distance_to_receiver, candidate);
+        vec2 offset = candidate - screen_uv;
+        offset *= min(1.0, max_pixels / max(length(offset * size), 0.00001));
+        vec2 edge = min(screen_uv, 1.0 - screen_uv);
+        offset *= smoothstep(0.0, 0.035, min(edge.x, edge.y));
+        candidate = clamp(screen_uv + offset, 0.5 / size, 1.0 - 0.5 / size);
+        // Retreat the sampling coordinate at occlusion/exclusion edges. Never
+        // cross-fade two scene colours: that creates a transparent duplicate.
+        for (int j = 0; j < 6; ++j)
+        {
+            vec3 target = waterScenePosition(candidate);
+            if (target.z < pos.z - 0.001 && texture(depthMap, candidate).r < 0.99999 &&
+                texture(exclusionTex, candidate).r >= mask &&
+                dot(target, waterPlane.xyz) + waterPlane.w < -0.001)
+                break;
+            candidate = mix(screen_uv, candidate, 0.5);
+        }
+        uv = candidate;
+        receiver = waterScenePosition(uv);
+    }
+    if (receiver.z >= pos.z || texture(depthMap, uv).r >= 0.99999 ||
+        texture(exclusionTex, uv).r < mask || dot(receiver, waterPlane.xyz) + waterPlane.w >= 0.0)
+        return original;
+    vec4 refracted = texture(screenTex, uv);
+    if (water_refraction_fog != 0)
+        refracted.rgb = waterRefractTransport(refracted.rgb, pos, receiver);
+    return refracted;
+}
+
+// Same-frame, short-range reflection of visible land and objects. No additional
+// scene render or history buffer. Misses fade to the existing environment probes.
+vec4 waterLocalReflection(vec3 pos, vec3 n, float roughness)
+{
+    float confidence = (1.0 - smoothstep(96.0, 192.0, length(pos))) *
+                       (1.0 - smoothstep(0.18, 0.45, roughness));
+    vec3 direction = reflect(normalize(pos), n);
+    if (water_local_reflections == 0 || cube_snapshot != 0 || confidence <= 0.0 ||
+        dot(direction, waterPlane.xyz) <= 0.01)
+        return vec4(0.0);
+
+    vec3 origin = pos + waterPlane.xyz * 0.03;
+    float previous_t = 0.0;
+    float step_size = 0.2;
+    float t = 0.1;
+    bool was_in_front = false;
+    for (int i = 0; i < 24; ++i)
+    {
+        vec3 ray_pos = origin + direction * t;
+        vec2 uv;
+        if (!waterProject(ray_pos, uv))
+            break;
+        vec3 scene_pos = waterScenePosition(uv);
+        float gap = scene_pos.z - ray_pos.z;
+        if (gap >= 0.0 && was_in_front)
+        {
+            float lo = previous_t, hi = t;
+            for (int j = 0; j < 5; ++j)
+            {
+                float mid = (lo + hi) * 0.5;
+                vec3 candidate = origin + direction * mid;
+                waterProject(candidate, uv);
+                if (waterScenePosition(uv).z - candidate.z >= 0.0)
+                    hi = mid;
+                else
+                    lo = mid;
+            }
+            ray_pos = origin + direction * hi;
+            waterProject(ray_pos, uv);
+            scene_pos = waterScenePosition(uv);
+            gap = scene_pos.z - ray_pos.z;
+            float tolerance = 0.12 + 0.002 * length(scene_pos);
+            // Reject depth discontinuities, the sky, and submerged geometry.
+            // This prevents the seabed being mistaken for a land reflection.
+            if (gap >= 0.0 && gap < tolerance && texture(depthMap, uv).r < 0.99999 &&
+                dot(scene_pos, waterPlane.xyz) + waterPlane.w > 0.02)
+            {
+                vec2 edge = min(uv, 1.0 - uv);
+                confidence *= smoothstep(0.0, 0.06, min(edge.x, edge.y));
+                confidence *= 1.0 - smoothstep(48.0, 96.0, hi);
+                confidence *= 1.0 - smoothstep(tolerance * 0.5, tolerance, gap);
+                return vec4(texture(screenTex, uv).rgb, confidence);
+            }
+            return vec4(0.0);
+        }
+        was_in_front = gap < 0.0;
+        previous_t = t;
+        step_size *= 1.24;
+        t = min(t + step_size, 96.0);
+        if (previous_t >= 96.0)
+            break;
+    }
+    return vec4(0.0);
+}
+#endif
+
+// GGX with height-correlated Smith visibility. Unlike the generic material
+// BRDF, a low-F0 water dielectric still reaches full grazing reflectance.
+float waterSunSpecular(vec3 n, vec3 v, vec3 l, float roughness, float f0)
+{
+    float nl = max(dot(n, l), 0.0);
+    float nv = max(dot(n, v), 0.001);
+    vec3 half_vector = l + v;
+    if (nl <= 0.0 || dot(half_vector, half_vector) < 0.000001)
+        return 0.0;
+    vec3 h = normalize(half_vector);
+    float nh = max(dot(n, h), 0.0);
+    // A finite sun highlight remains stable at the mirror endpoint. Environment
+    // reflections can still use zero roughness; this is only the direct lobe.
+    float a = pow(max(roughness, 0.02), 2.0);
+    float a2 = a * a;
+    float d = (1.0 - nh * nh) + nh * nh * a2;
+    float distribution = a2 / (3.14159265 * d * d);
+    float visibility = 0.5 / max(
+        nl * sqrt(nv * nv * (1.0 - a2) + a2) +
+        nv * sqrt(nl * nl * (1.0 - a2) + a2), 0.000001);
+    return nl * distribution * visibility * waterFresnel(dot(v, h), f0);
+}
+
+float waterSurfaceRoughness(vec3 n)
+{
+    float preset = clamp(blurMultiplier, 0.06, 1.0);
+    float scale = clamp(water_roughness_scale, 0.0, 3.0);
+    // Below 1 sharpens the preset; above 1 reaches the full roughness range.
+    // Multiplying a near-zero preset alone made most of the slider ineffective.
+    float base = scale <= 1.0 ? preset * scale : mix(preset, 1.0, (scale - 1.0) * 0.5);
+    // Keep the subpixel specular filter after the material adjustment. Smooth
+    // settings can sharpen resolved highlights without reintroducing glitter.
+    vec3 dx = dFdx(n);
+    vec3 dy = dFdy(n);
+    float variance = min(0.5 * (dot(dx, dx) + dot(dy, dy)), 0.02);
+    return clamp(pow(pow(base, 4.0) + variance, 0.25), 0.0, 1.0);
 }
 
 void main()
 {
     mirrorClip(vary_position);
+    vec3 pos = vary_position;
+    vec3 v = normalize(-pos);
+    vec3 up = normalize(vary_normal);
+    vec3 tangent = normalize(vary_tangent);
+    vec3 bitangent = normalize(cross(up, tangent));
+    vec2 screen_uv = refCoord.xy / refCoord.z * 0.5 + 0.5;
+    float mask = clamp(texture(exclusionTex, screen_uv).r, 0.0, 1.0);
 
-    vec3 vN = vary_normal;
-    vec3 vT = vary_tangent;
-    vec3 vB = cross(vN, vT);
-
-    vec3 pos = vary_position.xyz;
-    float linear_depth = 1 / -pos.z;
-
-    float dist = length(pos.xyz);
-
-    //normalize view vector
-    vec3 viewVec = normalize(pos.xyz);
-
-    // Setup our waves.
-
-    vec3 wave1 = vec3(0, 0, 1);
-    vec3 wave2 = vec3(0, 0, 1);
-    vec3 wave3 = vec3(0, 0, 1);
-
-    generateWaveNormals(wave1, wave2, wave3);
-
-    float dmod = sqrt(dist);
-    vec2 distort = (refCoord.xy/refCoord.z) * 0.5 + 0.5;
-
-    vec3 wavef = (wave1 + wave2 * 0.4 + wave3 * 0.6) * 0.5;
-
-    vec3 df3 = vec3(0);
-    vec2 df2 = vec2(0);
-
-    vec3 sunlit;
-    vec3 amblit;
-    vec3 additive;
-    vec3 atten;
-    calcAtmosphericVarsLinear(pos.xyz, wavef, vary_light_dir, sunlit, amblit, additive, atten);
-
-    calculateFresnelFactors(df3, df2, normalize(view.xyz), wave1, wave2, wave3, wavef);
-
-    vec3 waver = wavef*3;
-
-    vec3 up = transform_normal(vN, vT, vB, vec3(0,0,1));
-    float vdu = -dot(viewVec, up)*2;
-
-    vec3 wave_ibl = wavef * normScale;
-    wave_ibl.z *= 2.0;
-    wave_ibl = transform_normal(vN, vT, vB, normalize(wave_ibl));
-
-    vec3 norm = transform_normal(vN, vT, vB, normalize(wavef));
-
-    vdu = clamp(vdu, 0, 1);
-    //wavef.z *= max(vdu*vdu*vdu, 0.1);
-
-    wavef = normalize(wavef);
-
-    //wavef = vec3(0, 0, 1);
-    wavef = transform_normal(vN, vT, vB, wavef);
-
-    float dist2 = dist;
-    dist = max(dist, 5.0);
-
-    //figure out distortion vector (ripply)
-    vec2 distort2 = distort + waver.xy * refScale / max(dmod, 1.0) * 2;
-
-    distort2 = clamp(distort2, vec2(0), vec2(0.999));
-
-    float shadow = 1.0f;
-
-    float water_mask = texture(exclusionTex, distort).r;
-
-#ifdef HAS_SUN_SHADOW
-    shadow = sampleDirectionalShadow(pos.xyz, norm.xyz, distort);
-#endif
-
-    vec3 sunlit_linear = sunlit;
-    float fade = 1;
+    float water_depth = 1000.0;
 #ifdef TRANSPARENT_WATER
-    float depth = texture(depthMap, distort).r;
-
-    vec3 refPos = getPositionWithNDC(vec3(distort*2.0-vec2(1.0), depth*2.0-1.0));
-
-    // Calculate some distance fade in the water to better assist with refraction blending and reducing the refraction texture's "disconnect".
-#ifdef SHORELINE_FADE
-    fade = max(0,min(1, (pos.z - refPos.z) / 10));
-#else
-    fade = 1;
+    vec3 behind = waterScenePosition(screen_uv);
+    water_depth = max(-(dot(behind, waterPlane.xyz) + waterPlane.w), 0.0);
 #endif
-    fade *= water_mask;
-    distort2 = mix(distort, distort2, min(1, fade * 10));
-    depth = texture(depthMap, distort2).r;
+    vec2 slope = waterSurfaceSlope(water_position, vec2(refCoord.w, view.w),
+                                   crossingWave, littleWave, length(pos));
+    vec3 waves = vec3(slope * mix(0.35, 1.0, smoothstep(0.0, 1.5, water_depth)), 1.0);
+    // Use the same normal for reflections, Fresnel and direct light. Keep the
+    // authored scale, with a positive Z even for a zero-strength preset.
+    waves *= max(normScale, vec3(0.0));
+    waves.z = max(waves.z, 0.001);
+    vec3 n = normalize(tangent * waves.x + bitangent * waves.y + up * waves.z);
+    // Very steep normal-map slopes must not point behind the viewing hemisphere.
+    float facing = dot(n, v);
+    if (facing < 0.001)
+        n = normalize(mix(n, up, clamp((0.001 - facing) / max(dot(up, v) - facing, 0.001), 0.0, 1.0)));
 
-    refPos = getPositionWithNDC(vec3(distort2 * 2.0 - vec2(1.0), depth * 2.0 - 1.0));
+    float roughness = waterSurfaceRoughness(n);
 
-    if (pos.z < refPos.z - 0.05)
-    {
-        distort2 = distort;
-    }
+    vec3 sunlit, amblit, additive, atten;
+    vec3 light_dir = normalize(vary_light_dir);
+    calcAtmosphericVarsLinear(pos, n, light_dir, sunlit, amblit, additive, atten);
+    float shadow = 1.0;
+#ifdef HAS_SUN_SHADOW
+    shadow = sampleDirectionalShadow(pos, n, screen_uv);
+#endif
 
-    vec4 fb = texture(screenTex, distort2);
-
+#ifdef TRANSPARENT_WATER
+    vec4 transmitted = waterRefractedScene(pos, n, screen_uv, mask, water_depth);
 #else
-    vec4 fb = applyWaterFogViewLinear(viewVec*2048.0, vec4(1.0));
-
-    if (water_mask < 1)
+    if (mask < 1.0)
         discard;
+    vec4 transmitted = applyWaterFogViewLinear(-v * 2048.0, vec4(0.0));
 #endif
 
-    float metallic = 1.0;
-    float perceptualRoughness = blurMultiplier;
-    float gloss      = 1 - perceptualRoughness;
-
-    vec3  irradiance = vec3(0);
-    vec3  radiance  = vec3(0);
-    vec3 legacyenv = vec3(0);
-
-    // TODO: Make this an option.
-#ifdef WATER_MINIMAL
-    sampleReflectionProbesWater(irradiance, radiance, distort2, pos.xyz, wave_ibl.xyz, gloss, amblit);
-#elif WATER_MINIMAL_PLUS
-    sampleReflectionProbes(irradiance, radiance, distort2, pos.xyz, wave_ibl.xyz, gloss, false, amblit);
+    // Air/water IOR 1.333 gives F0 ~= 0.02037. Existing EEP Fresnel controls
+    // remain modest artistic adjustments around their default values.
+    float f0 = clamp(0.02037 * exp2(clamp((fresnelOffset - 0.5) * 2.0 +
+                     fresnelScale - 0.3999, -2.0, 2.0)), 0.005, 0.08);
+    float nv = max(dot(n, v), 0.001);
+    // The viewer's BRDF LUT uses glossiness on its second axis.
+    vec2 brdf = BRDF(nv, 1.0 - roughness);
+    float reflection_strength = clamp(water_reflection_strength, 0.0, 1.0);
+    float reflected_energy = clamp(f0 * brdf.x + brdf.y, 0.0, 1.0) * reflection_strength;
+    vec3 irradiance = vec3(0.0), radiance = vec3(0.0);
+    // Reflection rays originate at the surface pixel, not the refracted UV.
+    sampleReflectionProbesWater(irradiance, radiance, screen_uv, pos, n, 1.0 - roughness, amblit);
+#ifdef TRANSPARENT_WATER
+    if (mask > 0.0 && reflection_strength > 0.0)
+    {
+        vec4 local_reflection = waterLocalReflection(pos, n, roughness);
+        radiance = mix(radiance, local_reflection.rgb, local_reflection.a);
+    }
 #endif
-
-    vec3 diffuseColor = vec3(0);
-    vec3 specularColor = vec3(0);
-    vec3 specular_linear = srgb_to_linear(specular);
-    calcDiffuseSpecular(specular_linear, metallic, diffuseColor, specularColor);
-
-    vec3 v = -normalize(pos.xyz);
-
-    vec3 colorEmissive = vec3(0);
-    float ao = 1.0;
-    vec3 light_dir = transform_normal(vN, vT, vB, lightDir);
-
-    float NdotV = clamp(abs(dot(norm, v)), 0.001, 1.0);
-
-    float nl = 0;
-    vec3 diffPunc = vec3(0);
-    vec3 specPunc = vec3(0);
-
-    pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, normalize(wavef+up*max(dist, 32.0)/32.0*(1.0-vdu)), v, normalize(light_dir), nl, diffPunc, specPunc);
-
-    vec3 punctual = clamp(nl * (diffPunc + specPunc), vec3(0), vec3(10)) * sunlit_linear * shadow * atten;
-    radiance *= df2.y;
-    //radiance = toneMapNoExposure(radiance);
-    vec3 color = vec3(0);
-    color = mix(fb.rgb, radiance, min(1, df2.x)) + punctual.rgb;
-
-    float water_haze_scale = 4;
-
-    if (classic_mode > 0)
-        water_haze_scale = 1;
-
-    // This looks super janky, but we do this to restore water haze in the distance.
-    // These values were finagled in to try and bring back some of the distant brightening on legacy water.  Also works reasonably well on PBR skies such as PBR midday.
-    // color = mix(color, additive * water_haze_scale, (1 - atten));
-
-    // We shorten the fade here at the shoreline so it doesn't appear too soft from a distance.
-    fade *= 60;
-    fade = min(1, fade);
-    color = mix(fb.rgb, color, fade);
-
-    float spec = min(max(max(punctual.r, punctual.g), punctual.b), 0);
-
-    frag_color = min(vec4(1),max(vec4(color.rgb, spec * water_mask), vec4(0)));
+    vec3 direct = waterSunSpecular(n, v, light_dir, roughness, f0) * sunlit * shadow * atten * reflection_strength;
+    vec3 color = transmitted.rgb * (1.0 - reflected_energy) + radiance * reflected_energy + direct;
+    color = mix(transmitted.rgb, color, mask);
+    // Alpha is the viewer's authored glow channel, not surface opacity. Water
+    // is not emissive; its specular highlights remain HDR in RGB for tone mapping.
+    frag_color = vec4(clamp(color, vec3(0.0), vec3(65504.0)), 0.0);
 }
-

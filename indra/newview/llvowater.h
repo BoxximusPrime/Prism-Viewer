@@ -73,9 +73,17 @@ public:
     void setIsEdgePatch(const bool edge_patch);
     bool getIsEdgePatch() const { return mIsEdgePatch; }
 
+    static LLVector3d getMeshCenter();
+    void updateMeshLOD();
+    void renderSurface();
+
 protected:
     bool mIsEdgePatch;
     S32  mRenderType;
+    LLVector3d mMeshCenter;
+    bool mMeshDisplaced = false;
+    F32 mMeshDistance = 0.f;
+    std::vector<LLPointer<LLVertexBuffer>> mMeshBuffers;
 };
 
 class LLVOVoidWater : public LLVOWater
