@@ -78,8 +78,13 @@ def key(path, keysym):
 
 
 time.sleep(2)
+# A fresh smoke settings file can show this informational startup modal. Close
+# only that notice so it cannot intercept the preference-control input below.
+for notice in request('LLNotifications', 'listChannelNotifications', channel='AlertModal').get('notifications', []):
+    if notice.get('name') == 'FoundLegacyNsisInstallation':
+        send('LLNotifications', dict(op='cancel', uuid=notice['id']))
 defaults = dict(RenderVolumeFog=True, RenderVolumeFogIntensity=1., RenderVolumeFogQuality=1,
-                RenderVolumeFogLightCount=8, RenderVolumeFogShadows=True)
+                RenderVolumeFogLightCount=8, RenderVolumeFogShadows=True, RenderVolumeFogLightStrength=1.)
 for name, value in defaults.items(): setting(name, value)
 setting('RenderVolumeFogSteps',0)
 send('LLFloaterReg', dict(op='showInstance', name='preferences', focus=True))
@@ -110,12 +115,15 @@ for level in range(4):
     assert get_setting('RenderVolumeFogQuality') == level
 key(base+'RenderVolumeFogIntensity/slider_bar', 'RIGHT')
 assert abs(get_setting('RenderVolumeFogIntensity')-1.05) < .001
+key(base+'RenderVolumeFogLightStrength/slider_bar', 'RIGHT')
+assert abs(get_setting('RenderVolumeFogLightStrength')-1.25) < .001
+assert abs(get_setting('RenderVolumeFogIntensity')-1.05) < .001
 key(base+'RenderVolumeFogLightCount/slider_bar', 'LEFT')
 assert get_setting('RenderVolumeFogLightCount') == 7
 click('RenderVolumeFogShadows')
 assert not get_setting('RenderVolumeFogShadows')
 request('LLFloaterReg', 'clickButton', name='preferences', button='Cancel')
 for name, value in defaults.items(): assert get_setting(name) == value, name
-log.write(json.dumps(dict(result='PASS: fog tab, five live controls, four quality levels, enable dependencies and Cancel restore'))+'\n')
+log.write(json.dumps(dict(result='PASS: fog tab, six live controls, four quality levels, independent light effect/density, enable dependencies and Cancel restore'))+'\n')
 log.close()
 send('LLAppViewer', dict(op='requestQuit'))

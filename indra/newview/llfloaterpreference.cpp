@@ -1304,8 +1304,49 @@ void LLFloaterPreference::buildPopupLists()
 
 void LLFloaterPreference::refreshEnabledState()
 {
+    const bool eye_supported = gGLManager.mGLVersion > 4.05f && gSavedSettings.getBOOL("RenderHDREnabled");
+    const bool eye_selected = gSavedSettings.getBOOL("RenderEyeAdaptationEnabled");
+    getChildView("RenderEyeAdaptationEnabled")->setEnabled(eye_supported);
+    for (const char* control : { "RenderEyeAdaptationMaxBoost", "RenderEyeAdaptationMaxDarken",
+        "RenderEyeAdaptationCompensation", "RenderEyeAdaptationHighlights",
+        "RenderEyeAdaptationDarkTime", "RenderEyeAdaptationLightTime" })
+        getChildView(control)->setEnabled(eye_supported && eye_selected);
+    getChild<LLTextBox>("EyeAdaptationStatus")->setValue(!eye_supported ?
+        "Eye adaptation requires HDR rendering. Disable Vintage Mode to use it." :
+        !eye_selected ? "Eye adaptation is off. The standard viewer exposure settings apply." :
+        !gPipeline.isEyeAdaptationEnabled() ? "Eye adaptation is paused while post processing is disabled." :
+        "Eye adaptation is on, including for legacy skies. Changes apply immediately.");
+    const bool water_enabled = gSavedSettings.getBOOL("RenderWater");
+    const bool evolving_water = water_enabled && gSavedSettings.getBOOL("RenderWaterProceduralWaves");
+    getChildView("RenderWaterProceduralWaves")->setEnabled(water_enabled);
+    for (const char* control : { "RenderWaterWaveStrength", "RenderWaterWaveScale", "RenderWaterCrossSwellStrength", "RenderWaterDisplacementEnabled" })
+        getChildView(control)->setEnabled(evolving_water);
+    for (const char* control : { "RenderWaterReflectionStrength", "RenderWaterDensityScale" })
+        getChildView(control)->setEnabled(water_enabled);
+    getChildView("RenderWaterWindSpeed")->setEnabled(water_enabled);
+    const bool displaced_water = evolving_water && gSavedSettings.getBOOL("RenderWaterDisplacementEnabled");
+    getChildView("RenderWaterDisplacement")->setEnabled(displaced_water);
+    for (const char* control : { "RenderWaterShallowDamping", "RenderWaterDisplacementDistance" })
+        getChildView(control)->setEnabled(displaced_water && gSavedSettings.getF32("RenderWaterDisplacement") > 0.f);
+    const bool water_reflections = water_enabled && gSavedSettings.getF32("RenderWaterReflectionStrength") > 0.f;
+    getChildView("RenderWaterRoughnessScale")->setEnabled(water_reflections);
+    getChildView("RenderWaterLocalReflections")->setEnabled(water_reflections && gSavedSettings.getBOOL("RenderTransparentWater"));
+    const bool water_scattering = water_enabled && gSavedSettings.getF32("RenderWaterDensityScale") > 0.f;
+    getChildView("RenderWaterSunScatteringScale")->setEnabled(water_scattering);
+    getChildView("RenderWaterSkyScatteringScale")->setEnabled(water_scattering);
+    getChildView("RenderWaterRefractionStrength")->setEnabled(water_enabled && gSavedSettings.getBOOL("RenderTransparentWater"));
+    getChildView("RenderWaterClarity")->setEnabled(water_scattering);
+    getChildView("RenderWaterCausticsStrength")->setEnabled(evolving_water);
+    getChildView("RenderWaterSubmergedLighting")->setEnabled(water_scattering);
+    getChildView("RenderWaterCustomColors")->setEnabled(water_scattering);
+    const bool custom_water_colors = water_scattering && gSavedSettings.getBOOL("RenderWaterCustomColors");
+    for (const char* control : { "RenderWaterAbsorptionColor", "RenderWaterScatteringColor",
+        "WaterTransmissionLabel", "WaterScatteringLabel" })
+        getChildView(control)->setEnabled(custom_water_colors);
+    getChild<LLTextBox>("WaterStatus")->setValue(!water_enabled ? "Water rendering is disabled in Debug Settings." :
+        !evolving_water ? "Using the environment's scrolling wave texture." : "Changes apply immediately.");
     const bool fog_enabled = gSavedSettings.getBOOL("RenderVolumeFog");
-    for (const char* control : { "RenderVolumeFogIntensity", "RenderVolumeFogQuality", "VolumeFogQualityLabel",
+    for (const char* control : { "RenderVolumeFogIntensity", "RenderVolumeFogLightStrength", "RenderVolumeFogQuality", "VolumeFogQualityLabel",
         "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
         getChildView(control)->setEnabled(fog_enabled);
     getChild<LLTextBox>("VolumeFogStatus")->setValue(!fog_enabled ? "Volumetric fog is off." :
@@ -2724,7 +2765,18 @@ void LLPanelPreferenceGraphics::saveSettings()
 }
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
-    for (const char* control : { "RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogQuality",
+    for (const char* control : { "RenderWaterProceduralWaves", "RenderWaterWaveStrength", "RenderWaterWaveScale",
+        "RenderWaterCrossSwellStrength", "RenderWaterDisplacement", "RenderWaterShallowDamping",
+        "RenderWaterDisplacementEnabled", "RenderWaterDisplacementDistance", "RenderWaterWindSpeed", "RenderWaterLocalReflections", "RenderWaterReflectionStrength",
+        "RenderWaterRoughnessScale", "RenderWaterDensityScale", "RenderWaterSunScatteringScale", "RenderWaterSkyScatteringScale",
+        "RenderWaterClarity", "RenderWaterRefractionStrength", "RenderWaterCausticsStrength", "RenderWaterSubmergedLighting", "RenderWaterCustomColors",
+        "RenderWaterAbsorptionColor", "RenderWaterScatteringColor" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
+    for (const char* control : { "RenderEyeAdaptationEnabled", "RenderEyeAdaptationMaxBoost",
+        "RenderEyeAdaptationMaxDarken", "RenderEyeAdaptationCompensation", "RenderEyeAdaptationHighlights",
+        "RenderEyeAdaptationDarkTime", "RenderEyeAdaptationLightTime" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
+    for (const char* control : { "RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogLightStrength", "RenderVolumeFogQuality",
         "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",

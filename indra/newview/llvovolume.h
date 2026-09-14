@@ -204,6 +204,9 @@ public:
     /*virtual*/ void    changeTEImage(S32 index, LLViewerTexture* new_image) override;
     /*virtual*/ void    setNumTEs(const U8 num_tes) override;
     /*virtual*/ void    setTEImage(const U8 te, LLViewerTexture *imagep) override;
+    void resumePhotoAppearance();
+    std::unordered_map<U8, LLUUID> mPhotoPendingTextures;
+    std::unordered_map<U8, LLColor4> mPhotoPendingColors;
     /*virtual*/ S32     setTETexture(const U8 te, const LLUUID &uuid) override;
     /*virtual*/ S32     setTEColor(const U8 te, const LLColor3 &color) override;
     /*virtual*/ S32     setTEColor(const U8 te, const LLColor4 &color) override;

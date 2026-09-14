@@ -108,6 +108,7 @@ void LLDrawPoolWater::beginPostDeferredPass(S32 pass)
 {
     LL_PROFILE_GPU_ZONE("water beginPostDeferredPass")
     gGL.setColorMask(true, true);
+    updateWaveField();
 
     if (LLPipeline::sRenderTransparentWater)
     {
@@ -133,6 +134,180 @@ void LLDrawPoolWater::beginPostDeferredPass(S32 pass)
 
         dst.flush();
     }
+}
+
+void LLDrawPoolWater::updateWaveField()
+{
+    LL_PROFILE_GPU_ZONE("water wave field");
+    const F64 now = LLFrameTimer::getElapsedSeconds();
+    const F64 dt = mWaveLastTime < 0.0 ? 0.0 : llmax(0.0, now - mWaveLastTime);
+    mWaveLastTime = now;
+    static LLCachedControl<F32> wind_speed(gSavedSettings, "RenderWaterWindSpeed", 1.f);
+    const F64 wave_dt = dt * llclamp(wind_speed(), 0.f, 3.f);
+    mWaveDetailTime += wave_dt;
+    static LLCachedControl<bool> enabled(gSavedSettings, "RenderWaterProceduralWaves", true);
+    if (!enabled || !gPipeline.mWaterWaves.isComplete()) return;
+
+    const auto water = LLEnvironment::instance().getCurrentWater();
+    F32 speed = water->getWave1Dir().length();
+    if (speed < 0.0001f) speed = water->getWave2Dir().length();
+    // Integrate speed changes instead of multiplying absolute time: EEP changes
+    // do not reset phase, and a stationary preset freezes the wave field.
+    mWaveTime += wave_dt * llclamp(speed, 0.f, 3.f);
+    const U32 frame = LLFrameTimer::getFrameCount();
+    if (gPipeline.mWaterWavesFrame == frame) return;
+
+    static LLCachedControl<F32> crossing(gSavedSettings, "RenderWaterCrossSwellStrength", 0.25f);
+    static LLCachedControl<F32> wave_scale(gSavedSettings, "RenderWaterWaveScale", 1.f);
+    LLGLDisable blend(GL_BLEND);
+    LLGLDisable cull(GL_CULL_FACE);
+    LLGLDisable scissor(GL_SCISSOR_TEST);
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    // This also runs before deferred lighting, where scene glow/alpha writes
+    // are normally disabled. Alpha here is the chop spectrum's imaginary part
+    // (and later its Y slope), so every FFT pass must write all four channels.
+    gGL.flush();
+    GLboolean color_mask[4];
+    glGetBooleanv(GL_COLOR_WRITEMASK, color_mask);
+    gGL.setColorMask(true, true);
+    // Both complex height spectra are generated together, then transformed on
+    // the GPU. FP32 scratch buffers avoid rounding errors during the butterflies.
+    gPipeline.mWaterWaveScratch[0].bindTarget();
+    gWaterWaveProgram.bind();
+    gWaterWaveProgram.uniform1f(LLStaticHashedString("water_wave_time"), (F32)fmod(mWaveTime, 1200.0));
+    gWaterWaveProgram.uniform1f(LLStaticHashedString("water_cross_swell"), llclamp(crossing(), 0.f, 3.f));
+    gWaterWaveProgram.uniform1f(LLStaticHashedString("water_wave_scale"), llclamp(wave_scale(), 0.01f, 2.f));
+    gPipeline.mScreenTriangleVB->setBuffer();
+    gPipeline.mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    gPipeline.mWaterWaveScratch[0].flush();
+    gWaterWaveProgram.unbind();
+
+    U32 source = 0;
+    gWaterWaveFFTProgram.bind();
+    for (S32 axis = 0; axis < 2; ++axis)
+    {
+        gWaterWaveFFTProgram.uniform1i(LLStaticHashedString("water_fft_axis"), axis);
+        for (S32 stage = 1; stage <= 8; ++stage)
+        {
+            gPipeline.mWaterWaveScratch[1-source].bindTarget();
+            gWaterWaveFFTProgram.bindTexture(LLShaderMgr::WATER_WAVE_SPECTRUM,
+                &gPipeline.mWaterWaveScratch[source], false, LLTexUnit::TFO_POINT);
+            gWaterWaveFFTProgram.uniform1i(LLStaticHashedString("water_fft_stage"), stage);
+            gPipeline.mScreenTriangleVB->setBuffer();
+            gPipeline.mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+            gWaterWaveFFTProgram.unbindTexture(LLShaderMgr::WATER_WAVE_SPECTRUM);
+            gPipeline.mWaterWaveScratch[1-source].flush();
+            source = 1-source;
+        }
+    }
+    gWaterWaveFFTProgram.unbind();
+
+    gPipeline.mWaterWaves.bindTarget();
+    gWaterWaveResolveProgram.bind();
+    gWaterWaveResolveProgram.uniform1i(LLStaticHashedString("water_wave_resolve_height"), 0);
+    gWaterWaveResolveProgram.bindTexture(LLShaderMgr::WATER_WAVE_SPECTRUM,
+        &gPipeline.mWaterWaveScratch[source], false, LLTexUnit::TFO_POINT);
+    gPipeline.mScreenTriangleVB->setBuffer();
+    gPipeline.mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    gWaterWaveResolveProgram.unbindTexture(LLShaderMgr::WATER_WAVE_SPECTRUM);
+    gPipeline.mWaterWaves.flush();
+    // Preserve the real FFT heights separately; slope channels remain unchanged
+    // for reflections and caustics. Each texture receives its own mip chain.
+    gPipeline.mWaterHeights.bindTarget();
+    gWaterWaveResolveProgram.uniform1i(LLStaticHashedString("water_wave_resolve_height"), 1);
+    gWaterWaveResolveProgram.bindTexture(LLShaderMgr::WATER_WAVE_SPECTRUM,
+        &gPipeline.mWaterWaveScratch[source], false, LLTexUnit::TFO_POINT);
+    gPipeline.mScreenTriangleVB->setBuffer();
+    gPipeline.mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    gWaterWaveResolveProgram.unbindTexture(LLShaderMgr::WATER_WAVE_SPECTRUM);
+    gPipeline.mWaterHeights.flush();
+    gWaterWaveResolveProgram.unbind();
+    gGL.setColorMask(color_mask[0], color_mask[1], color_mask[2], color_mask[3]);
+    gPipeline.mWaterWavesFrame = frame;
+}
+
+void LLDrawPoolWater::prepareDisplacementDepth()
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "RenderWaterDisplacementEnabled", true);
+    static LLCachedControl<F32> displacement(gSavedSettings, "RenderWaterDisplacement", 1.f);
+    static LLCachedControl<F32> damping(gSavedSettings, "RenderWaterShallowDamping", 1.f);
+    static LLCachedControl<bool> waves(gSavedSettings, "RenderWaterProceduralWaves", true);
+    if (!enabled || !waves || displacement() <= 0.f || damping() <= 0.f || gCubeSnapshot ||
+        !gPipeline.mWaterGeometryDepth.isComplete()) return;
+    const U32 frame = LLFrameTimer::getFrameCount();
+    if (gPipeline.mWaterGeometryDepthFrame == frame) return;
+    // Freeze opaque scene depth before either water pass. Sampling the live
+    // framebuffer depth while displacing its geometry would create feedback.
+    gGL.flush();
+    GLboolean mask[4];
+    glGetBooleanv(GL_COLOR_WRITEMASK, mask);
+    gGL.setColorMask(true, true);
+    LLGLDisable blend(GL_BLEND), cull(GL_CULL_FACE), scissor(GL_SCISSOR_TEST);
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    gPipeline.mWaterGeometryDepth.bindTarget();
+    gCopyProgram.bind();
+    gCopyProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &gPipeline.mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
+    gPipeline.mScreenTriangleVB->setBuffer();
+    gPipeline.mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    gCopyProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+    gPipeline.mWaterGeometryDepth.flush();
+    gCopyProgram.unbind();
+    gGL.setColorMask(mask[0], mask[1], mask[2], mask[3]);
+    gPipeline.mWaterGeometryDepthFrame = frame;
+}
+
+void LLDrawPoolWater::bindWaveField(LLGLSLShader& shader)
+{
+    static LLCachedControl<bool> procedural(gSavedSettings, "RenderWaterProceduralWaves", true);
+    static LLCachedControl<F32> wave_strength(gSavedSettings, "RenderWaterWaveStrength", 1.f);
+    static LLCachedControl<F32> wave_scale(gSavedSettings, "RenderWaterWaveScale", 1.f);
+    const F32 wave_size = llclamp(wave_scale(), 0.01f, 2.f);
+    const bool wave_field_ready = procedural && gPipeline.mWaterWavesFrame != ~0U;
+    shader.uniform1i(LLStaticHashedString("water_procedural_waves"), wave_field_ready ? 1 : 0);
+    shader.uniform1f(LLStaticHashedString("water_wave_strength"), llclamp(wave_strength(), 0.f, 3.f));
+    shader.uniform1f(LLStaticHashedString("water_wave_scale"), wave_size);
+    if (wave_field_ready)
+    {
+        const S32 channel = shader.bindTexture(LLShaderMgr::WATER_WAVE_SLOPES,
+            &gPipeline.mWaterWaves, false, LLTexUnit::TFO_ANISOTROPIC);
+        if (channel >= 0) gGL.getTexUnit(channel)->setTextureAddressMode(LLTexUnit::TAM_WRAP);
+    }
+    static LLCachedControl<F32> displacement(gSavedSettings, "RenderWaterDisplacement", 1.f);
+    static LLCachedControl<bool> displaced(gSavedSettings, "RenderWaterDisplacementEnabled", true);
+    static LLCachedControl<F32> distance(gSavedSettings, "RenderWaterDisplacementDistance", 64.f);
+    const F32 height_scale = wave_field_ready && displaced ? llclamp(displacement(), 0.f, 5.f) : 0.f;
+    shader.uniform1f(LLStaticHashedString("water_displacement"), height_scale);
+    shader.uniform1f(LLStaticHashedString("water_displacement_distance"), llclamp(distance(), 8.f, 128.f));
+    static LLCachedControl<F32> damping(gSavedSettings, "RenderWaterShallowDamping", 1.f);
+    const bool has_depth = !gCubeSnapshot && gPipeline.mWaterGeometryDepthFrame == LLFrameTimer::getFrameCount();
+    shader.uniform1f(LLStaticHashedString("water_shallow_damping"), has_depth ? llclamp(damping(), 0.f, 1.f) : 0.f);
+    if (height_scale > 0.f && has_depth)
+        shader.bindTexture(LLShaderMgr::WATER_GEOMETRY_DEPTH, &gPipeline.mWaterGeometryDepth, false, LLTexUnit::TFO_POINT);
+    if (height_scale > 0.f)
+    {
+        const S32 channel = shader.bindTexture(LLShaderMgr::WATER_WAVE_HEIGHTS,
+            &gPipeline.mWaterHeights, false, LLTexUnit::TFO_TRILINEAR);
+        if (channel >= 0) gGL.getTexUnit(channel)->setTextureAddressMode(LLTexUnit::TAM_WRAP);
+    }
+    const LLVector3d mesh_center = LLVOWater::getMeshCenter();
+    const LLVector3 mesh_center_agent = gAgent.getPosAgentFromGlobal(mesh_center);
+    shader.uniform2f(LLStaticHashedString("water_mesh_center"), mesh_center_agent.mV[0], mesh_center_agent.mV[1]);
+    const auto pwater = LLEnvironment::instance().getCurrentWater();
+    shader.uniform3fv(LLShaderMgr::WATER_NORM_SCALE, 1, pwater->getNormalScale().mV);
+    LLVector2 direction = pwater->getWave1Dir();
+    if (direction.lengthSquared() < 0.000001f) direction = pwater->getWave2Dir();
+    if (direction.lengthSquared() < 0.000001f) direction = LLVector2(1.f, 0.f);
+    direction.normalize();
+    // EEP scrolling advances UVs; the visible pattern moves opposite that vector.
+    direction *= -1.f;
+    shader.uniform2fv(LLStaticHashedString("water_wave_direction"), 1, direction.mV);
+    const LLVector3d origin = gAgent.getPosGlobalFromAgent(LLVector3::zero);
+    // Scale and reduce the rotated global origin in double precision, so even
+    // tiny waves stay continuous across regions without huge shader coordinates.
+    shader.uniform2f(LLStaticHashedString("water_wave_origin"),
+        (F32)fmod((origin.mdV[0]*direction.mV[0] + origin.mdV[1]*direction.mV[1]) / wave_size, 256.0),
+        (F32)fmod((-origin.mdV[0]*direction.mV[1] + origin.mdV[1]*direction.mV[0]) / wave_size, 256.0));
+
 }
 
 void LLDrawPoolWater::renderPostDeferred(S32 pass)
@@ -178,7 +353,7 @@ void LLDrawPoolWater::renderPostDeferred(S32 pass)
     LLTexUnit::eTextureFilterOptions filter_mode = has_normal_mips ? LLTexUnit::TFO_ANISOTROPIC : LLTexUnit::TFO_POINT;
 
     LLColor4      specular(sun_up ? psky->getSunlightColor() : psky->getMoonlightColor());
-    F32           phase_time = (F32) LLFrameTimer::getElapsedSeconds() * 0.5f;
+    F32           phase_time = (F32)(mWaveDetailTime * 0.5);
     LLGLSLShader *shader     = nullptr;
 
     // One pass, one of two shaders.  Void water and region water share state.
@@ -197,6 +372,8 @@ void LLDrawPoolWater::renderPostDeferred(S32 pass)
     }
 
     gPipeline.bindDeferredShader(*shader, nullptr, &gPipeline.mWaterDis);
+
+    bindWaveField(*shader);
 
     LLViewerTexture* tex_a = mWaterNormp[0];
     LLViewerTexture* tex_b = mWaterNormp[1];
@@ -252,7 +429,19 @@ void LLDrawPoolWater::renderPostDeferred(S32 pass)
     shader->uniform3fv(LLShaderMgr::WATER_NORM_SCALE, 1, pwater->getNormalScale().mV);
     shader->uniform1f(LLShaderMgr::WATER_FRESNEL_SCALE, pwater->getFresnelScale());
     shader->uniform1f(LLShaderMgr::WATER_FRESNEL_OFFSET, pwater->getFresnelOffset());
-    shader->uniform1f(LLShaderMgr::WATER_BLUR_MULTIPLIER, fmaxf(0, pwater->getBlurMultiplier()) * 2);
+    static LLCachedControl<F32> roughness_scale(gSavedSettings, "RenderWaterRoughnessScale", 1.f);
+    static LLCachedControl<F32> reflection_strength(gSavedSettings, "RenderWaterReflectionStrength", 1.f);
+    shader->uniform1f(LLShaderMgr::WATER_BLUR_MULTIPLIER,
+        fmaxf(0, pwater->getBlurMultiplier()) * 2);
+    static LLCachedControl<F32> refraction_strength(gSavedSettings, "RenderWaterRefractionStrength", 1.f);
+    shader->uniform1f(LLStaticHashedString("water_refraction_strength"), llclamp(refraction_strength(), 0.f, 2.f));
+    static LLCachedControl<S32> probe_level(gSavedSettings, "RenderReflectionProbeLevel", 0);
+    shader->uniform1i(LLStaticHashedString("water_refraction_fog"),
+        LLPipeline::RenderDeferredAtmospheric && !(gCubeSnapshot && probe_level == 0) ? 1 : 0);
+    shader->uniform1f(LLStaticHashedString("water_roughness_scale"), llclamp(roughness_scale(), 0.f, 3.f));
+    shader->uniform1f(LLStaticHashedString("water_reflection_strength"), llclamp(reflection_strength(), 0.f, 1.f));
+    static LLCachedControl<bool> local_reflections(gSavedSettings, "RenderWaterLocalReflections", true);
+    shader->uniform1i(LLStaticHashedString("water_local_reflections"), local_reflections ? 1 : 0);
 
     static LLStaticHashedString s_exposure("exposure");
     static LLStaticHashedString tonemap_mix("tonemap_mix");
@@ -301,6 +490,7 @@ void LLDrawPoolWater::renderPostDeferred(S32 pass)
     pushWaterPlanes(0);
 
     // clean up
+    shader->unbindTexture(LLShaderMgr::WATER_WAVE_SLOPES);
     gPipeline.unbindDeferredShader(*shader);
 
     gGL.setColorMask(true, false);
@@ -313,7 +503,8 @@ void LLDrawPoolWater::pushWaterPlanes(int pass)
     {
         water = static_cast<LLVOWater*>(face->getViewerObject());
 
-        face->renderIndexed();
+        water->updateMeshLOD();
+        water->renderSurface();
 
         // Note non-void water being drawn, updates required
         // Previously we had some logic to determine if this pass was also our water edge pass.

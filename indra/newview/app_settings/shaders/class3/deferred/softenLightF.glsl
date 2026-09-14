@@ -66,6 +66,8 @@ uniform vec2 screen_res;
 vec4 getNorm(vec2 pos_screen);
 vec4 getPositionWithDepth(vec2 pos_screen, float depth);
 
+vec3 waterLitSun(vec3 pos, vec3 light_dir, vec3 sunlit, int classic);
+vec3 waterLitAmbient(vec3 pos, vec3 ambient, int classic);
 void calcAtmosphericVarsLinear(vec3 inPositionEye, vec3 norm, vec3 light_dir, out vec3 sunlit, out vec3 amblit, out vec3 atten, out vec3 additive);
 vec3  atmosFragLightingLinear(vec3 l, vec3 additive, vec3 atten);
 vec3  scaleSoftClipFragLinear(vec3 l);
@@ -258,6 +260,7 @@ void main()
     if (classic_mode > 0)
         sunlit *= 1.35;
 
+    sunlit = waterLitSun(pos.xyz, light_dir, sunlit, classic_mode);
     vec3 sunlit_linear = sunlit;
     vec3 amblit_linear = amblit;
 
@@ -276,6 +279,7 @@ void main()
         float gloss      = 1.0 - perceptualRoughness;
 
         sampleReflectionProbes(irradiance, radiance, tc, pos.xyz, gb.normal, gloss, false, amblit_linear);
+        irradiance = waterLitAmbient(pos.xyz, irradiance, 0);
 
         adjustIrradiance(irradiance, ambocc);
 
@@ -336,6 +340,7 @@ void main()
         vec3 legacyenv = vec3(0);
 
         sampleReflectionProbesLegacy(irradiance, glossenv, legacyenv, tc, pos.xyz, gb.normal, spec.a, envIntensity, false, amblit_linear);
+        irradiance = waterLitAmbient(pos.xyz, irradiance, classic_mode);
 
         adjustIrradiance(irradiance, ambocc);
 

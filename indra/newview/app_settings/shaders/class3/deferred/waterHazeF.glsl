@@ -31,11 +31,13 @@ in vec4 vary_fragcoord;
 vec4 getPositionWithDepth(vec2 pos_screen, float depth);
 float getDepth(vec2 pos_screen);
 
-vec4 getWaterFogView(vec3 pos);
+void getWaterFogTransport(vec3 pos, out vec3 transmission, out vec3 scattering);
 
 uniform int above_water;
 
 uniform sampler2D exclusionTex;
+uniform sampler2D screenTex;
+uniform vec4 waterPlane;
 
 void main()
 {
@@ -68,9 +70,17 @@ void main()
 
     vec4  pos          = getPositionWithDepth(tc, depth);
 
-    vec4 fogged = getWaterFogView(pos.xyz);
-    fogged.a = max(pow(fogged.a, 1.7), 0);
+    // Above-water objects seen from below are handled at the underside of the
+    // water surface. Keep this pass from fogging that segment twice.
+    if (dot(pos.xyz, waterPlane.xyz) + waterPlane.w > 0.0)
+        discard;
 
-    frag_color = max(fogged, vec4(0)); //output linear since local lights will be added to this shader's results
+    vec3 transmission, scattering;
+    getWaterFogTransport(pos.xyz, transmission, scattering);
+    vec4 scene = texture(screenTex, tc);
+    // RGB transmission cannot be expressed with the old scalar-alpha blend.
+    // Composite the saved scene once, preserving attenuation of authored glow.
+    frag_color = vec4(scene.rgb * transmission + scattering,
+        scene.a * dot(transmission, vec3(0.2126, 0.7152, 0.0722)));
 
 }

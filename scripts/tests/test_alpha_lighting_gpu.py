@@ -28,6 +28,10 @@ def function(source, signature):
 
 
 STUBS = """
+// These fixtures isolate surface/OIT lighting; water transport is exercised
+// independently by test_water_optics_gpu.py.
+vec3 waterLitSun(vec3 p, vec3 l, vec3 c, int classic) { return c; }
+vec3 waterLitAmbient(vec3 p, vec3 c, int classic) { return c; }
 uniform float test_ambient;
 vec3 srgb_to_linear(vec3 c) { return c; }
 vec3 linear_to_srgb(vec3 c) { return c; }

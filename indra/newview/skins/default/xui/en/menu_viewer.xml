@@ -744,7 +744,7 @@
             </menu_item_call>
         <menu_item_separator/>
         <menu_item_call
-         label="Snapshot"
+         label="Photo Tools"
          name="Take Snapshot"
          shortcut="control|shift|S">
             <menu_item_call.on_click

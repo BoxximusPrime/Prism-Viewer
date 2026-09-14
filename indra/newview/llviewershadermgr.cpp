@@ -124,6 +124,10 @@ LLGLSLShader        gObjectAlphaMaskNoColorProgram;
 
 //environment shaders
 LLGLSLShader        gWaterProgram;
+LLGLSLShader        gWaterWaveProgram;
+LLGLSLShader        gWaterWaveFFTProgram;
+LLGLSLShader        gWaterWaveResolveProgram;
+LLGLSLShader        gWaterDisplacementMaskProgram;
 LLGLSLShader        gUnderWaterProgram;
 
 //interface shaders
@@ -1099,8 +1103,42 @@ bool LLViewerShaderMgr::loadShadersWater()
     if (mShaderLevel[SHADER_WATER] == 0)
     {
         gWaterProgram.unload();
+        gWaterWaveProgram.unload();
+        gWaterWaveFFTProgram.unload();
+        gWaterWaveResolveProgram.unload();
+        gWaterDisplacementMaskProgram.unload();
         gUnderWaterProgram.unload();
         return true;
+    }
+
+    if (success)
+    {
+        gWaterWaveProgram.mName = "Water Wave Field";
+        gWaterWaveProgram.mShaderLevel = 1;
+        gWaterWaveProgram.mShaderFiles.clear();
+        gWaterWaveProgram.mShaderFiles.push_back(make_pair("interface/copyV.glsl", GL_VERTEX_SHADER));
+        gWaterWaveProgram.mShaderFiles.push_back(make_pair("environment/waterWaveFieldF.glsl", GL_FRAGMENT_SHADER));
+        success = gWaterWaveProgram.createShader();
+    }
+
+    if (success)
+    {
+        gWaterWaveFFTProgram.mName = "Water Wave IFFT";
+        gWaterWaveFFTProgram.mShaderLevel = 1;
+        gWaterWaveFFTProgram.mShaderFiles = {
+            make_pair("interface/copyV.glsl", GL_VERTEX_SHADER),
+            make_pair("environment/waterWaveFFTF.glsl", GL_FRAGMENT_SHADER)};
+        success = gWaterWaveFFTProgram.createShader();
+    }
+
+    if (success)
+    {
+        gWaterWaveResolveProgram.mName = "Water Wave Slopes";
+        gWaterWaveResolveProgram.mShaderLevel = 1;
+        gWaterWaveResolveProgram.mShaderFiles = {
+            make_pair("interface/copyV.glsl", GL_VERTEX_SHADER),
+            make_pair("environment/waterWaveResolveF.glsl", GL_FRAGMENT_SHADER)};
+        success = gWaterWaveResolveProgram.createShader();
     }
 
     if (success)
@@ -1116,7 +1154,9 @@ bool LLViewerShaderMgr::loadShadersWater()
         gWaterProgram.mFeatures.hasShadows = use_sun_shadow;
         gWaterProgram.mShaderFiles.clear();
         gWaterProgram.mShaderFiles.push_back(make_pair("environment/waterV.glsl", GL_VERTEX_SHADER));
+        gWaterProgram.mShaderFiles.push_back(make_pair("environment/waterDisplacementV.glsl", GL_VERTEX_SHADER));
         gWaterProgram.mShaderFiles.push_back(make_pair("environment/waterF.glsl", GL_FRAGMENT_SHADER));
+        gWaterProgram.mShaderFiles.push_back(make_pair("environment/waterWavesF.glsl", GL_FRAGMENT_SHADER));
         gWaterProgram.clearPermutations();
         if (LLPipeline::sRenderTransparentWater)
         {
@@ -1142,7 +1182,9 @@ bool LLViewerShaderMgr::loadShadersWater()
         gUnderWaterProgram.mFeatures.hasAtmospherics = true;
         gUnderWaterProgram.mShaderFiles.clear();
         gUnderWaterProgram.mShaderFiles.push_back(make_pair("environment/waterV.glsl", GL_VERTEX_SHADER));
+        gUnderWaterProgram.mShaderFiles.push_back(make_pair("environment/waterDisplacementV.glsl", GL_VERTEX_SHADER));
         gUnderWaterProgram.mShaderFiles.push_back(make_pair("environment/underWaterF.glsl", GL_FRAGMENT_SHADER));
+        gUnderWaterProgram.mShaderFiles.push_back(make_pair("environment/waterWavesF.glsl", GL_FRAGMENT_SHADER));
         gUnderWaterProgram.mShaderLevel = mShaderLevel[SHADER_WATER];
         gUnderWaterProgram.mShaderGroup = LLGLSLShader::SG_WATER;
         gUnderWaterProgram.clearPermutations();
@@ -1152,6 +1194,17 @@ bool LLViewerShaderMgr::loadShadersWater()
         }
         success = gUnderWaterProgram.createShader();
         llassert(success);
+    }
+
+    if (success)
+    {
+        gWaterDisplacementMaskProgram.mName = "Water Displacement Mask";
+        gWaterDisplacementMaskProgram.mShaderLevel = 1;
+        gWaterDisplacementMaskProgram.mShaderFiles = {
+            make_pair("environment/waterMaskV.glsl", GL_VERTEX_SHADER),
+            make_pair("environment/waterDisplacementV.glsl", GL_VERTEX_SHADER),
+            make_pair("objects/simpleColorF.glsl", GL_FRAGMENT_SHADER)};
+        success = gWaterDisplacementMaskProgram.createShader();
     }
 
     /// Keep track of water shader levels

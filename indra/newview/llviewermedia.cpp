@@ -967,7 +967,10 @@ void LLViewerMedia::setAllMediaEnabled(bool val)
     }
     else {
         // This actually unloads the impl, as opposed to "stop"ping the media
-        LLViewerParcelMedia::getInstance()->stop();
+        // During shutdown the message system may already be gone. Stopping
+        // media must not construct a singleton that registers message handlers.
+        if (LLViewerParcelMedia::instanceExists())
+            LLViewerParcelMedia::getInstance()->stop();
         if (gAudiop)
         {
             LLViewerAudio::getInstance()->stopInternetStreamWithAutoFade();

@@ -194,6 +194,10 @@ extern LLGLSLShader     gObjectAlphaMaskNoColorProgram;
 
 //environment shaders
 extern LLGLSLShader         gWaterProgram;
+extern LLGLSLShader         gWaterWaveProgram;
+extern LLGLSLShader         gWaterWaveFFTProgram;
+extern LLGLSLShader         gWaterWaveResolveProgram;
+extern LLGLSLShader         gWaterDisplacementMaskProgram;
 extern LLGLSLShader         gUnderWaterProgram;
 extern LLGLSLShader         gGlowProgram;
 extern LLGLSLShader         gGlowExtractProgram;

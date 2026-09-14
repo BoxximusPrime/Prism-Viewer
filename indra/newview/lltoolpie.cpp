@@ -40,6 +40,7 @@
 #include "llfloaterland.h"
 #include "llfloaterreg.h"
 #include "llfloaterscriptdebug.h"
+#include "llfloatersnapshot.h"
 #include "lltooltip.h"
 #include "llhudeffecttrail.h"
 #include "llhudicon.h"
@@ -298,7 +299,8 @@ bool LLToolPie::handleLeftClickPick()
     }
 
     static LLCachedControl<bool> prevent_left_click_actions(gSavedSettings, "BoxxyPreventLeftClickActions", false);
-    if (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment())
+    if (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment()
+        && useClickAction(mask, object, parent))
     {
         mMouseButtonDown = false;
         return true;
@@ -893,8 +895,10 @@ bool LLToolPie::handleDoubleClick(S32 x, S32 y, MASK mask)
 
     static LLCachedControl<bool> prevent_left_click_actions(gSavedSettings, "BoxxyPreventLeftClickActions", false);
     LLViewerObject* object = mPick.getObject();
+    LLViewerObject* parent = object ? object->getRootEdit() : nullptr;
     if (mPick.mPickNameTag ||
-        (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment()))
+        (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment()
+         && useClickAction(mask, object, parent)))
     {
         return true;
     }
@@ -1268,13 +1272,32 @@ bool LLToolPie::handleTooltipObject( LLViewerObject* hover_object, std::string l
 bool LLToolPie::handleToolTip(S32 local_x, S32 local_y, MASK mask)
 {
     static LLCachedControl<bool> show_hover_tips(*LLUI::getInstance()->mSettingGroups["config"], "ShowHoverTips", true);
-    if (!show_hover_tips) return true;
     if (!mHoverPick.isValid()) return true;
 
     LLViewerObject* hover_object = mHoverPick.getObject();
 
     // update hover object and hover parcel
     LLSelectMgr::getInstance()->setHoverObject(hover_object, mHoverPick.mObjectFace);
+
+    // Photo Tools deliberately hides the normal viewer chrome, but the object
+    // under the pointer is still useful composition context. Keep this overlay
+    // name-only so hiding the UI does not resurrect inspector affordances.
+    if (LLFloaterSnapshot::findInstance() && !gViewerWindow->getUIVisibility()
+        && hover_object && !hover_object->isAvatar() && !hover_object->isHUDAttachment())
+    {
+        LLSelectNode* nodep = LLSelectMgr::getInstance()->getHoverNode();
+        const std::string name = nodep && !nodep->mName.empty()
+            ? nodep->mName
+            : (hover_object->hasCachedObjectName() ? hover_object->getCachedObjectName()
+                                                   : LLTrans::getString("TooltipNoName"));
+        LLToolTipMgr::instance().show(LLToolTip::Params()
+            .message(name)
+            .delay_time(gSavedSettings.getF32("ObjectInspectorTooltipDelay"))
+            .wrap(false));
+        return true;
+    }
+
+    if (!show_hover_tips) return true;
 
 
     std::string tooltip_msg;

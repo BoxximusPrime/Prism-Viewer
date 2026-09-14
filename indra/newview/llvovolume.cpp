@@ -2414,6 +2414,11 @@ void LLVOVolume::setTEImage(const U8 te, LLViewerTexture *imagep)
 
 S32 LLVOVolume::setTETexture(const U8 te, const LLUUID &uuid)
 {
+    if (gSavedSettings.getBOOL("PhotoFreezeVisuals") && mDrawable && getTE(te))
+    {
+        mPhotoPendingTextures[te] = uuid;
+        return 0;
+    }
     S32 res = LLViewerObject::setTETexture(te, uuid);
     if (res)
     {
@@ -2435,6 +2440,11 @@ S32 LLVOVolume::setTEColor(const U8 te, const LLColor3& color)
 
 S32 LLVOVolume::setTEColor(const U8 te, const LLColor4& color)
 {
+    if (gSavedSettings.getBOOL("PhotoFreezeVisuals") && mDrawable && getTE(te))
+    {
+        mPhotoPendingColors[te] = color;
+        return 0;
+    }
     S32 retval = 0;
     const LLTextureEntry *tep = getTE(te);
     if (!tep)
@@ -7348,4 +7358,17 @@ LLHUDPartition::LLHUDPartition(LLViewerRegion* regionp) : LLBridgePartition(regi
 void LLHUDPartition::shift(const LLVector4a &offset)
 {
     //HUD objects don't shift with region crossing.  That would be silly.
+}
+
+// Apply only the most recent appearance received for each face, without replaying
+// the intervening script updates. Deleted objects naturally discard their queue.
+void LLVOVolume::resumePhotoAppearance()
+{
+    if (isDead()) return;
+    for (const auto& entry : mPhotoPendingTextures)
+        if (entry.first < getNumTEs()) setTETexture(entry.first, entry.second);
+    for (const auto& entry : mPhotoPendingColors)
+        if (entry.first < getNumTEs()) setTEColor(entry.first, entry.second);
+    mPhotoPendingTextures.clear();
+    mPhotoPendingColors.clear();
 }

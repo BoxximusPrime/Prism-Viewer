@@ -75,9 +75,34 @@ float noise(vec2 x) {
 vec3 clampHDRRange(vec3 color);
 
 
+// Display-referred finishing grade, after scene effects and before UI/noise.
+// It never feeds the luminance, exposure or TAA history textures.
+uniform int photo_grade_enabled;
+uniform vec4 photo_grade_color; // contrast, saturation, warmth, tint
+uniform vec3 photo_grade_curve; // lift, gamma, gain
+
+vec3 photoGrade(vec3 color)
+{
+    if (photo_grade_enabled == 0 ||
+        (photo_grade_color == vec4(1.0, 1.0, 0.0, 0.0) &&
+         photo_grade_curve == vec3(0.0, 1.0, 1.0))) return color;
+    vec3 balance = exp2(vec3(photo_grade_color.z - photo_grade_color.w * 0.5,
+                            photo_grade_color.w,
+                           -photo_grade_color.z - photo_grade_color.w * 0.5) * 0.25);
+    color *= balance;
+    // Lift/gamma/gain provide a monotonic tonal curve. Keep pow's base nonnegative.
+    color = max(color + photo_grade_curve.x * (vec3(1.0) - color), vec3(0.0));
+    color = pow(color, vec3(1.0 / max(photo_grade_curve.y, 0.01))) * photo_grade_curve.z;
+    color = (color - vec3(0.5)) * photo_grade_color.x + vec3(0.5);
+    float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    color = mix(vec3(luma), color, photo_grade_color.y);
+    return clamp(color, 0.0, 1.0);
+}
+
 void main()
 {
     vec4 diff = texture(diffuseRect, vary_fragcoord.xy);
+    diff.rgb = photoGrade(diff.rgb);
 
 #ifdef HAS_NOISE
     vec2 tc = vary_fragcoord.xy*screen_res*4.0;

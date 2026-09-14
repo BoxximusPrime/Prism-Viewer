@@ -28,6 +28,7 @@
 
 #include "llviewertextureanim.h"
 #include "llvovolume.h"
+#include "llviewercontrol.h"
 
 #include "llmath.h"
 #include "llerror.h"
@@ -79,6 +80,14 @@ S32 LLViewerTextureAnim::animateTextures(F32 &off_s, F32 &off_t,
                                         F32 &scale_s, F32 &scale_t,
                                         F32 &rot)
 {
+    static LLCachedControl<bool> photo_freeze(gSavedSettings, "PhotoFreezeVisuals", false);
+    if (photo_freeze)
+    {
+        mTimer.pause();
+        return 0;
+    }
+    mTimer.unpause();
+
     S32 result = 0;
     if (!(mMode & ON))
     {

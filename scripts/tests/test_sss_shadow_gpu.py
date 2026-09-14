@@ -25,6 +25,9 @@ struct GBufferInfo { vec4 albedo; vec4 specular; vec3 normal; vec4 emissive;
 
 # Controlled inputs around the production lighting and transmission code.
 STUBS = """
+// Water is disabled in these skin-lighting fixtures.
+vec3 waterLitSun(vec3 p, vec3 l, vec3 c, int classic) { return c; }
+vec3 waterLitAmbient(vec3 p, vec3 c, int classic) { return c; }
 uniform vec3 test_pos, test_normal;
 uniform vec3 test_surface_dx, test_surface_dy;
 uniform float test_flag;

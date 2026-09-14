@@ -1182,6 +1182,9 @@ bool LLViewerWindow::handleAnyMouseClick(LLWindow *window, LLCoordGL pos, MASK m
             }
     }
 
+    if (down && clicktype == CLICK_LEFT && LLFloaterSnapshot::photoWorldClick(x, y, mask))
+        return true;
+
     // Do not allow tool manager to handle mouseclicks if we have disconnected
     if(!gDisconnected && LLToolMgr::getInstance()->getCurrentTool()->handleAnyMouseClick( x, y, mask, clicktype, down ) )
     {
@@ -3033,6 +3036,8 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
         LLViewerEventRecorder::instance().logKeyEvent(key,mask);
         return true;
     }
+
+    if (LLFloaterSnapshot::photoKey(key, mask)) return true;
 
     LLFocusableElement* keyboard_focus = gFocusMgr.getKeyboardFocus();
 

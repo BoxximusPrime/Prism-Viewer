@@ -103,6 +103,5 @@ indra/newview/app_settings/keywords_lua_default.xml
 *.tracy
 
 # GTAO reference downloads and generated GPU-test artifacts
-/tmp/gtao-reference/
-/tmp/gtao-tests/
-/tmp/taa-tests/
+/output/
+/tmp/

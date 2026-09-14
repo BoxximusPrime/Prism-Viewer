@@ -53,6 +53,12 @@ in vec4 refCoord;
 in vec4 littleWave;
 in vec4 view;
 in vec3 vary_position;
+in vec2 water_position;
+in vec2 crossingWave;
+uniform vec3 normScale;
+
+vec2 waterSurfaceSlope(vec2 position, vec2 broad_uv, vec2 crossing_uv,
+                       vec4 detail_uv, float distance_to_eye);
 
 vec4 applyWaterFogViewLinearNoClip(vec3 pos, vec4 color);
 void mirrorClip(vec3 position);
@@ -65,11 +71,11 @@ void main()
 
     vec4 color;
 
-    //get detail normals
-    vec3 wave1 = texture(bumpMap, vec2(refCoord.w, view.w)).xyz*2.0-1.0;
-    vec3 wave2 = texture(bumpMap, littleWave.xy).xyz*2.0-1.0;
-    vec3 wave3 = texture(bumpMap, littleWave.zw).xyz*2.0-1.0;
-    vec3 wavef = normalize(wave1+wave2+wave3);
+    vec2 slope = waterSurfaceSlope(water_position, vec2(refCoord.w, view.w),
+                                   crossingWave, littleWave, length(vary_position));
+    vec3 wavef = vec3(slope, 1.0) * max(normScale, vec3(0.0));
+    wavef.z = max(wavef.z, 0.001);
+    wavef = normalize(wavef);
 
     //figure out distortion vector (ripply)
     vec2 distort = screen_tc;

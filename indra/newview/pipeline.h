@@ -171,9 +171,10 @@ public:
     void renderTAADebug(LLRenderTarget& dst);
     void resetTAAHistory();
     void copyScreenSpaceReflections(LLRenderTarget* src, LLRenderTarget* dst);
-    void generateLuminance(LLRenderTarget* src, LLRenderTarget* dst);
-    void generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool use_history = true);
-    void tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_correct);
+    bool isEyeAdaptationEnabled() const;
+    void generateLuminance(LLRenderTarget* src, LLRenderTarget* dst, bool eye_adaptation = false);
+    void generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool use_history = true, bool eye_adaptation = false);
+    void tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_correct, bool eye_adaptation = false);
     void gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst);
     void generateGlow(LLRenderTarget* src);
     void applyCAS(LLRenderTarget* src, LLRenderTarget* dst);
@@ -866,6 +867,13 @@ public:
 
     //water distortion texture (refraction)
     LLRenderTarget              mWaterDis;
+    LLRenderTarget              mWaterWaves;
+    LLRenderTarget              mWaterHeights;
+    LLRenderTarget              mWaterGeometryDepth;
+    U32                         mWaterGeometryDepthFrame = ~0U;
+    LLRenderTarget              mWaterWaveScratch[2];
+    U32                         mWaterWavesFrame = ~0U;
+    bool                        mWaterLightingReady = false;
 
     static const U32 MAX_PREVIEW_WIDTH;
 

@@ -786,9 +786,17 @@ void sampleReflectionProbesWater(inout vec3 ambenv, inout vec3 glossenv,
     preProbeSample(pos);
     sample_automatic = true;
     // always include void probe on water
-    probeIndex[probeInfluences++] = 0;
+    if (probeInfluences < REF_SAMPLE_COUNT)
+        probeIndex[probeInfluences++] = 0;
+    else
+        probeIndex[REF_SAMPLE_COUNT - 1] = 0;
 
-    doProbeSample(ambenv, glossenv, tc, pos, norm, glossiness, false, amblit);
+    // Water traces its own current-frame scene in waterF. Avoid also tracing
+    // the general SSR history here when global screen-space reflections are on.
+    ambenv = amblit;
+    glossenv = sampleProbes(pos, normalize(reflect(pos, norm)),
+                           (1.0 - glossiness) * max_probe_lod);
+    tapHeroProbe(glossenv, pos, norm, glossiness);
 }
 
 void debugTapRefMap(vec3 pos, vec3 dir, float depth, int i, inout vec4 col)
@@ -911,4 +919,3 @@ void applyGlossEnv(inout vec3 color, vec3 glossenv, vec4 spec, vec3 pos, vec3 no
     reflected_color *= (envIntensity*fresnel);
     color = mix(color.rgb, reflected_color*0.5, envIntensity);
  }
-

@@ -1120,7 +1120,8 @@ void LLSettingsVOWater::applySpecial(void *ptarget, bool force)
             shader->uniform1f(LLShaderMgr::MIRROR_FLAG, 0);
         }
 
-        F32 waterFogKS = 1.f / llmax(light_direction.mV[2], WATER_FOG_LIGHT_CLAMP);
+        // Lightnorm uses (world Y, world Z, world X), so elevation is Y.
+        F32 waterFogKS = 1.f / llmax(light_direction.mV[1], WATER_FOG_LIGHT_CLAMP);
 
         shader->uniform1f(LLShaderMgr::WATER_FOGKS, waterFogKS);
 
@@ -1128,12 +1129,53 @@ void LLSettingsVOWater::applySpecial(void *ptarget, bool force)
         bool underwater = (eyedepth <= 0.0f);
 
         F32 waterFogDensity = env.getCurrentWater()->getModifiedWaterFogDensity(underwater);
+        static LLCachedControl<F32> water_density_scale(gSavedSettings, "RenderWaterDensityScale", 1.f);
+        waterFogDensity *= llclamp(water_density_scale(), 0.f, 4.f);
+        static LLCachedControl<F32> water_clarity(gSavedSettings, "RenderWaterClarity", 1.f);
+        waterFogDensity /= llclamp(water_clarity(), 0.25f, 8.f);
         shader->uniform1f(LLShaderMgr::WATER_FOGDENSITY, waterFogDensity);
 
         LLColor4 fog_color(env.getCurrentWater()->getWaterFogColor());
         shader->uniform4fv(LLShaderMgr::WATER_FOGCOLOR, fog_color.mV);
 
         shader->uniform3fv(LLShaderMgr::WATER_FOGCOLOR_LINEAR, linearColor3(fog_color).mV);
+        static LLCachedControl<bool> custom_water_colors(gSavedSettings, "RenderWaterCustomColors", false);
+        const LLColor4 absorption = custom_water_colors ? gSavedSettings.getColor4("RenderWaterAbsorptionColor") : fog_color;
+        const LLColor4 scattering = custom_water_colors ? gSavedSettings.getColor4("RenderWaterScatteringColor") : fog_color;
+        shader->uniform3fv(LLShaderMgr::WATER_ABSORPTION_COLOR, linearColor3(absorption).mV);
+        shader->uniform3fv(LLShaderMgr::WATER_SCATTERING_COLOR, linearColor3(scattering).mV);
+
+        // The preset tint describes the medium, not an emissive water colour.
+        // Supply scene lighting once per environment update for every opaque,
+        // transparent and underwater fog path, in the same working colour space.
+        const auto sky = env.getCurrentSky();
+        const bool directional = sky->getIsSunUp() || sky->getIsMoonUp();
+        LLColor3 water_sun = directional ? sky->getLightDiffuse() : LLColor3::black;
+        LLColor3 water_sky(sky->getTotalAmbient());
+        static LLCachedControl<bool> water_hdr(gSavedSettings, "RenderHDREnabled");
+        static LLCachedControl<bool> water_auto_adjust(gSavedSettings, "RenderSkyAutoAdjustLegacy", false);
+        static LLCachedControl<F32> water_auto_ambient(gSavedSettings, "RenderSkyAutoAdjustAmbientScale", 0.75f);
+        static LLCachedControl<F32> water_sun_scale(gSavedSettings, "RenderSkySunlightScale", 1.5f);
+        static LLCachedControl<F32> water_hdr_sun_scale(gSavedSettings, "RenderHDRSkySunlightScale", 1.5f);
+        static LLCachedControl<F32> water_ambient_scale(gSavedSettings, "RenderSkyAmbientScale", 1.5f);
+        if (sky->getReflectionProbeAmbiance() == 0.f && sky->canAutoAdjust() && water_auto_adjust)
+            water_sky *= water_auto_ambient;
+        if (!sky->canAutoAdjust() || water_auto_adjust)
+        {
+            water_sun = linearColor3(water_sun);
+            water_sky = linearColor3(water_sky);
+        }
+        water_sun *= water_hdr ? F32(water_hdr_sun_scale) : F32(water_sun_scale);
+        water_sky *= water_ambient_scale;
+        static LLCachedControl<F32> water_sun_scattering(gSavedSettings, "RenderWaterSunScatteringScale", 1.f);
+        static LLCachedControl<F32> water_sky_scattering(gSavedSettings, "RenderWaterSkyScatteringScale", 1.f);
+        water_sun *= llclamp(water_sun_scattering(), 0.f, 3.f);
+        water_sky *= llclamp(water_sky_scattering(), 0.f, 3.f);
+        shader->uniform3fv(LLShaderMgr::WATER_FOG_SUN_COLOR, water_sun.mV);
+        shader->uniform3fv(LLShaderMgr::WATER_FOG_SKY_COLOR, water_sky.mV);
+        const LLVector3 world_light = env.getLightDirection();
+        const glm::vec3 view_light = glm::mat3(mat) * glm::vec3(world_light.mV[0], world_light.mV[1], world_light.mV[2]);
+        shader->uniform3fv(LLShaderMgr::WATER_FOG_LIGHT_DIR, glm::value_ptr(view_light));
 
         F32 blend_factor = (F32)env.getCurrentWater()->getBlendFactor();
         shader->uniform1f(LLShaderMgr::BLEND_FACTOR, blend_factor);

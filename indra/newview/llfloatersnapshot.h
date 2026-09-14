@@ -73,6 +73,8 @@ protected:
     LLUICtrl *mRefreshBtn, *mRefreshLabel;
     LLUICtrl *mSucceessLblPanel, *mFailureLblPanel;
     LLUICtrl* mFreezeFrameCheck = nullptr;
+    S32 mPhotoPreviewWidth = 0;
+    S32 mPhotoPreviewHeight = 0;
 };
 
 class LLFloaterSnapshotBase::ImplBase
@@ -161,6 +163,18 @@ public:
 
     static LLFloaterSnapshot* getInstance();
     static LLFloaterSnapshot* findInstance();
+    static bool photoActive();
+    static bool photoWorldClick(S32 x, S32 y, MASK mask);
+    static bool photoKey(KEY key, MASK mask);
+    static void photoCamera(LLVector3& position, LLVector3& up, LLVector3& focus);
+    static F32 photoFocusDistance(F32 automatic_distance);
+    void onClose(bool app_quitting) override;
+
+    bool mPhotoPickFocus = false;
+    bool mPhotoLockFocus = false;
+    bool mPhotoManualFocus = false;
+    F32 mPhotoFocusDistance = 16.f;
+    LLVector3d mPhotoFocusPoint;
     /*virtual*/ void saveTexture();
 
     typedef boost::signals2::signal<void(void)> snapshot_saved_signal_t;

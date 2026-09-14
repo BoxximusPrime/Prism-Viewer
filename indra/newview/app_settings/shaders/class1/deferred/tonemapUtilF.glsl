@@ -116,6 +116,21 @@ vec3 PBRNeutralToneMapping( vec3 color )
 uniform float exposure;
 uniform float tonemap_mix;
 uniform int tonemap_type;
+uniform int eye_adaptation;
+
+// A shoulder without a shadow toe: leave dark and middle values alone and
+// smoothly approach display white above the knee. Scaling RGB together keeps
+// highlight hues intact instead of clipping the channels independently.
+vec3 eyeAdaptationShoulder(vec3 color)
+{
+    const float knee = 0.8;
+    float peak = max(color.r, max(color.g, color.b));
+    if (peak <= knee) return color;
+
+    const float headroom = 1.0 - knee;
+    float compressed_peak = 1.0 - headroom * headroom / (peak - knee + headroom);
+    return color * (compressed_peak / peak);
+}
 
 
 vec3 toneMap(vec3 color)
@@ -139,6 +154,12 @@ vec3 toneMap(vec3 color)
     }
 
     vec3 exposed_linear_input = linear_input_color * final_exposure;
+    if (eye_adaptation != 0)
+    {
+        // Apply only to the portion the sky leaves untonemapped. An existing
+        // ACES/Neutral curve keeps its original strength and is not compressed twice.
+        exposed_linear_input = eyeAdaptationShoulder(exposed_linear_input);
+    }
     color = mix(exposed_linear_input, tonemapped_color, tonemap_mix);
 
     color = clamp(color, 0.0, 1.0);

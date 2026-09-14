@@ -36,6 +36,7 @@ uniform sampler2D diffuseRect;
 uniform sampler2D emissiveRect;
 uniform sampler2D normalMap;
 uniform float diffuse_luminance_scale;
+uniform int eye_adaptation;
 
 float lum(vec3 col)
 {
@@ -45,6 +46,22 @@ float lum(vec3 col)
 
 void main()
 {
+    if (eye_adaptation != 0)
+    {
+        // Meter the actual pre-exposure scene, including the screen edges.
+        // The stock diffuse/sky bias and glow buffer are deliberately excluded:
+        // emissive surfaces already contribute to diffuseRect here.
+        vec3 c = texture(diffuseRect, vary_fragcoord).rgb;
+        if (any(isnan(c)) || any(isinf(c))) c = vec3(0.0);
+        float L = clamp(lum(max(c, vec3(0.0))), 0.0001, 64.0);
+        float weight = 0.25 + 0.75 * (1.0 - smoothstep(0.0, 0.7,
+            distance(vary_fragcoord, vec2(0.5))));
+        // Automatic mip generation reduces weighted log luminance and its
+        // second moment. R16F is insufficient for these independent statistics.
+        frag_color = vec4(log2(L), L * L, 1.0, L) * weight;
+        return;
+    }
+
     vec2 tc = vary_fragcoord*0.6+0.2;
     tc.y -= 0.1; // HACK - nudge exposure sample down a little bit to favor ground over sky
     vec3 c = texture(diffuseRect, tc).rgb;
@@ -65,4 +82,3 @@ void main()
     float L = lum(c);
     frag_color = vec4(max(L, 0.0));
 }
-
