@@ -177,6 +177,7 @@ public:
     void tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_correct, bool eye_adaptation = false);
     void gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst);
     void generateGlow(LLRenderTarget* src);
+    void generateBloom(LLRenderTarget* src);
     void applyCAS(LLRenderTarget* src, LLRenderTarget* dst);
     void applyFXAA(LLRenderTarget* src, LLRenderTarget* dst);
     void generateSMAABuffers(LLRenderTarget* src);
@@ -879,6 +880,7 @@ public:
 
     //texture for making the glow
     LLRenderTarget              mGlow[3];
+    LLRenderTarget              mBloom[3];
 
     //noise map
     U32                 mNoiseMap;

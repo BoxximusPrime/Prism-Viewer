@@ -9451,6 +9451,42 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>RenderBloomEnabled</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable the independent HDR automatic bloom layer.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>RenderBloomIntensity</key>
+    <map>
+      <key>Comment</key><string>Intensity of the HDR automatic bloom composite.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.50</real>
+    </map>
+    <key>RenderBloomKnee</key>
+    <map>
+      <key>Comment</key><string>Width of the soft transition around the automatic bloom threshold.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>0.76</real>
+    </map>
+    <key>RenderBloomRadius</key>
+    <map>
+      <key>Comment</key><string>Sample radius of each automatic bloom blur pass.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>F32</string>
+      <key>Value</key><real>1.75</real>
+    </map>
+    <key>RenderBloomQuality</key>
+    <map>
+      <key>Comment</key><string>Number of horizontal and vertical automatic bloom blur iterations.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>S32</string>
+      <key>Value</key><integer>4</integer>
+    </map>
     <key>RenderGlow</key>
     <map>
       <key>Comment</key>
@@ -9502,13 +9538,13 @@
     <key>RenderGlowMinLuminance</key>
     <map>
       <key>Comment</key>
-      <string>Min luminance intensity necessary to consider an object bright enough to automatically glow.</string>
+      <string>Linear HDR luminance threshold for the independent automatic bloom layer.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>9999</real>
+      <real>1.4</real>
     </map>
     <key>RenderGlowResolutionPow</key>
     <map>

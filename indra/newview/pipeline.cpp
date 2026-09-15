@@ -182,6 +182,7 @@ LLColor4 LLPipeline::PreviewSpecular2;
 LLVector3 LLPipeline::PreviewDirection0;
 LLVector3 LLPipeline::PreviewDirection1;
 LLVector3 LLPipeline::PreviewDirection2;
+F32 LLPipeline::RenderGlowMinLuminance;
 F32 LLPipeline::RenderGlowMaxExtractAlpha;
 F32 LLPipeline::RenderGlowWarmthAmount;
 LLVector3 LLPipeline::RenderGlowLumWeights;
@@ -575,6 +576,7 @@ void LLPipeline::init()
     connectRefreshCachedSettingsSafe("PreviewDirection0");
     connectRefreshCachedSettingsSafe("PreviewDirection1");
     connectRefreshCachedSettingsSafe("PreviewDirection2");
+    connectRefreshCachedSettingsSafe("RenderGlowMinLuminance");
     connectRefreshCachedSettingsSafe("RenderGlowMaxExtractAlpha");
     connectRefreshCachedSettingsSafe("RenderGlowWarmthAmount");
     connectRefreshCachedSettingsSafe("RenderGlowLumWeights");
@@ -1031,6 +1033,13 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
         mPostPingMap.allocate(resX, resY, post_color_fmt);
         mPostPongMap.allocate(resX, resY, post_color_fmt);
 
+        const U32 bloom_x = llmax(1U, (resX + 1) / 2);
+        const U32 bloom_y = llmax(1U, (resY + 1) / 2);
+        for (auto& target : mBloom)
+        {
+            if (!target.allocate(bloom_x, bloom_y, GL_RGBA16F)) return false;
+        }
+
         // The water exclusion mask needs its own depth buffer so we can take care of the problem of multiple water planes.
         // Should we ever make water not just a plane, it also aids with that as well as the water planes will be rendered into the mask.
         // Why do we do this? Because it saves us some janky logic in the exclusion shader when we generate the mask.
@@ -1205,6 +1214,7 @@ void LLPipeline::refreshCachedSettings()
     PreviewDirection0 = gSavedSettings.getVector3("PreviewDirection0");
     PreviewDirection1 = gSavedSettings.getVector3("PreviewDirection1");
     PreviewDirection2 = gSavedSettings.getVector3("PreviewDirection2");
+    RenderGlowMinLuminance = gSavedSettings.getF32("RenderGlowMinLuminance");
     RenderGlowMaxExtractAlpha = gSavedSettings.getF32("RenderGlowMaxExtractAlpha");
     RenderGlowWarmthAmount = gSavedSettings.getF32("RenderGlowWarmthAmount");
     RenderGlowLumWeights = gSavedSettings.getVector3("RenderGlowLumWeights");
@@ -1326,6 +1336,7 @@ void LLPipeline::releaseGLBuffers()
     mWaterExclusionMask.release();
 
     mPostPingMap.release();
+    for (auto& target : mBloom) target.release();
     mSSSTransmission.release();
     mSSSOverlayReady = false;
     mSSSOverlayBase.release();
@@ -7502,6 +7513,22 @@ void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_co
 
         shader->bindTexture(LLShaderMgr::EXPOSURE_MAP, &mExposureMap);
 
+        static LLStaticHashedString bloom_map("bloomMap");
+        static LLStaticHashedString bloom_enabled("bloomEnabled");
+        static LLStaticHashedString bloom_intensity("bloomIntensity");
+        static LLCachedControl<bool> bloom_setting(gSavedSettings, "RenderBloomEnabled", false);
+        static LLCachedControl<F32> bloom_strength(gSavedSettings, "RenderBloomIntensity", 0.35f);
+        const bool use_bloom = bloom_setting() && gBloomExtractProgram.isComplete() && gBloomBlurProgram.isComplete();
+        constexpr S32 bloom_channel = 7;
+        shader->uniform1i(bloom_map, bloom_channel);
+        shader->uniform1i(bloom_enabled, use_bloom ? 1 : 0);
+        shader->uniform1f(bloom_intensity, llclamp((F32)bloom_strength(), 0.0f, 2.0f));
+        if (use_bloom)
+        {
+            gGL.getTexUnit(bloom_channel)->bind(&mBloom[1]);
+            gGL.getTexUnit(bloom_channel)->setTextureFilteringOption(LLTexUnit::TFO_BILINEAR);
+        }
+
         shader->uniform2f(LLShaderMgr::DEFERRED_SCREEN_RES, (GLfloat)src->getWidth(), (GLfloat)src->getHeight());
 
         static LLCachedControl<F32> exposure(gSavedSettings, "RenderExposure", 1.f);
@@ -7526,6 +7553,10 @@ void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_co
 
         gGL.getTexUnit(channel)->unbind(src->getUsage());
         shader->unbind();
+        if (use_bloom)
+        {
+            gGL.getTexUnit(bloom_channel)->unbind(mBloom[1].getUsage());
+        }
     }
     dst->flush();
 }
@@ -7585,6 +7616,58 @@ void LLPipeline::copyScreenSpaceReflections(LLRenderTarget* src, LLRenderTarget*
     }
 }
 
+void LLPipeline::generateBloom(LLRenderTarget* src)
+{
+    LL_PROFILE_GPU_ZONE("HDR bloom generate");
+
+    static LLCachedControl<bool> enabled(gSavedSettings, "RenderBloomEnabled", false);
+    if (!enabled() || !gBloomExtractProgram.isComplete() || !gBloomBlurProgram.isComplete())
+    {
+        mBloom[1].bindTarget();
+        mBloom[1].clear();
+        mBloom[1].flush();
+        return;
+    }
+
+    static LLCachedControl<F32> threshold(gSavedSettings, "RenderGlowMinLuminance", 1.0f);
+    static LLCachedControl<F32> knee(gSavedSettings, "RenderBloomKnee", 0.5f);
+    static LLCachedControl<F32> radius(gSavedSettings, "RenderBloomRadius", 1.0f);
+    static LLCachedControl<S32> quality(gSavedSettings, "RenderBloomQuality", 2);
+    static LLStaticHashedString bloom_threshold("bloomThreshold");
+    static LLStaticHashedString bloom_knee("bloomKnee");
+
+    mBloom[2].bindTarget();
+    mBloom[2].clear();
+    gBloomExtractProgram.bind();
+    gBloomExtractProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, src);
+    gBloomExtractProgram.uniform1f(bloom_threshold, llclamp((F32)threshold(), 0.0f, 8.0f));
+    gBloomExtractProgram.uniform1f(bloom_knee, llclamp((F32)knee(), 0.01f, 2.0f));
+    mScreenTriangleVB->setBuffer();
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    gBloomExtractProgram.unbind();
+    mBloom[2].flush();
+
+    const S32 passes = llclamp((S32)quality(), 1, 4) * 2;
+    const F32 blur_radius = llclamp((F32)radius(), 0.25f, 4.0f);
+    const F32 delta_x = blur_radius / (F32)mBloom[2].getWidth();
+    const F32 delta_y = blur_radius / (F32)mBloom[2].getHeight();
+    gBloomBlurProgram.bind();
+    for (S32 i = 0; i < passes; ++i)
+    {
+        LLRenderTarget& destination = mBloom[i % 2];
+        LLRenderTarget& source = i == 0 ? mBloom[2] : mBloom[(i - 1) % 2];
+        destination.bindTarget();
+        destination.clear();
+        gBloomBlurProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &source);
+        gBloomBlurProgram.uniform2f(LLShaderMgr::GLOW_DELTA,
+            i % 2 == 0 ? delta_x : 0.0f, i % 2 == 0 ? 0.0f : delta_y);
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        destination.flush();
+    }
+    gBloomBlurProgram.unbind();
+}
+
 void LLPipeline::generateGlow(LLRenderTarget* src)
 {
     LL_PROFILE_GPU_ZONE("glow generate");
@@ -7599,7 +7682,8 @@ void LLPipeline::generateGlow(LLRenderTarget* src)
         LLVector3 lumWeights = RenderGlowLumWeights;
         LLVector3 warmthWeights = RenderGlowWarmthWeights;
 
-        gGlowExtractProgram.uniform1f(LLShaderMgr::GLOW_MIN_LUMINANCE, 9999);
+        // Authored legacy/PBR glow only. Automatic luminance bloom has its own HDR layer.
+        gGlowExtractProgram.uniform1f(LLShaderMgr::GLOW_MIN_LUMINANCE, 9999.0f);
         gGlowExtractProgram.uniform1f(LLShaderMgr::GLOW_MAX_EXTRACT_ALPHA, maxAlpha);
         gGlowExtractProgram.uniform3f(LLShaderMgr::GLOW_LUM_WEIGHTS, lumWeights.mV[0], lumWeights.mV[1],
             lumWeights.mV[2]);
@@ -8608,6 +8692,8 @@ void LLPipeline::renderFinalize()
         generateLuminance(antialiased, &mLuminanceMap, eye_adaptation);
 
         generateExposure(&mLuminanceMap, &mExposureMap, true, eye_adaptation);
+
+        generateBloom(antialiased);
 
         static LLCachedControl<F32> cas_sharpness(gSavedSettings, "RenderCASSharpness", 0.4f);
         bool apply_cas = cas_sharpness != 0.0f && gCASProgram.isComplete() && gCASLegacyGammaProgram.isComplete();

@@ -175,7 +175,10 @@
                 <combo_box.item label="ACES tone mapping" value="1" />
             </combo_box>
             <slider name="photo_glow" label="Glow strength" layout="topleft" left="12" top="90" width="510" height="22" label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2" follows="left|right|top" control_name="RenderGlowStrength" />
-            <text name="photo_live_effects_hint" layout="topleft" left="12" top="135" width="510" height="44" word_wrap="true" follows="left|right|top">Adjustments apply to the live world view and the capture. Export dimensions and UI/HUD inclusion are controlled on the left.</text>
+            <check_box name="photo_bloom_enabled" label="Enable automatic HDR bloom" layout="topleft" left="12" top="120" width="510" height="22" follows="left|right|top" control_name="RenderBloomEnabled" />
+            <slider name="photo_bloom_threshold" label="HDR bloom threshold" layout="topleft" left="12" top="150" width="510" height="22" label_width="185" min_val="0" max_val="8" increment="0.1" decimal_digits="1" follows="left|right|top" control_name="RenderGlowMinLuminance" enabled_control="RenderBloomEnabled" tool_tip="Linear HDR brightness required for the independent automatic bloom layer." />
+            <slider name="photo_bloom_intensity" label="HDR bloom intensity" layout="topleft" left="12" top="180" width="510" height="22" label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2" follows="left|right|top" control_name="RenderBloomIntensity" enabled_control="RenderBloomEnabled" />
+            <text name="photo_live_effects_hint" layout="topleft" left="12" top="215" width="510" height="44" word_wrap="true" follows="left|right|top">Adjustments apply to the live world view and the capture. Export dimensions and UI/HUD inclusion are controlled on the left.</text>
             <text type="string" length="1" follows="left|top" height="20" layout="topleft" left="12" name="filter_list_label" visible="false" width="90" top="135">
             Filter:
         </text>

@@ -994,6 +994,52 @@ Combined: transmitted light from all lights, including blur.</text>
       Start with the defaults. If motion leaves trails, raise motion protection or lower history weight. HUDs stay sharp. TAA pauses for snapshots and GTAO / skin debug views.
     </text>
   </panel>
+  <panel name="graphics_bloom_panel" label="Bloom" follows="all"
+    layout="topleft" left="0" top="0" width="517" height="410">
+    <text name="BloomDescription" follows="left|top|right" layout="topleft"
+      left="30" top="12" width="355" height="40" word_wrap="true">
+      Adds a separate HDR bloom layer around bright surfaces. Authored prim and PBR glow remain on the legacy glow path.
+    </text>
+    <button name="BloomDefaults" label="Default" follows="right|top"
+      layout="topleft" left="400" top="8" width="80" height="23"
+      tool_tip="Restore this page's settings to their defaults.">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults"
+        parameter="graphics_bloom_panel" />
+    </button>
+    <check_box name="RenderBloomEnabled" control_name="RenderBloomEnabled"
+      label="Enable automatic HDR bloom" follows="left|top" layout="topleft"
+      left="30" top="62" width="450" height="20"
+      tool_tip="Adds viewer-side bloom without changing authored object glow." />
+    <slider name="RenderGlowMinLuminance" control_name="RenderGlowMinLuminance"
+      enabled_control="RenderBloomEnabled" label="HDR threshold:" label_width="190"
+      follows="left|top" layout="topleft" left="30" top="102" width="450" height="20"
+      min_val="0" max_val="8" increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
+      tool_tip="Linear HDR brightness where bloom begins. Higher values isolate only the brightest highlights." />
+    <slider name="RenderBloomKnee" control_name="RenderBloomKnee"
+      enabled_control="RenderBloomEnabled" label="Soft knee:" label_width="190"
+      follows="left|top" layout="topleft" left="30" top="138" width="450" height="20"
+      min_val="0.01" max_val="2" increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Softens the transition around the threshold to avoid a hard bloom edge." />
+    <slider name="RenderBloomIntensity" control_name="RenderBloomIntensity"
+      enabled_control="RenderBloomEnabled" label="Intensity:" label_width="190"
+      follows="left|top" layout="topleft" left="30" top="174" width="450" height="20"
+      min_val="0" max_val="2" increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Strength of the automatic bloom added before tone mapping." />
+    <slider name="RenderBloomRadius" control_name="RenderBloomRadius"
+      enabled_control="RenderBloomEnabled" label="Radius:" label_width="190"
+      follows="left|top" layout="topleft" left="30" top="210" width="450" height="20"
+      min_val="0.25" max_val="4" increment="0.25" decimal_digits="2" show_text="true"
+      tool_tip="Width of each blur pass. Increase for a broader halo." />
+    <slider name="RenderBloomQuality" control_name="RenderBloomQuality"
+      enabled_control="RenderBloomEnabled" label="Quality passes:" label_width="190"
+      follows="left|top" layout="topleft" left="30" top="246" width="450" height="20"
+      min_val="1" max_val="4" increment="1" decimal_digits="0" show_text="true"
+      tool_tip="Number of horizontal and vertical blur iterations. Higher values are smoother and wider but cost more GPU time." />
+    <text name="BloomHelp" follows="left|top|right" layout="topleft"
+      left="30" top="292" width="450" height="70" word_wrap="true" text_color="LtGray_50">
+      Bloom is extracted from the linear HDR scene and combined before tone mapping. Legacy Glow strength continues to control authored object glow independently.
+    </text>
+  </panel>
   <panel name="graphics_eye_adaptation_panel" label="EyeAd" follows="all"
     layout="topleft" left="0" top="0" width="517" height="410">
     <text name="EyeAdaptationDescription" follows="left|top|right" layout="topleft"

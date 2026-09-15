@@ -1102,7 +1102,8 @@ bool LLFloaterSnapshot::postBuild()
             if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
         });
         for (const char* name : {"photo_dof", "photo_aperture", "photo_focus_speed",
-                                "photo_exposure", "photo_tonemap", "photo_glow",
+                                "photo_exposure", "photo_tonemap", "photo_glow", "photo_bloom_enabled",
+                                "photo_bloom_threshold", "photo_bloom_intensity",
                                 "photo_sunrise", "photo_noon", "photo_sunset", "photo_midnight",
                                 "photo_shared", "photo_clouds", "photo_freeze_visuals",
                                 "photo_dutch", "photo_yaw", "photo_pitch", "photo_grade_enabled",
