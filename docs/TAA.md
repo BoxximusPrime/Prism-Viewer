@@ -11,7 +11,7 @@ continues to apply only to FXAA/SMAA.
 | History weight | 0.97 | Maximum previous-frame contribution; automatic validation can reduce it to zero. |
 | Motion protection | 0.85 | Reduces history during motion and color disagreement. Raise for clearer movement, at the cost of more shimmer. |
 | Color clipping range | 1.20 | YCoCg neighborhood standard deviations. Lower values reject stale colors more tightly. |
-| Transparency protection | 0.00 | Favors the current image where transparency/post-deferred shading changes the opaque image. |
+| Transparency protection | 0.50 | Favors the current image where transparency/post-deferred shading changes the opaque image. |
 | Sharpening | 1.50 | Range 0–2. Bounded output sharpening, outside history. Adds to general CAS sharpening. |
 | Stabilize fine static details | On | Retains thin static geometry and highlights through jitter and gentle camera motion. |
 | Debug view | Normal | Motion/reactivity, actual history weight, clipping amount, detail protection, or rejection reasons. Session-only. |

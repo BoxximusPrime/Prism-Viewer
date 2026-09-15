@@ -177,7 +177,7 @@
   <key>RenderTAAClipGamma</key>
   <map><key>Comment</key><string>TAA color clipping standard deviations (0.5 to 2). Lower values reject stale colors more aggressively.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.20</real></map>
   <key>RenderTAATransparency</key>
-  <map><key>Comment</key><string>TAA reactive protection for transparency and post-deferred shading (0 to 1).</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.00</real></map>
+  <map><key>Comment</key><string>TAA reactive protection for transparency and post-deferred shading (0 to 1).</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.50</real></map>
   <key>RenderTAASharpen</key>
   <map><key>Comment</key><string>Bounded TAA output sharpening (0 to 2). Kept outside temporal history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.50</real></map>
   <key>RenderTAADebug</key>
