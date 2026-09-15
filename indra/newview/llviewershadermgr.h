@@ -201,6 +201,8 @@ extern LLGLSLShader         gWaterDisplacementMaskProgram;
 extern LLGLSLShader         gUnderWaterProgram;
 extern LLGLSLShader         gGlowProgram;
 extern LLGLSLShader         gGlowExtractProgram;
+extern LLGLSLShader         gBloomExtractProgram;
+extern LLGLSLShader         gBloomBlurProgram;
 
 //interface shaders
 extern LLGLSLShader         gHighlightProgram;

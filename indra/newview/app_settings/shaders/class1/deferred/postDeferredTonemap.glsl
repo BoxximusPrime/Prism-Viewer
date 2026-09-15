@@ -28,6 +28,9 @@
 out vec4 frag_color;
 
 uniform sampler2D diffuseRect;
+uniform sampler2D bloomMap;
+uniform int bloomEnabled;
+uniform float bloomIntensity;
 
 in vec2 vary_fragcoord;
 
@@ -55,6 +58,11 @@ void main()
     //this is the one of the rare spots where diffuseRect contains linear color values (not sRGB)
     vec4 diff = texture(diffuseRect, vary_fragcoord);
 
+    if (bloomEnabled != 0)
+    {
+        diff.rgb += texture(bloomMap, vary_fragcoord).rgb * bloomIntensity;
+    }
+
 #ifndef NO_POST
     diff.rgb = toneMap(diff.rgb);
 #else
@@ -75,4 +83,3 @@ void main()
     //debugExposure(diff.rgb);
     frag_color = diff;
 }
-

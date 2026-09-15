@@ -148,6 +148,8 @@ LLGLSLShader        gImpostorProgram;
 // Effects Shaders
 LLGLSLShader            gGlowProgram;
 LLGLSLShader            gGlowExtractProgram;
+LLGLSLShader            gBloomExtractProgram;
+LLGLSLShader            gBloomBlurProgram;
 LLGLSLShader            gPostScreenSpaceReflectionProgram;
 
 // Deferred rendering shaders
@@ -1245,6 +1247,8 @@ bool LLViewerShaderMgr::loadShadersEffects()
     {
         gGlowProgram.unload();
         gGlowExtractProgram.unload();
+        gBloomExtractProgram.unload();
+        gBloomBlurProgram.unload();
         return true;
     }
 
@@ -1260,6 +1264,26 @@ bool LLViewerShaderMgr::loadShadersEffects()
         {
             LLPipeline::sRenderGlow = false;
         }
+    }
+
+    if (success)
+    {
+        gBloomExtractProgram.mName = "HDR Bloom Extract Shader";
+        gBloomExtractProgram.mShaderFiles.clear();
+        gBloomExtractProgram.mShaderFiles.push_back(make_pair("effects/glowExtractV.glsl", GL_VERTEX_SHADER));
+        gBloomExtractProgram.mShaderFiles.push_back(make_pair("effects/bloomExtractF.glsl", GL_FRAGMENT_SHADER));
+        gBloomExtractProgram.mShaderLevel = mShaderLevel[SHADER_EFFECT];
+        success = gBloomExtractProgram.createShader();
+    }
+
+    if (success)
+    {
+        gBloomBlurProgram.mName = "HDR Bloom Blur Shader";
+        gBloomBlurProgram.mShaderFiles.clear();
+        gBloomBlurProgram.mShaderFiles.push_back(make_pair("effects/glowV.glsl", GL_VERTEX_SHADER));
+        gBloomBlurProgram.mShaderFiles.push_back(make_pair("effects/bloomBlurF.glsl", GL_FRAGMENT_SHADER));
+        gBloomBlurProgram.mShaderLevel = mShaderLevel[SHADER_EFFECT];
+        success = gBloomBlurProgram.createShader();
     }
 
     if (success)
