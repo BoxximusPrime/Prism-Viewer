@@ -145,6 +145,7 @@
 #include "llregionhandle.h"
 #include "llsd.h"
 #include "llsdserialize.h"
+#include "llsdutil.h"
 #include "llsdutil_math.h"
 #include "llstring.h"
 #include "lluserrelations.h"
@@ -354,6 +355,86 @@ void apply_udp_blacklist(const std::string& csv);
 bool process_login_success_response();
 void on_benefits_failed_callback(const LLSD& notification, const LLSD& response);
 void transition_back_to_login_panel(const std::string& emsg);
+
+// These are Prism's added effects. Keep legacy water/graphics controls outside
+// the reset, and ignore session-only diagnostics. New effect controls are
+// picked up automatically; settings.xml remains the source of defaults.
+struct PrismGraphicsDefaults : LLControlGroup::ApplyFunctor
+{
+    LLSD defaults = LLSD::emptyMap();
+    LLSD saved = LLSD::emptyMap();
+
+    static LLSD comparable(LLControlVariable* control, const LLSD& value)
+    {
+        // XML booleans can be integers, and sliders round reals to F32.
+        if (control->isType(TYPE_BOOLEAN)) return LLSD(value.asBoolean());
+        if (control->isType(TYPE_F32)) return LLSD(F64(F32(value.asReal())));
+        if (control->isType(TYPE_COL4)) return LLColor4(value).getValue();
+        return value;
+    }
+
+    void apply(const std::string& name, LLControlVariable* control) override
+    {
+        // Unknown settings survive in old user files, including this removed mode.
+        if (!control->isPersisted() || name == "RenderWater" || name == "RenderWaterMaterials" ||
+            name == "RenderWaterMipNormal" || name == "RenderWaterRefResolution" ||
+            name == "BoxxySSSFullResolution") return;
+
+        bool included = name == "RenderFSAAType" || name == "RenderGlowMinLuminance";
+        for (const std::string prefix : { "BoxxySSS", "RenderGTAO", "RenderPCSS", "RenderTAA",
+            "RenderWater", "RenderVolumeFog", "RenderBloom", "RenderEyeAdaptation" })
+        {
+            included |= name.compare(0, prefix.size(), prefix) == 0;
+        }
+        if (included)
+        {
+            defaults[name] = comparable(control, control->getDefault());
+            saved[name] = comparable(control, control->getSaveValue());
+        }
+    }
+};
+
+static void record_graphics_defaults(const std::string& version, const LLSD& defaults)
+{
+    gSavedSettings.setString("PrismGraphicsDefaultsVersion", version);
+    gSavedSettings.setLLSD("PrismGraphicsDefaultsSnapshot", defaults);
+    gSavedSettings.saveToFile(gSavedSettings.getString("ClientSettingsFile"), true);
+}
+
+static void show_graphics_defaults_if_required()
+{
+    const std::string version = LLVersionInfo::instance().getShortVersion();
+    if (gSavedSettings.getString("PrismGraphicsDefaultsVersion") == version) return;
+
+    PrismGraphicsDefaults graphics;
+    gSavedSettings.applyToAll(&graphics);
+    if (llsd_equals(graphics.defaults, gSavedSettings.getLLSD("PrismGraphicsDefaultsSnapshot")) ||
+        llsd_equals(graphics.defaults, graphics.saved))
+    {
+        // No shipped changes, or the user's settings already match this release.
+        record_graphics_defaults(version, graphics.defaults);
+        return;
+    }
+
+    LLSD args;
+    args["VERSION"] = version;
+    LLNotificationsUtil::add("PrismGraphicsDefaultsUpdate", args, LLSD(),
+        [version, defaults = graphics.defaults](const LLSD& notification, const LLSD& response)
+        {
+            const S32 option = LLNotificationsUtil::getSelectedOption(notification, response);
+            if (option != 0 && option != 1) return; // Unanswered: ask next startup.
+            if (option == 0)
+            {
+                for (const auto& entry : llsd::inMap(defaults))
+                {
+                    gSavedSettings.getControl(entry.first)->resetToDefault(true);
+                }
+                gSavedSettings.setString("PresetGraphicActive", "");
+                LLPresetsManager::getInstance()->triggerChangeSignal();
+            }
+            record_graphics_defaults(version, defaults);
+        });
+}
 
 void callback_cache_name(const LLUUID& id, const std::string& full_name, bool is_group)
 {
@@ -991,6 +1072,13 @@ bool idle_startup()
         }
         LL_DEBUGS("AppInit") << "PeekMessage processed" << LL_ENDL;
 #endif
+        // Login retries return here too; only queue one prompt per process.
+        static bool checked_graphics_defaults = false;
+        if (!checked_graphics_defaults)
+        {
+            checked_graphics_defaults = true;
+            show_graphics_defaults_if_required();
+        }
         do_startup_frame();
         uninstall_nsis_if_required();
         timeout.reset();

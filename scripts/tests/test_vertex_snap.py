@@ -7,7 +7,7 @@ import tempfile
 
 source = (Path(__file__).resolve().parents[2] / "indra/newview/llmaniptranslate.cpp").read_text()
 start = source.index("    if (hasMouseCapture() && mVertexDrag)")
-end = source.index("    // Translation tool only works", start)
+end = source.index("    if (hasMouseCapture() && mCenterDrag)", start)
 harness = r"""
 #include <cassert>
 using F32=float;

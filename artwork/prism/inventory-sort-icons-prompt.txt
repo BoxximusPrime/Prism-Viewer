@@ -1,0 +1,12 @@
+Generated with the built-in imagegen tool. Source atlas: indra/newview/skins/default/textures/icons/prism_sort_categories.png
+Twelve icons in a 4 x 3 grid, 362px square cells; textures.xml clips the atlas without separate image files.
+
+Use case: ui-mockup / icon asset.
+Generate a production-ready transparent PNG sprite atlas of TWELVE generalized clothing category icons for the Prism inventory viewer. Exactly a regular 4-column by 3-row grid, equal square cells, canvas 1536x1152 (4:3). Absolutely transparent RGBA background, no checkerboard painted in, no labels or letters, no grid lines, no cell backgrounds, no framing or UI.
+Each item must be centered in its own cell with a consistent 20 percent empty margin on all four sides, wholly contained within its cell. Consistent visual scale, centered silhouettes. These will be shown at 48px on a charcoal UI.
+Style: tasteful softly shaded realistic miniature wardrobe objects, neutral ivory and warm gray fabric, restrained amber/brass details, soft top-left lighting, recognizable clear silhouettes and strong edges. No black-on-black: dark articles are medium slate gray with pale edge highlights. No ground shadow outside object silhouettes. Clothing only, no bodies, no people, no mannequins.
+EXACT cell contents and ordering reading left-to-right:
+Row 1: a simple ivory short-sleeve t-shirt for tops; straight-leg slate gray trousers for bottoms; a single warm-gray ankle boot side view for shoes; an ivory sleeveless knee-length dress for dresses.
+Row 2: a gray pleated skirt for skirts; an ivory casual jacket for outerwear; simple gray briefs for underwear; a pair of ivory socks for socks.
+Row 3: a warm-gray wide-brim hat for hats; pale brass-framed eyeglasses for glasses; a gray shoulder bag for bags; a pale gold pendant necklace in a closed loop for jewelry.
+One object/category per cell (socks is a pair). All twelve categories distinctly readable. Sharp clean alpha edges, no text or logos. Match the restrained, realistic clothing miniatures of a premium dark desktop inventory application.

@@ -200,11 +200,13 @@ F32 LLManip::getSubdivisionLevel(const LLVector3 &reference_point, const LLVecto
 
 void LLManip::handleSelect()
 {
+    mTemporarySnap = false;
     mObjectSelection = LLSelectMgr::getInstance()->getEditSelection();
 }
 
 void LLManip::handleDeselect()
 {
+    mTemporarySnap = false;
     mHighlightedPart = LL_NO_PART;
     mManipPart = LL_NO_PART;
     mObjectSelection = NULL;
@@ -252,6 +254,23 @@ bool LLManip::handleMouseUp(S32 x, S32 y, MASK mask)
 void LLManip::updateGridSettings()
 {
     sGridMaxSubdivisionLevel = gSavedSettings.getBOOL("GridSubUnit") ? (F32)gSavedSettings.getS32("GridSubdivision") : 1.f;
+}
+
+bool LLManip::updateSnapMode(MASK mask)
+{
+    const bool previous = mTemporarySnap;
+    // Shift alone temporarily snaps ordinary handles. Vertex and center drags
+    // have their own gestures, and the saved grid checkbox is never changed.
+    mTemporarySnap = hasMouseCapture() && mask == MASK_SHIFT &&
+        mManipPart != LL_NO_PART && mManipPart != LL_TRANSLATE_CENTER &&
+        !gSavedSettings.getBOOL("SnapEnabled");
+    if (mTemporarySnap) updateGridSettings();
+    return previous != mTemporarySnap;
+}
+
+bool LLManip::isSnapEnabled() const
+{
+    return gSavedSettings.getBOOL("SnapEnabled") || mTemporarySnap;
 }
 
 bool LLManip::getMousePointOnPlaneAgent(LLVector3& point, S32 x, S32 y, LLVector3 origin, LLVector3 normal)

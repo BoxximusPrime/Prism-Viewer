@@ -29,6 +29,18 @@ with the same filename but different name
 -->
 
 <textures version="101">
+  <texture name="SortCategory_tops" file_name="icons/prism_sort_categories.png" preload="false" clip.left="0" clip.right="362" clip.top="1086" clip.bottom="724" />
+  <texture name="SortCategory_bottoms" file_name="icons/prism_sort_categories.png" preload="false" clip.left="362" clip.right="724" clip.top="1086" clip.bottom="724" />
+  <texture name="SortCategory_shoes" file_name="icons/prism_sort_categories.png" preload="false" clip.left="724" clip.right="1086" clip.top="1086" clip.bottom="724" />
+  <texture name="SortCategory_dresses" file_name="icons/prism_sort_categories.png" preload="false" clip.left="1086" clip.right="1448" clip.top="1086" clip.bottom="724" />
+  <texture name="SortCategory_skirts" file_name="icons/prism_sort_categories.png" preload="false" clip.left="0" clip.right="362" clip.top="724" clip.bottom="362" />
+  <texture name="SortCategory_outerwear" file_name="icons/prism_sort_categories.png" preload="false" clip.left="362" clip.right="724" clip.top="724" clip.bottom="362" />
+  <texture name="SortCategory_underwear" file_name="icons/prism_sort_categories.png" preload="false" clip.left="724" clip.right="1086" clip.top="724" clip.bottom="362" />
+  <texture name="SortCategory_socks" file_name="icons/prism_sort_categories.png" preload="false" clip.left="1086" clip.right="1448" clip.top="724" clip.bottom="362" />
+  <texture name="SortCategory_hats" file_name="icons/prism_sort_categories.png" preload="false" clip.left="0" clip.right="362" clip.top="362" clip.bottom="0" />
+  <texture name="SortCategory_glasses" file_name="icons/prism_sort_categories.png" preload="false" clip.left="362" clip.right="724" clip.top="362" clip.bottom="0" />
+  <texture name="SortCategory_bags" file_name="icons/prism_sort_categories.png" preload="false" clip.left="724" clip.right="1086" clip.top="362" clip.bottom="0" />
+  <texture name="SortCategory_jewelry" file_name="icons/prism_sort_categories.png" preload="false" clip.left="1086" clip.right="1448" clip.top="362" clip.bottom="0" />
   <texture name="Light_Source_Icon" file_name="icons/light_source.png" preload="false" />
   <!-- Please add new files alphabetically to prevent merge conflicts. JC -->
   <texture name="Accordion_ArrowClosed_Off" file_name="containers/Accordion_ArrowClosed_Off.png" preload="false" />

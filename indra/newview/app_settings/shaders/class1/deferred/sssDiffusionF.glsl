@@ -18,7 +18,6 @@ uniform vec4 sss_params; // strength, mode, warmth, maximum distance
 uniform float sss_depth; // scattering radius in meters, not mesh thickness
 uniform int sss_pass; // 0/1: full-resolution narrow filter/composite, 2: prepare, 3/4: wide filter
 uniform int sss_smoothing_pass; // filter isolated transmission with gentler normal rejection
-uniform int sss_full_resolution; // screenshot quality: original contiguous per-pixel gather
 uniform vec2 screen_res;
 uniform mat4 inv_proj;
 
@@ -177,8 +176,8 @@ void main()
     }
     // Keep the original per-pixel filter for small radii, blending to the wide
     // buffer over 8--16 pixels so zooming cannot expose a resolution switch.
-    float wide = sss_full_resolution != 0 ? 0.0 : smoothstep(8.0, 16.0, radius);
-    if (sss_full_resolution == 0 && sss_pass == 0 && radius > 20.0)
+    float wide = smoothstep(8.0, 16.0, radius);
+    if (sss_pass == 0 && radius > 20.0)
     {
         frag_color = vec4(texture(diffuseMap, tc).rgb / albedo, 0.0);
         return;
@@ -187,8 +186,7 @@ void main()
     vec3 sigma = kernelSigma();
     vec3 sum = vec3(0.0);
     vec3 weights = vec3(0.0);
-    // Screenshot quality evaluates the full requested radius here; the default
-    // path evaluates wide radii on the quarter-resolution grid above.
+    // Wide radii are evaluated on the quarter-resolution grid above.
     int axis = sss_pass == 0 ? 0 : 1;
     int taps = int(ceil(min(radius, screen_res[axis])));
     int pixel = int(tc[axis] * screen_res[axis]);

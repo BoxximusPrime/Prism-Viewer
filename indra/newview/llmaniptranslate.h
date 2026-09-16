@@ -65,6 +65,7 @@ public:
     virtual bool    handleKey(KEY key, MASK mask) override;
     virtual void    onMouseCaptureLost() override;
     static bool     vertexSnapHeld();
+    bool            centerHandleHit(S32 x, S32 y) const;
 
 
 protected:
@@ -87,9 +88,13 @@ protected:
     F32         getMinGridScale();
 
 private:
+    bool        getCenterHandle(LLVector3& position) const;
+    bool        updateSurfaceBounds();
+    LLVector3   getSurfaceOffset(const LLVector3& normal) const;
+    bool        findSurface(S32 x, S32 y, LLVector3d& point, LLVector3& normal);
     bool        findVertex(S32 x, S32 y, bool source, LLPointer<LLViewerObject>& object, LLVector3& local);
     bool        vertexPoint(LLVector3d& point) const;
-    void        renderVertexMarker(const LLVector3d& point, const LLColor4& color);
+    void        renderVertexMarker(const LLVector3d& point, const LLColor4& color, bool filled = false);
     void        applyTranslation(const LLVector3d& clamped_relative_move);
     LLPointer<LLViewerObject> mVertexObject;
     LLVector3   mVertexLocal;
@@ -97,6 +102,12 @@ private:
     LLVector3d  mVertexDestination;
     bool        mVertexDrag = false;
     bool        mVertexTarget = false;
+    bool        mCenterDrag = false;
+    bool        mSurfaceSnapActive = false;
+    bool        mSurfaceBoundsValid = false;
+    LLVector3   mSurfaceMin;
+    LLVector3   mSurfaceMax;
+    LLVector3   mSurfaceOffset;
     S32         mLastHoverMouseX;
     S32         mLastHoverMouseY;
     bool        mMouseOutsideSlop;      // true after mouse goes outside slop region

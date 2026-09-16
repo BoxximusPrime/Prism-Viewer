@@ -461,6 +461,7 @@ bool LLManipRotate::handleMouseDownOnPart( S32 x, S32 y, MASK mask )
 
     // Route future Mouse messages here preemptively.  (Release on mouse up.)
     setMouseCapture( true );
+    updateSnapMode(mask);
     LLSelectMgr::getInstance()->enableSilhouette(false);
 
     mHelpTextTimer.reset();
@@ -520,6 +521,7 @@ bool LLManipRotate::handleMouseUp(S32 x, S32 y, MASK mask)
 
 bool LLManipRotate::handleHover(S32 x, S32 y, MASK mask)
 {
+    updateSnapMode(mask);
     if( hasMouseCapture() )
     {
         if( mObjectSelection->isEmpty() )
@@ -621,7 +623,7 @@ void LLManipRotate::drag( S32 x, S32 y, MASK mask )
         return;
     }
 
-    const bool aim = mManipPart == LL_ROT_GENERAL && (mask & MASK_SHIFT) &&
+    const bool aim = mManipPart == LL_ROT_GENERAL && (mask & MASK_SHIFT) && !mTemporarySnap &&
         mObjectSelection->getSelectType() != SELECT_TYPE_HUD;
     mAimHit = false;
     if (aim != mAimMode)
@@ -647,6 +649,18 @@ void LLManipRotate::drag( S32 x, S32 y, MASK mask )
     else
     {
         mRotation = dragConstrained(x, y);
+    }
+
+    if (mTemporarySnap)
+    {
+        // Snap the normal drag angle on every handle, including the free sphere
+        // and edge-on rings, without needing to drag outside to the ruler.
+        F32 angle;
+        LLVector3 axis;
+        mRotation.getAngleAxis(&angle, axis);
+        mRotation = LLQuaternion(ll_round(angle, SNAP_ANGLE_INCREMENT * DEG_TO_RAD), axis);
+        mInSnapRegime = true;
+        mSmoothRotate = false;
     }
 
     bool damped = mSmoothRotate;
@@ -877,8 +891,7 @@ void LLManipRotate::renderActiveRing( F32 radius, F32 width, const LLColor4& fro
 
 void LLManipRotate::renderSnapGuides()
 {
-    static LLCachedControl<bool> snap_enabled(gSavedSettings, "SnapEnabled", true);
-    if (!snap_enabled)
+    if (!isSnapEnabled())
     {
         return;
     }
@@ -1783,9 +1796,12 @@ LLQuaternion LLManipRotate::dragConstrained( S32 x, S32 y )
         }
     }
 
-    F32 rot_step = gSavedSettings.getF32("RotationStep");
-    F32 step_size = DEG_TO_RAD * rot_step;
-    angle -= fmod(angle, step_size);
+    if (!mTemporarySnap)
+    {
+        F32 rot_step = gSavedSettings.getF32("RotationStep");
+        F32 step_size = DEG_TO_RAD * rot_step;
+        angle -= fmod(angle, step_size);
+    }
 
     return LLQuaternion( angle, constraint_axis );
 }

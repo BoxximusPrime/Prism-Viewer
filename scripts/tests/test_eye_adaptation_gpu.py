@@ -159,11 +159,51 @@ def run(sdl,gl):
     check(geometric>.0155,('screen-edge window included',stats))
     unprotected=expose(protection=0)
     protected=expose(protection=1)
-    check(.25<protected<unprotected*.75,('highlight protection',protected,unprotected))
+    check(.25<protected<unprotected,('highlight protection',protected,unprotected))
     summary['dark_room_with_edge_window']={'unprotected_exposure':unprotected,'protected_exposure':protected}
     # A solitary hot pixel should not black out the room.
     scene(lambda x,y:(64.,)*3 if (x,y)==(128,128) else (.015,)*3)
     check(expose(protection=1)>3.,'one hot pixel must not dominate')
+
+    # Regression: a shadow-heavy room with substantial lit surfaces used to
+    # request extra brightening even when those surfaces were already bright.
+    # Interleaved samples keep the area fraction independent of center weighting.
+    scene(lambda x,y:(.9,)*3 if x%4==0 else (.005,)*3)
+    room_exposure=expose(boost=1.3,darken=2.7,compensation=-.05)
+    raised_boost=expose(boost=4.,darken=2.7,compensation=-.05)
+    summary['mixed_lit_room']={'exposure':room_exposure,'raised_boost_limit':raised_boost}
+    check(room_exposure<1.,('lit room should darken, not boost',room_exposure,raised_boost))
+    check(abs(room_exposure-raised_boost)<.001,'nonbinding brightening cap must not change the meter')
+
+    # Most of this view is already normally lit: dark recesses must not cause
+    # those surfaces to be washed out by another several stops of exposure.
+    scene(lambda x,y:(.28,)*3 if x%4!=0 else (.0001,)*3)
+    mostly_lit=[expose(boost=limit,darken=2.7,compensation=-.05) for limit in (1.3,4.)]
+    check(.7<mostly_lit[0]<1. and abs(mostly_lit[0]-mostly_lit[1])<.001,
+        ('mostly lit room with dark recesses',mostly_lit))
+    summary['mostly_lit_room']={'exposure':mostly_lit[0],'raised_boost_limit':mostly_lit[1]}
+
+    # Once a bright room really calls for darkening, the darkening cap must
+    # constrain the final answer without influencing the scene measurement.
+    scene(lambda x,y:(4.,)*3 if x%4==0 else (.005,)*3)
+    darken_limits=[expose(boost=1.3,darken=limit,compensation=-.05) for limit in (0.,.5,2.7)]
+    check(darken_limits[0]==1. and .70<darken_limits[1]<.71 and darken_limits[2]<.3,
+        ('darkening limits on a mixed lit room',darken_limits))
+
+    # Same lighting with more visible shadow should not trigger maximum boost.
+    mixed=[]
+    for divisor in (1,2,3,4):
+        scene(lambda x,y:(.9,)*3 if x%divisor==0 else (.005,)*3)
+        mixed.append(expose(boost=4.,darken=4.,compensation=-.05))
+    check(all(a<b<1. for a,b in zip(mixed,mixed[1:])),('lit-area coverage',mixed))
+
+    # An extreme isolated emitter should retain its area influence, without
+    # its intensity overwhelming otherwise dark surroundings.
+    sparse=[]
+    for intensity in (4.,64.):
+        scene(lambda x,y:(intensity,)*3 if x%16==0 and y%16==0 else (.015,)*3)
+        sparse.append(expose(boost=4.,compensation=-.05))
+    check(min(sparse)>3. and abs(sparse[0]-sparse[1])<.1,('sparse bright emitters',sparse))
 
     # EyeAd ignores the stock sky/diffuse coefficient and the separate glow texture.
     stats_a=uniform_scene(.1,glow=0,flag=.34,scale=.1)

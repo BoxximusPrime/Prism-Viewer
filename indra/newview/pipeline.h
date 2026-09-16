@@ -807,6 +807,7 @@ public:
     LLRenderTarget          mTAAResolved;
     bool                   mTAAFrameActive = false;
     bool                   mTAAHistoryValid = false;
+    bool                   mTAAOpaqueReady = false;
     bool                   mTAAMotionReady = false;
     U32                    mTAAIndex = 0;
     U32                    mTAASequence = 0;

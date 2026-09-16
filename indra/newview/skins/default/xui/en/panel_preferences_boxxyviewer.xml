@@ -61,7 +61,7 @@
    layout="topleft"
    left="150"
    name="prevent_left_click_actions"
-   tool_tip="Prevent left clicks from activating world objects and worn attachments. HUD attachments remain interactive, and action cursor icons are still shown."
+   tool_tip="Block special left-click actions such as Sit, Buy, and Open. Pay and Touch remain allowed, HUD attachments remain interactive, and action cursor icons are still shown."
    top_delta="0"
    width="330" />
   <view_border

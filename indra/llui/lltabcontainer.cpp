@@ -557,6 +557,23 @@ void LLTabContainer::draw()
 
 
 // virtual
+bool LLTabContainer::handleScrollWheel(S32 x, S32 y, S32 clicks)
+{
+    if (!mIsVertical && !getTabsHidden() && !mHideScrollArrows &&
+        mMaxScrollPos > 0 && getTabCount() > 0)
+    {
+        const LLRect& button = getTab(0)->mButton->getRect();
+        const LLRect strip(0, button.mTop, getRect().getWidth(), button.mBottom);
+        if (strip.pointInRect(x, y))
+        {
+            // Pan only: keep the active page and keyboard focus unchanged.
+            mScrollPos = llclamp(mScrollPos + clicks, 0, mMaxScrollPos);
+            return true;
+        }
+    }
+    return LLPanel::handleScrollWheel(x, y, clicks);
+}
+
 bool LLTabContainer::handleMouseDown( S32 x, S32 y, MASK mask )
 {
     static LLUICachedControl<S32> tabcntrv_pad ("UITabCntrvPad", 0);
@@ -1959,24 +1976,27 @@ void LLTabContainer::initButtons()
         // Left and right scroll arrows (for when there are too many tabs to show all at once).
         S32 btn_top = (getTabPosition() == TOP ) ? getRect().getHeight() - getTopBorderHeight() : tabcntr_arrow_btn_size + 1;
 
+        // Keep arrow art square and centered within taller tab strips.
+        btn_top -= (mTabHeight - tabcntr_arrow_btn_size) / 2;
+
         LLRect left_arrow_btn_rect;
-        left_arrow_btn_rect.setLeftTopAndSize( LLPANEL_BORDER_WIDTH+1+tabcntr_arrow_btn_size, btn_top + arrow_fudge, tabcntr_arrow_btn_size, mTabHeight );
+        left_arrow_btn_rect.setLeftTopAndSize( LLPANEL_BORDER_WIDTH+1+tabcntr_arrow_btn_size, btn_top + arrow_fudge, tabcntr_arrow_btn_size, tabcntr_arrow_btn_size );
 
         LLRect jump_left_arrow_btn_rect;
-        jump_left_arrow_btn_rect.setLeftTopAndSize( LLPANEL_BORDER_WIDTH+1, btn_top + arrow_fudge, tabcntr_arrow_btn_size, mTabHeight );
+        jump_left_arrow_btn_rect.setLeftTopAndSize( LLPANEL_BORDER_WIDTH+1, btn_top + arrow_fudge, tabcntr_arrow_btn_size, tabcntr_arrow_btn_size );
 
         S32 right_pad = tabcntr_arrow_btn_size + LLPANEL_BORDER_WIDTH + 1;
 
         LLRect right_arrow_btn_rect;
         right_arrow_btn_rect.setLeftTopAndSize( getRect().getWidth() - mRightTabBtnOffset - right_pad - tabcntr_arrow_btn_size,
                                                 btn_top + arrow_fudge,
-                                                tabcntr_arrow_btn_size, mTabHeight );
+                                                tabcntr_arrow_btn_size, tabcntr_arrow_btn_size );
 
 
         LLRect jump_right_arrow_btn_rect;
         jump_right_arrow_btn_rect.setLeftTopAndSize( getRect().getWidth() - mRightTabBtnOffset - right_pad,
                                                      btn_top + arrow_fudge,
-                                                     tabcntr_arrow_btn_size, mTabHeight );
+                                                     tabcntr_arrow_btn_size, tabcntr_arrow_btn_size );
 
         LLButton::Params p;
         p.name(std::string("Jump Left Arrow"));

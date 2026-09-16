@@ -11,7 +11,7 @@ continues to apply only to FXAA/SMAA.
 | History weight | 0.97 | Maximum previous-frame contribution; automatic validation can reduce it to zero. |
 | Motion protection | 0.85 | Reduces history during motion and color disagreement. Raise for clearer movement, at the cost of more shimmer. |
 | Color clipping range | 1.20 | YCoCg neighborhood standard deviations. Lower values reject stale colors more tightly. |
-| Transparency protection | 0.50 | Favors the current image where transparency/post-deferred shading changes the opaque image. |
+| Transparency protection | 0.50 | Favors the current image where blended layers change the opaque image. Higher values reduce trails but can increase shimmer. |
 | Sharpening | 1.50 | Range 0–2. Bounded output sharpening, outside history. Adds to general CAS sharpening. |
 | Stabilize fine static details | On | Retains thin static geometry and highlights through jitter and gentle camera motion. |
 | Debug view | Normal | Motion/reactivity, actual history weight, clipping amount, detail protection, or rejection reasons. Session-only. |
@@ -50,16 +50,20 @@ Accurate rigged mesh motion replaces that fallback on visible mesh surfaces.
 This intentionally gives less temporal smoothing to untracked geometry.
 
 The HDR resolve runs before exposure, tone mapping, CAS, glow, and depth of field.
-It reconstructs the current unjittered image, dilates closest-surface motion and
+It reconstructs the current unjittered image in compressed HDR space, dilates closest-surface motion and
 reactive coverage, rejects offscreen history and mismatching history depths,
 clips compressed HDR history against a 3×3 YCoCg variance/min-max box, and lowers
 history weight for fast movement and color disagreement. Every contributing
-history tap is validated before filtering. Invalid colors are discarded, valid
+history tap is validated and compressed before filtering. Invalid colors are discarded, valid
 colors are renormalized, and missing support reduces history weight. A wholly
 invalid footprint still rejects history. History stores the
 depth of the same nearest surface used for motion dilation, so jitter does not
 invalidate stationary silhouettes by mixing foreground and background ownership.
-The output is sharpened only for presentation;
+Current reconstruction reuses the existing neighborhood fetches with bilinear
+weights. Compressing each tap before interpolation prevents a small HDR highlight
+from dominating the whole footprint; compression after raw HDR interpolation
+cannot undo that spread. Flat HDR colors are preserved, while mixed bright/dark
+pixels have a different, bounded response. The output is sharpened only for presentation;
 scene glow alpha is retained separately from history depth.
 
 Static details receive up to one eight-frame jitter cycle of protection from
@@ -73,7 +77,10 @@ feature retains its previous depth pair. The old 0.01-pixel motion cutoff is
 replaced by graded confidence: coherent motion up to 0.5 pixels/frame retains
 full protection, which fades to zero by 4 pixels/frame; differing neighboring
 velocities reduce protection too. Changed background shading, new occluders,
-and reactive shading cancel protection. Static eligibility is tracked when batching geometry; rigged,
+and strongly reactive shading cancel protection. Faint composition retains
+validated detail protection; reactivity between 0.05 and 0.25 smoothly removes it.
+The usual reactive reduction of history weight still applies at every strength.
+Static eligibility is tracked when batching geometry; rigged,
 active, flexible, texture-animated, and newly rebuilt batches retain strict
 history rejection. The option can be disabled in Graphics > TAA. This adds no
 geometry pass. Shader-only changes can be tested using the viewer's shader reload;
@@ -95,9 +102,12 @@ no extra persistent buffers are allocated. Sharpening settings and filters are
 unchanged by the September stability fixes.
 
 A pre-transparency HDR color snapshot provides conservative reactive detection
-for blended hair, clothing, particles, water, and other post-deferred shading,
-including Exact OIT composition. This also reduces history on some static
-fullbright surfaces. Transparent layers do not have independent motion vectors.
+for blended hair, clothing, particles, water, and Exact OIT composition. It is
+captured after post-deferred opaque/fullbright/masked surfaces and water haze,
+before blended pools and the water surface. Atmospheric haze and volume fog
+also update this reference, so opaque lighting is not mistaken for transparency.
+Transparent layers do not have independent motion vectors; even static blended
+textures can therefore trade stability for less ghosting at high protection.
 
 History resets on AA/resource changes, resolution/projection changes, camera mode
 changes, large camera cuts, region-origin shifts, skipped/long frames, relevant
@@ -116,6 +126,131 @@ There is an additional untextured geometry pass; total cost depends on visible
 draw calls and skinned geometry as well as image resolution.
 
 ## Validation and remaining limits
+
+September 16 stationary-flicker fixes are in progress/uncommitted. The report
+reproduced with a still camera and persisted with GTAO disabled. A follow-up video
+shows fluctuations around both distant railings/stairs and foliage while the sky
+is nearly constant. The user reports little change from sharpening, partial
+improvement from the initial shader fixes, and much better stability on nearby
+blended textures with transparency protection at 0.1–0.2.
+
+The follow-up exposed a pipeline ordering error: the opaque reference was taken
+before post-deferred fullbright/masked surfaces, atmospheric haze and volume fog.
+The resolve compared that incomplete reference with the final lit scene. Ordinary
+opaque surfaces could therefore receive strong reactive rejection, particularly
+at distances with stronger haze. The capture now follows opaque post-deferred
+passes and water haze, and both images receive the same later haze/fog transforms.
+Actual alpha composition remains excluded from the reference.
+
+`scripts/tests/test_taa_composition_gpu.py` covers the C++ pass ordering and runs
+the production haze, fog-composite and TAA shaders. The atmosphere dependency uses
+a deterministic test preset. With identical resolve code, changing only the
+reference to include the missing contribution gives:
+
+| Stationary synthetic input | Incomplete reference | Correct reference | Reduction |
+| --- | ---: | ---: | ---: |
+| Thin geometry through atmospheric haze | 0.11893 | 0.00498 | 95.8% |
+| Post-deferred fullbright masked detail | 0.23927 | 0.00830 | 96.5% |
+| Thin geometry through volume fog | 0.13809 | 0.00584 | 95.8% |
+
+These are mean per-pixel peak-to-peak bounded brightness over the last 16 of 96
+frames, before presentation sharpening, using history 0.97, motion 0.85,
+clipping 1.20, transparency 0.50 and fine-detail stabilization. Corrected opaque
+cases retain approximately 0.97 history weight instead of 0.27–0.37. A separate
+blended-layer case verifies that transparency protection still reduces history.
+These controlled scenes reproduce the integration fault; the compressed clip
+alone cannot identify the cause of each fluctuating pixel, and an in-world retest
+is still needed.
+
+All six TAA suites pass 208 checks, including the 12 new composition checks;
+the volume-fog suite also passes 46 GPU checks on the RTX 5090. The Release build
+passed and the staged resolve shader matches the source. This renderer change requires
+the new executable, not only a shader reload. It adds no persistent buffers or
+settings. With TAA active, atmospheric haze draws once more into its reference;
+active volume fog adds a composite and copy using existing TAA scratch storage,
+without repeating fog integration. In-world performance is not yet measured.
+
+The initial shader investigation reproduced and corrected two independent
+resolve problems without GTAO:
+
+- A hard `reactive < 0.01` eligibility test disabled all thin-detail protection
+  under faint post-deferred composition, even when it was static. A 4% gray
+  overlay on thin bars triggered this failure. Protection now fades with
+  reactivity while preserving depth, motion, background and lifetime checks.
+- Both current reconstruction and history reprojection filtered raw HDR before
+  compression. They now filter individual compressed samples, consistent with
+  temporal accumulation and neighborhood clipping. A quarter-pixel contribution
+  from a 1024-intensity highlight previously approached white after compression;
+  it now contributes a quarter of that highlight's bounded color.
+
+Measured on the RTX 5090 at the reported settings (history 0.97, motion 0.85,
+clipping 1.20, transparency 0.50, sharpening 1.50, static details on):
+
+| Stationary synthetic input | Before | After | Reduction |
+| --- | ---: | ---: | ---: |
+| Thin bars with 4% gray composition | 0.29712 | 0.01459 | 95.1% |
+| 0.65-pixel HDR specks, peak 1024 | 0.01486 | 0.00414 | 72.2% |
+| Thin bars on a textured background | 0.09207 | 0.07172 | 22.1% |
+| Dense 1.4-pixel-period bars | 0.06320 | 0.05457 | 13.7% |
+| High-frequency checker texture | 0.05657 | 0.05510 | 2.6% |
+
+The metric is mean per-pixel peak-to-peak `red / (1 + red)` over the final
+16 of 96 frames, including TAA presentation sharpening. It is a bounded proxy
+for display brightness, not the viewer's actual tonemapper. These tests exclude
+CAS, bloom, exposure and GTAO. The measurements establish specific improvements,
+not the cause or cure of every pixel in the reported in-world scene.
+
+The initial five TAA suites pass 196 GPU checks, including 52 stationary-flicker
+checks in `scripts/tests/test_taa_flicker_gpu.py`. The new tests also check mean
+feature coverage (so losing detail cannot masquerade as stability), current and
+history HDR interpolation, image borders, gradual reactivity, animated/untracked
+rejection, and removed-detail expiry. The analytic edge reference now uses the
+same bounded-color filtering convention; the high-history test measures after
+80 settling frames, since 48 frames at 0.97 still retain 23% of the reset frame.
+The checkbox test compares enabled/disabled stability instead of requiring a
+fixed minimum amount of flicker from the old reconstruction filter.
+
+The initial shader-only Release build passed and the staged resolve shader matched
+the source. Those changes add no render targets, passes, samplers, settings, or texture
+fetches. Existing settings, including sharpening, remain unchanged. Restart the
+Release viewer to load the staged shader. In-world confirmation is pending;
+small bright mixed-coverage details will be less over-bright than before.
+
+The deeper review identified several remaining limits:
+
+- **Sharpening amplifies residual variation.** `taaCopyF.glsl` applies an unsharp
+  adjustment of `2 * strength`, then allows overshoot outside the local range.
+  At 1.50 this can substantially amplify fine texture fluctuations, and the
+  independent CAS pass can sharpen them again. After this fix the checker test
+  measures 0.02319 with sharpening off, 0.02922 at 0.20 and 0.05510 at 1.50.
+  This does not establish sharpening as the cause of the reported video; the
+  user's sharpening comparison produced little change. Saved preferences and
+  shipped defaults were not changed.
+- **Actual blended layers still use a conservative reactive mask.** The opaque
+  reference correction removes false rejection from fullbright/masked surfaces
+  and haze/fog. Strong static alpha composition can still reduce history, because
+  these layers lack independent depth and motion. The user's 0.1–0.2 transparency
+  setting favors their stability at the cost of possible trails on moving layers.
+  A material-provided reactive/composition signal could better distinguish them.
+- **General material specular filtering is missing.** `pbrOpaqueF.glsl` normalizes
+  the sampled normal and uses authored roughness; `pbrPunctual()` only imposes a
+  fixed roughness floor. They do not account for the variation of normals within
+  a pixel. Normal-variance roughness filtering is a candidate for distant glossy
+  sparkle, with care to preserve material appearance. The existing water-specific
+  normal-derivative filtering does not cover general materials.
+- **There is no multi-frame luminance-instability detector.** The existing detail
+  metadata stores a lifetime, surface pair and background anchor. Textured
+  backgrounds can still fail its endpoint-only background comparison, and dense
+  patterns can fluctuate without a depth change. A short reprojected luminance
+  history could distinguish repeated sample oscillation from a real lighting
+  change. It needs explicit ghosting, animated-texture and memory-cost validation.
+
+These are distinct improvements seen in established implementations: AMD
+documents bounded-color filtering, separate lock/reactivity controls, luminance
+history and noise-aware RCAS in its [FSR2 implementation guide](https://gpuopen.com/manuals/fidelityfx_sdk/techniques/super-resolution-temporal/).
+Filament documents [material specular antialiasing](https://google.github.io/filament/main/materials.html)
+for preserving distant glossy highlights. These sources inform the remaining
+options; this change implements neither FSR nor Filament.
 
 September 12 stability fixes are in progress/uncommitted. The 76 general TAA,
 23 thin-detail, 25 motion/history, and 20 post-TAA depth GPU checks pass on the

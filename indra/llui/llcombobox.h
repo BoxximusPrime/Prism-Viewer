@@ -70,6 +70,7 @@ public:
     :   public LLInitParam::Block<Params, LLUICtrl::Params>
     {
         Optional<bool>                      allow_text_entry,
+                                            allow_scroll_wheel,
                                             show_text_as_tentative,
                                             allow_new_values;
         Optional<S32>                       max_chars;
@@ -248,6 +249,7 @@ protected:
 
 private:
     bool                mAllowTextEntry;
+    bool                mAllowScrollWheel;
     bool                mAllowNewValues;
     S32                 mMaxChars;
     bool                mTextEntryTentative;

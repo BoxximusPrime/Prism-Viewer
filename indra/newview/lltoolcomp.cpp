@@ -268,6 +268,11 @@ bool LLToolCompTranslate::handleHover(S32 x, S32 y, MASK mask)
 bool LLToolCompTranslate::handleMouseDown(S32 x, S32 y, MASK mask)
 {
     mMouseDown = true;
+    if (static_cast<LLManipTranslate*>(mManip)->centerHandleHit(x, y))
+    {
+        setCurrentTool(mManip);
+        return mManip->handleMouseDownOnPart(x, y, mask);
+    }
     if (LLManipTranslate::vertexSnapHeld() && mManip->getSelection()->getObjectCount())
     {
         setCurrentTool(mManip);
@@ -334,6 +339,11 @@ LLTool* LLToolCompTranslate::getOverrideTool(MASK mask)
     }
     else if (mask == (MASK_CONTROL | MASK_SHIFT))
     {
+        if (static_cast<LLManipTranslate*>(mManip)->centerHandleHit(
+                gViewerWindow->getCurrentMouseX(), gViewerWindow->getCurrentMouseY()))
+        {
+            return this;
+        }
         return LLToolCompScale::getInstance();
     }
     return LLToolComposite::getOverrideTool(mask);

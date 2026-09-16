@@ -278,7 +278,9 @@ void LLInventoryItemsList::refresh()
             // Note: usually item pairs are sorted with std::sort, but we are calling
             // this function on idle and pairs' list can take a lot of time to sort
             // through, so we are sorting items into list while adding them
-            addItemPairs(panel_list, false);
+            // Matching rows are already visible, so visibility changes alone
+            // won't request a resize after the first batch or a later addition.
+            mNeedsArrange |= addItemPairs(panel_list, false);
 
             // update visibility of items in the list
             std::string cur_filter = getFilterSubString();

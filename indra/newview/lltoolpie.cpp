@@ -298,9 +298,7 @@ bool LLToolPie::handleLeftClickPick()
         return true;
     }
 
-    static LLCachedControl<bool> prevent_left_click_actions(gSavedSettings, "BoxxyPreventLeftClickActions", false);
-    if (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment()
-        && useClickAction(mask, object, parent))
+    if (shouldBlockClickAction(mask, object, parent))
     {
         mMouseButtonDown = false;
         return true;
@@ -528,6 +526,17 @@ U8 final_click_action(LLViewerObject* obj)
         click_action = parent_action;
     }
     return click_action;
+}
+
+bool LLToolPie::shouldBlockClickAction(MASK mask, LLViewerObject* object, LLViewerObject* parent)
+{
+    static LLCachedControl<bool> prevent_left_click_actions(gSavedSettings, "BoxxyPreventLeftClickActions", false);
+    if (!prevent_left_click_actions || !object || object->isAvatar() || object->isHUDAttachment() ||
+        !useClickAction(mask, object, parent)) return false;
+
+    // Resolve inherited linkset actions just as the action cursor does.
+    const U8 action = final_click_action(object);
+    return action != CLICK_ACTION_PAY && action != CLICK_ACTION_TOUCH;
 }
 
 ECursorType LLToolPie::cursorFromObject(LLViewerObject* object)
@@ -893,12 +902,9 @@ bool LLToolPie::handleDoubleClick(S32 x, S32 y, MASK mask)
         LL_INFOS() << "LLToolPie handleDoubleClick (becoming mouseDown)" << LL_ENDL;
     }
 
-    static LLCachedControl<bool> prevent_left_click_actions(gSavedSettings, "BoxxyPreventLeftClickActions", false);
     LLViewerObject* object = mPick.getObject();
     LLViewerObject* parent = object ? object->getRootEdit() : nullptr;
-    if (mPick.mPickNameTag ||
-        (prevent_left_click_actions && object && !object->isAvatar() && !object->isHUDAttachment()
-         && useClickAction(mask, object, parent)))
+    if (mPick.mPickNameTag || shouldBlockClickAction(mask, object, parent))
     {
         return true;
     }

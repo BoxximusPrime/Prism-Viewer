@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llfloaterinventoryllmsort.h"
 #include "llinventorybridge.h"
 
 // external projects
@@ -850,7 +851,11 @@ void LLInvFVBridge::getClipboardEntries(bool show_asset_id,
 
     if (obj)
     {
-
+        if (LLFloaterInventoryLLMSort::hasModel())
+        {
+            items.push_back("LLM Sort");
+            if (!LLFloaterInventoryLLMSort::canSort(mUUID)) disabled_items.push_back("LLM Sort");
+        }
         if (obj->getType() != LLAssetType::AT_CATEGORY)
         {
             items.push_back(std::string("Copy Separator"));

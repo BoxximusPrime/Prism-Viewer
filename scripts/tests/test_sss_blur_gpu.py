@@ -10,7 +10,7 @@ from test_exact_oit_gpu import context, U, I, F, TEXTURE, FRAMEBUFFER, COLOR_ATT
 from test_sss_shadow_gpu import PREAMBLE
 
 
-def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False, full_resolution=False):
+def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False):
     for name, args in {'ActiveTexture':[U], 'Uniform2f':[I,F,F], 'Uniform4f':[I,F,F,F,F],
                        'UniformMatrix4fv':[I,I,C.c_ubyte,C.POINTER(F)],
                        'DrawBuffers':[I,C.POINTER(U)], 'DeleteTextures':[I,C.POINTER(U)]}.items():
@@ -102,9 +102,8 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False, full_re
     elapsed=[]
     benchmark_inputs=[]
     normal_inputs={}
-    def filter_image(light,albedo,edge=0,radius=0.02,channel=0,full_resolution=full_resolution):
+    def filter_image(light,albedo,edge=0,radius=0.02,channel=0):
         uniform('sss_depth',radius); uniform('test_edges',edge,integer=True)
-        uniform('sss_full_resolution',int(full_resolution),integer=True)
         boundary=values_by_uniform['test_boundary'][0]
         width=values_by_uniform['test_finger_width'][0]; center=values_by_uniform['test_finger_center'][0]
         key=(edge,boundary,width,center)
@@ -135,7 +134,7 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False, full_re
             gl.ActiveTexture(0x84C1); original=texture(rgba(light))
             if benchmark: benchmark_inputs.extend((surface,original))
         gl.BeginQuery(0x88BF,query)
-        if not reference and not full_resolution:
+        if not reference:
             if normal_unit!=3:
                 gl.ActiveTexture(0x84C3); gl.BindTexture(TEXTURE,0)
             gl.ActiveTexture(0x84C4); gl.BindTexture(TEXTURE,0)
@@ -182,7 +181,7 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False, full_re
                     matrix[5]=radius*0.5*size/projected
                     gl.UniformMatrix4fv(gl.GetUniformLocation(prog,b'inv_proj'),1,0,matrix)
                     for _ in range(4): filter_image(beam,white,edge=4,radius=radius)
-                    print(f'{"reference" if reference else "maximum quality" if full_resolution else "optimized"} {"transmission" if smoothing else "diffuse"} {radius:.3f}m {projected}px {size}x{size}: {statistics.median(elapsed[-3:]):.3f} ms',flush=True)
+                    print(f'{"reference" if reference else "optimized"} {"transmission" if smoothing else "diffuse"} {radius:.3f}m {projected}px {size}x{size}: {statistics.median(elapsed[-3:]):.3f} ms',flush=True)
         return
     if size != 64:
         # Partial 4x4 tiles at odd viewport edges must not dim or shift light.
@@ -242,7 +241,7 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False, full_re
         # optimization. Keep the same physical profile, including the 100 mm end.
         reference_spread=(0.004852,0.157499,0.368562,0.468460,0.488479) if smoothing else \
             (0.011349,0.200427,0.395604,0.475579,0.491112)
-        assert max(abs(a-b) for a,b in zip(spread,reference_spread))<(1e-5 if full_resolution else 0.015)
+        assert max(abs(a-b) for a,b in zip(spread,reference_spread))<0.015
         assert all(b>a+0.001 for a,b in zip(spread,spread[1:])), 'Scattering radius silently plateaued'
         assert spread[-1]>spread[0]+0.2, 'Maximum radius barely widened the beam edge'
         assert max(abs(v-0.4) for v in filter_image(flat,white,radius=0.1))<1e-5
@@ -267,18 +266,8 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False, full_re
         assert min(thin[32*64:33*64])>0.001, 'Preparation lost a one-pixel skin surface/light'
         assert max(abs(thin[y*64+x]) for y in range(64) if y!=32 for x in range(64))<1e-6
         uniform('test_finger_width',0.125); uniform('test_finger_center',0.5)
-    if not reference:
-        # Switch both ways on the same program and buffers, as the live checkbox
-        # does. Returning to normal quality must not retain screenshot state.
-        for smoothing in (0,1):
-            uniform('sss_smoothing_pass',smoothing,integer=True)
-            ordinary=filter_image(split,white,radius=0.006,full_resolution=False)
-            maximum=filter_image(split,white,radius=0.006,full_resolution=True)
-            restored=filter_image(split,white,radius=0.006,full_resolution=False)
-            assert max(abs(a-b) for a,b in zip(ordinary,restored))<1e-6
-            assert max(abs(a-b) for a,b in zip(ordinary,maximum))>0.001
     assert gl.GetError()==0
-    print('Passed 41 diffusion/transmission blur GPU checks: reference beam profiles, close-up radius progression through 100 mm, color response, bounded radius, mottling, constants, zero radius, texture detail, off-grid skin/depth boundaries, and continuous one-pixel surface/light filtering.')
+    print('Passed diffusion/transmission blur GPU checks: reference beam profiles, close-up radius progression through 100 mm, color response, bounded radius, mottling, constants, zero radius, texture detail, off-grid skin/depth boundaries, and continuous one-pixel surface/light filtering.')
     print(f'Interior mottling variance: {before:.6f} -> {after:.6f}')
 
 if __name__=='__main__':
@@ -287,16 +276,13 @@ if __name__=='__main__':
     parser.add_argument('--benchmark',action='store_true',help='time the complete filter with GL_TIME_ELAPSED')
     parser.add_argument('--size',type=int,default=512,help='square benchmark patch size')
     parser.add_argument('--reference',help='optional original two-pass shader to compare')
-    parser.add_argument('--full-resolution',action='store_true',help='benchmark screenshot quality instead of the optimized path')
     args=parser.parse_args()
     sdl,window,ctx,gl=context()
     try:
         if args.benchmark:
-            run(sdl,gl,reference=args.reference,size=args.size,benchmark=True,full_resolution=args.full_resolution)
+            run(sdl,gl,reference=args.reference,size=args.size,benchmark=True)
         else:
-            for full_resolution in (False,True):
-                print('Maximum quality' if full_resolution else 'Optimized quality')
-                run(sdl,gl,reference=args.reference,full_resolution=full_resolution)
-                run(sdl,gl,reference=args.reference,size=67,full_resolution=full_resolution)
+            run(sdl,gl,reference=args.reference)
+            run(sdl,gl,reference=args.reference,size=67)
     finally:
         sdl.SDL_GL_DestroyContext(ctx); sdl.SDL_DestroyWindow(window); sdl.SDL_Quit()
