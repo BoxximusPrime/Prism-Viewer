@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="inventory_llm_sort" title="LLM Sort — Review" width="1120" height="880"
+ min_width="1120" min_height="640" can_resize="true" save_rect="true" single_instance="true"
+ bg_opaque_color="0.10 0.12 0.13 1" background_opaque="true">
+ <panel name="review" left="0" top="30" right="-1" bottom="-1" follows="all">
+  <text left="24" top="12" width="520" height="30" font="SansSerifLarge">Review suggested folders</text>
+  <text name="model" right="-24" top="17" width="430" height="22" halign="right" text_color="0.67 0.72 0.74 1">Uses your translation model</text>
+  <text left="24" top="48" right="-24" height="22" text_color="0.67 0.72 0.74 1">Suggestions use selected item or folder names and the categories under your root.</text>
+  <panel name="root_surface" left="24" top="82" right="-24" height="86" follows="left|right|top"
+   background_visible="true" bg_alpha_color="0.14 0.17 0.18 1" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.14 0.17 0.18 1">
+   <text left="16" top="17" width="100" height="24">Root folder</text>
+   <text name="root_path" left="122" top="17" right="-152" height="24" use_ellipses="true" />
+   <button name="change_root" label="Change…" right="-14" top="12" width="118" height="28" follows="right|top" />
+   <text name="categories" left="122" top="50" right="-16" height="22" use_ellipses="true" text_color="0.67 0.72 0.74 1" />
+  </panel>
+  <button name="all" label="All" left="24" top="184" width="150" height="32" is_toggle="true"
+   image_unselected="Prism_Tab_Off" image_selected="Prism_Tab_Selected" image_hover_unselected="Prism_Tab_Hover"
+   image_hover_selected="Prism_Tab_Selected_Hover" label_color_selected="0.96 0.83 0.64 1" />
+  <button name="attention" label="Needs attention" left="178" top="184" width="202" height="32" is_toggle="true"
+   image_unselected="Prism_Tab_Off" image_selected="Prism_Tab_Selected" image_hover_unselected="Prism_Tab_Hover"
+   image_hover_selected="Prism_Tab_Selected_Hover" label_color_selected="0.96 0.83 0.64 1" />
+  <button name="sort" label="Sort / retry remaining" right="-24" top="182" width="190" height="30" follows="right|top" />
+  <button name="stop" label="Stop sorting" right="-24" top="182" width="190" height="30" follows="right|top" visible="false" />
+  <panel name="table_header" left="24" top="218" right="-24" height="32" follows="left|right|top" background_visible="true" bg_alpha_color="0.16 0.19 0.21 1">
+   <text left="16" top="7" width="290" height="20" text_color="0.7 0.74 0.77 1">ITEM / FOLDER</text>
+   <text left="420" top="7" width="300" height="20" text_color="0.7 0.74 0.77 1">SUGGESTED FOLDER</text>
+   <text right="-24" top="7" width="236" height="20" follows="right|top" text_color="0.7 0.74 0.77 1">ACTION</text>
+  </panel>
+  <scroll_container name="row_scroll" left="24" top="250" right="-24" bottom="-146" follows="all" opaque="true" color="0.10 0.12 0.13 1" reserve_scroll_corner="true">
+   <panel name="rows" left="0" top="0" width="1054" height="440" follows="left|top" />
+  </scroll_container>
+  <text name="empty" left="50" top="280" right="-50" height="32" halign="center" visible="false">No items need attention.</text>
+  <text left="24" top="-132" right="-24" height="22" follows="left|right|bottom" text_color="0.67 0.72 0.74 1">Approve moves that selection. Folders keep their contents. Create &amp; Move also creates its category.</text>
+  <text name="status" left="24" top="-102" right="-24" height="36" follows="left|right|bottom" word_wrap="true" />
+  <text name="count" left="24" top="-44" width="320" height="24" follows="left|bottom" text_color="0.67 0.72 0.74 1" />
+  <button name="model_settings" label="Translation settings…" right="-170" top="-48" width="190" height="30" follows="right|bottom" />
+  <button name="close" label="Close" right="-24" top="-48" width="130" height="30" follows="right|bottom" />
+ </panel>
+ <panel name="root_picker" left="0" top="30" right="-1" bottom="-1" follows="all" visible="false">
+  <text left="24" top="16" right="-24" height="30" font="SansSerifLarge">Choose a root folder</text>
+  <text name="picker_count" left="24" top="58" right="-24" height="30" word_wrap="true" />
+  <line_editor name="folder_search" left="24" top="100" right="-24" height="28" label="Filter folders" follows="left|right|top" />
+  <inventory_panel name="folders" left="24" top="142" right="-24" bottom="-108" follows="all"
+   allow_multi_select="false" allow_drag="false" accepts_drag_and_drop="false" suppress_folder_menu="true"
+   start_folder.name="My Inventory" show_root_folder="true" show_empty_message="false" />
+  <text name="selected_root" left="24" top="-92" right="-24" height="30" follows="left|right|bottom" use_ellipses="true">Choose a regular folder in My Inventory.</text>
+  <button name="cancel_root" label="Cancel" right="-220" top="-48" width="130" height="30" follows="right|bottom" />
+  <button name="use_root" label="Use this folder" right="-24" top="-48" width="180" height="30" follows="right|bottom" enabled="false" />
+ </panel>
+</floater>

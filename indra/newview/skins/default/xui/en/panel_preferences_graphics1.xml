@@ -534,11 +534,6 @@
       <combo_box.commit_callback function="Pref.RenderOptionUpdate" />
     </combo_box>
 
-    <check_box control_name="BoxxySSSFullResolution" enabled_control="BoxxySSSEnabled"
-      follows="left|top" height="20" label="Maximum quality (screenshots)"
-      layout="topleft" left="30" name="BoxxySSSFullResolution" top="111" width="450"
-      tool_tip="Use full-resolution diffusion and transmission blur in Screen diffusion and Combined modes. Very GPU intensive at large radii and close zoom. Applies immediately; leave off for everyday use." />
-
     <slider
       control_name="BoxxySSSStrength"
       decimal_digits="2"
@@ -554,7 +549,7 @@
       min_val="0.0"
       name="BoxxySSSStrength"
       show_text="true"
-      top="137"
+      top="111"
       tool_tip="Controls how strongly skin lighting wraps and diffuses."
       width="450" />
 
@@ -573,7 +568,7 @@
       min_val="0.001"
       name="BoxxySSSDepth"
       show_text="true"
-      top="165"
+      top="139"
       tool_tip="Sets how far illumination spreads across visible skin in Screen diffusion and Combined modes. Larger radii increase GPU work."
       width="450" />
 
@@ -592,7 +587,7 @@
       min_val="0.0"
       name="BoxxySSSWarmth"
       show_text="true"
-      top="193"
+      top="167"
       tool_tip="Shared tone control: warms wrapped light, favors red transmission, and spreads red diffuse light farther than blue. It affects all three scattering components."
       width="450" />
 
@@ -611,7 +606,7 @@
       min_val="1"
       name="BoxxySSSMaxDistance"
       show_text="true"
-      top="221"
+      top="195"
       tool_tip="Limits skin scattering to nearby affected surfaces to control GPU cost."
       width="450" />
 
@@ -629,14 +624,14 @@
       min_val="0.0"
       name="BoxxySSSWrapAmount"
       show_text="true"
-      top="249"
+      top="223"
       tool_tip="Adds wrapped lighting in Combined mode. Zero leaves diffusion and transmission."
       width="450" />
 
     <slider control_name="BoxxySSSGrazingStrength" decimal_digits="2" follows="left|top"
       height="20" increment="0.05" label="Grazing scatter strength:" label_width="180"
       layout="topleft" left="30" max_val="2" min_val="0" name="BoxxySSSGrazingStrength"
-      show_text="true" top="277" width="450"
+      show_text="true" top="251" width="450"
       tool_tip="Combined mode: adds warm diffuse light at shallow angles on the side facing the light. Try 0.25 for light grazing across the stomach or arms. Respects shadows and skin strength; separate from wrap, transmission brightness, boost and cap. Zero disables it." />
 
     <slider
@@ -653,20 +648,20 @@
       min_val="0.0"
       name="BoxxySSSTransmission"
       show_text="true"
-      top="305"
+      top="279"
       tool_tip="Linearly scales shine-through brightness without changing the penetration limit. Increase to brighten thin areas such as ears."
       width="450" />
 
     <slider control_name="BoxxySSSPointTransmissionBoost" decimal_digits="1" follows="left|top"
       height="20" increment="0.5" label="Local transmission boost:" label_width="180"
       layout="topleft" left="30" max_val="16" min_val="0" name="BoxxySSSPointTransmissionBoost"
-      show_text="true" top="333" width="450"
+      show_text="true" top="307" width="450"
       tool_tip="Extra multiplier for point-light and projector shine-through. 1 is neutral; try 4 for stronger transmission. Leaves front lighting and sun/moon unchanged. Works with both measured and estimated thickness; blocked paths remain dark." />
 
     <slider control_name="BoxxySSSMaxTransmission" decimal_digits="2" follows="left|top"
       height="20" increment="0.05" label="Maximum transmission:" label_width="180"
       layout="topleft" left="30" max_val="16" min_val="0" name="BoxxySSSMaxTransmission"
-      show_text="true" top="361" width="450"
+      show_text="true" top="335" width="450"
       tool_tip="Zero is unlimited. Caps each light's transmission response after brightness and local boost while preserving skin tint. Try 1.0, then raise brightness to bring out thicker areas without overdriving thin fingers. Light intensity still applies." />
 
     <slider
@@ -683,7 +678,7 @@
       min_val="0.0"
       name="BoxxySSSThickness"
       show_text="true"
-      top="389"
+      top="363"
       tool_tip="Controls absorption in both transmission modes. Zero disables absorption; lower values transmit more light. Estimated mode uses a fixed rounded 8.5 mm reference layer. Measured transmission still requires a valid path within the penetration limit."
       width="450" />
 
@@ -694,25 +689,25 @@
       layout="topleft"
       left="30"
       name="BoxxySSSShadowThickness"
-      top="421"
+      top="395"
       tool_tip="Combined mode: verify matching skin entry and exit surfaces near a selected subject within 32 m. Opaque clothing and gaps between layers block transmission. Coverage and subject/light changes fade smoothly. Works with Shadows set to None. Turn off to use estimated thickness."
       width="450" />
 
     <slider control_name="BoxxySSSPenetration" decimal_digits="0" follows="left|top"
       height="20" increment="1" label="Penetration limit (mm):" label_width="180"
       layout="topleft" left="30" max_val="300" min_val="5" name="BoxxySSSPenetration"
-      show_text="true" top="449" width="450"
+      show_text="true" top="423" width="450"
       tool_tip="Maximum verified light path through skin. Light fades gradually across the entire range and reaches zero at this limit. Lower values suppress thicker regions. Requires depth-based transmission; estimated mode is unaffected." />
 
     <slider control_name="BoxxySSSTransmissionSmoothing" decimal_digits="0" follows="left|top"
       height="20" increment="1" label="Transmission blur (mm):" label_width="180"
       layout="topleft" left="30" max_val="100" min_val="0" name="BoxxySSSTransmissionSmoothing"
-      show_text="true" top="477" width="450"
+      show_text="true" top="451" width="450"
       tool_tip="Smooths transmitted light after lighting, with skin and depth checks at edges. Gentler normal filtering reduces mottling on uneven meshes. Textures and specular highlights stay sharp. Zero disables the extra transmission filtering." />
 
     <check_box control_name="BoxxySSSPointDepth" height="20"
       label="Include point-light depth (experimental)" layout="topleft" left="30"
-      name="BoxxySSSPointDepth" top="505" width="450"
+      name="BoxxySSSPointDepth" top="479" width="450"
       tool_tip="Include point lights in the shared two-light depth budget near the closest affected subject. Adds depth rendering and sampling work. Toggle to compare performance." />
 
     <check_box
@@ -723,7 +718,7 @@
       layout="topleft"
       left="30"
       name="BoxxySSSAutoDetect"
-      top="533"
+      top="507"
       tool_tip="Detect your own and other avatars' mesh attachments when the linkset root name contains any whitelist term. Names load gradually for visible attachments within Maximum distance."
       width="420" />
 
@@ -735,33 +730,33 @@
       layout="topleft"
       left="30"
       name="BoxxySSSShowMask"
-      top="559"
+      top="533"
       tool_tip="Highlight every surface currently receiving skin scattering for setup and testing."
       width="420" />
 
     <check_box control_name="BoxxySSSShowDepth" enabled_control="BoxxySSSEnabled"
       height="20" label="Debug transmission depth" layout="topleft" left="30"
-      name="BoxxySSSShowDepth" top="585" width="420"
+      name="BoxxySSSShowDepth" top="559" width="420"
       tool_tip="Choose interpolated measured depth, or the final summed transmission, including absorption, light colors, intensity, and blur. Overrides the surface highlight. Requires depth-based transmission enabled in Combined mode." />
     <combo_box control_name="BoxxySSSDebugLight" enabled_control="BoxxySSSShowDepth"
-      name="BoxxySSSDebugLight" layout="topleft" left="30" top="611" width="280" height="23">
+      name="BoxxySSSDebugLight" layout="topleft" left="30" top="585" width="280" height="23">
       <combo_box.item label="Sun / moon depth" value="0" />
       <combo_box.item label="Local depth 1 (highest priority)" value="1" />
       <combo_box.item label="Local depth 2" value="2" />
       <combo_box.item label="Combined transmission (final light)" value="3" />
     </combo_box>
-    <text name="SSSDepthLegend" layout="topleft" left="30" top="640" width="450"
+    <text name="SSSDepthLegend" layout="topleft" left="30" top="614" width="450"
       height="36" word_wrap="true">Depth: white 0 mm; black 300 mm / blocked; magenta unavailable.
 Combined: transmitted light from all lights, including blur.</text>
 
     <text name="SSSWhitelistLabel" follows="left|top" layout="topleft"
-      left="30" top="683" width="440" height="18">Automatic detection whitelist:</text>
+      left="30" top="657" width="440" height="18">Automatic detection whitelist:</text>
     <line_editor name="BoxxySSSWhitelist" control_name="BoxxySSSWhitelist"
       enabled_control="BoxxySSSAutoDetect" follows="left|top" layout="topleft"
-      left="30" top="706" width="450" height="23" max_length_bytes="2048"
+      left="30" top="680" width="450" height="23" max_length_bytes="2048"
       tool_tip="Separate terms with commas. Matching ignores case and finds terms anywhere in the attachment root name. Empty terms are ignored." />
     <text name="SSSWhitelistHelp" follows="left|top" layout="topleft"
-      left="30" top="735" width="450" height="28" word_wrap="true">
+      left="30" top="709" width="450" height="28" word_wrap="true">
       Comma-separated terms; body also matches eBODY. Clear the list to use only explicit [sss] tags.
     </text>
 
@@ -772,25 +767,77 @@ Combined: transmitted light from all lights, including blur.</text>
       left="30"
       name="SkinScatteringPerformanceNote"
       text_color="LtGray_50"
-      top="865"
+      top="839"
       width="440"
       word_wrap="true">
       Works with Shadows off. Focused depth covers nearby skin and at most two local lights. Skin is opaque or alpha-masked; matching transparent overlays inherit the skin beneath them.
     </text>
 
     <text name="SSSOverlayNamesLabel" follows="left|top" layout="topleft"
-      left="30" top="771" width="440" height="18">Skin overlay names:</text>
+      left="30" top="745" width="440" height="18">Skin overlay names:</text>
     <line_editor name="BoxxySSSOverlayNames" control_name="BoxxySSSOverlayNames"
       enabled_control="BoxxySSSEnabled" follows="left|top" layout="topleft"
-      left="30" top="794" width="450" height="23" max_length_bytes="2048"
+      left="30" top="768" width="450" height="23" max_length_bytes="2048"
       tool_tip="Comma-separated terms in attachment root names, ignoring case. Use a distinctive neck-fix name. Works on no-mod attachments; independent of automatic skin detection. Leave empty to disable." />
     <text name="SSSOverlayNamesHelp" follows="left|top" layout="topleft"
-      left="30" top="823" width="450" height="34" word_wrap="true">
+      left="30" top="797" width="450" height="34" word_wrap="true">
       Matching transparent attachments blend their colour into nearby SSS skin. Separate names with commas; leave empty to disable.
     </text>
 
     </panel>
     </scroll_container>
+  </panel>
+  <panel name="graphics_shadows_panel" label="Shadows" follows="all"
+    control_name="RenderShadowSplitExponent"
+    layout="topleft" width="517" height="410">
+    <text name="ShadowsDescription" follows="left|top|right" layout="topleft"
+      left="20" top="8" width="355" height="36" word_wrap="true">
+      Balance shadow detail nearby and farther away. Soft shadow edges are configured in PCSS.
+    </text>
+    <button name="ShadowsDefaults" label="Default" follows="right|top"
+      layout="topleft" left="400" top="8" width="80" height="23">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_shadows_panel" />
+    </button>
+    <text name="ShadowsModeLabel" layout="topleft" left="30" top="53" width="175" height="20">Shadows:</text>
+    <combo_box name="ShadowsMode" control_name="RenderShadowDetail"
+      follows="left|top" layout="topleft" left="235" top="50" width="245" height="23">
+      <combo_box.item label="Off" value="0" />
+      <combo_box.item label="Sun / Moon" value="1" />
+      <combo_box.item label="Sun / Moon + Projectors" value="2" />
+      <combo_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </combo_box>
+    <slider name="RenderShadowResolutionScale" control_name="RenderShadowResolutionScale"
+      label="Resolution scale:" label_width="205" follows="left|top"
+      layout="topleft" left="30" top="86" width="450" height="20"
+      min_val="0.5" max_val="2" increment="0.25" decimal_digits="2" show_text="true"
+      tool_tip="Sharpens every cascade. Try 1.50. At 2.00, shadow maps contain roughly four times as many pixels as at 1.00, increasing GPU time and memory." />
+    <text name="ShadowCascadesLabel" layout="topleft" left="30" top="120" width="200" height="20">Sun / moon cascades:</text>
+    <combo_box name="RenderShadowSplits" control_name="RenderShadowSplits"
+      follows="left|top" layout="topleft" left="235" top="117" width="245" height="23"
+      tool_tip="Four provides full coverage. Fewer cascades remove farther shadow ranges.">
+      <combo_box.item label="1 (nearest only)" value="0" />
+      <combo_box.item label="2" value="1" />
+      <combo_box.item label="3" value="2" />
+      <combo_box.item label="4 (full coverage)" value="3" />
+    </combo_box>
+    <slider name="ShadowSplit0" label="Cascade exponent (X):" label_width="205" follows="left|top"
+      layout="topleft" left="30" top="158" width="450" height="20"
+      min_val="1" max_val="4" increment="0.1" decimal_digits="2" show_text="true"
+      tool_tip="Perspective distribution. Lower values extend nearer cascades farther, trading nearby detail for coverage. Default 3.00." />
+    <slider name="ShadowSplit1" label="Cascade exponent (Y):" label_width="205" follows="left|top"
+      layout="topleft" left="30" top="192" width="450" height="20"
+      min_val="1" max_val="4" increment="0.1" decimal_digits="2" show_text="true"
+      tool_tip="Orthographic distribution. Try setting both X and Y to 2.00 for farther coverage. Default 3.00." />
+    <slider name="ShadowSplit2" label="Angle transition (Z):" label_width="205" follows="left|top"
+      layout="topleft" left="30" top="226" width="450" height="20"
+      min_val="1" max_val="4" increment="0.1" decimal_digits="2" show_text="true"
+      tool_tip="Controls how light and camera angle blend X and Y. Has no effect when X equals Y. Default 2.00." />
+    <text name="ShadowsHelp" follows="left|top|right" layout="topleft"
+      left="30" top="270" width="450" height="100" word_wrap="true" text_color="LtGray_50">
+      Start with resolution scale 1.50 for sharper distant shadows. Lower X and Y together to move cascade transitions farther away; this spreads their detail over more ground.
+
+      Total range adapts to the scene and draw distance, up to 512 m. These controls do not increase that limit.
+    </text>
   </panel>
   <panel name="graphics_pcss_panel" label="PCSS" follows="all"
     layout="topleft" width="517" height="410">
@@ -1062,17 +1109,17 @@ Combined: transmitted light from all lights, including blur.</text>
       label="Maximum brightening:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="96" width="450" height="20" min_val="0" max_val="4"
       increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
-      tool_tip="Maximum boost in stops: 0 = none, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x. Does not raise sky intensity." />
+      tool_tip="Maximum allowed boost in stops: 0 = none, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x. This limit does not force brightening. Use Target brightness to adjust the overall view." />
     <slider name="RenderEyeAdaptationMaxDarken" control_name="RenderEyeAdaptationMaxDarken"
       label="Maximum darkening:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="128" width="450" height="20" min_val="0" max_val="4"
       increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
-      tool_tip="Maximum reduction in stops: 0 = none, 1 = half, 2 = one quarter. Independent of maximum brightening." />
+      tool_tip="Maximum allowed reduction in stops: 0 = none, 1 = half, 2 = one quarter. This limit does not force darkening. Lower Target brightness to darken the overall view." />
     <slider name="RenderEyeAdaptationCompensation" control_name="RenderEyeAdaptationCompensation"
       label="Target brightness:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="160" width="450" height="20" min_val="-2" max_val="2"
       increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
-      tool_tip="Adjust target brightness in stops. Positive values favor a brighter view while respecting the exposure limits and highlight protection." />
+      tool_tip="Adjust overall target brightness in stops: negative values favor a darker view and positive values a brighter view, within the exposure limits and highlight protection." />
     <slider name="RenderEyeAdaptationHighlights" control_name="RenderEyeAdaptationHighlights"
       label="Highlight protection:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="192" width="450" height="20" min_val="0" max_val="1"

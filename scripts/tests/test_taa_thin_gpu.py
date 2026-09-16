@@ -82,8 +82,10 @@ def run(sdl, gl):
         if enabled:
             check(crawl<.06, f'Thin detail should settle: {crawl:.4f}')
             check(statistics.mean(rejected)<.02,'static thin detail should retain history')
+            if width==.65 and geometry and not dark:
+                protected_crawl=crawl
         else:
-            check(crawl>.2,'the checkbox must disable static-detail retention')
+            check(crawl>protected_crawl*5,'the checkbox must disable static-detail retention')
         if presented_frames:
             presented_crawl=statistics.mean(max(v)-min(v) for v in zip(*presented_frames))
             print(f'Thin bars after default presentation sharpening: crawl={presented_crawl:.4f}')

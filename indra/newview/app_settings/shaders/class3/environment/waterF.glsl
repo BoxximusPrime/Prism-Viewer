@@ -46,6 +46,7 @@ uniform int water_local_reflections;
 uniform int cube_snapshot;
 uniform float water_refraction_strength;
 uniform int water_refraction_fog;
+uniform float water_displacement;
 #endif
 
 in vec4 refCoord;
@@ -150,6 +151,37 @@ vec4 waterRefractedScene(vec3 pos, vec3 n, vec2 screen_uv, float mask, float wat
     return refracted;
 }
 
+vec3 waterReflectionScenePosition(vec2 uv)
+{
+    ivec2 size = textureSize(depthMap, 0);
+    ivec2 pixel = clamp(ivec2(uv * vec2(size)), ivec2(0), size - 1);
+    float depth = texelFetch(depthMap, pixel, 0).r;
+    if (depth >= 0.99999)
+        return getPositionWithNDC(vec3(uv * 2.0 - 1.0, depth * 2.0 - 1.0));
+    // Projected depth is affine across a triangle. Reconstruct it at the ray's
+    // subpixel location: nearest-depth sampling turns a grazing dock underside
+    // into steps that no amount of hit bisection can converge through.
+    float left = texelFetch(depthMap, max(pixel - ivec2(1, 0), ivec2(0)), 0).r;
+    float right = texelFetch(depthMap, min(pixel + ivec2(1, 0), size - 1), 0).r;
+    float down = texelFetch(depthMap, max(pixel - ivec2(0, 1), ivec2(0)), 0).r;
+    float up = texelFetch(depthMap, min(pixel + ivec2(0, 1), size - 1), 0).r;
+    vec2 backward = depth - vec2(left, down);
+    vec2 forward = vec2(right, up) - depth;
+    // Use the smaller same-sign gradient. At a silhouette this selects the
+    // surface's own side; opposite slopes keep a thin object at its point depth.
+    // Unlike bilinear depth filtering, this never bridges foreground and sky.
+    vec2 gradient = mix(forward, backward, lessThan(abs(backward), abs(forward)));
+    gradient *= vec2(greaterThan(backward * forward, vec2(0.0)));
+    // Sky is not a neighbouring point on the surface, even when its depth
+    // difference happens to be smaller near the far clip plane.
+    if (left >= 0.99999) gradient.x = right < 0.99999 ? forward.x : 0.0;
+    else if (right >= 0.99999) gradient.x = backward.x;
+    if (down >= 0.99999) gradient.y = up < 0.99999 ? forward.y : 0.0;
+    else if (up >= 0.99999) gradient.y = backward.y;
+    depth += dot(uv * vec2(size) - (vec2(pixel) + 0.5), gradient);
+    return getPositionWithNDC(vec3(uv * 2.0 - 1.0, depth * 2.0 - 1.0));
+}
+
 // Same-frame, short-range reflection of visible land and objects. No additional
 // scene render or history buffer. Misses fade to the existing environment probes.
 vec4 waterLocalReflection(vec3 pos, vec3 n, float roughness)
@@ -157,14 +189,24 @@ vec4 waterLocalReflection(vec3 pos, vec3 n, float roughness)
     float confidence = (1.0 - smoothstep(96.0, 192.0, length(pos))) *
                        (1.0 - smoothstep(0.18, 0.45, roughness));
     vec3 direction = reflect(normalize(pos), n);
+    // A hard cutoff here toggled whole object reflections as tiny waves moved
+    // the ray across the horizon, particularly with the camera at water level.
+    confidence *= smoothstep(0.0, 0.01, dot(direction, waterPlane.xyz));
     if (water_local_reflections == 0 || cube_snapshot != 0 || confidence <= 0.0 ||
-        dot(direction, waterPlane.xyz) <= 0.01)
+        dot(direction, waterPlane.xyz) <= 0.0)
         return vec4(0.0);
 
-    vec3 origin = pos + waterPlane.xyz * 0.03;
+    // The sampled scene excludes the water itself. Start at the actual surface,
+    // not 3 cm above it or 10 cm along the ray: either offset can skip the wall
+    // at a contact point and expose the sky probe as a bright seam.
+    vec3 origin = pos;
+    // A trough can meet a wall below the mean water plane. Classify reflection
+    // receivers against that visible surface, not an empty strip above it.
+    float receiver_level = water_displacement > 0.0 ?
+        min(dot(pos, waterPlane.xyz) + waterPlane.w, 0.0) : 0.0;
     float previous_t = 0.0;
     float step_size = 0.2;
-    float t = 0.1;
+    float t = 0.0;
     bool was_in_front = false;
     for (int i = 0; i < 24; ++i)
     {
@@ -172,40 +214,52 @@ vec4 waterLocalReflection(vec3 pos, vec3 n, float roughness)
         vec2 uv;
         if (!waterProject(ray_pos, uv))
             break;
-        vec3 scene_pos = waterScenePosition(uv);
+        vec3 scene_pos = waterReflectionScenePosition(uv);
         float gap = scene_pos.z - ray_pos.z;
         if (gap >= 0.0 && was_in_front)
         {
             float lo = previous_t, hi = t;
-            for (int j = 0; j < 5; ++j)
+            // Exponential steps can span metres. Five bisections left enough
+            // residual error to alternate hits and misses on a continuous wall.
+            // Refine to millimetres (bounded work), not a fixed fraction of the
+            // coarse step. The hit tolerance remains an edge-rejection test.
+            for (int j = 0; j < 12; ++j)
             {
                 float mid = (lo + hi) * 0.5;
                 vec3 candidate = origin + direction * mid;
                 waterProject(candidate, uv);
-                if (waterScenePosition(uv).z - candidate.z >= 0.0)
+                float candidate_gap = waterReflectionScenePosition(uv).z - candidate.z;
+                if (candidate_gap >= 0.0)
+                {
                     hi = mid;
+                    if (candidate_gap < 0.001) break;
+                }
                 else
                     lo = mid;
             }
             ray_pos = origin + direction * hi;
             waterProject(ray_pos, uv);
-            scene_pos = waterScenePosition(uv);
+            scene_pos = waterReflectionScenePosition(uv);
             gap = scene_pos.z - ray_pos.z;
             float tolerance = 0.12 + 0.002 * length(scene_pos);
             // Reject depth discontinuities, the sky, and submerged geometry.
             // This prevents the seabed being mistaken for a land reflection.
             if (gap >= 0.0 && gap < tolerance && texture(depthMap, uv).r < 0.99999 &&
-                dot(scene_pos, waterPlane.xyz) + waterPlane.w > 0.02)
+                dot(scene_pos, waterPlane.xyz) + waterPlane.w >= receiver_level - 0.001)
             {
                 vec2 edge = min(uv, 1.0 - uv);
                 confidence *= smoothstep(0.0, 0.06, min(edge.x, edge.y));
                 confidence *= 1.0 - smoothstep(48.0, 96.0, hi);
                 confidence *= 1.0 - smoothstep(tolerance * 0.5, tolerance, gap);
-                return vec4(texture(screenTex, uv).rgb, confidence);
+                // March iterations/hit branches differ across neighbouring
+                // pixels, so implicit texture derivatives are not defined here.
+                return vec4(textureLod(screenTex, uv, 0.0).rgb, confidence);
             }
             return vec4(0.0);
         }
-        was_in_front = gap < 0.0;
+        // Contact pixels can differ slightly after depth reconstruction. Keep
+        // the first millimetre in the bracket without accepting deeper objects.
+        was_in_front = gap < 0.0 || (i == 0 && gap < 0.001);
         previous_t = t;
         step_size *= 1.24;
         t = min(t + step_size, 96.0);

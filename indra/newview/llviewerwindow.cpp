@@ -1696,7 +1696,9 @@ bool LLViewerWindow::handleTranslatedKeyDown(KEY key,  MASK mask, bool repeated)
         // RIDER: although, at times some of the controlls (in particular the CEF viewer
         // would like to know about the KEYDOWN for an enter key... so ask and pass it along.
         LLFocusableElement* keyboard_focus = gFocusMgr.getKeyboardFocus();
-        if (keyboard_focus && !keyboard_focus->wantsReturnKey())
+        // Also defer when nothing has focus: handling both keydown and the
+        // character would open chat, then immediately submit or dismiss it.
+        if (!keyboard_focus || !keyboard_focus->wantsReturnKey())
             return false;
     }
 
@@ -3111,6 +3113,20 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
                 }
             }
         }
+    }
+
+    // Enter starts nearby chat even when a non-text floater control has focus.
+    // Text editors, embedded media, and modal/focus-locked UI retain Enter.
+    LLUICtrl* focused_ctrl = dynamic_cast<LLUICtrl*>(keyboard_focus);
+    if (key == KEY_RETURN && mask == MASK_NONE
+        && LLStartUp::getStartupState() >= STATE_STARTED
+        && !gFocusMgr.focusLocked()
+        && !(focused_ctrl && focused_ctrl->acceptsTextInput())
+        && !(keyboard_focus && keyboard_focus->wantsReturnKey()))
+    {
+        LLFloaterIMNearbyChat::startChat(NULL);
+        LLViewerEventRecorder::instance().logKeyEvent(key, mask);
+        return true;
     }
 
     // let menus handle navigation keys for navigation

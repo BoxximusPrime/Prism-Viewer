@@ -7,7 +7,7 @@ import tempfile
 
 source = (Path(__file__).resolve().parents[2] / "indra/newview/llmaniprotate.cpp").read_text()
 start = source.index("    const bool aim =")
-end = source.index("    bool damped =", start)
+end = source.index("    if (mTemporarySnap)", start)
 dispatch = source[start:end]
 harness = r"""
 #include <cassert>
@@ -28,7 +28,7 @@ struct Manip {
     Selection* mObjectSelection=&selection;
     int mManipPart=LL_ROT_GENERAL, mRotation=0, mRotationCenter=0;
     int mMouseDown=0, mRadiusMeters=1, applied=0, sphere=0, ring=0;
-    bool mAimMode=false, mAimHit=false, hit=true;
+    bool mAimMode=false, mAimHit=false, hit=true, mTemporarySnap=false;
     int intersectMouseWithSphere(int x,int,int,int) { return x; }
     bool aimAtCursor(int,int) { mAimHit=hit; if(hit) mRotation=42; return hit; }
     int dragUnconstrained(int x,int) { ++sphere; return x-mMouseDown; }
@@ -53,6 +53,8 @@ int main() {
     assert(ring.ring==1 && !ring.mAimMode);
     Manip hud; hud.selection.type=SELECT_TYPE_HUD; hud.drag(10,0,MASK_SHIFT);
     assert(hud.sphere==1 && !hud.mAimMode);
+    Manip snap; snap.mTemporarySnap=true; snap.drag(10,0,MASK_SHIFT);
+    assert(snap.sphere==1 && !snap.mAimMode && snap.mRotation==10);
 }
 """
 with tempfile.TemporaryDirectory() as directory:

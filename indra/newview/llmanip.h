@@ -94,7 +94,9 @@ public:
         LL_ROT_X,
         LL_ROT_Y,
         LL_ROT_Z,
-        LL_ROT_ROLL
+        LL_ROT_ROLL,
+
+        LL_TRANSLATE_CENTER
     } EManipPart;
 
     // For use in loops and range checking.
@@ -141,6 +143,8 @@ protected:
     void                renderTickValue(const LLVector3& pos, F32 value, const std::string& suffix, const LLColor4 &color);
     void                renderTickText(const LLVector3& pos, const std::string& suffix, const LLColor4 &color);
     void                updateGridSettings();
+    bool                updateSnapMode(MASK mask);
+    bool                isSnapEnabled() const;
     bool                getMousePointOnPlaneGlobal(LLVector3d& point, S32 x, S32 y, LLVector3d origin, LLVector3 normal) const;
     bool                getMousePointOnPlaneAgent(LLVector3& point, S32 x, S32 y, LLVector3 origin, LLVector3 normal);
     bool                nearestPointOnLineFromMouse( S32 x, S32 y, const LLVector3& b1, const LLVector3& b2, F32 &a_param, F32 &b_param );
@@ -148,6 +152,7 @@ protected:
 protected:
     LLFrameTimer        mHelpTextTimer;
     bool                mInSnapRegime;
+    bool                mTemporarySnap = false;
     LLSafeHandle<LLObjectSelection> mObjectSelection;
     EManipPart          mHighlightedPart;
     EManipPart          mManipPart;

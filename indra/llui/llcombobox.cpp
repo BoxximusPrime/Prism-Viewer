@@ -70,6 +70,7 @@ LLComboBox::ItemParams::ItemParams()
 
 LLComboBox::Params::Params()
 :   allow_text_entry("allow_text_entry", false),
+    allow_scroll_wheel("allow_scroll_wheel", true),
     allow_new_values("allow_new_values", false),
     show_text_as_tentative("show_text_as_tentative", true),
     max_chars("max_chars", 20),
@@ -90,6 +91,7 @@ LLComboBox::LLComboBox(const LLComboBox::Params& p)
     mTextEntryTentative(p.show_text_as_tentative),
     mHasAutocompletedText(false),
     mAllowTextEntry(p.allow_text_entry),
+    mAllowScrollWheel(p.allow_scroll_wheel),
     mAllowNewValues(p.allow_new_values),
     mMaxChars(p.max_chars),
     mPrearrangeCallback(p.prearrange_callback()),
@@ -966,6 +968,9 @@ bool LLComboBox::handleScrollWheel(S32 x, S32 y, S32 clicks)
     {
         return mList->handleScrollWheel(x, y, clicks);
     }
+
+    // Let the enclosing scroll container handle the wheel without changing the value.
+    if (!mAllowScrollWheel) return false;
 
     if (mAllowTextEntry) // We might be editable
     {

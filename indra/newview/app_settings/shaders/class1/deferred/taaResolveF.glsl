@@ -74,7 +74,7 @@ void main()
     vec2 uv = gl_FragCoord.xy * taa_rcp_res;
     vec2 current_uv = clamp(uv + taa_jitter, .5*taa_rcp_res, 1.0-.5*taa_rcp_res);
     ivec2 center = clamp(ivec2(current_uv*vec2(size)),ivec2(0),size-1);
-    vec3 current = texture(taa_current,current_uv).rgb;
+    vec3 current = vec3(0);
     vec3 lo = vec3(1e10), hi = vec3(-1e10), mean = vec3(0), square = vec3(0);
     float closest = 1.0, reactive = 0.0, depth_min = 1e10, depth_max = 0.0;
     float previous_min=1e10, previous_max=0.0, max_speed=0.0, composition=0.0;
@@ -87,7 +87,14 @@ void main()
     {
         ivec2 p = clamp(center+ivec2(x,y),ivec2(0),size-1);
         vec3 raw = texelFetch(taa_current,p,0).rgb;
-        vec3 c = toYCoCg(compressColor(raw));
+        vec3 compressed = compressColor(raw);
+        // Reconstruct in the same bounded HDR space used for accumulation.
+        // Filtering raw HDR first lets one tiny highlight dominate all four
+        // bilinear taps before compression can limit its influence.
+        vec2 tap = vec2(center+ivec2(x,y))+.5-current_uv*vec2(size);
+        vec2 filter = max(vec2(1)-abs(tap),vec2(0));
+        current += compressed*filter.x*filter.y;
+        vec3 c = toYCoCg(compressed);
         lo=min(lo,c); hi=max(hi,c); mean+=c; square+=c*c;
         float d = texelFetch(depthMap,p,0).r;
         if(d<closest) { closest=d; motion_pixel=p; }
@@ -106,9 +113,13 @@ void main()
         static_detail=static_detail && local_motion.a<0.0;
     }
     mean/=9.0; square/=9.0;
-    static_detail=static_detail && reactive<.01;
+    // A faint compositing change must not abruptly turn off thin-detail
+    // retention. Fade it out; strongly reactive/untracked surfaces still use
+    // strict rejection, and the ordinary reactive blend reduction remains.
+    static_detail=static_detail && reactive<.25;
     float detail_confidence=static_detail ?
-        (1.0-smoothstep(.5,4.0,max_speed))*(1.0-smoothstep(.25,1.0,length(velocity_max-velocity_min))) : 0.0;
+        (1.0-smoothstep(.5,4.0,max_speed))*(1.0-smoothstep(.25,1.0,length(velocity_max-velocity_min))) *
+        (1.0-smoothstep(.05,.25,reactive)) : 0.0;
     vec2 luma_range=vec2(lo.x,hi.x);
     bool detail_sample=static_detail && depth_max>0.0 && hi.x-lo.x>.05;
     float background=mean.x<(lo.x+hi.x)*.5 ? lo.x : hi.x;
@@ -124,7 +135,7 @@ void main()
     if (taa_history_valid==0)
     {
         frag_data[1]=detail;
-        writeResult(min(max(current,vec3(0)),vec3(65000)),current_depth,0.0,0.0,0.0,0.0,1);
+        writeResult(min(expandColor(current),vec3(65000)),current_depth,0.0,0.0,0.0,0.0,1);
         return;
     }
     bool onscreen=all(greaterThanEqual(history_uv,.5*taa_rcp_res)) && all(lessThanEqual(history_uv,1.0-.5*taa_rcp_res));
@@ -157,7 +168,7 @@ void main()
         if(!valid_depth && !retain_detail) continue;
         // Fade depth exceptions with confidence rather than flipping at a speed threshold.
         float accepted=w*(valid_depth ? 1.0 : detail_confidence);
-        history+=sample_history.rgb*accepted; support+=accepted;
+        history+=compressColor(sample_history.rgb)*accepted; support+=accepted;
         if(retain_detail)
         {
             protected_support+=accepted*detail_confidence;
@@ -177,7 +188,7 @@ void main()
     frag_data[1]=detail;
     history=support>0.0 ? history/support : current;
     float protection=protected_support/max(support,.00001);
-    vec3 old=toYCoCg(compressColor(history));
+    vec3 old=toYCoCg(history);
     vec3 bounded=clipBox(old,lo,hi);
     vec3 clipped=mix(bounded,old,protection);
     // Clipping alone can leave a plausible trail within a high-contrast region.
@@ -188,7 +199,7 @@ void main()
     weight*=1.0-clamp(disagreement,0.0,1.0)*taa_motion_protection;
     weight=min(weight,mix(taa_history_weight,.50,clamp(speed/16.0,0.0,1.0)*taa_motion_protection));
     weight*=1.0-reactive;
-    vec3 resolved=mix(compressColor(current),max(toRGB(clipped),vec3(0)),weight);
+    vec3 resolved=mix(current,max(toRGB(clipped),vec3(0)),weight);
     int reason=!onscreen ? 2 : support<=0.0 ? 3 : reactive>.01 ? 4 : 0;
     writeResult(min(expandColor(resolved),vec3(65000)),current_depth,weight,support,
         length(old-bounded)/max(length(hi-lo),.02),protection,reason);

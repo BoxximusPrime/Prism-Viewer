@@ -366,6 +366,8 @@ bool LLManipScale::handleMouseDownOnPart( S32 x, S32 y, MASK mask )
     LLSelectMgr::getInstance()->saveSelectedObjectTransform(SELECT_ACTION_TYPE_SCALE);
     // Route future Mouse messages here preemptively.  (Release on mouse up.)
     setMouseCapture( true );
+    updateSnapMode(mask);
+    mLastMouseX = mLastMouseY = -1;
 
     mHelpTextTimer.reset();
     sNumTimesHelpTextShown++;
@@ -410,6 +412,11 @@ bool LLManipScale::handleMouseUp(S32 x, S32 y, MASK mask)
 
 bool LLManipScale::handleHover(S32 x, S32 y, MASK mask)
 {
+    if (updateSnapMode(mask))
+    {
+        // A modifier change must resnap even if the mouse has not moved.
+        mLastMouseX = mLastMouseY = -1;
+    }
     if( hasMouseCapture() )
     {
         if( mObjectSelection->isEmpty() )
@@ -858,8 +865,8 @@ void LLManipScale::dragCorner( S32 x, S32 y )
     LLVector3 projected_drag_pos1 = inverse_projected_vec(mScaleDir, orthogonal_component(mouse_on_plane1, mSnapGuideDir1));
     LLVector3 projected_drag_pos2 = inverse_projected_vec(mScaleDir, orthogonal_component(mouse_on_plane2, mSnapGuideDir2));
 
-    bool snap_enabled = gSavedSettings.getBOOL("SnapEnabled");
-    if (snap_enabled && (mouse_on_plane1 - projected_drag_pos1) * mSnapGuideDir1 > mSnapRegimeOffset)
+    bool snap_enabled = isSnapEnabled();
+    if (snap_enabled && (mTemporarySnap || (mouse_on_plane1 - projected_drag_pos1) * mSnapGuideDir1 > mSnapRegimeOffset))
     {
         F32 drag_dist = mScaleDir * projected_drag_pos1; // Projecting the drag position allows for negative results, vs using the length which will result in a "reverse scaling" bug.
 
@@ -1069,9 +1076,9 @@ void LLManipScale::dragFace( S32 x, S32 y )
     F32 dist_from_scale_line = dist_vec(scale_center_to_mouse, (mouse_on_scale_line - mScaleCenter));
     F32 dist_along_scale_line = scale_center_to_mouse * mScaleDir;
 
-    bool snap_enabled = gSavedSettings.getBOOL("SnapEnabled");
+    bool snap_enabled = isSnapEnabled();
 
-    if (snap_enabled && dist_from_scale_line > mSnapRegimeOffset)
+    if (snap_enabled && (mTemporarySnap || dist_from_scale_line > mSnapRegimeOffset))
     {
         mSnapRegime = static_cast<ESnapRegimes>(SNAP_REGIME_UPPER | SNAP_REGIME_LOWER); // A face drag doesn't have split regimes.
 
@@ -1539,7 +1546,7 @@ void LLManipScale::updateSnapGuides(const LLBBox& bbox)
 
 void LLManipScale::renderSnapGuides(const LLBBox& bbox)
 {
-    if (!gSavedSettings.getBOOL("SnapEnabled"))
+    if (!isSnapEnabled())
     {
         return;
     }

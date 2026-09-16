@@ -1,0 +1,364 @@
+{
+  "description": "Effective saved graphics tuning adopted for the 0.6.0 release; missing saved overrides use the shipped default. Values are normalized to the control type.",
+  "settings": {
+    "BoxxySSSAutoDetect": {
+      "type": "Boolean",
+      "value": true
+    },
+    "BoxxySSSDepth": {
+      "type": "F32",
+      "value": 0.012000001035630703
+    },
+    "BoxxySSSEnabled": {
+      "type": "Boolean",
+      "value": true
+    },
+    "BoxxySSSGrazingStrength": {
+      "type": "F32",
+      "value": 0.0
+    },
+    "BoxxySSSMaxDistance": {
+      "type": "F32",
+      "value": 43.0
+    },
+    "BoxxySSSMaxTransmission": {
+      "type": "F32",
+      "value": 0.0
+    },
+    "BoxxySSSMode": {
+      "type": "S32",
+      "value": 2
+    },
+    "BoxxySSSOverlayNames": {
+      "type": "String",
+      "value": ""
+    },
+    "BoxxySSSPenetration": {
+      "type": "F32",
+      "value": 80.0
+    },
+    "BoxxySSSPointDepth": {
+      "type": "Boolean",
+      "value": true
+    },
+    "BoxxySSSPointTransmissionBoost": {
+      "type": "F32",
+      "value": 9.0
+    },
+    "BoxxySSSShadowThickness": {
+      "type": "Boolean",
+      "value": true
+    },
+    "BoxxySSSShowMask": {
+      "type": "Boolean",
+      "value": false
+    },
+    "BoxxySSSStrength": {
+      "type": "F32",
+      "value": 0.550000011920929
+    },
+    "BoxxySSSThickness": {
+      "type": "F32",
+      "value": 9.0
+    },
+    "BoxxySSSTransmission": {
+      "type": "F32",
+      "value": 4.0
+    },
+    "BoxxySSSTransmissionSmoothing": {
+      "type": "F32",
+      "value": 43.0
+    },
+    "BoxxySSSWarmth": {
+      "type": "F32",
+      "value": 0.6499999761581421
+    },
+    "BoxxySSSWhitelist": {
+      "type": "String",
+      "value": "body, head, hands, feet, ear, ears, perky, Noelle, eye, eyes, squish"
+    },
+    "BoxxySSSWrapAmount": {
+      "type": "F32",
+      "value": 0.20000000298023224
+    },
+    "RenderBloomEnabled": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderBloomIntensity": {
+      "type": "F32",
+      "value": 0.5
+    },
+    "RenderBloomKnee": {
+      "type": "F32",
+      "value": 0.7599999904632568
+    },
+    "RenderBloomQuality": {
+      "type": "S32",
+      "value": 4
+    },
+    "RenderBloomRadius": {
+      "type": "F32",
+      "value": 1.75
+    },
+    "RenderEyeAdaptationCompensation": {
+      "type": "F32",
+      "value": -0.05000000074505806
+    },
+    "RenderEyeAdaptationDarkTime": {
+      "type": "F32",
+      "value": 2.0
+    },
+    "RenderEyeAdaptationEnabled": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderEyeAdaptationHighlights": {
+      "type": "F32",
+      "value": 0.6499999761581421
+    },
+    "RenderEyeAdaptationLightTime": {
+      "type": "F32",
+      "value": 0.6000000238418579
+    },
+    "RenderEyeAdaptationMaxBoost": {
+      "type": "F32",
+      "value": 1.2999999523162842
+    },
+    "RenderEyeAdaptationMaxDarken": {
+      "type": "F32",
+      "value": 2.700000047683716
+    },
+    "RenderFSAAType": {
+      "type": "U32",
+      "value": 3
+    },
+    "RenderGTAODenoise": {
+      "type": "F32",
+      "value": 0.05000000074505806
+    },
+    "RenderGTAOEnabled": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderGTAOFalloff": {
+      "type": "F32",
+      "value": 0.10000000149011612
+    },
+    "RenderGTAOQuality": {
+      "type": "S32",
+      "value": 2
+    },
+    "RenderGTAORadius": {
+      "type": "F32",
+      "value": 1.0
+    },
+    "RenderGTAOStrength": {
+      "type": "F32",
+      "value": 1.0
+    },
+    "RenderGTAOThinOccluder": {
+      "type": "F32",
+      "value": 0.0
+    },
+    "RenderGlowMinLuminance": {
+      "type": "F32",
+      "value": 1.399999976158142
+    },
+    "RenderPCSSBias": {
+      "type": "F32",
+      "value": 3.5
+    },
+    "RenderPCSSCleanup": {
+      "type": "F32",
+      "value": 1.5
+    },
+    "RenderPCSSEnabled": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderPCSSLightSize": {
+      "type": "F32",
+      "value": 1.4500000476837158
+    },
+    "RenderPCSSMaxSoftness": {
+      "type": "F32",
+      "value": 0.800000011920929
+    },
+    "RenderPCSSMinSoftness": {
+      "type": "F32",
+      "value": 0.009999999776482582
+    },
+    "RenderPCSSProjectorSize": {
+      "type": "F32",
+      "value": 0.10999999940395355
+    },
+    "RenderPCSSQuality": {
+      "type": "S32",
+      "value": 1
+    },
+    "RenderTAAClipGamma": {
+      "type": "F32",
+      "value": 1.2000000476837158
+    },
+    "RenderTAAHistoryWeight": {
+      "type": "F32",
+      "value": 0.9700000286102295
+    },
+    "RenderTAAMotionProtection": {
+      "type": "F32",
+      "value": 0.8500000238418579
+    },
+    "RenderTAASharpen": {
+      "type": "F32",
+      "value": 1.5
+    },
+    "RenderTAAStaticDetails": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderTAATransparency": {
+      "type": "F32",
+      "value": 0.5
+    },
+    "RenderVolumeFog": {
+      "type": "Boolean",
+      "value": false
+    },
+    "RenderVolumeFogAmbient": {
+      "type": "F32",
+      "value": 0.15000000596046448
+    },
+    "RenderVolumeFogAnisotropy": {
+      "type": "F32",
+      "value": 0.20000000298023224
+    },
+    "RenderVolumeFogIntensity": {
+      "type": "F32",
+      "value": 1.0
+    },
+    "RenderVolumeFogLightCount": {
+      "type": "S32",
+      "value": 8
+    },
+    "RenderVolumeFogLightStrength": {
+      "type": "F32",
+      "value": 1.0
+    },
+    "RenderVolumeFogLighting": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderVolumeFogQuality": {
+      "type": "S32",
+      "value": 1
+    },
+    "RenderVolumeFogShadows": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderVolumeFogSteps": {
+      "type": "S32",
+      "value": 0
+    },
+    "RenderWaterAbsorptionColor": {
+      "type": "Color4",
+      "value": [
+        0.015599999576807022,
+        0.14900000393390656,
+        0.250900000333786,
+        1.0
+      ]
+    },
+    "RenderWaterCausticsStrength": {
+      "type": "F32",
+      "value": 2.049999952316284
+    },
+    "RenderWaterClarity": {
+      "type": "F32",
+      "value": 0.44999998807907104
+    },
+    "RenderWaterCrossSwellStrength": {
+      "type": "F32",
+      "value": 1.2000000476837158
+    },
+    "RenderWaterCustomColors": {
+      "type": "Boolean",
+      "value": false
+    },
+    "RenderWaterDensityScale": {
+      "type": "F32",
+      "value": 1.2000000476837158
+    },
+    "RenderWaterDisplacement": {
+      "type": "F32",
+      "value": 5.0
+    },
+    "RenderWaterDisplacementDistance": {
+      "type": "F32",
+      "value": 64.0
+    },
+    "RenderWaterDisplacementEnabled": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderWaterLocalReflections": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderWaterProceduralWaves": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderWaterReflectionStrength": {
+      "type": "F32",
+      "value": 1.0
+    },
+    "RenderWaterRefractionStrength": {
+      "type": "F32",
+      "value": 2.0
+    },
+    "RenderWaterRoughnessScale": {
+      "type": "F32",
+      "value": 0.0
+    },
+    "RenderWaterScatteringColor": {
+      "type": "Color4",
+      "value": [
+        0.015599999576807022,
+        0.14900000393390656,
+        0.250900000333786,
+        1.0
+      ]
+    },
+    "RenderWaterShallowDamping": {
+      "type": "F32",
+      "value": 1.0
+    },
+    "RenderWaterSkyScatteringScale": {
+      "type": "F32",
+      "value": 0.949999988079071
+    },
+    "RenderWaterSubmergedLighting": {
+      "type": "Boolean",
+      "value": true
+    },
+    "RenderWaterSunScatteringScale": {
+      "type": "F32",
+      "value": 1.0
+    },
+    "RenderWaterWaveScale": {
+      "type": "F32",
+      "value": 0.07999999821186066
+    },
+    "RenderWaterWaveStrength": {
+      "type": "F32",
+      "value": 0.20000000298023224
+    },
+    "RenderWaterWindSpeed": {
+      "type": "F32",
+      "value": 0.949999988079071
+    }
+  },
+  "version": "0.6.0"
+}

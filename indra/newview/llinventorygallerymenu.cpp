@@ -24,6 +24,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llfloaterinventoryllmsort.h"
 
 #include "llinventorygallery.h"
 #include "llinventorygallerymenu.h"
@@ -134,6 +135,11 @@ LLContextMenu* LLInventoryGalleryContextMenu::createMenu()
 void LLInventoryGalleryContextMenu::doToSelected(const LLSD& userdata)
 {
     std::string action = userdata.asString();
+    if (action == "llm_sort")
+    {
+        LLFloaterInventoryLLMSort::show(mUUIDs);
+        return;
+    }
     LLInventoryObject* obj = gInventory.getObject(mUUIDs.front());
     if(!obj) return;
 
@@ -634,6 +640,12 @@ void LLInventoryGalleryContextMenu::updateMenuItemsVisibility(LLContextMenu* men
         }
     }
 
+    if (LLFloaterInventoryLLMSort::hasModel())
+    {
+        items.push_back("LLM Sort");
+        if (std::any_of(mUUIDs.begin(), mUUIDs.end(), [](const LLUUID& id) { return !LLFloaterInventoryLLMSort::canSort(id); }))
+            disabled_items.push_back("LLM Sort");
+    }
     if(!is_link)
     {
         items.push_back(std::string("thumbnail"));
@@ -1086,4 +1098,3 @@ void LLInventoryGalleryContextMenu::updateMenuItemsVisibility(LLContextMenu* men
 
     hide_context_entries(*menu, items, disabled_items);
 }
-

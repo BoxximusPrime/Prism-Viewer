@@ -79,6 +79,9 @@
 	<menu_item_separator
     layout="topleft"
     name="Marketplace Listings Separator" />
+    <menu_item_call label="LLM Sort…" name="LLM Sort">
+        <menu_item_call.on_click function="Inventory.DoToSelected" parameter="llm_sort" />
+    </menu_item_call>
     <menu_item_call
      label="Share"
      layout="topleft"

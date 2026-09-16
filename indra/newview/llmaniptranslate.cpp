@@ -77,6 +77,7 @@ const F32 MIN_PLANE_MANIP_DOT_PRODUCT = 0.25f;
 const F32 PLANE_TICK_SIZE = 0.4f;
 const F32 MANIPULATOR_SCALE_HALF_LIFE = 0.07f;
 const F32 SNAP_ARROW_SCALE = 0.7f;
+const S32 CENTER_HANDLE_RADIUS = 7; // scaled UI pixels
 
 static LLPointer<LLViewerTexture> sGridTex = NULL ;
 
@@ -313,6 +314,126 @@ bool LLManipTranslate::vertexPoint(LLVector3d& point) const
     return true;
 }
 
+bool LLManipTranslate::getCenterHandle(LLVector3& position) const
+{
+    // Also used while Ctrl+Shift has temporarily switched the tool to Scale.
+    auto selection = LLSelectMgr::getInstance()->getSelection();
+    if (selection->isEmpty() || selection->getSelectType() != SELECT_TYPE_WORLD) return false;
+    for (auto iter = selection->begin(); iter != selection->end(); ++iter)
+    {
+        auto* object = dynamic_cast<LLVOVolume*>((*iter)->getObject());
+        if (!object || object->isDead() || object->isAttachment() || object->isRiggedMesh() ||
+            object->mGLTFAsset || (*iter)->mSelectedGLTFNode != -1) return false;
+    }
+    position = selection->getObjectCount() == 1 ? selection->getFirstObject()->getPivotPositionAgent() :
+        LLSelectMgr::getInstance()->getBBoxOfSelection().getCenterAgent();
+    return !gSavedSettings.getBOOL("LimitSelectDistance") ||
+        dist_vec(gAgent.getPositionAgent(), position) <= gSavedSettings.getF32("MaxSelectDistance");
+}
+
+bool LLManipTranslate::centerHandleHit(S32 x, S32 y) const
+{
+    LLVector3 position;
+    LLCoordGL screen;
+    return getCenterHandle(position) && !vertexSnapHeld() &&
+        LLViewerCamera::getInstance()->projectPosAgentToScreen(position, screen) &&
+        abs(x - screen.mX) <= CENTER_HANDLE_RADIUS && abs(y - screen.mY) <= CENTER_HANDLE_RADIUS;
+}
+
+bool LLManipTranslate::updateSurfaceBounds()
+{
+    mSurfaceBoundsValid = false;
+    const LLVector3 pivot = getPivotPoint();
+    mSurfaceMin = LLVector3(F32_MAX, F32_MAX, F32_MAX);
+    mSurfaceMax = LLVector3(-F32_MAX, -F32_MAX, -F32_MAX);
+    // A family selection includes its children; Edit linked includes only the
+    // selected parts. Cache world-axis extents relative to the drag origin once,
+    // after scale and rotation, so no physics shape is required.
+    for (auto iter = mObjectSelection->begin(); iter != mObjectSelection->end(); ++iter)
+    {
+        auto* volume = dynamic_cast<LLVOVolume*>((*iter)->getObject());
+        if (!volume || volume->isDead() || volume->isAttachment() || volume->isRiggedMesh() ||
+            volume->mGLTFAsset || (*iter)->mSelectedGLTFNode != -1 || volume->mDrawable.isNull() ||
+            !volume->getVolume() || (volume->isMesh() && !volume->getVolume()->isMeshAssetLoaded()))
+        {
+            return false;
+        }
+        const LLVolume* mesh = volume->getVolume();
+        bool found = false;
+        for (S32 face = 0; face < mesh->getNumVolumeFaces(); ++face)
+        {
+            const LLVolumeFace& geometry = mesh->getVolumeFace(face);
+            for (S32 vertex = 0; vertex < geometry.mNumVertices; ++vertex)
+            {
+                const LLVector3 local(geometry.mPositions[vertex].getF32ptr());
+                const LLVector3 agent = volume->volumePositionToAgent(local);
+                if (!agent.isFinite()) continue;
+                found = true;
+                const LLVector3 offset = agent - pivot;
+                for (S32 axis = VX; axis <= VZ; ++axis)
+                {
+                    mSurfaceMin.mV[axis] = llmin(mSurfaceMin.mV[axis], offset.mV[axis]);
+                    mSurfaceMax.mV[axis] = llmax(mSurfaceMax.mV[axis], offset.mV[axis]);
+                }
+            }
+        }
+        if (!found)
+        {
+            return false;
+        }
+    }
+    mSurfaceBoundsValid = !mObjectSelection->isEmpty();
+    mSurfaceOffset = LLVector3(0.f, 0.f, mSurfaceMin.mV[VZ]);
+    return mSurfaceBoundsValid;
+}
+
+LLVector3 LLManipTranslate::getSurfaceOffset(const LLVector3& normal) const
+{
+    // Keep the origin on the two unsnapped axes: bottom center for a floor,
+    // top center for a ceiling, and side center for a wall. Favor Z on ties.
+    S32 axis = VZ;
+    if (llabs(normal.mV[VX]) > llabs(normal.mV[axis])) axis = VX;
+    if (llabs(normal.mV[VY]) > llabs(normal.mV[axis])) axis = VY;
+    LLVector3 offset;
+    offset.mV[axis] = normal.mV[axis] < 0.f ? mSurfaceMax.mV[axis] : mSurfaceMin.mV[axis];
+    return offset;
+}
+
+bool LLManipTranslate::findSurface(S32 x, S32 y, LLVector3d& point, LLVector3& normal)
+{
+    const LLVector3 origin = LLViewerCamera::getInstance()->getOrigin();
+    const LLVector3 direction = gViewerWindow->mouseDirectionGlobal(x, y);
+    LLVector3 start = origin + direction * LLViewerCamera::getInstance()->getNear();
+    LLVector4a end;
+    end.load3((origin + direction * 512.f).mV);
+    // ponytail: bounded traversal through selected surfaces, as in vertex
+    // snapping; add an octree exclusion filter if dense selections hit the cap.
+    for (S32 i = 0; i < 256; ++i)
+    {
+        LLVector4a begin, intersection, hit_normal;
+        begin.load3(start.mV);
+        hit_normal.clear();
+        // The existing ray picker intersects rendered mesh and terrain, including
+        // phantom/Physics Shape None prims, without requiring a physics collider.
+        LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
+            begin, end, false, false, true, false, nullptr, nullptr, nullptr, &intersection, nullptr, &hit_normal);
+        if (!object) return false;
+        LLSelectNode* root = mObjectSelection->findNode(object->getRootEdit());
+        if (!object->isSelected() && !(root && !root->mIndividualSelection) &&
+            !object->isAvatar() && !object->isAttachment())
+        {
+            point = gAgent.getPosGlobalFromAgent(LLVector3(intersection.getF32ptr()));
+            normal = LLVector3(hit_normal.getF32ptr());
+            if (!normal.isFinite() || normal.lengthSquared() < 0.000001f)
+                normal = LLVector3::z_axis;
+            return point.isFinite();
+        }
+        start = LLVector3(intersection.getF32ptr()) + direction * 0.001f;
+        if ((start - origin) * direction >= 512.f) return false;
+    }
+    return false;
+}
+
 bool LLManipTranslate::findVertex(S32 x, S32 y, bool source,
     LLPointer<LLViewerObject>& result, LLVector3& local)
 {
@@ -391,19 +512,29 @@ bool LLManipTranslate::findVertex(S32 x, S32 y, bool source,
     return result.notNull();
 }
 
-void LLManipTranslate::renderVertexMarker(const LLVector3d& point, const LLColor4& color)
+void LLManipTranslate::renderVertexMarker(const LLVector3d& point, const LLColor4& color, bool filled)
 {
     const LLVector3 agent = gAgent.getPosAgentFromGlobal(point);
     LLViewerCamera* camera = LLViewerCamera::getInstance();
     const F32 depth = (agent - camera->getOrigin()) * camera->getAtAxis();
     if (depth <= camera->getNear()) return;
-    const F32 size = depth * tanf(camera->getView() * 0.5f) * 12.f /
+    const F32 size = depth * tanf(camera->getView() * 0.5f) * (filled ? 2.f * CENTER_HANDLE_RADIUS : 12.f) /
         gViewerWindow->getWorldViewHeightScaled();
     const LLVector3 right = camera->getLeftAxis() * size;
     const LLVector3 up = camera->getUpAxis() * size;
     LLGLDepthTest depth_test(GL_FALSE, GL_FALSE);
     gDebugProgram.bind();
     gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    if (filled)
+    {
+        gGL.color4f(color.mV[0] * 0.35f, color.mV[1] * 0.35f, color.mV[2] * 0.35f, 1.f);
+        gGL.begin(LLRender::TRIANGLE_STRIP);
+        gGL.vertex3fv((agent + right + up).mV);
+        gGL.vertex3fv((agent - right + up).mV);
+        gGL.vertex3fv((agent + right - up).mV);
+        gGL.vertex3fv((agent - right - up).mV);
+        gGL.end();
+    }
     gGL.color4fv(color.mV);
     gGL.begin(LLRender::LINE_LOOP);
     gGL.vertex3fv((agent + right + up).mV);
@@ -423,13 +554,17 @@ void LLManipTranslate::renderVertexMarker(const LLVector3d& point, const LLColor
 
 void LLManipTranslate::onMouseCaptureLost()
 {
-    if (mVertexDrag)
+    if (mVertexDrag || mCenterDrag)
     {
         LLSelectMgr::getInstance()->sendMultipleUpdate(UPD_POSITION);
         LLSelectMgr::getInstance()->enableSilhouette(true);
         LLSelectMgr::getInstance()->saveSelectedObjectTransform(SELECT_ACTION_TYPE_PICK);
     }
     mVertexDrag = false;
+    mCenterDrag = false;
+    mSurfaceSnapActive = false;
+    mSurfaceBoundsValid = false;
+    mManipPart = LL_NO_PART;
     mVertexTarget = false;
     mVertexObject = nullptr;
     LLManip::onMouseCaptureLost();
@@ -459,7 +594,8 @@ bool LLManipTranslate::handleMouseDown(S32 x, S32 y, MASK mask)
          mHighlightedPart == LL_Z_ARROW ||
          mHighlightedPart == LL_YZ_PLANE ||
          mHighlightedPart == LL_XZ_PLANE ||
-         mHighlightedPart == LL_XY_PLANE ) )
+         mHighlightedPart == LL_XY_PLANE ||
+         mHighlightedPart == LL_TRANSLATE_CENTER ) )
     {
         handled = handleMouseDownOnPart( x, y, mask );
     }
@@ -478,6 +614,27 @@ bool LLManipTranslate::handleMouseDownOnPart( S32 x, S32 y, MASK mask )
 
     highlightManipulators(x, y);
     S32 hit_part = mHighlightedPart;
+
+    if (hit_part == LL_TRANSLATE_CENTER)
+    {
+        mManipNormal = LLViewerCamera::getInstance()->getAtAxis();
+        mDragSelectionStartGlobal = gAgent.getPosGlobalFromAgent(getPivotPoint());
+        if (!getMousePointOnPlaneGlobal(mDragCursorStartGlobal, x, y,
+                mDragSelectionStartGlobal, mManipNormal)) return true;
+        updateSurfaceBounds();
+        LLSelectMgr::getInstance()->saveSelectedObjectTransform(SELECT_ACTION_TYPE_MOVE);
+        LLSelectMgr::getInstance()->enableSilhouette(false);
+        mCenterDrag = true;
+        mSurfaceSnapActive = false;
+        mVertexTarget = false;
+        mManipPart = LL_TRANSLATE_CENTER;
+        mInSnapRegime = false;
+        mMouseDownX = x;
+        mMouseDownY = y;
+        mMouseOutsideSlop = false;
+        setMouseCapture(true);
+        return true;
+    }
 
     if( (hit_part != LL_X_ARROW) &&
         (hit_part != LL_Y_ARROW) &&
@@ -558,12 +715,14 @@ bool LLManipTranslate::handleMouseDownOnPart( S32 x, S32 y, MASK mask )
 
     // Route future Mouse messages here preemptively.  (Release on mouse up.)
     setMouseCapture( true );
+    updateSnapMode(mask);
 
     return true;
 }
 
 bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
 {
+    const bool snap_mode_changed = updateSnapMode(mask);
     if (hasMouseCapture() && mVertexDrag)
     {
         mVertexTarget = false;
@@ -595,6 +754,51 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
             }
         }
         gViewerWindow->setCursor(UI_CURSOR_TOOLTRANSLATE);
+        return true;
+    }
+
+    if (hasMouseCapture() && mCenterDrag)
+    {
+        mVertexTarget = false;
+        gViewerWindow->setCursor(UI_CURSOR_TOOLTRANSLATE);
+        if (!canAffectSelection()) return true;
+        if (!mMouseOutsideSlop && abs(x - mMouseDownX) < MOUSE_DRAG_SLOP &&
+            abs(y - mMouseDownY) < MOUSE_DRAG_SLOP) return true;
+        mMouseOutsideSlop = true;
+
+        const bool snapping = (mask & (MASK_CONTROL | MASK_SHIFT)) == (MASK_CONTROL | MASK_SHIFT);
+        LLVector3d destination, delta, current;
+        if (snapping)
+        {
+            mSurfaceSnapActive = true;
+            LLVector3 normal;
+            if (!mSurfaceBoundsValid || !findSurface(x, y, destination, normal)) return true;
+            mSurfaceOffset = getSurfaceOffset(normal);
+            delta = destination - (mDragSelectionStartGlobal + LLVector3d(mSurfaceOffset));
+        }
+        else
+        {
+            const LLVector3d pivot = gAgent.getPosGlobalFromAgent(getPivotPoint());
+            if (!getMousePointOnPlaneGlobal(destination, x, y, pivot, mManipNormal)) return true;
+            if (mSurfaceSnapActive)
+            {
+                // Resume the free drag from the snapped position without jumping.
+                mDragCursorStartGlobal = destination - (pivot - mDragSelectionStartGlobal);
+                mSurfaceSnapActive = false;
+            }
+            delta = destination - mDragCursorStartGlobal;
+        }
+        const F32 limit = gSavedSettings.getF32("MaxDragDistance");
+        if (gSavedSettings.getBOOL("LimitDragDistance") && delta.lengthSquared() > limit * limit)
+        {
+            gViewerWindow->setCursor(UI_CURSOR_NOLOCKED);
+            return true;
+        }
+        applyTranslation(delta);
+        mVertexDestination = destination;
+        current = gAgent.getPosGlobalFromAgent(getPivotPoint()) + LLVector3d(mSurfaceOffset);
+        mVertexTarget = snapping &&
+            (current - destination).lengthSquared() < 0.000001;
         return true;
     }
 
@@ -636,7 +840,7 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
     // Suppress processing if mouse hasn't actually moved.
     // This may cause problems if the camera moves outside of the
     // rotation above.
-    if( x == mLastHoverMouseX && y == mLastHoverMouseY && !rotated)
+    if( x == mLastHoverMouseX && y == mLastHoverMouseY && !rotated && !snap_mode_changed)
     {
         LL_DEBUGS("UserInput") << "hover handled by LLManipTranslate (mouse unmoved)" << LL_ENDL;
         gViewerWindow->setCursor(UI_CURSOR_TOOLTRANSLATE);
@@ -659,8 +863,8 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
         {
             // ...just went outside the slop region
             mMouseOutsideSlop = true;
-            // If holding down shift, leave behind a copy.
-            if (mask == MASK_COPY)
+            // With the grid off, Shift is reserved for temporary snapping.
+            if (mask == MASK_COPY && !mTemporarySnap)
             {
                 // ...we're trying to make a copy
                 LLSelectMgr::getInstance()->selectDuplicate(LLVector3::zero, false);
@@ -732,12 +936,20 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
 
     F64 off_axis_magnitude;
 
-    getMousePointOnPlaneGlobal(cursor_point_snap_line, x, y, current_pos_global, mSnapOffsetAxis % axis_f);
+    if (mTemporarySnap)
+    {
+        // Use the handle's drag plane even before any ruler has been rendered.
+        cursor_point_snap_line = mDragSelectionStartGlobal + relative_move;
+    }
+    else
+    {
+        getMousePointOnPlaneGlobal(cursor_point_snap_line, x, y, current_pos_global, mSnapOffsetAxis % axis_f);
+    }
     off_axis_magnitude = axis_exists ? llabs((cursor_point_snap_line - current_pos_global) * LLVector3d(mSnapOffsetAxis)) : 0.f;
 
-    if (gSavedSettings.getBOOL("SnapEnabled"))
+    if (isSnapEnabled())
     {
-        if (off_axis_magnitude > mSnapOffsetMeters)
+        if (axis_exists && (mTemporarySnap || off_axis_magnitude > mSnapOffsetMeters))
         {
             mInSnapRegime = true;
             LLVector3 cursor_snap_agent = gAgent.getPosAgentFromGlobal(cursor_point_snap_line);
@@ -1007,6 +1219,12 @@ void LLManipTranslate::highlightManipulators(S32 x, S32 y)
         return;
     }
 
+    if (centerHandleHit(x, y))
+    {
+        mHighlightedPart = LL_TRANSLATE_CENTER;
+        return;
+    }
+
     //LLBBox bbox = LLSelectMgr::getInstance()->getBBoxOfSelection();
     LLMatrix4 projMatrix = LLViewerCamera::getInstance()->getProjection();
     LLMatrix4 modelView = LLViewerCamera::getInstance()->getModelview();
@@ -1269,6 +1487,9 @@ bool LLManipTranslate::handleMouseUp(S32 x, S32 y, MASK mask)
     mVertexDrag = false;
     mVertexTarget = false;
     mVertexObject = nullptr;
+    mCenterDrag = false;
+    mSurfaceSnapActive = false;
+    mSurfaceBoundsValid = false;
     return LLManip::handleMouseUp(x, y, mask);
 }
 
@@ -1284,19 +1505,32 @@ void LLManipTranslate::render()
     }
     {
         LLGLDepthTest gls_depth(GL_TRUE, GL_FALSE);
-        if (!mVertexDrag && !(vertexSnapHeld() && mVertexObject)) renderGuidelines();
+        if (!mCenterDrag && !mVertexDrag && !(vertexSnapHeld() && mVertexObject)) renderGuidelines();
     }
     {
         //LLGLDisable gls_stencil(GL_STENCIL_TEST);
         renderTranslationHandles();
-        if (!mVertexDrag && !(vertexSnapHeld() && mVertexObject)) renderSnapGuides();
+        if (!mCenterDrag && !mVertexDrag && !(vertexSnapHeld() && mVertexObject)) renderSnapGuides();
+        LLVector3 center;
+        if (!mVertexDrag && (mCenterDrag || !vertexSnapHeld()) &&
+            (mManipPart == LL_NO_PART || mCenterDrag) && getCenterHandle(center))
+        {
+            renderVertexMarker(gAgent.getPosGlobalFromAgent(center),
+                mCenterDrag || mHighlightedPart == LL_TRANSLATE_CENTER ?
+                    LLColor4(1.f, 0.8f, 0.15f, 1.f) : LLColor4(0.9f, 0.9f, 0.9f, 1.f), true);
+        }
         LLVector3d vertex;
-        if ((mVertexDrag || vertexSnapHeld()) && vertexPoint(vertex))
+        if (mCenterDrag && mSurfaceBoundsValid)
+        {
+            vertex = gAgent.getPosGlobalFromAgent(getPivotPoint()) + LLVector3d(mSurfaceOffset);
+            renderVertexMarker(vertex, LLColor4(1.f, 0.8f, 0.15f, 1.f));
+        }
+        else if ((mVertexDrag || vertexSnapHeld()) && vertexPoint(vertex))
         {
             renderVertexMarker(vertex, LLColor4(1.f, 0.8f, 0.15f, 1.f));
-            if (mVertexTarget && vertexSnapHeld())
-                renderVertexMarker(mVertexDestination, LLColor4(0.2f, 1.f, 0.6f, 1.f));
         }
+        if (mVertexTarget && (mCenterDrag || vertexSnapHeld()))
+            renderVertexMarker(mVertexDestination, LLColor4(0.2f, 1.f, 0.6f, 1.f));
     }
     gGL.popMatrix();
 
@@ -1305,7 +1539,7 @@ void LLManipTranslate::render()
 
 void LLManipTranslate::renderSnapGuides()
 {
-    if (!gSavedSettings.getBOOL("SnapEnabled"))
+    if (!isSnapEnabled())
     {
         return;
     }
@@ -2048,7 +2282,7 @@ void LLManipTranslate::renderTranslationHandles()
 
     LLVector3 selection_center = getPivotPoint();
     LLVector3d vertex;
-    if ((mVertexDrag || vertexSnapHeld()) && vertexPoint(vertex))
+    if ((mVertexDrag || (!mCenterDrag && vertexSnapHeld())) && vertexPoint(vertex))
         selection_center = gAgent.getPosAgentFromGlobal(vertex);
 
     // Drag handles

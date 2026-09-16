@@ -85,6 +85,7 @@ private:
     bool handleLeftClickPick();
     bool handleRightClickPick();
     bool useClickAction     (MASK mask, LLViewerObject* object,LLViewerObject* parent);
+    bool shouldBlockClickAction(MASK mask, LLViewerObject* object, LLViewerObject* parent);
 
     void showVisualContextMenuEffect();
     ECursorType cursorFromObject(LLViewerObject* object);

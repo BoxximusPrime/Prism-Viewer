@@ -270,7 +270,10 @@ def run(sdl,gl):
     truth=[]
     for y in range(H):
         for x in range(W):
-            truth.append(sum(x+(sx+.5)/8>(y+(sy+.5)/8)*.37+23.2 for sy in range(8) for sx in range(8))/64)
+            coverage=sum(x+(sx+.5)/8>(y+(sy+.5)/8)*.37+23.2 for sy in range(8) for sx in range(8))/64
+            # Spatial and temporal AA now both filter compressed HDR. Convert
+            # analytic coverage back to HDR for comparison with stored history.
+            truth.append(coverage/(2-coverage))
     gpu.uniform(edge,'shift',23.2); gpu.uniform(edge,'jitter',0,0); gpu.draw(edge,current)
     raw=gpu.read(current)[0::4]
     raw_error=sum((a-b)**2 for a,b in zip(raw,truth))
@@ -295,7 +298,9 @@ def run(sdl,gl):
     for background_depth,history_weight in ((8,.9),(0,.9),(8,.97)):
         gpu.uniform(resolve,'taa_history_weight',history_weight)
         frames=[]; rejected=[]
-        for frame in range(64):
+        # At .97 history, 48 frames still retain 23% of the reset frame.
+        # Measure after the same 80-frame settling period as the motion suite.
+        for frame in range(96):
             jx,jy=halton(frame%8+1,2)-.5,halton(frame%8+1,3)-.5
             colors=[]; depths=[]
             for y in range(H):
@@ -317,7 +322,7 @@ def run(sdl,gl):
             gpu.uniform(resolve,'taa_jitter',jx/W,jy/H)
             gpu.uniform(resolve,'taa_history_valid',int(frame>0),integer=True)
             bind_resolve(); gpu.draw(resolve,output)
-            if frame>=48:
+            if frame>=80:
                 result=gpu.read(output)
                 frames.append([result[i*4] for i in edge_pixels])
                 rejected.extend(result[i*4+3]<0 for i in edge_pixels)

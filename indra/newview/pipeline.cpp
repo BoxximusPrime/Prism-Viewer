@@ -35,6 +35,7 @@
 
 // library includes
 #include "llimagepng.h"
+#include "llsdserialize.h"
 #include "llaudioengine.h" // For debugging.
 #include "llerror.h"
 #include "llviewercontrol.h"
@@ -1474,7 +1475,8 @@ void LLPipeline::createGLBuffers()
     const U32 glow_color_fmt = glow_hdr ? GL_RGBA16F : GL_RGBA;
     for (U32 i = 0; i < 3; i++)
     {
-        mGlow[i].allocate(512, glow_res, glow_color_fmt);
+        mGlow[i].allocate(512, glow_res, glow_color_fmt, false,
+            LLTexUnit::TT_TEXTURE, LLTexUnit::TMG_AUTO);
     }
 
     allocateScreenBuffer(resX, resY);
@@ -4337,6 +4339,7 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
     bool done_atmospherics = LLPipeline::sRenderingHUDs; //skip atmospherics on huds
     bool done_water_haze = done_atmospherics;
     bool done_water_exclusion = mWaterLightingReady;
+    bool done_taa_opaque = false;
 
     // do water exclusion just before water pass.
     U32 water_exclusion_pass = LLDrawPool::POOL_WATEREXCLUSION;
@@ -4396,6 +4399,14 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
             done_water_haze = true;
         }
 
+        if (cur_type >= LLDrawPool::POOL_ALPHA_PRE_WATER && !done_taa_opaque)
+        {
+            // Include post-deferred opaque/fullbright/masked surfaces and water
+            // haze, but stop before blended geometry and the water surface.
+            captureTAAOpaque();
+            done_taa_opaque = true;
+        }
+
         pool_set_t::iterator iter2 = iter1;
         if (hasRenderType(poolp->getType()) && poolp->getNumPostDeferredPasses() > 0)
         {
@@ -4442,6 +4453,8 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
         iter1 = iter2;
         stop_glerror();
     }
+
+    if (!done_taa_opaque) captureTAAOpaque();
 
     gGLLastMatrix = NULL;
     gGL.matrixMode(LLRender::MM_MODELVIEW);
@@ -7513,20 +7526,16 @@ void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_co
 
         shader->bindTexture(LLShaderMgr::EXPOSURE_MAP, &mExposureMap);
 
-        static LLStaticHashedString bloom_map("bloomMap");
         static LLStaticHashedString bloom_enabled("bloomEnabled");
         static LLStaticHashedString bloom_intensity("bloomIntensity");
         static LLCachedControl<bool> bloom_setting(gSavedSettings, "RenderBloomEnabled", false);
         static LLCachedControl<F32> bloom_strength(gSavedSettings, "RenderBloomIntensity", 0.35f);
         const bool use_bloom = bloom_setting() && gBloomExtractProgram.isComplete() && gBloomBlurProgram.isComplete();
-        constexpr S32 bloom_channel = 7;
-        shader->uniform1i(bloom_map, bloom_channel);
         shader->uniform1i(bloom_enabled, use_bloom ? 1 : 0);
         shader->uniform1f(bloom_intensity, llclamp((F32)bloom_strength(), 0.0f, 2.0f));
         if (use_bloom)
         {
-            gGL.getTexUnit(bloom_channel)->bind(&mBloom[1]);
-            gGL.getTexUnit(bloom_channel)->setTextureFilteringOption(LLTexUnit::TFO_BILINEAR);
+            shader->bindTexture(LLShaderMgr::DEFERRED_BLOOM, &mBloom[1], false, LLTexUnit::TFO_BILINEAR);
         }
 
         shader->uniform2f(LLShaderMgr::DEFERRED_SCREEN_RES, (GLfloat)src->getWidth(), (GLfloat)src->getHeight());
@@ -7555,7 +7564,7 @@ void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_co
         shader->unbind();
         if (use_bloom)
         {
-            gGL.getTexUnit(bloom_channel)->unbind(mBloom[1].getUsage());
+            shader->unbindTexture(LLShaderMgr::DEFERRED_BLOOM);
         }
     }
     dst->flush();
@@ -7746,11 +7755,11 @@ void LLPipeline::generateGlow(LLRenderTarget* src)
 
             if (i == 0)
             {
-                gGlowProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mGlow[2]);
+                gGlowProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mGlow[2], false, LLTexUnit::TFO_TRILINEAR);
             }
             else
             {
-                gGlowProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mGlow[(i - 1) % 2]);
+                gGlowProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mGlow[(i - 1) % 2], false, LLTexUnit::TFO_TRILINEAR);
             }
 
             if (i % 2 == 0)
@@ -8142,6 +8151,60 @@ void LLPipeline::combineGlow(LLRenderTarget* src, LLRenderTarget* dst)
     }
 
     dst->flush();
+
+    // One-shot, local-only capture for replaying the legacy glow passes offscreen.
+    static LLCachedControl<bool> dump_glow(gSavedSettings, "RenderGlowDebugDump", false);
+    if (dump_glow)
+    {
+        gSavedSettings.setBOOL("RenderGlowDebugDump", false);
+        const std::string directory = gDirUtilp->getExpandedFilename(LL_PATH_LOGS,
+            "glow-debug-" + LLUUID::generateNewID().asString());
+        if (LLFile::mkdir(directory) != 0)
+        {
+            LL_WARNS("Render") << "Cannot create glow capture directory: " << directory << LL_ENDL;
+            return;
+        }
+        LLSD metadata;
+        for (const char* name : { "RenderGlow", "RenderGlowHDR", "RenderGlowStrength", "RenderGlowIterations",
+            "RenderGlowWidth", "RenderGlowResolutionPow", "RenderGlowNoise", "RenderHighPrecisionPostProcess",
+            "RenderBloomEnabled", "RenderFSAAType", "RenderCASSharpness", "RenderEyeAdaptationEnabled" })
+        {
+            metadata["settings"][name] = gSavedSettings.getControl(name)->getValue();
+        }
+        bool complete = true;
+        auto capture = [&](const char* name, U32 texture)
+        {
+            gGL.getTexUnit(0)->bindManual(LLTexUnit::TT_TEXTURE, texture);
+            gGL.getTexUnit(0)->activate(); // A cached bind need not change the active unit.
+            GLint width = 0, height = 0, format = 0;
+            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+            metadata["buffers"][name]["width"] = width;
+            metadata["buffers"][name]["height"] = height;
+            metadata["buffers"][name]["format"] = format;
+            if (width <= 0 || height <= 0) { complete = false; return; }
+            std::vector<F32> pixels(size_t(width) * height * 4);
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
+            llofstream output(directory + "/" + name + ".rgba32f", std::ios::binary);
+            output.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(F32));
+            output.close();
+            complete &= !output.fail();
+        };
+        capture("scene", src->getTexture());
+        capture("extract", mGlow[2].getTexture());
+        capture("blur", mGlow[1].getTexture());
+        capture("composite", dst->getTexture());
+        capture("noise", mTrueNoiseMap);
+        gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+        llofstream output(directory + "/metadata.xml");
+        LLSDSerialize::toPrettyXML(metadata, output);
+        output.close();
+        if (complete && !output.fail())
+            LL_INFOS("Render") << "Glow capture saved: " << directory << LL_ENDL;
+        else
+            LL_WARNS("Render") << "Glow capture incomplete: " << directory << LL_ENDL;
+    }
 }
 
 void LLPipeline::renderDoF(LLRenderTarget* src, LLRenderTarget* dst)
@@ -8356,6 +8419,7 @@ bool LLPipeline::isTAAAvailable() const
 void LLPipeline::resetTAAHistory()
 {
     mTAAHistoryValid = false;
+    mTAAOpaqueReady = false;
     mTAAMotionReady = false;
     mTAASequence = 0;
     mTAALastFrame = 0;
@@ -8364,6 +8428,7 @@ void LLPipeline::resetTAAHistory()
 void LLPipeline::beginTAAFrame(bool for_snapshot)
 {
     mTAAFrameActive = false;
+    mTAAOpaqueReady = false;
     mTAAMotionReady = false;
     if (for_snapshot || gSnapshot || gCubeSnapshot || sImpostorRender || mRT != &mMainRT ||
         gUseWireframe || !isTAAAvailable() || gSavedSettings.getBOOL("RenderGTAODebug") ||
@@ -8443,8 +8508,13 @@ void LLPipeline::copyTAA(LLRenderTarget& src, LLRenderTarget& dst, S32 mode)
 
 void LLPipeline::captureTAAOpaque()
 {
-    if (mTAAFrameActive && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
+    if (mTAAFrameActive && !gCubeSnapshot && !sImpostorRender && !sRenderingHUDs && mRT == &mMainRT)
+    {
+        mRT->screen.flush();
         copyTAA(mRT->screen, mTAAOpaque);
+        mRT->screen.bindTarget();
+        mTAAOpaqueReady = true;
+    }
 }
 
 void LLPipeline::renderTAAMotion()
@@ -8586,7 +8656,7 @@ void LLPipeline::renderTAAMotion()
 
 LLRenderTarget* LLPipeline::resolveTAA()
 {
-    if (!mTAAFrameActive || !mTAAMotionReady || !isTAAAvailable()) return &mRT->screen;
+    if (!mTAAFrameActive || !mTAAOpaqueReady || !mTAAMotionReady || !isTAAAvailable()) return &mRT->screen;
     LL_PROFILE_GPU_ZONE("TAA resolve");
     auto& shader = gTAAResolveProgram;
     auto& history = mTAAHistory[mTAAIndex];
@@ -9803,8 +9873,6 @@ void LLPipeline::renderDeferredLighting()
         renderSSSDiffusion(true);
     mSSSTransmissionSmoothing = false;
 
-    captureTAAOpaque();
-
     {  // render non-deferred geometry (alpha, fullbright, glow)
         LLGLDisable blend(GL_BLEND);
 
@@ -10041,39 +10109,33 @@ void LLPipeline::renderSSSDiffusion(bool transmission)
     static const LLStaticHashedString depth_name("sss_depth");
     static const LLStaticHashedString pass_name("sss_pass");
     static const LLStaticHashedString smoothing_name("sss_smoothing_pass");
-    static const LLStaticHashedString full_resolution_name("sss_full_resolution");
-    const bool full_resolution = gSavedSettings.getBOOL("BoxxySSSFullResolution");
     const F32 radius = transmission ? gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") * 0.001f :
         gSavedSettings.getF32("BoxxySSSDepth");
     shader.uniform1f(depth_name, llclamp(radius, 0.001f, 0.1f));
     shader.uniform1i(smoothing_name, transmission ? 1 : 0);
-    shader.uniform1i(full_resolution_name, full_resolution ? 1 : 0);
     LLRenderTarget* source = transmission ? &mSSSTransmission : &mSSSDiffuse;
     shader.bindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
 
     mScreenTriangleVB->setBuffer();
-    if (!full_resolution)
-    {
-        // Average all source pixels before filtering: sparse full-resolution taps
-        // miss narrow lights. The wide gather reads only cached irradiance/guides.
-        mSSSWide.bindTarget();
-        shader.uniform1i(pass_name, 2);
-        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-        mSSSWide.flush();
-        // NORMAL_MAP must retain the deferred surface normal/skin-mask attachment.
-        shader.bindTexture(LLShaderMgr::BUMP_MAP, &mSSSWide, false, LLTexUnit::TFO_POINT, 1);
-        mSSSWideScratch.bindTarget();
-        shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSWide, false, LLTexUnit::TFO_POINT);
-        shader.uniform1i(pass_name, 3);
-        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-        mSSSWideScratch.flush();
-        mSSSWideResult.bindTarget();
-        shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSWideScratch, false, LLTexUnit::TFO_POINT);
-        shader.uniform1i(pass_name, 4);
-        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-        mSSSWideResult.flush();
-        shader.bindTexture(LLShaderMgr::SPECULAR_MAP, &mSSSWideResult, false, LLTexUnit::TFO_POINT);
-    }
+    // Average all source pixels before filtering: sparse full-resolution taps
+    // miss narrow lights. The wide gather reads only cached irradiance/guides.
+    mSSSWide.bindTarget();
+    shader.uniform1i(pass_name, 2);
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    mSSSWide.flush();
+    // NORMAL_MAP must retain the deferred surface normal/skin-mask attachment.
+    shader.bindTexture(LLShaderMgr::BUMP_MAP, &mSSSWide, false, LLTexUnit::TFO_POINT, 1);
+    mSSSWideScratch.bindTarget();
+    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSWide, false, LLTexUnit::TFO_POINT);
+    shader.uniform1i(pass_name, 3);
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    mSSSWideScratch.flush();
+    mSSSWideResult.bindTarget();
+    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mSSSWideScratch, false, LLTexUnit::TFO_POINT);
+    shader.uniform1i(pass_name, 4);
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    mSSSWideResult.flush();
+    shader.bindTexture(LLShaderMgr::SPECULAR_MAP, &mSSSWideResult, false, LLTexUnit::TFO_POINT);
 
     mSSSScratch.bindTarget();
     shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
@@ -10203,20 +10265,31 @@ void LLPipeline::renderVolumeFog()
     shader.unbind();
     mVolumeFog.flush();
 
-    mVolumeFogComposite.bindTarget();
-    auto& composite = gVolumeFogCompositeProgram;
-    composite.bind();
-    composite.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, &mRT->screen, false, LLTexUnit::TFO_POINT);
-    composite.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
-    composite.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mVolumeFog, false, LLTexUnit::TFO_POINT);
-    composite.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
-    mScreenTriangleVB->setBuffer();
-    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-    composite.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
-    composite.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
-    composite.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
-    composite.unbind();
-    mVolumeFogComposite.flush();
+    auto composite_fog = [&](LLRenderTarget& scene, LLRenderTarget& target)
+    {
+        target.bindTarget();
+        auto& composite = gVolumeFogCompositeProgram;
+        composite.bind();
+        composite.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, &scene, false, LLTexUnit::TFO_POINT);
+        composite.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
+        composite.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mVolumeFog, false, LLTexUnit::TFO_POINT);
+        composite.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        composite.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
+        composite.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
+        composite.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+        composite.unbind();
+        target.flush();
+    };
+    composite_fog(mRT->screen, mVolumeFogComposite);
+    if (mTAAFrameActive && mTAAOpaqueReady)
+    {
+        // The reactive comparison must see the same lighting on both images.
+        // Reuse the integrated medium and TAA scratch; do not march fog twice.
+        composite_fog(mTAAOpaque, mTAAResolved);
+        copyTAA(mTAAResolved, mTAAOpaque);
+    }
 
     mRT->screen.bindTarget();
     gCopyProgram.bind();
@@ -10286,6 +10359,18 @@ void LLPipeline::doAtmospherics()
         // full screen blit
         mScreenTriangleVB->setBuffer();
         mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+
+        if (mTAAFrameActive && mTAAOpaqueReady && mRT == &mMainRT && !gCubeSnapshot && !sRenderingHUDs)
+        {
+            // Haze is opaque-surface lighting, not independent transparency.
+            // Apply the identical blend to the reference so distant surfaces
+            // do not become more reactive simply because their haze is stronger.
+            mRT->screen.flush();
+            mTAAOpaque.bindTarget();
+            mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+            mTAAOpaque.flush();
+            mRT->screen.bindTarget();
+        }
 
         unbindDeferredShader(haze_shader);
 

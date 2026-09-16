@@ -55,16 +55,22 @@ void main()
     {
         vec4 meter = textureLod(emissiveRect, tc, 8);
         float weight = max(meter.b, 0.0001);
-        float average_log = meter.r / weight;
+        // The area-weighted mean lets normally lit surfaces outweigh deep
+        // shadows. A log mean alone would brighten the whole room to lift those
+        // shadows. It still provides a floor when most HDR values exceed the
+        // per-sample cap used for the moments.
+        float geometric_mean = exp2(meter.r / weight);
+        float average = max(meter.a / weight, geometric_mean);
         float highlights = sqrt(max(meter.g / weight, 0.00000001));
         float min_ev = eye_adaptation_limits.x;
         float max_ev = eye_adaptation_limits.y;
-        float target_ev = log2(0.18) + eye_adaptation_limits.z - average_log;
-        target_ev = clamp(target_ev, min_ev, max_ev);
+        float target_ev = log2(0.18 / max(average, 0.0001)) + eye_adaptation_limits.z;
 
-        // RMS luminance gives bright regions a voice without using the single
-        // hottest pixel as the meter. Leave the tonemapper some HDR headroom.
-        float highlight_ev = log2(2.0 / highlights);
+        // Protect broad highlights near the start of the display shoulder,
+        // rather than waiting for them to exceed display white by several stops.
+        // Solve the meter before applying either exposure limit, so the limits
+        // only constrain its answer and cannot change the metering decision.
+        float highlight_ev = log2(0.8 / highlights);
         target_ev = mix(target_ev, min(target_ev, highlight_ev), eye_adaptation_limits.w);
         target_ev = clamp(target_ev, min_ev, max_ev);
         if (isnan(target_ev) || isinf(target_ev)) target_ev = 0.0;

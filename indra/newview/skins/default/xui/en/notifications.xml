@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <notifications>
+  <notification name="PrismGraphicsDefaultsUpdate" type="alertmodal">
+    Update new graphics feature settings for Prism [VERSION]?
+
+Your saved settings differ from this version's defaults for SSS, GTAO, PCSS, TAA, Water, Volumetric Fog, Bloom or eye adaptation.
+
+Reset these effects to the new defaults? This includes their tuning, colours and SSS detection lists. Other preferences will stay as they are.
+
+Either choice dismisses this prompt for this version.
+    <form>
+      <button index="0" name="Reset" text="Yes, reset" />
+      <button index="1" name="Keep" text="No, keep mine" default="true" />
+    </form>
+  </notification>
   <notification name="MusicStreamError" type="notify" icon="notifytip.tga">
     Music stream cannot play: [REASON]
   </notification>

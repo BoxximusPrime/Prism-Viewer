@@ -1395,8 +1395,6 @@ void LLFloaterPreference::refreshEnabledState()
         pcss_enabled ? "PCSS is active. Adjustments apply immediately." :
         "PCSS is off. Enable it above to adjust shadow softness.");
 
-    getChildView("BoxxySSSFullResolution")->setEnabled(gSavedSettings.getBOOL("BoxxySSSEnabled") &&
-        gSavedSettings.getS32("BoxxySSSMode") >= 1);
     const bool sss_combined = gSavedSettings.getBOOL("BoxxySSSEnabled") &&
         gSavedSettings.getS32("BoxxySSSMode") == 2;
     getChildView("BoxxySSSWrapAmount")->setEnabled(sss_combined);
@@ -2596,6 +2594,21 @@ static LLPanelInjector<LLPanelPreferencePrivacy> t_pref_privacy("panel_preferenc
 
 bool LLPanelPreferenceGraphics::postBuild()
 {
+    // The page binds the complete vector for preset, Default and Cancel handling;
+    // its three sliders edit individual components without introducing new settings.
+    for (S32 axis = 0; axis < 3; ++axis)
+    {
+        getChild<LLUICtrl>("ShadowSplit" + std::to_string(axis))->setCommitCallback(
+            [axis](LLUICtrl* ctrl, const LLSD&)
+            {
+                LLVector3 split = gSavedSettings.getVector3("RenderShadowSplitExponent");
+                split.mV[axis] = (F32)ctrl->getValue().asReal();
+                gSavedSettings.setVector3("RenderShadowSplitExponent", split);
+                gSavedSettings.setString("PresetGraphicActive", "");
+                LLPresetsManager::getInstance()->triggerChangeSignal();
+            });
+    }
+
     if (!FSExactOIT::isSupported())
     {
         getChild<LLCheckBoxCtrl>("RenderExactOIT")->setEnabled(false);
@@ -2618,6 +2631,17 @@ bool LLPanelPreferenceGraphics::postBuild()
 
 void LLPanelPreferenceGraphics::draw()
 {
+    const LLVector3 split = gSavedSettings.getVector3("RenderShadowSplitExponent");
+    const bool shadows = gSavedSettings.getS32("RenderShadowDetail") > 0;
+    for (S32 axis = 0; axis < 3; ++axis)
+    {
+        LLUICtrl* slider = getChild<LLUICtrl>("ShadowSplit" + std::to_string(axis));
+        slider->setValue(split.mV[axis]);
+        slider->setEnabled(shadows);
+    }
+    getChildView("RenderShadowResolutionScale")->setEnabled(shadows);
+    getChildView("RenderShadowSplits")->setEnabled(shadows);
+
     LLPanelPreference::draw();
 }
 
@@ -2803,7 +2827,6 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSShowDepth")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSDebugLight")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSMode")->resetToDefault(true);
-    gSavedSettings.getControl("BoxxySSSFullResolution")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSStrength")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSDepth")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWarmth")->resetToDefault(true);

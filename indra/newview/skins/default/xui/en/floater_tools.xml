@@ -42,13 +42,13 @@
     Attachment
   </floater.string>
     <floater.string name="status_rotate">
-        Drag colored bands to rotate object
+        Drag to rotate; hold Shift to snap with grid off
     </floater.string>
     <floater.string name="status_scale">
-        Click and drag to stretch selected side
+        Drag to scale; hold Shift to snap with grid off
     </floater.string>
     <floater.string name="status_move">
-        Drag to move, shift-drag to copy
+        Shift snaps with grid off; Ctrl+Shift center snaps to surface
     </floater.string>
     <floater.string name="status_modifyland">
         Click and hold to modify land
@@ -111,7 +111,7 @@
         image_selected="PushButton_Selected_Press"
         layout="topleft"
         name="button move"
-        tool_tip="Move"
+        tool_tip="Move. With grid snapping off, hold Shift to snap arrows and planes to the grid. Drag the center square freely; Ctrl+Shift snaps the bottom, side, or top center to a surface. With grid snapping on, Shift-drag an arrow to copy."
         width="104"
         font="DejaVu"
         font.size="LSmall"
