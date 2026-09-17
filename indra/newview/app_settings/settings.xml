@@ -221,7 +221,7 @@
   <key>RenderGTAOQuality</key>
   <map>
     <key>Comment</key><string>GTAO quality: 0 Performance (8 samples), 1 Balanced (18), 2 High (32).</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><integer>2</integer>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><integer>1</integer>
   </map>
   <key>RenderGTAOFalloff</key>
   <map>
