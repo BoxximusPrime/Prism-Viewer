@@ -277,6 +277,10 @@ public:
     virtual void    updateDebugText();
     virtual bool    computeNeedsUpdate();
     virtual bool    updateCharacter(LLAgent &agent);
+    void restorePhotoEyeRotations();
+    void updatePhotoEyeRotations();
+    LLJoint* mPhotoEyeJoints[4] = {};
+    LLQuaternion mPhotoEyeRotations[4];
     void            updateFootstepSounds();
     void            computeUpdatePeriod();
     void            updateOrientation(LLAgent &agent, F32 speed, F32 delta_time);

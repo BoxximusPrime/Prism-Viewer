@@ -35,6 +35,7 @@
     <command name="marketplacelistings"/>
     <command name="picks"/>
     <command name="preferences"/>
+    <command name="quick_preferences"/>
     <command name="reporter"/>
     <command name="gridstatus"/>
     <command name="myenvironments"/>

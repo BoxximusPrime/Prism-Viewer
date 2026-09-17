@@ -960,6 +960,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
             LL_WARNS("Render") << "GTAO buffers unavailable; using legacy SSAO." << LL_ENDL;
         }
         mSSSTransmission.release();
+        mSSSGrazing.release();
         mSSSOverlayReady = false;
         mSSSOverlayBase.release();
         mSSSOverlayColor.release();
@@ -1339,6 +1340,8 @@ void LLPipeline::releaseGLBuffers()
     mPostPingMap.release();
     for (auto& target : mBloom) target.release();
     mSSSTransmission.release();
+    mSSSGrazing.release();
+    mSSSGrazingSmoothing = false;
     mSSSOverlayReady = false;
     mSSSOverlayBase.release();
     mSSSOverlayColor.release();
@@ -9094,6 +9097,9 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     static const LLStaticHashedString transmission_smoothing("sss_transmission_smoothing");
     shader.uniform1i(transmission_smoothing, mSSSTransmissionSmoothing && !gCubeSnapshot &&
         !sImpostorRender && mRT == &mMainRT ? 1 : 0);
+    static const LLStaticHashedString grazing_smoothing("sss_grazing_smoothing");
+    shader.uniform1i(grazing_smoothing, mSSSGrazingSmoothing && !gCubeSnapshot &&
+        !sImpostorRender && mRT == &mMainRT ? 1 : 0);
 
     S32 channel = 0;
     channel = shader.enableTexture(LLShaderMgr::DEFERRED_DIFFUSE, deferred_target->getUsage());
@@ -9391,6 +9397,12 @@ void LLPipeline::renderDeferredLighting()
     if (mSSSTransmissionSmoothing && !mSSSTransmission.isComplete())
         mSSSTransmissionSmoothing = mSSSTransmission.allocate(mSSSDiffuse.getWidth(), mSSSDiffuse.getHeight(), GL_RGBA16F);
 
+    mSSSGrazingSmoothing = sss_diffusion && gSavedSettings.getS32("BoxxySSSMode") == 2 &&
+        gSavedSettings.getF32("BoxxySSSGrazingSmoothing") > 0.f &&
+        gSavedSettings.getF32("BoxxySSSGrazingStrength") > 0.f;
+    if (mSSSGrazingSmoothing && !mSSSGrazing.isComplete())
+        mSSSGrazingSmoothing = mSSSGrazing.allocate(mSSSDiffuse.getWidth(), mSSSDiffuse.getHeight(), GL_RGBA16F);
+
 
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("deferred");
@@ -9531,8 +9543,11 @@ void LLPipeline::renderDeferredLighting()
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mSSSDiffuse.getTexture(), 0);
             if (mSSSTransmissionSmoothing)
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, mSSSTransmission.getTexture(), 0);
-            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-            glDrawBuffers(mSSSTransmissionSmoothing ? 3 : 2, buffers);
+            if (mSSSGrazingSmoothing)
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, mSSSGrazing.getTexture(), 0);
+            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+                GLenum(mSSSTransmissionSmoothing ? GL_COLOR_ATTACHMENT2 : GL_NONE), GL_COLOR_ATTACHMENT3};
+            glDrawBuffers(mSSSGrazingSmoothing ? 4 : mSSSTransmissionSmoothing ? 3 : 2, buffers);
         }
         // clear color buffer here - zeroing alpha (glow) is important or it will accumulate against sky
         glClearColor(0, 0, 0, 0);
@@ -9837,8 +9852,13 @@ void LLPipeline::renderDeferredLighting()
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
         if (mSSSTransmissionSmoothing)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, 0, 0);
-        renderSSSDiffusion();
-        if (mSSSTransmissionSmoothing && sss_transmission_blur && !sss_debug_combined) renderSSSDiffusion(true);
+        if (mSSSGrazingSmoothing)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, 0, 0);
+        renderSSSDiffusion(mSSSDiffuse, gSavedSettings.getF32("BoxxySSSDepth"));
+        if (mSSSTransmissionSmoothing && sss_transmission_blur && !sss_debug_combined)
+            renderSSSDiffusion(mSSSTransmission, gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") * 0.001f, true);
+        if (mSSSGrazingSmoothing)
+            renderSSSDiffusion(mSSSGrazing, gSavedSettings.getF32("BoxxySSSGrazingSmoothing") * 0.001f, true);
     }
 
     if (mHasSSSGeometry && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
@@ -9870,8 +9890,9 @@ void LLPipeline::renderDeferredLighting()
     }
     // Apply the same blur correction to the isolated sum as to normal lighting.
     if (sss_debug_combined && mSSSTransmissionSmoothing && sss_transmission_blur)
-        renderSSSDiffusion(true);
+        renderSSSDiffusion(mSSSTransmission, gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") * 0.001f, true);
     mSSSTransmissionSmoothing = false;
+    mSSSGrazingSmoothing = false;
 
     {  // render non-deferred geometry (alpha, fullbright, glow)
         LLGLDisable blend(GL_BLEND);
@@ -10098,7 +10119,7 @@ void LLPipeline::renderSSSOverlays()
     gGL.setSceneBlendType(LLRender::BT_ALPHA);
 }
 
-void LLPipeline::renderSSSDiffusion(bool transmission)
+void LLPipeline::renderSSSDiffusion(LLRenderTarget& source, F32 radius, bool smoothing)
 {
     LL_PROFILE_GPU_ZONE("Skin diffusion");
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
@@ -10109,12 +10130,9 @@ void LLPipeline::renderSSSDiffusion(bool transmission)
     static const LLStaticHashedString depth_name("sss_depth");
     static const LLStaticHashedString pass_name("sss_pass");
     static const LLStaticHashedString smoothing_name("sss_smoothing_pass");
-    const F32 radius = transmission ? gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") * 0.001f :
-        gSavedSettings.getF32("BoxxySSSDepth");
     shader.uniform1f(depth_name, llclamp(radius, 0.001f, 0.1f));
-    shader.uniform1i(smoothing_name, transmission ? 1 : 0);
-    LLRenderTarget* source = transmission ? &mSSSTransmission : &mSSSDiffuse;
-    shader.bindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
+    shader.uniform1i(smoothing_name, smoothing ? 1 : 0);
+    shader.bindTexture(LLShaderMgr::ALTERNATE_DIFFUSE_MAP, &source, false, LLTexUnit::TFO_POINT);
 
     mScreenTriangleVB->setBuffer();
     // Average all source pixels before filtering: sparse full-resolution taps
@@ -10138,7 +10156,7 @@ void LLPipeline::renderSSSDiffusion(bool transmission)
     shader.bindTexture(LLShaderMgr::SPECULAR_MAP, &mSSSWideResult, false, LLTexUnit::TFO_POINT);
 
     mSSSScratch.bindTarget();
-    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, source, false, LLTexUnit::TFO_POINT);
+    shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &source, false, LLTexUnit::TFO_POINT);
     shader.uniform1i(pass_name, 0);
     mScreenTriangleVB->setBuffer();
     mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);

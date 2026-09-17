@@ -116,14 +116,19 @@ def run(sdl, gl):
         values = (F * 16)(*(rows[r][c] for c in range(4) for r in range(4)))
         gl.UniformMatrix4fv(gl.GetUniformLocation(prog, name.encode()), 1, 0, values)
 
-    def program(fragment, flags, spot=False, vertex_override=None):
+    def program(fragment, flags, spot=False, vertex_override=None, real_srgb=False):
         vertex = "out vec4 vary_fragcoord; out vec3 trans_center;" if spot else "out vec2 vary_fragcoord;"
         vertex += "void main() { vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3)); gl_Position=vec4(p[gl_VertexID],0,1);"
         vertex += "vary_fragcoord=vec4(0,0,0,1); trans_center=vec3(0); }" if spot else "vary_fragcoord=vec2(0.5); }"
         if vertex_override is not None:
             vertex = vertex_override
         result = gl.CreateProgram()
-        for kind, source in [(0x8B31, vertex), (0x8B30, fragment), (0x8B30, STUBS)] + [
+        stubs = STUBS
+        if real_srgb:
+            stubs = stubs.replace("vec3 srgb_to_linear(vec3 c) { return c; }", "")
+            stubs = stubs.replace("vec3 linear_to_srgb(vec3 c) { return c; }", "")
+            stubs += (SHADERS / "class1/environment/srgbF.glsl").read_text().split("vec3 ColorFromRadiance")[0]
+        for kind, source in [(0x8B31, vertex), (0x8B30, fragment), (0x8B30, stubs)] + [
             (0x8B30, (SHADERS / f"class1/deferred/{name}.glsl").read_text())
             for name in ("gbufferUtil", "sssDepthUtil", "shadowUtil")
         ]:
@@ -173,10 +178,12 @@ def run(sdl, gl):
 
     gl.BindVertexArray(obj(gl.GenVertexArrays))
     gl.BindFramebuffer(FRAMEBUFFER, obj(gl.GenFramebuffers))
-    for i in range(3):
+    targets = []
+    for i in range(4):
         target = color_texture(0, [0,0,0,0])
+        targets.append(target)
         gl.FramebufferTexture2D(FRAMEBUFFER, COLOR_ATTACHMENT+i, TEXTURE, target, 0)
-    gl.DrawBuffers(3, (U*3)(COLOR_ATTACHMENT, COLOR_ATTACHMENT+1, COLOR_ATTACHMENT+2))
+    gl.DrawBuffers(4, (U*4)(*(COLOR_ATTACHMENT+i for i in range(4))))
     assert gl.CheckFramebufferStatus(FRAMEBUFFER) == 0x8CD5
     color_texture(0, [1,1,1,0])
     color_texture(2, [0,0.5,0,0])
@@ -683,6 +690,62 @@ def run(sdl, gl):
                         assert max(transmitted[:3]) < 1e-6, (name,"front light was isolated")
                     checks += 1
         gl.DeleteProgram(prog)
+    # Grazing is a separate diffuse component, never transmission. Splitting it
+    # must conserve the scene, and leave precisely the no-grazing diffuse input
+    # for the main filter, including sun shadow clamps and Classic lighting.
+    for name in ("softenLightF", "spotLightF", "pointLightF", "multiPointLightF"):
+        for defines in ("", flags):
+            prog = program((SHADERS / f"class3/deferred/{name}.glsl").read_text(),
+                           defines + "#define LIGHT_COUNT 1\n", spot=name != "softenLightF", real_srgb=True)
+            uniform(prog,"color",1,1,1)
+            uniform(prog,"size",10)
+            uniform(prog,"far_z",-100)
+            uniform(prog,"light[0]",0,0,0,10)
+            uniform(prog,"light_col[0]",1,1,1,0.5)
+            uniform(prog,"proj_shadow_idx",0,integer=True)
+            uniform(prog,"sss_shadow_thickness",0,integer=True)
+            for flag in (0.46,0.79):
+                uniform(prog,"test_flag",flag)
+                for classic in (0,1):
+                    uniform(prog,"classic_mode",classic,integer=True)
+                    for visibility in (0,0.3,1):
+                        color_texture(3,[visibility,1,visibility,visibility])
+                        for nl in (-0.2,0,0.15,0.4,1):
+                            setup_depth(prog,0.005)
+                            uniform(prog,"test_normal",math.sqrt(1-nl*nl),0,nl)
+                            for transmission_blur in (0,1):
+                                uniform(prog,"sss_transmission_smoothing",transmission_blur,integer=True)
+                                uniform(prog,"sss_grazing_smoothing",0,integer=True)
+                                uniform(prog,"sss_grazing_strength",0)
+                                baseline = pixel(1)
+                                uniform(prog,"sss_grazing_strength",1)
+                                scene, diffuse, transmitted = pixel(), pixel(1), pixel(2)
+                                assert pixel(3)==(0,0,0,0), 'Disabled grazing capture wrote light'
+                                uniform(prog,"sss_grazing_smoothing",1,integer=True)
+                                split, grazing = pixel(1), pixel(3)
+                                assert pixel()==scene, (name,'Grazing capture changed scene')
+                                assert pixel(2)==transmitted, (name,'Grazing leaked into transmission')
+                                assert max(abs(diffuse[i]-split[i]-grazing[i]) for i in range(3))<1e-6
+                                assert max(abs(baseline[i]-split[i]) for i in range(3))<1e-6, (name,classic,nl,baseline,split)
+                                if 0<nl<0.7 and visibility==1:
+                                    assert grazing[0]>0.001, (name,'Missing grazing capture',grazing)
+                                if nl<=0 or nl>=0.7 or (visibility==0 and name in ('softenLightF','spotLightF') and defines):
+                                    assert max(grazing[:3])<1e-6, (name,'Grazing escaped light/shadow boundary',grazing)
+                                checks+=1
+            # The viewer omits the transmission attachment when its blur is
+            # zero. The unused slot must not disable grazing's fourth output.
+            uniform(prog,"test_normal",math.sqrt(1-0.15**2),0,0.15)
+            uniform(prog,"sss_transmission_smoothing",0,integer=True)
+            grazing = pixel(3)
+            gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT+2,TEXTURE,0,0)
+            gl.DrawBuffers(4,(U*4)(COLOR_ATTACHMENT,COLOR_ATTACHMENT+1,0,COLOR_ATTACHMENT+3))
+            assert gl.CheckFramebufferStatus(FRAMEBUFFER)==0x8CD5
+            assert grazing[0]>0.001 and pixel(3)==grazing, 'Grazing requires transmission capture'
+            gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT+2,TEXTURE,targets[2],0)
+            gl.DrawBuffers(4,(U*4)(*(COLOR_ATTACHMENT+i for i in range(4))))
+            checks+=1
+            gl.DeleteProgram(prog)
+    color_texture(3,[0,1,0,0])
     # Depth on/off changes through-body transmission before either blur. It must
     # preserve the diffuse input that spreads across a projector's beam edge.
     for defines in ("", "#define MULTI_SPOTLIGHT 1\n"):

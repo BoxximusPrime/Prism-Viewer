@@ -1782,6 +1782,7 @@ F32 LLFloaterSnapshot::photoFocusDistance(F32 automatic_distance)
 
 void LLFloaterSnapshot::onClose(bool app_quitting)
 {
+    gSavedSettings.setBOOL("PhotoLookAtCamera", false);
     mPhotoPickFocus = mPhotoLockFocus = mPhotoManualFocus = false;
     mPhotoFocusPoint.clear();
     sPhotoOrbit.setMouseCapture(false);

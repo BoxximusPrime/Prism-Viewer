@@ -767,12 +767,14 @@ public:
     std::map<const LLViewerObject*, U32> mSSSDepthObjectIDs;
     LLRenderTarget          mSSSTransmission;
     bool                    mSSSTransmissionSmoothing = false;
+    LLRenderTarget          mSSSGrazing;
+    bool                    mSSSGrazingSmoothing = false;
     LLRenderTarget          mSSSDiffuse;
     LLRenderTarget          mSSSScratch;
     LLRenderTarget          mSSSWide; // quarter-size irradiance/coverage plus normal/depth guide
     LLRenderTarget          mSSSWideScratch;
     LLRenderTarget          mSSSWideResult;
-    void renderSSSDiffusion(bool transmission = false);
+    void renderSSSDiffusion(LLRenderTarget& source, F32 radius, bool smoothing = false);
     LLRenderTarget          mSSSOverlayBase; // original albedo + frozen opaque skin depth
     LLRenderTarget          mSSSOverlayColor; // premultiplied linear overlay colour
     bool                    mSSSOverlayReady = false;

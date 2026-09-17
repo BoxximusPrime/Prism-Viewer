@@ -48,7 +48,7 @@
         Drag to scale; hold Shift to snap with grid off
     </floater.string>
     <floater.string name="status_move">
-        Shift snaps with grid off; Ctrl+Shift center snaps to surface
+        Shift snaps with grid off; drag center to snap to surface
     </floater.string>
     <floater.string name="status_modifyland">
         Click and hold to modify land
@@ -111,7 +111,7 @@
         image_selected="PushButton_Selected_Press"
         layout="topleft"
         name="button move"
-        tool_tip="Move. With grid snapping off, hold Shift to snap arrows and planes to the grid. Drag the center square freely; Ctrl+Shift snaps the bottom, side, or top center to a surface. With grid snapping on, Shift-drag an arrow to copy."
+        tool_tip="Move. With grid snapping off, hold Shift to snap arrows and planes to the grid. Drag the center square to snap the bottom, side, or top center to a surface. With grid snapping on, Shift-drag an arrow to copy."
         width="104"
         font="DejaVu"
         font.size="LSmall"

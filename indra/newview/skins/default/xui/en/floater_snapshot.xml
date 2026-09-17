@@ -144,7 +144,8 @@
             <button name="photo_pick_focus" label="Pick Focus" label_selected="Click the world..." is_toggle="true" layout="topleft" left="12" top="160" width="180" height="25" follows="left|top" />
             <button name="photo_lock_focus" label="Lock Focus" label_selected="Focus Locked" is_toggle="true" label_color_selected="Green" layout="topleft" left="202" top="160" width="180" height="25" follows="left|top" />
             <spinner name="photo_focus_distance" label="Focus distance (metres)" layout="topleft" left="12" top="202" width="320" height="22" label_width="185" min_val="0.01" max_val="4096" increment="0.1" decimal_digits="2" initial_value="16" follows="left|top" />
-            <text name="photo_focus_hint" layout="topleft" left="12" top="238" width="510" height="44" word_wrap="true" follows="left|right|top">Entering a distance sets manual lens focus. Pick Focus returns to the world point. Depth of field must be enabled to see lens blur.</text>
+            <text name="photo_focus_hint" layout="topleft" left="12" top="234" width="510" height="32" word_wrap="true" follows="left|right|top">Type a distance for manual focus, or Pick Focus for a world point. Enable depth of field to see blur.</text>
+            <check_box name="photo_look_at_camera" control_name="PhotoLookAtCamera" label="Look at camera" layout="topleft" left="12" top="273" width="510" height="20" follows="left|right|top" tool_tip="Locally aim all rendered avatars' standard and Bento eye bones at your camera, including your own. Heads stay unchanged. Works with visual freeze. Turn off or close Photo Tools to restore normal eyes. Unrigged or independently scripted eyes may not follow." />
         </panel>
         <panel name="photo_lighting" label="Lighting" layout="topleft" follows="all" width="555" height="300">
             <text name="lighting_hint" layout="topleft" left="12" top="8" width="520" height="36" word_wrap="true" follows="left|right|top">Choose local lighting for your shot. Shared Environment restores the location lighting.</text>
@@ -199,6 +200,22 @@
             <slider name="photo_grade_lift" label="Shadows (lift)" control_name="PhotoGradeLift" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="207" width="510" height="22" label_width="185" min_val="-0.25" max_val="0.25" increment="0.01" decimal_digits="2" follows="left|right|top" />
             <slider name="photo_grade_gamma" label="Midtones (gamma)" control_name="PhotoGradeGamma" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="234" width="510" height="22" label_width="185" min_val="0.5" max_val="2" increment="0.05" decimal_digits="2" follows="left|right|top" />
             <slider name="photo_grade_gain" label="Highlights (gain)" control_name="PhotoGradeGain" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="261" width="510" height="22" label_width="185" min_val="0.5" max_val="1.5" increment="0.05" decimal_digits="2" follows="left|right|top" />
+        </panel>
+        <panel name="photo_overlays" label="Overlays" layout="topleft" follows="all" width="555" height="300">
+            <text name="overlays_hint" layout="topleft" left="12" top="12" width="520" height="42" follows="left|right|top" word_wrap="true">Composition guides follow the live world viewport. They stay visible with the UI hidden and are never included in saved photos.</text>
+            <text name="photo_guide_label" layout="topleft" left="12" top="72" width="130" height="20">Guide:</text>
+            <combo_box name="photo_composition_guide" control_name="PhotoCompositionGuide" layout="topleft" left="152" top="68" width="370" height="23" follows="left|right|top">
+                <combo_box.item label="Off" value="0" />
+                <combo_box.item label="Rule of Thirds" value="1" />
+                <combo_box.item label="Center Cross" value="2" />
+                <combo_box.item label="Diagonals" value="3" />
+                <combo_box.item label="Golden Ratio" value="4" />
+                <combo_box.item label="Golden Triangle" value="5" />
+                <combo_box.item label="Golden Triangle (Mirrored)" value="6" />
+            </combo_box>
+            <check_box name="photo_composition_white" control_name="PhotoCompositionWhite" label="White lines (uncheck for black)" layout="topleft" left="12" top="113" width="510" height="22" follows="left|right|top" />
+            <slider name="photo_composition_alpha" control_name="PhotoCompositionAlpha" label="Alpha (opacity)" label_width="140" layout="topleft" left="12" top="157" width="510" height="22" min_val="0" max_val="1" increment="0.05" decimal_digits="2" can_edit_text="true" follows="left|right|top" />
+            <text name="overlays_help" layout="topleft" left="12" top="205" width="510" height="60" follows="left|right|top" word_wrap="true">Guides resize with the viewport and keep a constant line width. Golden Triangle intersections stay perpendicular in both portrait and landscape views. Close Photo Tools or choose Off to hide guides.</text>
         </panel>
     </tab_container>
 </floater>

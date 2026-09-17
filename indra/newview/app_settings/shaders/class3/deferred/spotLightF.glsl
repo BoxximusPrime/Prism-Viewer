@@ -29,6 +29,8 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec4 sss_diffuse;
 layout(location = 2) out vec4 sss_transmitted;
 uniform int sss_transmission_smoothing;
+layout(location = 3) out vec4 sss_grazing;
+uniform int sss_grazing_smoothing;
 uniform float sss_point_transmission_boost;
 
 uniform samplerCube environmentMap;
@@ -97,6 +99,7 @@ float getSSSStrength(float mask, vec3 positionEye);
 bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
+vec3 getSSSDiffuseFactorWithoutGrazing(float nl, float strength);
 vec3 capSSSTransmission(vec3 transmission);
 vec3 getSSSTransmission(float nl, float nv, float strength);
 bool useSSSShadowThickness(float nl, float strength);
@@ -141,6 +144,7 @@ void main()
     float wrapStrength = useSSSWrappedDiffuse(sssStrength) ? sssStrength : 0.0;
     vec3 diffuseLighting = vec3(0.0);
     vec3 transmissionLighting = vec3(0.0);
+    vec3 grazingLighting = vec3(0.0);
 
     vec3 n = gb.normal;
 
@@ -213,6 +217,9 @@ void main()
                 vec3 lightDiffuse = intensity * clamp(diffuseFactor * diffPunc, vec3(0), vec3(10));
                 lightDiffuse += dist_atten * dlit * 3.25 * transmission * diffuseColor / 3.14159265;
                 transmissionLighting += lightDiffuse - intensity * clamp(diffuseFactor * diffPunc, vec3(0), vec3(10));
+                if (sss_grazing_smoothing != 0)
+                    grazingLighting += intensity * (clamp(diffuseFactor * diffPunc, vec3(0), vec3(10)) -
+                        clamp(getSSSDiffuseFactorWithoutGrazing(diffuseNl, wrapStrength) * diffPunc, vec3(0), vec3(10)));
                 diffuseLighting += lightDiffuse;
                 if (wrapStrength > 0.0)
                 {
@@ -233,6 +240,9 @@ void main()
             float ambianceNl = wrapStrength > 0.0 ? geometricNl : ambiancePbrNl;
             vec3 ambianceFactor = getSSSDiffuseFactor(ambianceNl, wrapStrength);
             vec3 ambianceDiffuse = amb_rgb * clamp(ambianceFactor * diffPunc, vec3(0), vec3(10));
+            if (sss_grazing_smoothing != 0)
+                grazingLighting += ambianceDiffuse - amb_rgb *
+                    clamp(getSSSDiffuseFactorWithoutGrazing(ambianceNl, wrapStrength) * diffPunc, vec3(0), vec3(10));
             diffuseLighting += ambianceDiffuse;
             if (wrapStrength > 0.0)
             {
@@ -271,6 +281,9 @@ void main()
                 vec3 lightDiffuse = dlit * diffuseFactor * dist_atten * diffuse * shadow;
                 lightDiffuse += dlit * transmission * dist_atten * diffuse;
                 transmissionLighting += lightDiffuse - dlit * getSSSDiffuseFactor(diffuseNl, wrapStrength) * dist_atten * diffuse * shadow;
+                if (sss_grazing_smoothing != 0)
+                    grazingLighting += dlit * (diffuseFactor - getSSSDiffuseFactorWithoutGrazing(diffuseNl, wrapStrength)) *
+                        dist_atten * diffuse * shadow;
                 diffuseLighting += lightDiffuse;
                 final_color = lightDiffuse;
 
@@ -282,6 +295,9 @@ void main()
             float ambianceNl = dot(-normalize(lv), n);
             vec3 ambianceFactor = getSSSDiffuseFactor(ambianceNl, wrapStrength);
             vec3 ambianceDiffuse = diffuse.rgb * amb_rgb * ambianceFactor;
+            if (sss_grazing_smoothing != 0)
+                grazingLighting += diffuse.rgb * amb_rgb *
+                    (ambianceFactor - getSSSDiffuseFactorWithoutGrazing(ambianceNl, wrapStrength));
             diffuseLighting += ambianceDiffuse;
             final_color += ambianceDiffuse;
         }
@@ -344,6 +360,7 @@ void main()
     frag_color.a = 0.0;
     sss_diffuse = vec4(0.0);
     sss_transmitted = vec4(0.0);
+    sss_grazing = vec4(0.0);
     if (useSSSScreenDiffusion(sssStrength))
     {
         sss_diffuse.rgb = diffuseLighting * final_scale;
@@ -351,6 +368,11 @@ void main()
         {
             sss_transmitted.rgb = min(max(transmissionLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
             sss_diffuse.rgb -= sss_transmitted.rgb;
+        }
+        if (sss_grazing_smoothing != 0)
+        {
+            sss_grazing.rgb = min(max(grazingLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_diffuse.rgb -= sss_grazing.rgb;
         }
     }
 }

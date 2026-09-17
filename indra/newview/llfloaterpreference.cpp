@@ -1399,6 +1399,7 @@ void LLFloaterPreference::refreshEnabledState()
         gSavedSettings.getS32("BoxxySSSMode") == 2;
     getChildView("BoxxySSSWrapAmount")->setEnabled(sss_combined);
     getChildView("BoxxySSSGrazingStrength")->setEnabled(sss_combined);
+    getChildView("BoxxySSSGrazingSmoothing")->setEnabled(sss_combined);
     getChildView("BoxxySSSTransmission")->setEnabled(sss_combined);
     getChildView("BoxxySSSMaxTransmission")->setEnabled(sss_combined);
     getChildView("BoxxySSSPointTransmissionBoost")->setEnabled(sss_combined);
@@ -2833,6 +2834,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSMaxDistance")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWrapAmount")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSGrazingStrength")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSGrazingSmoothing")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSTransmission")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSMaxTransmission")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSPointTransmissionBoost")->resetToDefault(true);

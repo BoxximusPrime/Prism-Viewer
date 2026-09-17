@@ -29,6 +29,8 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec4 sss_diffuse;
 layout(location = 2) out vec4 sss_transmitted;
 uniform int sss_transmission_smoothing;
+layout(location = 3) out vec4 sss_grazing;
+uniform int sss_grazing_smoothing;
 
 uniform sampler2D     lightFunc;
 
@@ -71,6 +73,7 @@ float getSSSStrength(float mask, vec3 positionEye);
 bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
+vec3 getSSSDiffuseFactorWithoutGrazing(float nl, float strength);
 uniform int sss_point_depth;
 uniform float sss_point_transmission_boost;
 bool useSSSShadowThickness(float nl, float strength);
@@ -104,6 +107,7 @@ void main()
     float wrapStrength = useSSSWrappedDiffuse(sssStrength) ? sssStrength : 0.0;
     vec3 diffuseLighting = vec3(0.0);
     vec3 transmissionLighting = vec3(0.0);
+    vec3 grazingLighting = vec3(0.0);
 
     vec3 n = gb.normal;
 
@@ -153,6 +157,9 @@ void main()
                 vec3 transmitted = pointSSSTransmission(diffuseNl, dot(n, v), wrapStrength, pos, light[light_idx].xyz) * diffuseColor / 3.14159265;
                 vec3 lightDiffuse = intensity * clamp(diffuseFactor * diff + transmitted, vec3(0), vec3(10));
                 transmissionLighting += lightDiffuse - intensity * clamp(diffuseFactor * diff, vec3(0), vec3(10));
+                if (sss_grazing_smoothing != 0)
+                    grazingLighting += intensity * (clamp(diffuseFactor * diff, vec3(0), vec3(10)) -
+                        clamp(getSSSDiffuseFactorWithoutGrazing(diffuseNl, wrapStrength) * diff, vec3(0), vec3(10)));
                 diffuseLighting += lightDiffuse;
                 if (wrapStrength > 0.0)
                 {
@@ -195,6 +202,9 @@ void main()
 
                     vec3 lightDiffuse = light_col[i].rgb * diffuseFactor * dist_atten * diffuse;
                     transmissionLighting += lightDiffuse - light_col[i].rgb * getSSSDiffuseFactor(diffuseNl, wrapStrength) * dist_atten * diffuse;
+                    if (sss_grazing_smoothing != 0)
+                        grazingLighting += light_col[i].rgb * (getSSSDiffuseFactor(diffuseNl, wrapStrength) -
+                            getSSSDiffuseFactorWithoutGrazing(diffuseNl, wrapStrength)) * dist_atten * diffuse;
                     vec3 col = lightDiffuse;
                     diffuseLighting += lightDiffuse;
 
@@ -225,6 +235,7 @@ void main()
     frag_color.a   = 0.0;
     sss_diffuse = vec4(0.0);
     sss_transmitted = vec4(0.0);
+    sss_grazing = vec4(0.0);
     if (useSSSScreenDiffusion(sssStrength))
     {
         sss_diffuse.rgb = diffuseLighting * final_scale;
@@ -232,6 +243,11 @@ void main()
         {
             sss_transmitted.rgb = min(max(transmissionLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
             sss_diffuse.rgb -= sss_transmitted.rgb;
+        }
+        if (sss_grazing_smoothing != 0)
+        {
+            sss_grazing.rgb = min(max(grazingLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_diffuse.rgb -= sss_grazing.rgb;
         }
     }
 

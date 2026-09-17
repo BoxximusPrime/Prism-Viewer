@@ -255,6 +255,7 @@ set(viewer_SOURCE_FILES
     llfloatergroups.cpp
     llfloaterhandler.cpp
     llfloaterhelpbrowser.cpp
+    llfloaterquickprefs.cpp
     llfloaterhoverheight.cpp
     llfloaterhud.cpp
     llfloaterimagepreview.cpp
@@ -957,6 +958,7 @@ set(viewer_HEADER_FILES
     llfloatergroups.h
     llfloaterhandler.h
     llfloaterhelpbrowser.h
+    llfloaterquickprefs.h
     llfloaterhoverheight.h
     llfloaterhud.h
     llfloaterimagepreview.h

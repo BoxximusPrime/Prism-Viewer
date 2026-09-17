@@ -469,7 +469,7 @@
     <scroll_container name="SkinScatteringScroll" follows="all" layout="topleft"
       left="0" top="0" width="517" height="410" reserve_scroll_corner="false">
     <panel name="SkinScatteringContent" follows="left|top" layout="topleft"
-      left="0" top="0" width="495" height="933">
+      left="0" top="0" width="495" height="961">
 
     <text
       follows="left|top|right"
@@ -634,6 +634,12 @@
       show_text="true" top="251" width="450"
       tool_tip="Combined mode: adds warm diffuse light at shallow angles on the side facing the light. Try 0.25 for light grazing across the stomach or arms. Respects shadows and skin strength; separate from wrap, transmission brightness, boost and cap. Zero disables it." />
 
+    <slider control_name="BoxxySSSGrazingSmoothing" decimal_digits="0" follows="left|top"
+      height="20" increment="1" label="Grazing blur (mm):" label_width="180"
+      layout="topleft" left="30" max_val="100" min_val="0" name="BoxxySSSGrazingSmoothing"
+      show_text="true" top="279" width="450"
+      tool_tip="Combined mode: independently spreads grazing scatter across nearby skin, preserving texture and highlights. Requires Grazing scatter strength above zero. Zero keeps grazing in the main diffusion filter; positive values use this radius instead, adding GPU work." />
+
     <slider
       control_name="BoxxySSSTransmission"
       decimal_digits="2"
@@ -648,20 +654,20 @@
       min_val="0.0"
       name="BoxxySSSTransmission"
       show_text="true"
-      top="279"
+      top="307"
       tool_tip="Linearly scales shine-through brightness without changing the penetration limit. Increase to brighten thin areas such as ears."
       width="450" />
 
     <slider control_name="BoxxySSSPointTransmissionBoost" decimal_digits="1" follows="left|top"
       height="20" increment="0.5" label="Local transmission boost:" label_width="180"
       layout="topleft" left="30" max_val="16" min_val="0" name="BoxxySSSPointTransmissionBoost"
-      show_text="true" top="307" width="450"
+      show_text="true" top="335" width="450"
       tool_tip="Extra multiplier for point-light and projector shine-through. 1 is neutral; try 4 for stronger transmission. Leaves front lighting and sun/moon unchanged. Works with both measured and estimated thickness; blocked paths remain dark." />
 
     <slider control_name="BoxxySSSMaxTransmission" decimal_digits="2" follows="left|top"
       height="20" increment="0.05" label="Maximum transmission:" label_width="180"
       layout="topleft" left="30" max_val="16" min_val="0" name="BoxxySSSMaxTransmission"
-      show_text="true" top="335" width="450"
+      show_text="true" top="363" width="450"
       tool_tip="Zero is unlimited. Caps each light's transmission response after brightness and local boost while preserving skin tint. Try 1.0, then raise brightness to bring out thicker areas without overdriving thin fingers. Light intensity still applies." />
 
     <slider
@@ -678,7 +684,7 @@
       min_val="0.0"
       name="BoxxySSSThickness"
       show_text="true"
-      top="363"
+      top="391"
       tool_tip="Controls absorption in both transmission modes. Zero disables absorption; lower values transmit more light. Estimated mode uses a fixed rounded 8.5 mm reference layer. Measured transmission still requires a valid path within the penetration limit."
       width="450" />
 
@@ -689,25 +695,25 @@
       layout="topleft"
       left="30"
       name="BoxxySSSShadowThickness"
-      top="395"
+      top="423"
       tool_tip="Combined mode: verify matching skin entry and exit surfaces near a selected subject within 32 m. Opaque clothing and gaps between layers block transmission. Coverage and subject/light changes fade smoothly. Works with Shadows set to None. Turn off to use estimated thickness."
       width="450" />
 
     <slider control_name="BoxxySSSPenetration" decimal_digits="0" follows="left|top"
       height="20" increment="1" label="Penetration limit (mm):" label_width="180"
       layout="topleft" left="30" max_val="300" min_val="5" name="BoxxySSSPenetration"
-      show_text="true" top="423" width="450"
+      show_text="true" top="451" width="450"
       tool_tip="Maximum verified light path through skin. Light fades gradually across the entire range and reaches zero at this limit. Lower values suppress thicker regions. Requires depth-based transmission; estimated mode is unaffected." />
 
     <slider control_name="BoxxySSSTransmissionSmoothing" decimal_digits="0" follows="left|top"
       height="20" increment="1" label="Transmission blur (mm):" label_width="180"
       layout="topleft" left="30" max_val="100" min_val="0" name="BoxxySSSTransmissionSmoothing"
-      show_text="true" top="451" width="450"
+      show_text="true" top="479" width="450"
       tool_tip="Smooths transmitted light after lighting, with skin and depth checks at edges. Gentler normal filtering reduces mottling on uneven meshes. Textures and specular highlights stay sharp. Zero disables the extra transmission filtering." />
 
     <check_box control_name="BoxxySSSPointDepth" height="20"
       label="Include point-light depth (experimental)" layout="topleft" left="30"
-      name="BoxxySSSPointDepth" top="479" width="450"
+      name="BoxxySSSPointDepth" top="507" width="450"
       tool_tip="Include point lights in the shared two-light depth budget near the closest affected subject. Adds depth rendering and sampling work. Toggle to compare performance." />
 
     <check_box
@@ -718,7 +724,7 @@
       layout="topleft"
       left="30"
       name="BoxxySSSAutoDetect"
-      top="507"
+      top="535"
       tool_tip="Detect your own and other avatars' mesh attachments when the linkset root name contains any whitelist term. Names load gradually for visible attachments within Maximum distance."
       width="420" />
 
@@ -730,33 +736,33 @@
       layout="topleft"
       left="30"
       name="BoxxySSSShowMask"
-      top="533"
+      top="561"
       tool_tip="Highlight every surface currently receiving skin scattering for setup and testing."
       width="420" />
 
     <check_box control_name="BoxxySSSShowDepth" enabled_control="BoxxySSSEnabled"
       height="20" label="Debug transmission depth" layout="topleft" left="30"
-      name="BoxxySSSShowDepth" top="559" width="420"
+      name="BoxxySSSShowDepth" top="587" width="420"
       tool_tip="Choose interpolated measured depth, or the final summed transmission, including absorption, light colors, intensity, and blur. Overrides the surface highlight. Requires depth-based transmission enabled in Combined mode." />
     <combo_box control_name="BoxxySSSDebugLight" enabled_control="BoxxySSSShowDepth"
-      name="BoxxySSSDebugLight" layout="topleft" left="30" top="585" width="280" height="23">
+      name="BoxxySSSDebugLight" layout="topleft" left="30" top="613" width="280" height="23">
       <combo_box.item label="Sun / moon depth" value="0" />
       <combo_box.item label="Local depth 1 (highest priority)" value="1" />
       <combo_box.item label="Local depth 2" value="2" />
       <combo_box.item label="Combined transmission (final light)" value="3" />
     </combo_box>
-    <text name="SSSDepthLegend" layout="topleft" left="30" top="614" width="450"
+    <text name="SSSDepthLegend" layout="topleft" left="30" top="642" width="450"
       height="36" word_wrap="true">Depth: white 0 mm; black 300 mm / blocked; magenta unavailable.
 Combined: transmitted light from all lights, including blur.</text>
 
     <text name="SSSWhitelistLabel" follows="left|top" layout="topleft"
-      left="30" top="657" width="440" height="18">Automatic detection whitelist:</text>
+      left="30" top="685" width="440" height="18">Automatic detection whitelist:</text>
     <line_editor name="BoxxySSSWhitelist" control_name="BoxxySSSWhitelist"
       enabled_control="BoxxySSSAutoDetect" follows="left|top" layout="topleft"
-      left="30" top="680" width="450" height="23" max_length_bytes="2048"
+      left="30" top="708" width="450" height="23" max_length_bytes="2048"
       tool_tip="Separate terms with commas. Matching ignores case and finds terms anywhere in the attachment root name. Empty terms are ignored." />
     <text name="SSSWhitelistHelp" follows="left|top" layout="topleft"
-      left="30" top="709" width="450" height="28" word_wrap="true">
+      left="30" top="737" width="450" height="28" word_wrap="true">
       Comma-separated terms; body also matches eBODY. Clear the list to use only explicit [sss] tags.
     </text>
 
@@ -767,20 +773,20 @@ Combined: transmitted light from all lights, including blur.</text>
       left="30"
       name="SkinScatteringPerformanceNote"
       text_color="LtGray_50"
-      top="839"
+      top="867"
       width="440"
       word_wrap="true">
       Works with Shadows off. Focused depth covers nearby skin and at most two local lights. Skin is opaque or alpha-masked; matching transparent overlays inherit the skin beneath them.
     </text>
 
     <text name="SSSOverlayNamesLabel" follows="left|top" layout="topleft"
-      left="30" top="745" width="440" height="18">Skin overlay names:</text>
+      left="30" top="773" width="440" height="18">Skin overlay names:</text>
     <line_editor name="BoxxySSSOverlayNames" control_name="BoxxySSSOverlayNames"
       enabled_control="BoxxySSSEnabled" follows="left|top" layout="topleft"
-      left="30" top="768" width="450" height="23" max_length_bytes="2048"
+      left="30" top="796" width="450" height="23" max_length_bytes="2048"
       tool_tip="Comma-separated terms in attachment root names, ignoring case. Use a distinctive neck-fix name. Works on no-mod attachments; independent of automatic skin detection. Leave empty to disable." />
     <text name="SSSOverlayNamesHelp" follows="left|top" layout="topleft"
-      left="30" top="797" width="450" height="34" word_wrap="true">
+      left="30" top="825" width="450" height="34" word_wrap="true">
       Matching transparent attachments blend their colour into nearby SSS skin. Separate names with commas; leave empty to disable.
     </text>
 

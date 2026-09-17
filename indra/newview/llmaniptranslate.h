@@ -103,7 +103,6 @@ private:
     bool        mVertexDrag = false;
     bool        mVertexTarget = false;
     bool        mCenterDrag = false;
-    bool        mSurfaceSnapActive = false;
     bool        mSurfaceBoundsValid = false;
     LLVector3   mSurfaceMin;
     LLVector3   mSurfaceMax;

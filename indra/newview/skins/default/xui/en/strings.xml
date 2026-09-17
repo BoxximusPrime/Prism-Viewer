@@ -4426,4 +4426,6 @@ and report the problem.
 [https://community.secondlife.com/knowledgebase/english/error-messages-r520/#Section__3 Knowledge Base]
   </string>
 
+  <string name="Command_QuickPreferences_Label">Quick Prefs</string>
+  <string name="Command_QuickPreferences_Tooltip">Quick graphics, avatar and environment preferences</string>
 </strings>

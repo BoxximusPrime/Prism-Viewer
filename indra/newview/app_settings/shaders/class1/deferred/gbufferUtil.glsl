@@ -104,7 +104,7 @@ vec3 getSSSWarmTint()
     return mix(vec3(1.0), vec3(1.0, 0.55, 0.35), clamp(sss_params.z, 0.0, 1.0));
 }
 
-vec3 getSSSDiffuseFactor(float nl, float strength)
+vec3 getSSSDiffuseFactor(float nl, float strength, bool includeGrazing)
 {
     float grazing = 0.0;
     if (sss_params.y > 1.5)
@@ -112,12 +112,22 @@ vec3 getSSSDiffuseFactor(float nl, float strength)
         // Light-facing grazing angles only. Fade to zero at the terminator
         // and toward face-on lighting, without adding backside transmission.
         grazing = smoothstep(0.0, 0.15, nl) * (1.0 - smoothstep(0.15, 0.7, nl))
-            * sss_grazing_strength * strength;
+            * (includeGrazing ? sss_grazing_strength : 0.0) * strength;
         strength *= sss_lighting.x;
     }
     float lambert = max(nl, 0.0);
     float wrapped = clamp((nl + 0.5) / 1.5, 0.0, 1.0);
     return vec3(lambert) + ((wrapped - lambert) * strength + grazing) * getSSSWarmTint();
+}
+
+vec3 getSSSDiffuseFactor(float nl, float strength)
+{
+    return getSSSDiffuseFactor(nl, strength, true);
+}
+
+vec3 getSSSDiffuseFactorWithoutGrazing(float nl, float strength)
+{
+    return getSSSDiffuseFactor(nl, strength, false);
 }
 
 bool useSSSShadowThickness(float nl, float strength)
