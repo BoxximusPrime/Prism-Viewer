@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="quick_preferences" title="QUICK PREFERENCES" width="360" height="300"
+ layout="topleft" can_resize="false" can_minimize="true" single_instance="true" save_rect="true">
+ <string name="custom">Custom</string>
+ <string name="shared_label">Shared Environment</string>
+ <string name="day_driven">Day Cycle / Shared</string>
+ <text name="graphics_label" left="12" top="34" width="112" height="20">Graphics:</text>
+ <combo_box name="graphics" left="124" top="30" width="224" height="23"
+ tool_tip="Default restores only shadow resolution, PCSS quality and GTAO quality. Ultra sets shadow resolution to 2 and both quality settings to High.">
+  <combo_box.item label="Default" value="default" />
+  <combo_box.item label="Ultra" value="ultra" />
+ </combo_box>
+ <slider name="draw_distance" control_name="RenderFarClip" label="Draw distance:" label_width="112"
+ left="12" top="65" width="336" height="20" min_val="32" max_val="1024" increment="8" decimal_digits="0" can_edit_text="true" />
+ <check_box name="name_tags" label="Name tags" left="12" top="98" width="145" height="20" />
+ <check_box name="look_targets" control_name="ShowLookAtTargets" label="Show look targets" left="170" top="98" width="178" height="20" />
+ <slider name="hover" label="Hover height:" label_width="112" left="12" top="132" width="336" height="20"
+ min_val="-2" max_val="2" increment="0.001" decimal_digits="3" can_edit_text="true" />
+ <text name="sky_label" left="12" top="174" width="70" height="20">Sky:</text>
+ <combo_box name="sky" left="84" top="170" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
+ <button name="sky_prev" label="&#x2039;" left="292" top="170" width="26" height="23" tool_tip="Previous sky preset" />
+ <button name="sky_next" label="&#x203a;" left="322" top="170" width="26" height="23" tool_tip="Next sky preset" />
+ <text name="water_label" left="12" top="204" width="70" height="20">Water:</text>
+ <combo_box name="water" left="84" top="200" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
+ <button name="water_prev" label="&#x2039;" left="292" top="200" width="26" height="23" tool_tip="Previous water preset" />
+ <button name="water_next" label="&#x203a;" left="322" top="200" width="26" height="23" tool_tip="Next water preset" />
+ <text name="day_label" left="12" top="234" width="70" height="20">Day cycle:</text>
+ <combo_box name="day" left="84" top="230" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
+ <button name="day_prev" label="&#x2039;" left="292" top="230" width="26" height="23" tool_tip="Previous day cycle preset" />
+ <button name="day_next" label="&#x203a;" left="322" top="230" width="26" height="23" tool_tip="Next day cycle preset" />
+ <button name="shared" label="Use Shared Environment" left="84" top="265" width="264" height="23" tool_tip="Clear local sky, water and day cycle overrides and use the parcel or region environment." />
+</floater>

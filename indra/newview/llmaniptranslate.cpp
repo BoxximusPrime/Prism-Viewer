@@ -562,7 +562,6 @@ void LLManipTranslate::onMouseCaptureLost()
     }
     mVertexDrag = false;
     mCenterDrag = false;
-    mSurfaceSnapActive = false;
     mSurfaceBoundsValid = false;
     mManipPart = LL_NO_PART;
     mVertexTarget = false;
@@ -617,15 +616,11 @@ bool LLManipTranslate::handleMouseDownOnPart( S32 x, S32 y, MASK mask )
 
     if (hit_part == LL_TRANSLATE_CENTER)
     {
-        mManipNormal = LLViewerCamera::getInstance()->getAtAxis();
         mDragSelectionStartGlobal = gAgent.getPosGlobalFromAgent(getPivotPoint());
-        if (!getMousePointOnPlaneGlobal(mDragCursorStartGlobal, x, y,
-                mDragSelectionStartGlobal, mManipNormal)) return true;
         updateSurfaceBounds();
         LLSelectMgr::getInstance()->saveSelectedObjectTransform(SELECT_ACTION_TYPE_MOVE);
         LLSelectMgr::getInstance()->enableSilhouette(false);
         mCenterDrag = true;
-        mSurfaceSnapActive = false;
         mVertexTarget = false;
         mManipPart = LL_TRANSLATE_CENTER;
         mInSnapRegime = false;
@@ -766,28 +761,11 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
             abs(y - mMouseDownY) < MOUSE_DRAG_SLOP) return true;
         mMouseOutsideSlop = true;
 
-        const bool snapping = (mask & (MASK_CONTROL | MASK_SHIFT)) == (MASK_CONTROL | MASK_SHIFT);
-        LLVector3d destination, delta, current;
-        if (snapping)
-        {
-            mSurfaceSnapActive = true;
-            LLVector3 normal;
-            if (!mSurfaceBoundsValid || !findSurface(x, y, destination, normal)) return true;
-            mSurfaceOffset = getSurfaceOffset(normal);
-            delta = destination - (mDragSelectionStartGlobal + LLVector3d(mSurfaceOffset));
-        }
-        else
-        {
-            const LLVector3d pivot = gAgent.getPosGlobalFromAgent(getPivotPoint());
-            if (!getMousePointOnPlaneGlobal(destination, x, y, pivot, mManipNormal)) return true;
-            if (mSurfaceSnapActive)
-            {
-                // Resume the free drag from the snapped position without jumping.
-                mDragCursorStartGlobal = destination - (pivot - mDragSelectionStartGlobal);
-                mSurfaceSnapActive = false;
-            }
-            delta = destination - mDragCursorStartGlobal;
-        }
+        LLVector3d destination, current;
+        LLVector3 normal;
+        if (!mSurfaceBoundsValid || !findSurface(x, y, destination, normal)) return true;
+        mSurfaceOffset = getSurfaceOffset(normal);
+        const LLVector3d delta = destination - (mDragSelectionStartGlobal + LLVector3d(mSurfaceOffset));
         const F32 limit = gSavedSettings.getF32("MaxDragDistance");
         if (gSavedSettings.getBOOL("LimitDragDistance") && delta.lengthSquared() > limit * limit)
         {
@@ -797,8 +775,7 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
         applyTranslation(delta);
         mVertexDestination = destination;
         current = gAgent.getPosGlobalFromAgent(getPivotPoint()) + LLVector3d(mSurfaceOffset);
-        mVertexTarget = snapping &&
-            (current - destination).lengthSquared() < 0.000001;
+        mVertexTarget = (current - destination).lengthSquared() < 0.000001;
         return true;
     }
 
@@ -1488,7 +1465,6 @@ bool LLManipTranslate::handleMouseUp(S32 x, S32 y, MASK mask)
     mVertexTarget = false;
     mVertexObject = nullptr;
     mCenterDrag = false;
-    mSurfaceSnapActive = false;
     mSurfaceBoundsValid = false;
     return LLManip::handleMouseUp(x, y, mask);
 }

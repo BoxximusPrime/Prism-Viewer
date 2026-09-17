@@ -144,7 +144,7 @@ struct Pipeline {
 struct LLManipTranslate {
     Selection* mObjectSelection=&selection; LLPointer<LLViewerObject> mVertexObject;
     Vec mVertexLocal,mVertexStart,mVertexDestination;
-    bool mCenterDrag=true,mSurfaceSnapActive=false,mVertexTarget=false,mMouseOutsideSlop=false;
+    bool mCenterDrag=true,mVertexTarget=false,mMouseOutsideSlop=false;
     bool mSurfaceBoundsValid=false;
     Vec mSurfaceMin,mSurfaceMax,mSurfaceOffset;
     bool allowed=true,capture=true,plane=true,clamp=false;
@@ -248,15 +248,16 @@ int main(){
     assert(!m.findSurface(0,0,hit,normal) && gPipeline.calls==256); gPipeline.stuck=false;
 
     gPipeline.hits={{&target,{8,0,0}}};
-    assert(m.hover(0,0,3) && m.writes==0); // quick click does not teleport
-    assert(m.hover(8,0,3) && m.mVertexTarget && near(m.applied,{8,0,-3}));
-    m.hover(8,0,3); assert(m.mVertexTarget && near(m.applied,{8,0,-3})); // no cumulative drift
+    assert(m.hover(0,0,0) && m.writes==0); // quick click does not teleport
+    assert(m.hover(8,0,0) && m.mVertexTarget && near(m.applied,{8,0,-3}));
+    m.hover(8,0,0); assert(m.mVertexTarget && near(m.applied,{8,0,-3})); // no cumulative drift
     gPipeline.hits={}; int writes=m.writes;
     m.hover(15,0,3); assert(m.writes==writes && !m.mVertexTarget); // sky holds position
-    m.hover(15,0,0); assert(near(m.applied,{8,0,-3})); // key release does not jump
-    m.hover(17,0,0); assert(near(m.applied,{10,0,-3})); // continues from snap
+    m.hover(15,0,0); assert(m.writes==writes); // no modifier: sky still holds position
+    m.hover(17,0,0); assert(m.writes==writes);
     gPipeline.hits={{&target,{5,0,0}}}; m.hover(17,0,3);
-    assert(near(m.applied,{5,0,-3}) && m.mVertexTarget); // can re-enter snap
+    assert(near(m.applied,{5,0,-3}) && m.mVertexTarget); // modifier changes keep surface snapping active
+    for(int mask=0;mask<8;++mask){m.hover(17,0,mask);assert(near(m.applied,{5,0,-3})&&m.mVertexTarget);}
     // Switching support axes keeps the two other coordinates at the origin.
     gPipeline.hit_normal={-1,0,0};m.hover(17,0,3);
     assert(near(m.applied,{1,0,-10})&&m.mVertexTarget);
@@ -270,7 +271,7 @@ int main(){
     gSavedSettings.limited=false; gPipeline.hits={{&target,{5,0,0}}}; m.clamp=true;
     m.hover(20,0,3); assert(!m.mVertexTarget); // no green success after a movement clamp
     m.clamp=false; b.dead=true; writes=m.writes; m.hover(20,0,3); assert(m.writes==writes);
-    b.dead=false; m.plane=false; m.hover(20,0,0); assert(m.writes==writes);
+    b.dead=false; m.mSurfaceBoundsValid=false; m.hover(20,0,0); assert(m.writes==writes);
     m.mCenterDrag=false; assert(!m.hover(20,0,3));
 }
 """

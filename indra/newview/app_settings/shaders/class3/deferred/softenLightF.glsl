@@ -31,6 +31,8 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec4 sss_diffuse;
 layout(location = 2) out vec4 sss_transmitted;
 uniform int sss_transmission_smoothing;
+layout(location = 3) out vec4 sss_grazing;
+uniform int sss_grazing_smoothing;
 
 const float M_PI = 3.14159265;
 
@@ -118,6 +120,7 @@ float getSSSStrength(float mask, vec3 positionEye);
 bool useSSSWrappedDiffuse(float strength);
 bool useSSSScreenDiffusion(float strength);
 vec3 getSSSDiffuseFactor(float nl, float strength);
+vec3 getSSSDiffuseFactorWithoutGrazing(float nl, float strength);
 vec3 capSSSTransmission(vec3 transmission);
 vec3 getSSSTransmission(float nl, float nv, float strength);
 bool useSSSShadowThickness(float nl, float strength);
@@ -131,8 +134,10 @@ vec3 clampHDRRange(vec3 color);
 vec3 pbrBaseLightSSS(vec3 diffuseColor, vec3 specularColor, float metallic, vec3 v, vec3 norm,
                      float perceptualRoughness, vec3 light_dir, vec3 sunlit, float scol,
                      vec3 radiance, vec3 irradiance, vec3 colorEmissive, float ao,
-                     float sssStrength, float sssPath, out vec3 diffuseLighting, out vec3 transmissionLighting)
+                     float sssStrength, float sssPath, out vec3 diffuseLighting, out vec3 transmissionLighting,
+                     out vec3 grazingLighting)
 {
+    grazingLighting = vec3(0.0);
     float nv = clamp(abs(dot(norm, v)), 0.001, 1.0);
     vec3 iblDiffuse = vec3(0.0);
     vec3 iblSpecular = vec3(0.0);
@@ -170,6 +175,14 @@ vec3 pbrBaseLightSSS(vec3 diffuseColor, vec3 specularColor, float metallic, vec3
         diffuseLighting = ambient + srgb_to_linear(linear_to_srgb(sunDiffuse) * 1.1);
         transmissionLighting = diffuseLighting - (ambient +
             srgb_to_linear(linear_to_srgb(max(sunDiffuse - transmitted, vec3(0.0))) * 1.1));
+        if (sss_grazing_smoothing != 0)
+        {
+            vec3 plainContrib = min(pow(getSSSDiffuseFactorWithoutGrazing(diffuseNl, sssStrength), vec3(1.2)), vec3(scol));
+            plainContrib = srgb_to_linear(linear_to_srgb(plainContrib) * sunlit * 0.7) * M_PI;
+            vec3 plainDiffuse = clamp(plainContrib * directDiffuse * scol, vec3(0.0), vec3(10.0));
+            grazingLighting = srgb_to_linear(linear_to_srgb(max(sunDiffuse - transmitted, vec3(0.0))) * 1.1) -
+                srgb_to_linear(linear_to_srgb(plainDiffuse) * 1.1);
+        }
     }
     else
     {
@@ -187,6 +200,10 @@ vec3 pbrBaseLightSSS(vec3 diffuseColor, vec3 specularColor, float metallic, vec3
         diffuseLighting = iblDiffuse + sunDiffuse;
         transmissionLighting = sunDiffuse - clamp(diffuseFactor * directDiffuse,
             vec3(0.0), vec3(10.0)) * sunlit * 3.0 * scol;
+        if (sss_grazing_smoothing != 0)
+            grazingLighting = (clamp(diffuseFactor * directDiffuse, vec3(0.0), vec3(10.0)) -
+                clamp(getSSSDiffuseFactorWithoutGrazing(diffuseNl, sssStrength) * directDiffuse,
+                    vec3(0.0), vec3(10.0))) * sunlit * 3.0 * scol;
     }
 
     return result + iblSpecular + colorEmissive;
@@ -219,6 +236,7 @@ void main()
     float wrapStrength = useSSSWrappedDiffuse(sssStrength) ? sssStrength : 0.0;
     vec3 sssDiffuseLighting = vec3(0.0);
     vec3 sssTransmissionLighting = vec3(0.0);
+    vec3 sssGrazingLighting = vec3(0.0);
 
     vec3 colorEmissive = gb.emissive.rgb;
     float envIntensity = gb.envIntensity;
@@ -292,7 +310,7 @@ void main()
         {
             color = pbrBaseLightSSS(diffuseColor, specularColor, metallic, v, gb.normal,
                                     perceptualRoughness, light_dir, sunlit_linear, scol, radiance,
-                                    irradiance, colorEmissive, ao, wrapStrength, sssPath, sssDiffuseLighting, sssTransmissionLighting);
+                                    irradiance, colorEmissive, ao, wrapStrength, sssPath, sssDiffuseLighting, sssTransmissionLighting, sssGrazingLighting);
         }
         else
         {
@@ -305,7 +323,7 @@ void main()
             {
                 pbrBaseLightSSS(diffuseColor, specularColor, metallic, v, gb.normal,
                                 perceptualRoughness, light_dir, sunlit_linear, scol, radiance,
-                                irradiance, colorEmissive, ao, 0.0, -1.0, sssDiffuseLighting, sssTransmissionLighting);
+                                irradiance, colorEmissive, ao, 0.0, -1.0, sssDiffuseLighting, sssTransmissionLighting, sssGrazingLighting);
             }
         }
     }
@@ -359,6 +377,12 @@ void main()
             vec3 plainSun = min(pow(getSSSDiffuseFactor(raw_da, wrapStrength), vec3(1.2)), vec3(scol));
             vec3 withoutTransmission = srgb_to_linear(color.rgb * 0.9 +
                 linear_to_srgb(plainSun) * sunlit_linear * 0.7);
+            if (sss_grazing_smoothing != 0)
+            {
+                vec3 withoutGrazing = min(pow(getSSSDiffuseFactorWithoutGrazing(raw_da, wrapStrength), vec3(1.2)), vec3(scol));
+                sssGrazingLighting = withoutTransmission - srgb_to_linear(color.rgb * 0.9 +
+                    linear_to_srgb(withoutGrazing) * sunlit_linear * 0.7);
+            }
             color.rgb = srgb_to_linear(color.rgb * 0.9 + (linear_to_srgb(sun_contrib) * sunlit_linear * 0.7));
             sssTransmissionLighting = color.rgb - withoutTransmission;
             sunlit_linear = srgb_to_linear(sunlit_linear);
@@ -372,11 +396,15 @@ void main()
             color.rgb += sun_contrib;
             sssTransmissionLighting = sun_contrib -
                 min(getSSSDiffuseFactor(raw_da, wrapStrength), vec3(scol)) * sunlit_linear;
+            if (sss_grazing_smoothing != 0)
+                sssGrazingLighting = (min(getSSSDiffuseFactor(raw_da, wrapStrength), vec3(scol)) -
+                    min(getSSSDiffuseFactorWithoutGrazing(raw_da, wrapStrength), vec3(scol))) * sunlit_linear;
         }
 
         color.rgb *= baseColor.rgb;
         sssDiffuseLighting = color.rgb;
         sssTransmissionLighting *= baseColor.rgb;
+        sssGrazingLighting *= baseColor.rgb;
 
         vec3 refnormpersp = reflect(pos.xyz, gb.normal);
 
@@ -409,6 +437,7 @@ void main()
         color.rgb = mix(color.rgb, baseColor.rgb, baseColor.a);
         sssDiffuseLighting *= 1.0 - baseColor.a;
         sssTransmissionLighting *= 1.0 - baseColor.a;
+        sssGrazingLighting *= 1.0 - baseColor.a;
 
         if (envIntensity > 0.0)
         {  // add environment map
@@ -425,6 +454,7 @@ void main()
     frag_color.a = 0.0;
     sss_diffuse = vec4(0.0);
     sss_transmitted = vec4(0.0);
+    sss_grazing = vec4(0.0);
     if (useSSSScreenDiffusion(sssStrength))
     {
         sss_diffuse.rgb = clampHDRRange(sssDiffuseLighting * final_scale);
@@ -432,6 +462,11 @@ void main()
         {
             sss_transmitted.rgb = min(max(sssTransmissionLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
             sss_diffuse.rgb -= sss_transmitted.rgb;
+        }
+        if (sss_grazing_smoothing != 0)
+        {
+            sss_grazing.rgb = min(max(sssGrazingLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_diffuse.rgb -= sss_grazing.rgb;
         }
     }
 }

@@ -4,6 +4,7 @@
 - Use: `cmake --build build-vc170-64 --config Release --target secondlife-bin -- /m:2`
 - The canonical executable is `E:\BoxxyViewer\build-vc170-64\newview\Release\secondlife-bin.exe`.
 - When reporting a completed build, link to that executable and do not direct the user to another configuration directory.
+- If a compile fails after changing a class layout in a header, discard the affected target's compiled objects and precompiled header before rebuilding. An incremental retry can retain objects built against the old layout even when the link succeeds.
 
 ## Feature inventory
 

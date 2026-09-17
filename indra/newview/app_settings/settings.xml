@@ -187,7 +187,7 @@
   <key>RenderTAAStaticDetails</key>
   <map><key>Comment</key><string>Retain fine static details through jitter and gentle camera motion; fast motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderTAAHistoryWeight</key>
-  <map><key>Comment</key><string>Maximum TAA history weight (0.5 to 0.97). Motion and invalid history lower this automatically.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.97</real></map>
+  <map><key>Comment</key><string>Maximum TAA history weight (0.5 to 0.97). Motion and invalid history lower this automatically.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.75999999</real></map>
   <key>RenderTAAMotionProtection</key>
   <map><key>Comment</key><string>TAA motion and color-disagreement protection (0 to 1). Higher values reduce trails at the cost of more shimmer in motion.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.85</real></map>
   <key>RenderTAAClipGamma</key>
@@ -211,12 +211,12 @@
   <key>RenderGTAORadius</key>
   <map>
     <key>Comment</key><string>GTAO near-field occlusion radius in metres (0.05 to 3).</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.00</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.5</real>
   </map>
   <key>RenderGTAOStrength</key>
   <map>
     <key>Comment</key><string>GTAO visibility power applied after denoising (0 to 3). 1 is normal, 0 removes occlusion.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.5</real>
   </map>
   <key>RenderGTAOQuality</key>
   <map>
@@ -231,19 +231,19 @@
   <key>RenderGTAOThinOccluder</key>
   <map>
     <key>Comment</key><string>GTAO thin-occluder compensation (0 to 1). Reduces excess occlusion from large depth discontinuities, at the expense of deep corners.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.0</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.15000001</real>
   </map>
   <key>RenderGTAODenoise</key>
   <map>
     <key>Comment</key><string>GTAO edge-aware spatial smoothing strength (0 to 2). 0 shows the unfiltered signal, 1 is normal.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.05</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>2</real>
   </map>
   <key>RenderPCSSLightSize</key>
   <map>
     <key>Comment</key><string>Sun/moon angular diameter in degrees for PCSS (0.1 to 10). Larger values soften distant shadows more.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.45</real>
+    <key>Value</key><real>1.71</real>
   </map>
   <key>RenderPCSSMaxSoftness</key>
   <map>
@@ -271,7 +271,7 @@
     <key>Comment</key><string>PCSS receiver depth bias in millimetres (0 to 30). Raise to reduce self-shadow artifacts; lower to keep close contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>3.5</real>
+    <key>Value</key><real>5.5</real>
   </map>
   <key>RenderPCSSQuality</key>
   <map>
@@ -285,7 +285,7 @@
     <key>Comment</key><string>Surface-aware cleanup amount for opaque PCSS shadows (0 to 3). Each unit supplies a 4 mm surface radius plus a one-pixel minimum; closeup filtering is bounded. Zero disables cleanup; larger values also soften small contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.5</real>
+    <key>Value</key><real>0.75</real>
   </map>
   <key>BoxxySSSEnabled</key>
   <map>
@@ -373,7 +373,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.55</real>
+    <real>0.45000002</real>
   </map>
   <key>BoxxySSSDepth</key>
   <map>
@@ -384,7 +384,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.012000001</real>
+    <real>0.078000009</real>
   </map>
   <key>BoxxySSSWarmth</key>
   <map>
@@ -395,7 +395,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.65</real>
+    <real>0.69999999</real>
   </map>
   <key>BoxxySSSMaxDistance</key>
   <map>
@@ -417,14 +417,21 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.20</real>
+    <real>0.15000001</real>
   </map>
   <key>BoxxySSSGrazingStrength</key>
   <map>
     <key>Comment</key><string>Additional warm diffuse scattering at light-facing grazing angles in Combined mode. Independent of wrap and transmission; zero preserves existing lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.0</real>
+    <key>Value</key><real>0.94999999</real>
+  </map>
+  <key>BoxxySSSGrazingSmoothing</key>
+  <map>
+    <key>Comment</key><string>Independent blur radius in millimeters for Combined grazing scatter. Zero keeps grazing in the ordinary skin diffusion; positive values isolate and smooth only grazing light.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>90</real>
   </map>
   <key>BoxxySSSTransmission</key>
   <map>
@@ -435,14 +442,14 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>4</real>
+    <real>0.60000002</real>
   </map>
   <key>BoxxySSSMaxTransmission</key>
   <map>
     <key>Comment</key><string>Maximum per-light skin transmission response after brightness and local boost, preserving color. Zero is unlimited. Light color and intensity still apply.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.0</real>
+    <key>Value</key><real>1.15</real>
   </map>
   <key>BoxxySSSPointTransmissionBoost</key>
   <map>
@@ -450,7 +457,7 @@
     <string>Additional 0-16x brightness multiplier for point-light and projector skin transmission in Combined mode. Applies to measured and estimated transmission without changing front lighting or sun/moon. 1 is neutral.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>9.0</real>
+    <key>Value</key><real>5</real>
   </map>
   <key>BoxxySSSThickness</key>
   <map>
@@ -461,7 +468,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>9</real>
+    <real>6.5</real>
   </map>
   <key>BoxxySSSTransmissionSmoothing</key>
   <map>
@@ -469,7 +476,7 @@
     <string>Radius in millimeters for a separate depth-aware transmission blur in Combined mode. Zero disables the extra buffer and two filter passes. Does not blur skin textures or specular highlights.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>43</real>
+    <key>Value</key><real>56</real>
   </map>
   <key>BoxxySSSPenetration</key>
   <map>
@@ -477,7 +484,7 @@
     <string>Maximum measured light path through skin in millimeters. Transmission fades across the full measured distance, independently of brightness and absorption. Requires a verified skin entry/exit pair.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>80</real>
+    <key>Value</key><real>118</real>
   </map>
   <key>BoxxySSSShadowThickness</key>
   <map>
@@ -4563,6 +4570,34 @@
         <string>F32</string>
       <key>Value</key>
         <real>2.0</real>
+    </map>
+    <key>PhotoLookAtCamera</key>
+    <map>
+        <key>Comment</key><string>Locally aim avatar eye bones at the Photo Tools camera. Restores the animated eye pose when disabled.</string>
+        <key>Persist</key><integer>0</integer>
+        <key>Type</key><string>Boolean</string>
+        <key>Value</key><boolean>false</boolean>
+    </map>
+    <key>PhotoCompositionGuide</key>
+    <map>
+        <key>Comment</key><string>Photo Tools composition guide: 0 off, 1 thirds, 2 center, 3 diagonals, 4 golden ratio, 5 golden triangle, 6 mirrored triangle.</string>
+        <key>Persist</key><integer>1</integer>
+        <key>Type</key><string>S32</string>
+        <key>Value</key><integer>0</integer>
+    </map>
+    <key>PhotoCompositionWhite</key>
+    <map>
+        <key>Comment</key><string>Draw Photo Tools composition guides white instead of black.</string>
+        <key>Persist</key><integer>1</integer>
+        <key>Type</key><string>Boolean</string>
+        <key>Value</key><boolean>true</boolean>
+    </map>
+    <key>PhotoCompositionAlpha</key>
+    <map>
+        <key>Comment</key><string>Opacity of live-only Photo Tools composition guides (0 to 1).</string>
+        <key>Persist</key><integer>1</integer>
+        <key>Type</key><string>F32</string>
+        <key>Value</key><real>0.6</real>
     </map>
     <key>LeapCommand</key>
     <map>
@@ -9472,7 +9507,7 @@
       <key>Comment</key><string>Intensity of the HDR automatic bloom composite.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>0.50</real>
+      <key>Value</key><real>0.60000002</real>
     </map>
     <key>RenderBloomKnee</key>
     <map>
@@ -9563,7 +9598,7 @@
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>1.4</real>
+      <real>1.1</real>
     </map>
     <key>RenderGlowResolutionPow</key>
     <map>
@@ -10997,7 +11032,7 @@
       <key>Comment</key><string>Enable experimental geometric waves without changing the selected height. Disabling uses the inexpensive flat water mesh.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>Boolean</string>
-      <key>Value</key><boolean>true</boolean>
+      <key>Value</key><boolean>0</boolean>
     </map>
     <key>RenderWaterDisplacementDistance</key>
     <map>

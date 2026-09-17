@@ -17,7 +17,7 @@ uniform sampler2D specularMap;   // completed wide irradiance filter
 uniform vec4 sss_params; // strength, mode, warmth, maximum distance
 uniform float sss_depth; // scattering radius in meters, not mesh thickness
 uniform int sss_pass; // 0/1: full-resolution narrow filter/composite, 2: prepare, 3/4: wide filter
-uniform int sss_smoothing_pass; // filter isolated transmission with gentler normal rejection
+uniform int sss_smoothing_pass; // filter isolated transmission/grazing with gentler normal rejection
 uniform vec2 screen_res;
 uniform mat4 inv_proj;
 

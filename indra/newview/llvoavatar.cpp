@@ -30,6 +30,7 @@
 #include "llboxxyvip.h"
 #include "llposestudio.h"
 #include "llvoavatar.h"
+#include "llfloatersnapshot.h"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -2373,6 +2374,7 @@ void LLVOAvatar::startDefaultMotions()
 // virtual
 void LLVOAvatar::buildCharacter()
 {
+    restorePhotoEyeRotations();
     if (LLPoseStudio::instanceExists())
         LLPoseStudio::instance().endForAvatar(*this, LLPoseStudio::EndReason::SKELETON_CHANGED);
 
@@ -2501,6 +2503,7 @@ void LLVOAvatar::applyDefaultParams()
 //-----------------------------------------------------------------------------
 void LLVOAvatar::resetSkeleton(bool reset_animations)
 {
+    restorePhotoEyeRotations();
     LL_DEBUGS("Avatar") << avString() << " reset starts" << LL_ENDL;
     if (!isControlAvatar() && !mLastProcessedAppearance)
     {
@@ -3117,6 +3120,7 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, const F64 &time)
     // store off last frame's root position to be consistent with camera position
     mLastRootPos = mRoot->getWorldPosition();
     bool detailed_update = updateCharacter(agent);
+    updatePhotoEyeRotations();
 
     static LLUICachedControl<bool> visualizers_in_calls("ShowVoiceVisualizersInCalls", false);
     bool voice_enabled = (visualizers_in_calls || LLVoiceClient::getInstance()->inProximalChannel()) &&
@@ -5141,8 +5145,50 @@ bool LLVOAvatar::computeNeedsUpdate()
 // simulator.
 //
 //------------------------------------------------------------------------
+namespace
+{
+const char* const PHOTO_EYE_JOINTS[] = {"mEyeLeft", "mEyeRight", "mFaceEyeAltLeft", "mFaceEyeAltRight"};
+}
+
+void LLVOAvatar::restorePhotoEyeRotations()
+{
+    for (S32 i = 0; i < 4; ++i)
+    {
+        // Skeletons can be rebuilt while the override is active. Never dereference
+        // a saved joint unless it still belongs to this avatar's current skeleton.
+        if (mPhotoEyeJoints[i] && mPhotoEyeJoints[i] == getJoint(PHOTO_EYE_JOINTS[i]))
+        {
+            mPhotoEyeJoints[i]->setRotation(mPhotoEyeRotations[i]);
+            mNeedsSkin = mNeedsImpostorUpdate = true;
+        }
+        mPhotoEyeJoints[i] = nullptr;
+    }
+}
+
+void LLVOAvatar::updatePhotoEyeRotations()
+{
+    static LLCachedControl<bool> look_at_camera(gSavedSettings, "PhotoLookAtCamera", false);
+    if (!look_at_camera || !LLFloaterSnapshot::photoActive() || mIsDummy || !isVisible()) return;
+    const LLVector3 camera = gAgentCamera.getCameraPositionAgent();
+    for (S32 i = 0; i < 4; ++i)
+    {
+        LLJoint* eye = getJoint(PHOTO_EYE_JOINTS[i]);
+        if (!eye || !eye->getParent()) continue;
+        LLVector3 direction = (camera - eye->getWorldPosition()) * ~eye->getParent()->getWorldRotation();
+        if (direction.normalize() < 0.0001f) continue;
+        mPhotoEyeJoints[i] = eye;
+        mPhotoEyeRotations[i] = eye->getRotation();
+        LLQuaternion rotation;
+        rotation.shortestArc(LLVector3::x_axis, direction);
+        eye->setRotation(rotation);
+        mNeedsSkin = mNeedsImpostorUpdate = true;
+    }
+    mRoot->updateWorldMatrixChildren();
+}
+
 bool LLVOAvatar::updateCharacter(LLAgent &agent)
 {
+    restorePhotoEyeRotations();
     if (LLPoseStudio::instanceExists())
         LLPoseStudio::instance().beforeUpdate(*this);
 

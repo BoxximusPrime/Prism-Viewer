@@ -45,6 +45,8 @@
 #include "llfasttimer.h"
 #include "llfeaturemanager.h"
 #include "llfloatertools.h"
+#include "llfloatersnapshot.h"
+#include <array>
 #include "llfocusmgr.h"
 #include "llgl.h"
 #include "llglheaders.h"
@@ -1472,6 +1474,81 @@ bool setup_hud_matrices(const LLRect& screen_region)
     return true;
 }
 
+// Pixel-space geometry: recompute for each viewport instead of stretching an image.
+static std::vector<std::array<F32, 4>> photoCompositionLines(S32 guide, F32 width, F32 height)
+{
+    std::vector<std::array<F32, 4>> lines;
+    if (width <= 0.f || height <= 0.f) return lines;
+    auto line = [&](F32 x1, F32 y1, F32 x2, F32 y2) { lines.push_back({x1, y1, x2, y2}); };
+    switch (guide)
+    {
+    case 1: // Rule of thirds
+    case 4: // Golden ratio grid
+        for (F32 fraction : (guide == 1 ? std::array<F32, 2>{1.f / 3.f, 2.f / 3.f} :
+                                         std::array<F32, 2>{0.38196601125f, 0.61803398875f}))
+        {
+            line(width * fraction, 0.f, width * fraction, height);
+            line(0.f, height * fraction, width, height * fraction);
+        }
+        break;
+    case 2: // Center cross
+        line(width * 0.5f, 0.f, width * 0.5f, height);
+        line(0.f, height * 0.5f, width, height * 0.5f);
+        break;
+    case 3: // Diagonals
+        line(0.f, 0.f, width, height);
+        line(0.f, height, width, 0.f);
+        break;
+    case 5: // Golden triangle: perpendiculars from the other two corners.
+    case 6: // Mirrored golden triangle
+    {
+        const F32 t = width * width / (width * width + height * height);
+        line(0.f, 0.f, width, height);
+        line(width, 0.f, width * t, height * t);
+        line(0.f, height, width * (1.f - t), height * (1.f - t));
+        if (guide == 6)
+            for (auto& segment : lines)
+            {
+                segment[0] = width - segment[0];
+                segment[2] = width - segment[2];
+            }
+        break;
+    }
+    default: break;
+    }
+    return lines;
+}
+
+static void render_photo_overlays()
+{
+    // Render outside the cached UI texture and skip every capture pass, including
+    // UI-inclusive, thumbnail, tiled high-resolution and 360-degree snapshots.
+    // Remains visible with normal UI hidden or Photo Tools minimized.
+    if (gSnapshot || !gDisplaySwapBuffers || !LLFloaterSnapshot::photoActive()) return;
+    const S32 guide = gSavedSettings.getS32("PhotoCompositionGuide");
+    const F32 alpha = llclamp(gSavedSettings.getF32("PhotoCompositionAlpha"), 0.f, 1.f);
+    if (!guide || alpha <= 0.f) return;
+    const LLRect rect = gViewerWindow->getWorldViewRectRaw();
+    const auto lines = photoCompositionLines(guide, (F32)rect.getWidth(), (F32)rect.getHeight());
+    if (lines.empty()) return;
+
+    gViewerWindow->setup2DRender();
+    gUIProgram.bind();
+    gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    const F32 shade = gSavedSettings.getBOOL("PhotoCompositionWhite") ? 1.f : 0.f;
+    gGL.color4f(shade, shade, shade, alpha);
+    gGL.setLineWidth(1.f);
+    gGL.begin(LLRender::LINES);
+    for (const auto& line : lines)
+    {
+        gGL.vertex2f(rect.mLeft + line[0], rect.mBottom + line[1]);
+        gGL.vertex2f(rect.mLeft + line[2], rect.mBottom + line[3]);
+    }
+    gGL.end();
+    gGL.flush();
+    gUIProgram.unbind();
+}
+
 void render_ui(F32 zoom_factor, int subfield)
 {
     LLPerfStats::RecordSceneTime T ( LLPerfStats::StatType_t::RENDER_UI ); // render time capture - Primary UI stat can have HUD time overlap (TODO)
@@ -1538,6 +1615,8 @@ void render_ui(F32 zoom_factor, int subfield)
             // Make sure particle effects disappear
             LLHUDObject::renderAllForTimer();
         }
+
+        render_photo_overlays();
 
         if (render_ui)
         {
