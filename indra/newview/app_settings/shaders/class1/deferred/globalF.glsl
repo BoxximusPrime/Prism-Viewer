@@ -60,3 +60,17 @@ vec4 decodeNormal(vec4 norm)
     n.z = 1-f/2;
     return n;
 }
+
+// Filter the GGX lobe over a pixel before lighting, rather than asking TAA to
+// recover a highlight narrower than its samples. The squared GGX roughness
+// parameter is perceptual roughness^4. Evaluate on normalized material normals
+// BEFORE any discard, never on a deferred normal across object edges.
+// Tokuyoshi/Kaplanyan normal-variance approximation, also used by Unity HDRP.
+float filterPBRRoughness(float perceptual_roughness, vec3 normal)
+{
+    vec3 dx = dFdx(normal), dy = dFdy(normal);
+    float kernel = min(0.5 * (dot(dx, dx) + dot(dy, dy)), 0.04);
+    float roughness = clamp(perceptual_roughness, 0.0, 1.0);
+    float alpha = roughness * roughness;
+    return sqrt(sqrt(min(alpha * alpha + kernel, 1.0)));
+}

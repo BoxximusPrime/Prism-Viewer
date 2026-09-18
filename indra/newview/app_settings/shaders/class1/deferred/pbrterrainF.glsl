@@ -163,6 +163,7 @@ in vec4[2] vary_coords;
 
 void mirrorClip(vec3 position);
 vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
+float filterPBRRoughness(float perceptual_roughness, vec3 normal);
 
 float terrain_mix(TerrainMix tm, vec4 tms4);
 
@@ -183,9 +184,6 @@ vec3 mikktspace(vec3 vNt, vec3 vT, float sign)
 
 void main()
 {
-    // Make sure we clip the terrain if we're in a mirror.
-    mirrorClip(vary_position);
-
     TerrainMix tm;
 #if TERRAIN_PAINT_TYPE == TERRAIN_PAINT_TYPE_HEIGHTMAP_WITH_NOISE
     float alpha1 = texture(alpha_ramp, vary_texcoord0.zw).a;
@@ -401,16 +399,12 @@ void main()
     }
 
     float minimum_alpha = terrain_mix(tm, minimum_alphas);
-    if (pbr_mix.col.a < minimum_alpha)
-    {
-        discard;
-    }
     float base_color_factor_alpha = terrain_mix(tm, vec4(baseColorFactors[0].z, baseColorFactors[1].z, baseColorFactors[2].z, baseColorFactors[3].z));
 
 #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_NORMAL)
     vec3 tnorm = normalize(pbr_mix.vNt);
 #else
-    vec3 tnorm = vary_normal;
+    vec3 tnorm = normalize(vary_normal);
 #endif
     tnorm *= gl_FrontFacing ? 1.0 : -1.0;
 
@@ -428,12 +422,15 @@ void main()
 // Matte plastic potato terrain
 #define mix_orm vec3(1.0, 1.0, 0.0)
 #endif
+    vec3 filtered_orm = mix_orm;
+    filtered_orm.g = filterPBRRoughness(filtered_orm.g, tnorm);
+    mirrorClip(vary_position);
+    if (pbr_mix.col.a < minimum_alpha) discard;
     frag_data[0] = max(vec4(pbr_mix.col.xyz, 0.0), vec4(0));                                                   // Diffuse
-    frag_data[1] = max(vec4(mix_orm.rgb, base_color_factor_alpha), vec4(0));                                    // PBR linear packed Occlusion, Roughness, Metal.
+    frag_data[1] = max(vec4(filtered_orm, base_color_factor_alpha), vec4(0));                                  // PBR linear packed Occlusion, Roughness, Metal.
     frag_data[2] = encodeNormal(tnorm, 0, GBUFFER_FLAG_HAS_PBR); // normal, flags
 
 #if defined(HAS_EMISSIVE)
     frag_data[3] = max(vec4(mix_emissive,0), vec4(0));                                                // PBR sRGB Emissive
 #endif
 }
-

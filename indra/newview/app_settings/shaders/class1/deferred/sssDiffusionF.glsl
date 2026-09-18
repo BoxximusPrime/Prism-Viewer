@@ -221,9 +221,14 @@ void main()
     }
     else
     {
-        vec3 original = texture(altDiffuseMap, tc).rgb;
+        vec4 original_sample = texture(altDiffuseMap, tc);
+        vec3 original = original_sample.rgb;
         if (wide > 0.0)
             filtered = mix(filtered, wideIrradiance(tc, center.normal, pos.z, original / albedo), wide);
+        // Isolated grazing light stores direct receiver exposure in alpha. Keep
+        // lit pixels as blur sources, but move their scattered light only into
+        // receivers that are not already facing the light.
+        filtered *= 1.0 - smoothstep(0.0, 1.0, clamp(original_sample.a, 0.0, 1.0));
         // Transmission already contains SSS strength and distance fade. Replace
         // it fully instead of retaining a fraction of the original mottling.
         float amount = sss_smoothing_pass != 0 ? visible : sss_params.x * fade * visible;

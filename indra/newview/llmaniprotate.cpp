@@ -569,30 +569,15 @@ bool LLManipRotate::aimAtCursor(S32 x, S32 y)
     const LLVector3 origin = LLViewerCamera::getInstance()->getOrigin();
     const LLVector3 direction = gViewerWindow->mouseDirectionGlobal(x, y);
     const F32 range = 512.f;
-    LLVector3 start = origin + direction * LLViewerCamera::getInstance()->getNear();
-    LLVector4a ray_end;
+    LLVector4a ray_start, ray_end, intersection;
+    ray_start.load3((origin + direction * LLViewerCamera::getInstance()->getNear()).mV);
     ray_end.load3((origin + direction * range).mV);
     LLVector3 target;
-    bool hit = false;
-    // ponytail: cap surface traversal for dense selected meshes; a pipeline exclusion
-    // filter can replace this if selections routinely exceed 256 crossed surfaces.
-    for (S32 i = 0; i < 256; ++i)
-    {
-        LLVector4a ray_start, intersection;
-        ray_start.load3(start.mV);
-        LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
-            ray_start, ray_end, false, true, true, false,
-            nullptr, nullptr, nullptr, &intersection);
-        if (!object) break;
-        target.set(intersection.getF32ptr());
-        if (!object->isSelected() && !object->getRootEdit()->isSelected())
-        {
-            hit = true;
-            break;
-        }
-        start = target + direction * 0.001f;
-        if ((start - origin) * direction >= range) break;
-    }
+    bool hit = gPipeline.lineSegmentIntersectInWorld(
+        ray_start, ray_end, false, true, true, false,
+        nullptr, nullptr, nullptr, &intersection, nullptr, nullptr, nullptr, nullptr,
+        [](LLViewerObject* object) { return !object->isSelected() && !object->getRootEdit()->isSelected(); }) != nullptr;
+    if (hit) target.set(intersection.getF32ptr());
     LLVector3d land;
     if (gViewerWindow->mousePointOnLandGlobal(x, y, &land))
     {

@@ -1,7 +1,8 @@
 """Production-shader regressions for subpixel motion and TAA history validation.
 
 Measures a static thin-line pattern and a tiny oscillating camera translation.
-Uses repository defaults; does not change shaders or viewer preferences.
+Uses a fixed 0.97 history reference for the original stability contract, then
+also measures the shipped history default. Does not change viewer preferences.
 """
 import json
 from pathlib import Path
@@ -57,9 +58,12 @@ def run(sdl, gl):
     # Alpha -1: static eligibility; 0: tracked but ineligible surface. Constant
     # depth isolates color clipping from geometric disocclusion. Two depths
     # additionally exercise the silhouette path used by the existing tests.
-    for geometry, amplitude, alpha in [(True,0,-1),(True,.004,-1),(True,.006,-1),(True,0,0),(False,0,-1),
-                                       (False,.004,-1),(False,.006,-1),
-                                       (False,0,0)]:
+    cases=[(geometry,amplitude,alpha,.97) for geometry,amplitude,alpha in
+           [(True,0,-1),(True,.004,-1),(True,.006,-1),(True,0,0),(False,0,-1),
+            (False,.004,-1),(False,.006,-1),(False,0,0)]]
+    cases.extend((True,0,alpha,defaults['RenderTAAHistoryWeight']) for alpha in (-1,0))
+    for geometry, amplitude, alpha, history_weight in cases:
+        gpu.uniform(resolve,'taa_history_weight',history_weight)
         frames={s:[] for s in (0,.2,defaults['RenderTAASharpen'])}
         rejected=[]; eligible=[]; previous_shift=0
         for frame in range(96):
@@ -105,7 +109,7 @@ def run(sdl, gl):
                     frames[strength].append([shown[i*4]/(1+shown[i*4]) for i in roi])
             previous_shift=shift
             history,output=output,history
-        result={'geometry':geometry,'camera_oscillation_amplitude_pixels':amplitude,
+        result={'geometry':geometry,'camera_oscillation_amplitude_pixels':amplitude,'history_weight':history_weight,
                 'motion_alpha':alpha,'history_rejection_fraction':statistics.mean(rejected),
                 'static_eligible_fraction':statistics.mean(eligible),
                 'mean_peak_to_peak':{str(s):statistics.mean(max(v)-min(v) for v in zip(*values))
@@ -113,10 +117,15 @@ def run(sdl, gl):
         results.append(result)
         print(json.dumps(result),flush=True)
         if alpha<0:
-            check(result['mean_peak_to_peak']['0']<.035, 'tiny camera movement must preserve thin detail')
+            if history_weight==.97:
+                check(result['mean_peak_to_peak']['0']<.035, 'tiny camera movement must preserve thin detail at high history weight')
             check(result['history_rejection_fraction']<.02, 'camera subpixel motion must not reset thin-edge history')
         else:
             check(result['static_eligible_fraction']==0, 'unqualified geometry must not acquire detail locks')
+
+    check(results[-2]['mean_peak_to_peak']['0']<results[-1]['mean_peak_to_peak']['0']*.5,
+          'detail protection must reduce flicker at the shipped history weight')
+    gpu.uniform(resolve,'taa_history_weight',.97)
 
     # A feature moves one whole pixel, and its metadata must follow its color.
     # Current view depth differs from previous view depth as well.

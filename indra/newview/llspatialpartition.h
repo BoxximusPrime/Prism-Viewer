@@ -45,6 +45,7 @@
 
 #include <queue>
 #include <unordered_map>
+#include <functional>
 
 #define SG_STATE_INHERIT_MASK (OCCLUDED)
 #define SG_INITIAL_STATE_MASK (static_cast<U32>(DIRTY) | static_cast<U32>(GEOM_DIRTY))
@@ -318,7 +319,8 @@ public:
         LLVector4a* intersection = NULL,         // return the intersection point
         LLVector2* tex_coord = NULL,            // return the texture coordinates of the intersection point
         LLVector4a* normal = NULL,               // return the surface normal at the intersection point
-        LLVector4a* tangent = NULL             // return the surface tangent at the intersection point
+        LLVector4a* tangent = NULL,            // return the surface tangent at the intersection point
+        const std::function<bool(LLViewerObject*)>& filter = {}
     );
 
 
@@ -396,7 +398,8 @@ public:
                                      LLVector4a* intersection = NULL,         // return the intersection point
                                      LLVector2* tex_coord = NULL,            // return the texture coordinates of the intersection point
                                      LLVector4a* normal = NULL,               // return the surface normal at the intersection point
-                                     LLVector4a* tangent = NULL             // return the surface tangent at the intersection point
+                                     LLVector4a* tangent = NULL,            // return the surface tangent at the intersection point
+                                     const std::function<bool(LLViewerObject*)>& filter = {}
         );
 
 

@@ -32,6 +32,8 @@ harness = r"""
 #include <algorithm>
 #include <string>
 #include <limits>
+#include <functional>
+#include <set>
 using S32=int; using F32=float; using MASK=int;
 constexpr int VX=0, VY=1, VZ=2, SELECT_TYPE_WORLD=0, SELECT_TYPE_HUD=1;
 constexpr int MASK_CONTROL=1, MASK_SHIFT=2, MOUSE_DRAG_SLOP=2, CENTER_HANDLE_RADIUS=7;
@@ -86,6 +88,7 @@ struct LLVOVolume: LLViewerObject {
     LLPointer<int> mDrawable{reinterpret_cast<int*>(1)};
     LLVolume geometry; Vec scale{1,1,1}; double angle=0;
     bool isRiggedMesh(){return rigged;} bool isMesh(){return mesh;}
+    bool isHUDAttachment(){return false;}
     LLVolume* getVolume(){return &geometry;}
     Vec volumePositionToAgent(Vec v){
         double x=v.mV[0]*scale.mV[0], y=v.mV[1]*scale.mV[1], z=v.mV[2]*scale.mV[2];
@@ -130,13 +133,14 @@ struct Window {
 } window;
 auto* gViewerWindow=&window;
 struct Pipeline {
-    std::vector<std::pair<LLViewerObject*,Vec>> hits; int calls=0; bool stuck=false;
+    std::vector<std::pair<LLViewerObject*,Vec>> hits; int calls=0;
     Vec hit_normal{0,0,1};
     LLViewerObject* lineSegmentIntersectInWorld(LLVector4a begin,LLVector4a end,
-        bool transparent,bool rigged,bool unselectable,bool probe,void*,void*,void*,LLVector4a* p,void*,LLVector4a* normal){
+        bool transparent,bool rigged,bool unselectable,bool probe,void*,void*,void*,LLVector4a* p,void*,LLVector4a* normal,
+        void* =nullptr,void* =nullptr,const std::function<bool(LLViewerObject*)>& filter={}){
         assert(!transparent&&!rigged&&unselectable&&!probe); ++calls;
-        for(auto h:hits)if(stuck||(h.second.mV[0]>=begin.v.mV[0]&&h.second.mV[0]<=end.v.mV[0])){
-            p->v=h.second;normal->v=hit_normal;return h.first;
+        for(auto h:hits)if((!filter||filter(h.first))&&h.second.mV[0]>=begin.v.mV[0]&&h.second.mV[0]<=end.v.mV[0]){
+            p->v=h.second;if(normal)normal->v=hit_normal;return h.first;
         }
         return nullptr;
     }
@@ -166,6 +170,7 @@ struct LLManipTranslate {
     bool getCenterHandle(Vec&) const; bool centerHandleHit(int,int) const;
     bool updateSurfaceBounds(); Vec getSurfaceOffset(const Vec&) const;
     bool findSurface(int,int,Vec&,Vec&); bool vertexPoint(Vec&) const;
+    bool findVertex(int,int,bool,LLPointer<LLViewerObject>&,Vec&);
     bool hover(int x,int y,MASK mask){
 """ + source[start:end] + r"""
         return false;
@@ -179,6 +184,7 @@ for signature in (
     "bool LLManipTranslate::updateSurfaceBounds",
     "LLVector3 LLManipTranslate::getSurfaceOffset",
     "bool LLManipTranslate::findSurface",
+    "bool LLManipTranslate::findVertex",
 ):
     harness += function(source, signature) + "\n"
 harness += r"""
@@ -236,7 +242,7 @@ int main(){
     sibling.selected=false; sibling.root=&a;
     Vec hit,normal;
     gPipeline.hits={{&a,{1,0,0}},{&b,{2,0,0}},{&avatar,{3,0,0}},{&target,{8,0,0}}};
-    assert(m.findSurface(0,0,hit,normal) && near(hit,{100008,200000,0}) && gPipeline.calls==4);
+    assert(m.findSurface(0,0,hit,normal) && near(hit,{100008,200000,0}) && gPipeline.calls==1);
     assert(near(normal,{0,0,1}));
     gPipeline.hits={{&sibling,{3,0,0}},{&target,{8,0,0}}};
     na.mIndividualSelection=false; assert(m.findSurface(0,0,hit,normal) && hit.mV[0]==100008);
@@ -244,13 +250,29 @@ int main(){
     gPipeline.hit_normal={};assert(m.findSurface(0,0,hit,normal)&&near(normal,{0,0,1}));
     gPipeline.hit_normal={0,0,1};
     gPipeline.hits={}; assert(!m.findSurface(0,0,hit,normal));
-    gPipeline.hits={{&a,{1,0,0}}}; gPipeline.calls=0; gPipeline.stuck=true;
-    assert(!m.findSurface(0,0,hit,normal) && gPipeline.calls==256); gPipeline.stuck=false;
+    // A selected base/shadow card touching the tabletop must not hide that table.
+    // Advancing past the selected hit skips the coincident support and picks the floor.
+    gPipeline.hits={{&a,{8,0,0}},{&target,{8,0,0}},{&target,{12,0,0}}};
+    assert(m.findSurface(0,0,hit,normal) && near(hit,{100008,200000,0}));
+    // No traversal cap or epsilon gap: dense selected geometry cannot hide support.
+    gPipeline.hits.assign(300,{&a,{8,0,0}});
+    gPipeline.hits.push_back({&target,{8.0001,0,0}}); gPipeline.calls=0;
+    assert(m.findSurface(0,0,hit,normal) && near(hit,{100008.0001,200000,0}) && gPipeline.calls==1);
+    gPipeline.hits={{&a,{1,0,0}}}; gPipeline.calls=0;
+    assert(!m.findSurface(0,0,hit,normal) && gPipeline.calls==1);
 
     gPipeline.hits={{&target,{8,0,0}}};
     assert(m.hover(0,0,0) && m.writes==0); // quick click does not teleport
     assert(m.hover(8,0,0) && m.mVertexTarget && near(m.applied,{8,0,-3}));
     m.hover(8,0,0); assert(m.mVertexTarget && near(m.applied,{8,0,-3})); // no cumulative drift
+    // Repeated floor/table contact at and below the old 1 mm ray-step spacing.
+    // Each frame puts the selected base directly on the newly chosen support.
+    for(double height:{0.,2.})for(int frame=0;frame<128;++frame){
+        double x=8.+frame*.000125;
+        gPipeline.hits={{&a,{x,0,height}},{&target,{x,0,height}},{&target,{12,0,-2}}};
+        m.hover(8,0,0);
+        assert(m.mVertexTarget && near(m.applied,{x,0,height-3}));
+    }
     gPipeline.hits={}; int writes=m.writes;
     m.hover(15,0,3); assert(m.writes==writes && !m.mVertexTarget); // sky holds position
     m.hover(15,0,0); assert(m.writes==writes); // no modifier: sky still holds position
@@ -273,6 +295,13 @@ int main(){
     m.clamp=false; b.dead=true; writes=m.writes; m.hover(20,0,3); assert(m.writes==writes);
     b.dead=false; m.mSurfaceBoundsValid=false; m.hover(20,0,0); assert(m.writes==writes);
     m.mCenterDrag=false; assert(!m.hover(20,0,3));
+    // The sibling vertex picker also reaches a target touching the selection.
+    LLVOVolume mesh_target; mesh_target.selected=false; mesh_target.position={8,0,5};
+    mesh_target.geometry.vertices({{0,0,0},{1,0,0}});
+    gPipeline.hits={{&a,{8,0,0}},{&mesh_target,{8,0,0}}}; gPipeline.calls=0;
+    LLPointer<LLViewerObject> vertex_object; Vec local;
+    assert(m.findVertex(100,100,false,vertex_object,local));
+    assert(vertex_object.get()==&mesh_target && near(local,{0,0,0}) && gPipeline.calls==9);
 }
 """
 
@@ -283,4 +312,4 @@ with tempfile.TemporaryDirectory() as directory:
     cpp.write_text(harness)
     subprocess.run(["g++", "-std=c++17", str(cpp), "-o", str(exe)], check=True)
     subprocess.run([str(exe)], check=True)
-print("Surface snap: centered floor/wall/ceiling contact, transformed bounds, linked parts, missing geometry, handle/shortcut routing, ray exclusions, drag continuity, limits and permissions passed.")
+print("Surface snap: 256 repeated floor/table contact frames, shadow-card overlap, dense selections, submillimetre movement, floor/wall/ceiling bounds, linked parts, routing, limits and permissions passed.")

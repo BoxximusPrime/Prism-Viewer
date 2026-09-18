@@ -164,6 +164,7 @@ public:
     static LLFloaterSnapshot* getInstance();
     static LLFloaterSnapshot* findInstance();
     static bool photoActive();
+    static F32 photoAspectRatio();
     static bool photoWorldClick(S32 x, S32 y, MASK mask);
     static bool photoKey(KEY key, MASK mask);
     static void photoCamera(LLVector3& position, LLVector3& up, LLVector3& focus);

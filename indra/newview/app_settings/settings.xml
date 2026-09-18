@@ -185,19 +185,25 @@
     <key>Value</key><integer>1</integer>
   </map>
   <key>RenderTAAStaticDetails</key>
-  <map><key>Comment</key><string>Retain fine static details through jitter and gentle camera motion; fast motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
+  <map><key>Comment</key><string>Stabilize fine static details with stronger history accumulation and bounded retention through jitter; motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderTAAHistoryWeight</key>
-  <map><key>Comment</key><string>Maximum TAA history weight (0.5 to 0.97). Motion and invalid history lower this automatically.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.75999999</real></map>
+  <map><key>Comment</key><string>Base TAA history weight (0.5 to 0.97). Fine static detail stabilization can raise this to 0.97; motion and invalid history lower it.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.97</real></map>
   <key>RenderTAAMotionProtection</key>
-  <map><key>Comment</key><string>TAA motion and color-disagreement protection (0 to 1). Higher values reduce trails at the cost of more shimmer in motion.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.85</real></map>
+  <map><key>Comment</key><string>TAA motion and color-disagreement protection (0 to 1). Higher values reduce trails at the cost of more shimmer in motion.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.40</real></map>
   <key>RenderTAAClipGamma</key>
-  <map><key>Comment</key><string>TAA color clipping standard deviations (0.5 to 2). Lower values reject stale colors more aggressively.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.20</real></map>
+  <map><key>Comment</key><string>TAA color clipping standard deviations (0.5 to 2). Lower values reject stale colors more aggressively.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
   <key>RenderTAATransparency</key>
-  <map><key>Comment</key><string>TAA reactive protection for transparency and post-deferred shading (0 to 1).</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.50</real></map>
+  <map><key>Comment</key><string>TAA reactive protection for transparency and post-deferred shading (0 to 1).</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.20</real></map>
   <key>RenderTAASharpen</key>
-  <map><key>Comment</key><string>Bounded TAA output sharpening (0 to 2). Kept outside temporal history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.50</real></map>
+  <map><key>Comment</key><string>Bounded TAA output sharpening (0 to 2). Kept outside temporal history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.65</real></map>
+  <key>RenderPostSharpenEnabled</key>
+  <map><key>Comment</key><string>Apply sharpening after antialiasing with any AA mode. Replaces TAA presentation sharpening while enabled.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
+  <key>RenderPostSharpenStrength</key>
+  <map><key>Comment</key><string>Post-processing sharpening strength (0 to 2), using the bounded TAA presentation filter.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
   <key>RenderTAADebug</key>
-  <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion/reactive, 2 history weight (red low, green high), 3 clipping (white high), 4 detail protection (green high), 5 rejection reason (gray reset, blue offscreen, red depth, yellow partial depth, magenta reactive, green valid). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
+  <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion/reactive, 2 history weight (red low, green high), 3 clipping (white high), 4 detail protection (green high), 5 rejection reason (gray reset, blue offscreen, red depth, yellow partial depth, magenta reactive, green valid), 6 repeated flicker protection (green high). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
+  <key>RenderTAAFlickerDetection</key>
+  <map><key>Comment</key><string>Detect repeated luminance reversals across frames and relax color rejection on eligible static surfaces. Requires fine static detail stabilization; motion, reactive shading and invalid depth still reject history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>0</integer></map>
   <key>RenderGTAOEnabled</key>
   <map>
     <key>Comment</key><string>Enable ground-truth ambient occlusion. Takes precedence over legacy SSAO; falls back to SSAO if GTAO resources are unavailable.</string>
@@ -211,12 +217,12 @@
   <key>RenderGTAORadius</key>
   <map>
     <key>Comment</key><string>GTAO near-field occlusion radius in metres (0.05 to 3).</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.5</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.70</real>
   </map>
   <key>RenderGTAOStrength</key>
   <map>
     <key>Comment</key><string>GTAO visibility power applied after denoising (0 to 3). 1 is normal, 0 removes occlusion.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.5</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.40</real>
   </map>
   <key>RenderGTAOQuality</key>
   <map>
@@ -231,33 +237,40 @@
   <key>RenderGTAOThinOccluder</key>
   <map>
     <key>Comment</key><string>GTAO thin-occluder compensation (0 to 1). Reduces excess occlusion from large depth discontinuities, at the expense of deep corners.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.15000001</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.55</real>
   </map>
   <key>RenderGTAODenoise</key>
   <map>
     <key>Comment</key><string>GTAO edge-aware spatial smoothing strength (0 to 2). 0 shows the unfiltered signal, 1 is normal.</string>
     <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>2</real>
   </map>
+  <key>RenderPCSSStablePattern</key>
+  <map>
+    <key>Comment</key><string>Anchor the sun/moon PCSS sampling pattern to world axes while the camera orbits. Disable to compare the previous camera-aligned pattern. Applies immediately; projector sampling is unaffected.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><boolean>true</boolean>
+  </map>
   <key>RenderPCSSLightSize</key>
   <map>
     <key>Comment</key><string>Sun/moon angular diameter in degrees for PCSS (0.1 to 10). Larger values soften distant shadows more.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.71</real>
+    <key>Value</key><real>1.45</real>
   </map>
   <key>RenderPCSSMaxSoftness</key>
   <map>
     <key>Comment</key><string>Maximum world-space PCSS penumbra radius in metres (0.05 to 3).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.80</real>
+    <key>Value</key><real>1.30</real>
   </map>
   <key>RenderPCSSMinSoftness</key>
   <map>
     <key>Comment</key><string>Minimum PCSS penumbra radius in metres (0 to 0.5), limited by maximum softness. Zero preserves physically sharp contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.01</real>
+    <key>Value</key><real>0.05</real>
   </map>
   <key>RenderPCSSProjectorSize</key>
   <map>
@@ -271,21 +284,21 @@
     <key>Comment</key><string>PCSS receiver depth bias in millimetres (0 to 30). Raise to reduce self-shadow artifacts; lower to keep close contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>5.5</real>
+    <key>Value</key><real>7.0</real>
   </map>
   <key>RenderPCSSQuality</key>
   <map>
     <key>Comment</key><string>PCSS sampling quality: 0 Performance (8/16 taps), 1 Balanced (16/32), 2 High (32/64).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>S32</string>
-    <key>Value</key><integer>1</integer>
+    <key>Value</key><integer>0</integer>
   </map>
   <key>RenderPCSSCleanup</key>
   <map>
     <key>Comment</key><string>Surface-aware cleanup amount for opaque PCSS shadows (0 to 3). Each unit supplies a 4 mm surface radius plus a one-pixel minimum; closeup filtering is bounded. Zero disables cleanup; larger values also soften small contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.75</real>
+    <key>Value</key><real>1.0</real>
   </map>
   <key>BoxxySSSEnabled</key>
   <map>
@@ -9360,7 +9373,7 @@
       <key>Type</key>
       <string>U32</string>
       <key>Value</key>
-      <integer>0</integer>
+      <integer>2</integer>
     </map>
     <key>RenderFSAAType</key>
     <map>
@@ -9371,7 +9384,7 @@
       <key>Type</key>
       <string>U32</string>
       <key>Value</key>
-      <integer>3</integer>
+      <integer>2</integer>
     </map>
     <key>RenderFarClip</key>
     <map>

@@ -6,17 +6,72 @@ choices and saved preferences are retained. New profiles default to TAA at highe
 restores the saved preference values. The old Low–Ultra AA quality selector
 continues to apply only to FXAA/SMAA.
 
+Graphics → **Post** now offers the same bounded sharpening filter independently
+of antialiasing, with a checkbox (off by default) and a 0–2 strength slider
+(default 1.50). It runs after spatial AA and scene effects, before photo grading
+and HUD/UI composition, and also applies to snapshot renders. When enabled it
+replaces TAA's presentation sharpening; the TAA slider is disabled until Post
+sharpening is turned off. Existing CAS remains separate. The later color stage
+means the result need not match pre-tonemap TAA sharpening exactly. No history
+or additional render-target allocation is required. Work is in progress/uncommitted.
+
 | Control | Default | Effect |
 | --- | --- | --- |
-| History weight | 0.97 | Maximum previous-frame contribution; automatic validation can reduce it to zero. |
+| History weight | 0.76 | Base previous-frame contribution. Validated static-detail stabilization can raise it to 0.97; rejection can reduce it to zero. Earlier stability measurements below explicitly use a 0.97 base. |
 | Motion protection | 0.85 | Reduces history during motion and color disagreement. Raise for clearer movement, at the cost of more shimmer. |
 | Color clipping range | 1.20 | YCoCg neighborhood standard deviations. Lower values reject stale colors more tightly. |
 | Transparency protection | 0.50 | Favors the current image where blended layers change the opaque image. Higher values reduce trails but can increase shimmer. |
 | Sharpening | 1.50 | Range 0–2. Bounded output sharpening, outside history. Adds to general CAS sharpening. |
-| Stabilize fine static details | On | Retains thin static geometry and highlights through jitter and gentle camera motion. |
-| Debug view | Normal | Motion/reactivity, actual history weight, clipping amount, detail protection, or rejection reasons. Session-only. |
+| Stabilize fine static details | On | Gives validated fine static geometry and highlights stronger accumulation and bounded retention through jitter and gentle camera motion. |
+| Detect repeated flicker | On | Learns recurring luminance changes across frames and relaxes color rejection. Requires static-detail stabilization; can smooth untracked lighting animation. |
+| Debug view | Normal | Motion/reactivity, actual history weight, clipping amount, detail protection, rejection reasons, or repeated-flicker protection. Session-only. |
 
 ## Rendering
+
+The latest follow-up adds reprojected luminance-reversal detection. It learns
+recurring changes rather than relying only on the current neighborhood's
+contrast. Confidence relaxes color clipping and its disagreement penalty;
+depth validation, surface persistence, static eligibility, motion and reactivity
+still limit protection. A quiet signal releases it within eight frames, and
+isolated flashes or monotonic fades do not build confidence. A third history
+attachment stores the previous unresolved luminance, signed change amplitude,
+reversal evidence and quiet age. No extra rendering pass is added.
+
+The user's final comparison found no improvement despite green detection on the
+slats. The detector can be redundant where existing protection already removes
+all clipping; it does not raise the history limit or recover depth-rejected
+history. A production-shader check reproduces green detection with identical
+normal output on/off. Investigation is paused/uncommitted; the option can be left
+off. Installing this version requires a full restart for the buffer changes. See
+[the temporal-detector audit](TAA-AUDIT.md#follow-up-multi-frame-flicker-detection).
+
+The preceding dim-detail follow-up uses relative luminance contrast so stationary
+slats, foliage and wires do not lose protection solely because their scene
+lighting is dark. Background and expiry checks scale with brightness too, keeping
+lighting changes and disappeared geometry responsive. The expanded GPU fixtures
+reproduce the old history loss under 10–100× dimmer lighting with compensating
+display exposure. The user's subsequent comparison showed only slight improvement. See
+[the dim-detail audit](TAA-AUDIT.md#follow-up-dim-details-still-losing-history).
+
+The follow-up window-slat/foliage fix changes the temporal resolve itself. Green
+detail protection previously relaxed rejection but still admitted 24% of each
+jittered frame at the shipped 0.76 history weight. Validated static detail now
+uses up to 0.97 history, graded by the existing motion/reactive confidence. The
+slider remains the base weight for unprotected surfaces; its value is unchanged.
+Background validation uses the observed brightness range and a depth-based
+background anchor, and foliage can retain intermediate depths within its known
+surface bounds. A disappearing surface still expires even when the remaining
+background is textured. See [the follow-up audit](TAA-AUDIT.md#follow-up-textured-slats-and-foliage)
+for A/B measurements and limitations. This work is in progress/uncommitted.
+
+September 17 review: PBR materials now filter specular roughness over the pixel
+footprint before lighting. This reduces individual flashing highlights that are
+too narrow for temporal samples to resolve reliably, including with a stationary
+camera. Opaque/masked, blended/OIT, terrain and imported glTF materials share the
+filter. It preserves authored roughness on constant normals and broadens the
+lobe where normals vary, without additional textures or passes. Work is in
+progress/uncommitted; see [the implementation audit](TAA-AUDIT.md) for the engine
+comparison, measurements, appearance tradeoffs and remaining limits.
 
 The main world projection uses an eight-sample Halton(2,3) subpixel sequence,
 applied after culling, shadow maps, reflection probes, and impostor updates. The
@@ -67,11 +122,14 @@ pixels have a different, bounded response. The output is sharpened only for pres
 scene glow alpha is retained separately from history depth.
 
 Static details receive up to one eight-frame jitter cycle of protection from
-color clipping and depth changes between the same foreground/background pair.
-The resolve records lifetime, the two surface depths, and a background luminance
-anchor in a second history attachment. It refreshes protection only when it
-sees contrast again; a removed detail clears within nine frames. Metadata follows
-reprojected color, with per-tap surface and background validation. Stored surface
+color clipping and depth changes within known foreground/background bounds.
+The resolve records lifetime, the surface depth bounds, and a background luminance
+anchor in a second history attachment. Protection refreshes when contrast and
+the retained surface bounds are observed again. Background texture contrast alone
+cannot renew a missing foreground; its retained color clears within nine frames.
+An expired lock is marked separately from never-protected background history,
+so unchanged background color can still accumulate through tiny camera movement.
+Metadata follows reprojected color, with per-tap surface and background validation. Stored surface
 depths are transformed into the current camera's view space when a missing
 feature retains its previous depth pair. The old 0.01-pixel motion cutoff is
 replaced by graded confidence: coherent motion up to 0.5 pixels/frame retains
@@ -94,6 +152,9 @@ The temporally dilated/signed history depth is never used as physical scene dept
 
 History diagnostics report actual blend weight (red low, green high), clipping
 amount (white high), and detail protection (green protected, blue unprotected).
+Repeated-flicker detection uses green for stronger confidence and blue for none.
+Green does not measure its additional effect: existing detail protection can
+already supply the same or stronger clipping relaxation.
 Rejection reasons distinguish reset (gray), offscreen (blue), no matching depth
 (red), partial depth support (yellow), and reactivity (magenta); green is valid.
 These views rerun the resolve on demand after presentation consumes its output,
@@ -118,14 +179,26 @@ GTAO advances its existing 64-frame sample index while the main image uses TAA;
 the shaded result is accumulated by TAA. GTAO retains its spatial denoiser. An
 independent AO history is not required by this implementation.
 
-Five targets contain seven RGBA16F attachments: two history color/depth images,
-two static-detail histories, motion/previous depth/reactivity, opaque color, and
-resolved/scratch color. These use 56 bytes per render pixel, about 111 MiB at
-1080p or 443 MiB at 4K. They allocate only when TAA is selected.
+Five targets contain nine RGBA16F attachments: two history color/depth images,
+two static-detail histories, two flicker histories, motion/previous depth/reactivity,
+opaque color, and resolved/scratch color. These use 72 bytes per render pixel,
+about 142 MiB at 1080p or 570 MiB at 4K. The flicker detector adds 16 bytes/pixel
+(76 MiB at 3440×1440, 127 MiB at 4K) and up to four metadata fetches per eligible
+pixel. These buffers allocate only when TAA is selected; disabling the detector
+stops its analysis but retains the allocation for immediate on/off comparison.
 There is an additional untextured geometry pass; total cost depends on visible
 draw calls and skinned geometry as well as image resolution.
 
 ## Validation and remaining limits
+
+September 17 multi-frame detector: 346 TAA checks (37 new) and 70 material checks
+pass, including the existing disappearing-detail regressions. Release build,
+settings/UI XML validation, staged-resource hashes and uncached startup shader
+validation pass. The three new controlled patterns show 93–96% less variation
+with mean brightness preserved, but the user reports no visible scene improvement.
+Four subsequent overlap checks confirm green confidence can coexist with zero
+additional effect (41 detector checks now pass). Work is paused/uncommitted;
+frame-time cost remains unmeasured. See the detector audit above for details.
 
 September 16 stationary-flicker fixes are in progress/uncommitted. The report
 reproduced with a still camera and persisted with GTAO disabled. A follow-up video
@@ -232,18 +305,18 @@ The deeper review identified several remaining limits:
   these layers lack independent depth and motion. The user's 0.1–0.2 transparency
   setting favors their stability at the cost of possible trails on moving layers.
   A material-provided reactive/composition signal could better distinguish them.
-- **General material specular filtering is missing.** `pbrOpaqueF.glsl` normalizes
-  the sampled normal and uses authored roughness; `pbrPunctual()` only imposes a
-  fixed roughness floor. They do not account for the variation of normals within
-  a pixel. Normal-variance roughness filtering is a candidate for distant glossy
-  sparkle, with care to preserve material appearance. The existing water-specific
-  normal-derivative filtering does not cover general materials.
-- **There is no multi-frame luminance-instability detector.** The existing detail
-  metadata stores a lifetime, surface pair and background anchor. Textured
-  backgrounds can still fail its endpoint-only background comparison, and dense
-  patterns can fluctuate without a depth change. A short reprojected luminance
-  history could distinguish repeated sample oscillation from a real lighting
-  change. It needs explicit ghosting, animated-texture and memory-cost validation.
+- **PBR specular filtering was added September 17.** The earlier material path
+  only normalized sampled normals and imposed a fixed punctual-light roughness
+  floor. It now filters roughness using material normal derivatives before
+  lighting; see [the audit](TAA-AUDIT.md) for coverage and measurements. Legacy
+  shininess materials and variance already lost in texture mips remain outside
+  this change. Water retains its specialized filtering.
+- **The new luminance detector has limited scope.** It relaxes color rejection
+  after repeated brightness reversals on eligible static surfaces. It cannot
+  recover history rejected by depth or replace independent transparent-layer
+  motion. Unmarked shader/lighting animation can resemble aliasing and be
+  smoothed. Controlled tests cover flashes, fading, motion, reactivity, depth
+  changes and removal; actual-scene benefit and frame-time cost remain unconfirmed.
 
 These are distinct improvements seen in established implementations: AMD
 documents bounded-color filtering, separate lock/reactivity controls, luminance

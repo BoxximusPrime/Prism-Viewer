@@ -20,6 +20,11 @@ namespace
         "RenderShadowResolutionScale", "RenderPCSSQuality", "RenderGTAOQuality"
     };
     const char* const ENV_ROWS[] = {"sky", "water", "day"};
+
+    LLSD quickGraphicsDefault(const std::string& name, LLControlVariable* control)
+    {
+        return name == "RenderPCSSQuality" ? LLSD(0) : control->getDefault();
+    }
 }
 
 LLFloaterQuickPrefs::~LLFloaterQuickPrefs()
@@ -35,7 +40,7 @@ bool LLFloaterQuickPrefs::postBuild()
         for (const char* name : GRAPHICS_SETTINGS)
         {
             auto control = gSavedSettings.getControl(name);
-            control->setValue(ultra ? LLSD(2) : control->getDefault());
+            control->setValue(ultra ? LLSD(2) : quickGraphicsDefault(name, control.get()));
         }
     });
     getChild<LLUICtrl>("name_tags")->setCommitCallback([](LLUICtrl* ctrl, const LLSD&)
@@ -169,7 +174,7 @@ void LLFloaterQuickPrefs::draw()
     {
         const auto control = gSavedSettings.getControl(name);
         ultra &= control->getValue().asReal() == 2.0;
-        defaults &= control->getValue().asReal() == control->getDefault().asReal();
+        defaults &= control->getValue().asReal() == quickGraphicsDefault(name, control.get()).asReal();
     }
     auto* graphics = getChild<LLComboBox>("graphics");
     if (!graphics->hasFocus())

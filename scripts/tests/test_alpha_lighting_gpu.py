@@ -197,6 +197,7 @@ def run(sdl, gl, projectors=False):
             if projectors:
                 stubs = stubs.replace("float sampleDirectionalShadow(vec3 p, vec3 n, vec2 tc) { return 1.0; }", "")
             source = defines + (SHADERS / path).read_text() + stubs + half_vectors + attenuation
+            source += function((SHADERS / 'class1/deferred/globalF.glsl').read_text(), 'float filterPBRRoughness(')
             source += (SHADERS / "class1/deferred/sssOverlayUtil.glsl").read_text()
             if name == "pbr":
                 source += punctual

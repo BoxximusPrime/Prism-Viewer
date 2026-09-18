@@ -52,7 +52,7 @@ def run(sdl, gl):
         uniform int test_quantized;
         uniform int test_spot;
         uniform int test_discontinuity, test_prepared;
-        uniform float test_depth_step;
+        uniform float test_depth_step, test_strip_width, test_screen_phase;
         uniform mat4 shadow_matrix[6];
         uniform mat4 test_camera;
         uniform mat4 test_camera_inverse;
@@ -66,7 +66,8 @@ def run(sdl, gl):
         vec4 getPosition(vec2 uv) {
             float x = test_x + (uv.x - 0.5) * 2.0 * test_view_scale;
             float z = test_z + test_slope * (x - test_x);
-            if (test_discontinuity != 0 && uv.x * 256.0 < 129.0) z += test_depth_step;
+            if (test_discontinuity == 1 && uv.x * 256.0 < 129.0) z += test_depth_step;
+            if (test_discontinuity == 2 && abs(uv.x * 256.0 - 128.5) > test_strip_width * .5) z += test_depth_step;
             float dy = test_quantized != 0 ? 2.0 / 256.0 : 0.001;
             vec3 p = vec3(x, test_y + (uv.y * 256.0 - 1.5) * dy * test_view_scale, z);
             if (test_perspective != 0) {
@@ -89,11 +90,12 @@ def run(sdl, gl):
             vec3 pos = getPosition(gl_FragCoord.xy / 256.0).xyz;
             vec3 normal = mat3(test_camera) * normalize(vec3(-test_slope, 0, 1));
             if (test_prepared != 0) preparePCSSDepth(pos, normal, gl_FragCoord.xy / 256.0);
-            float shadow = sampleDirectionalShadow(pos, normal, gl_FragCoord.xy / 256.0);
-            float old = pcfShadow(shadowMap0, normal, shadow_matrix[0]*vec4(pos,1), 1.0, gl_FragCoord.xy/256.0, vec3(0,0,1));
+            vec2 screen = gl_FragCoord.xy / 256.0 + vec2(0, test_screen_phase);
+            float shadow = sampleDirectionalShadow(pos, normal, screen);
+            float old = pcfShadow(shadowMap0, normal, shadow_matrix[0]*vec4(pos,1), 1.0, screen, vec3(0,0,1));
             if (test_spot != 0) {
                 shadow = sampleSpotShadow(pos, normal, test_spot - 1, gl_FragCoord.xy);
-                old = pcfSpotShadow(shadowMap0, shadow_matrix[4]*vec4(pos,1), 0.8, pos.xy);
+                old = pcfSpotShadow(shadowMap0, shadow_matrix[4]*vec4(pos,1), 0.8, pos.xy + vec2(0, test_screen_phase));
             }
             frag_color = vec4(shadow, old, 0, 1);
         }
@@ -161,7 +163,8 @@ def run(sdl, gl):
                extent=4.0, z=-4.0, slope=0.0, fill="edge", prog=None, bias=.005,
                minimum=0.0, spot=0, emitter=.1, discontinuity=False, prepared=False,
                quantized=False, view_scale=1.0, depth_step=2.0, x_offset=0.0, caster_slope=None, camera_angle=0,
-               camera_pitch=False, strip_half_width=.015625, receiver_floor=False, perspective=False):
+               camera_pitch=False, strip_half_width=.015625, receiver_floor=False, perspective=False,
+               strip_width=3, screen_phase=0, stable_pattern=True, shadow_angle=0, depth_range=None, map_size=SIZE):
         nonlocal cases
         prog = programs[3 if spot else 0] if prog is None else prog
         gl.UseProgram(prog)
@@ -180,8 +183,8 @@ def run(sdl, gl):
         matrix(prog, 'test_camera_inverse', camera_inverse)
         uniform(prog, 'test_perspective', int(perspective), integer=True)
         gl.Viewport(0, 0, WIDTH, WIDTH if perspective else 3)
-        uniform(prog,'pcss_world_up',*(camera[r][2] for r in range(3)))
-        uniform(prog,'pcss_world_north',*(camera[r][1] for r in range(3)))
+        uniform(prog,'pcss_world_up',*(tuple(camera[r][2] for r in range(3)) if stable_pattern else (0,0,1)))
+        uniform(prog,'pcss_world_north',*(tuple(camera[r][1] for r in range(3)) if stable_pattern else (0,1,0)))
         uniform(prog,'sun_dir',*(camera[r][2] for r in range(3)))
         uniform(prog,'moon_dir',*(camera[r][2] for r in range(3)))
         uniform(prog, "test_z", z)
@@ -196,36 +199,44 @@ def run(sdl, gl):
         uniform(prog, "test_spot", spot, integer=True)
         uniform(prog, "test_discontinuity", int(discontinuity), integer=True)
         uniform(prog, "test_depth_step", depth_step)
+        uniform(prog, "test_strip_width", strip_width)
+        uniform(prog, "test_screen_phase", screen_phase)
         uniform(prog, "test_prepared", int(prepared), integer=True)
         uniform(prog, "pcss_params", math.tan(math.radians(angle) * 0.5), radius, bias, min(minimum, radius))
         uniform(prog, "pcss_projector_radius", emitter * .5)
         uniform(prog, "pcss_quality", quality, integer=True)
+        uniform(prog, "shadow_res", map_size, map_size)
+        uniform(prog, "proj_shadow_res", map_size, map_size)
         # This projection warps along Y, as the viewer's sun cascades do.
-        depth_range = 1024.0 if quantized else 128.0
+        depth_range = (1024.0 if quantized else 128.0) if depth_range is None else depth_range
         rows = [[1/extent, .5*warp, 0, .5], [0, 1/extent+.5*warp, 0, .5],
                 [0, .5*warp, -1/depth_range, .5], [0, warp, 0, 1]]
         inverse = [[extent, 0, 0, -.5*extent], [0, extent, 0, -.5*extent],
                    [0, 0, -depth_range, .5*depth_range],
                    [0, -warp*extent, 0, 1+.5*warp*extent]]
+        lc, ls = math.cos(shadow_angle), math.sin(shadow_angle)
+        rotation = [[lc,-ls,0,0],[ls,lc,0,0],[0,0,1,0],[0,0,0,1]]
+        rows = multiply(rows, rotation)
+        inverse = multiply([list(row) for row in zip(*rotation)], inverse)
         if spot:
             rows = [[.5, 0, -.5, 0], [0, .5, -.5, 0], [0, 0, -64/63, -64/63], [0, 0, -1, 0]]
             inverse = [[2, 0, 0, -1], [0, 2, 0, -1], [0, 0, 0, -1], [0, 0, -63/64, 1]]
         data = []
         caster_slope = slope if caster_slope is None else caster_slope
-        for iy in range(SIZE):
-            v = (iy + .5) / SIZE
+        for iy in range(map_size):
+            v = (iy + .5) / map_size
             w_inv = 1 - warp * extent * (v - .5)
             y = extent * (v - .5) / w_inv
             w = 1 + warp * y
-            for ix in range(SIZE):
-                x = extent * ((ix + .5) / SIZE - .5) * w
+            for ix in range(map_size):
+                x = lc * extent * ((ix + .5) / map_size - .5) * w + ls * y
                 blocked = fill == "all" or fill == "self" or (fill == "edge" and x < x_offset) or (fill == "strip" and abs(x-x_offset) < strip_half_width)
                 caster_z = z + (0 if fill == "self" else gap) + caster_slope * (x - x_offset)
                 if spot:
-                    caster_z = (z - caster_slope * x_offset + (0 if fill == "self" else gap)) / (1 + caster_slope * 2 * ((ix+.5)/SIZE-.5))
+                    caster_z = (z - caster_slope * x_offset + (0 if fill == "self" else gap)) / (1 + caster_slope * 2 * ((ix+.5)/map_size-.5))
                     if fill == "edge":
-                        blocked = -caster_z * 2 * ((ix+.5)/SIZE-.5) < x_offset * (z + gap) / z
-                    receiver_z = (z-slope*x_offset) / (1+slope*2*((ix+.5)/SIZE-.5))
+                        blocked = -caster_z * 2 * ((ix+.5)/map_size-.5) < x_offset * (z + gap) / z
+                    receiver_z = (z-slope*x_offset) / (1+slope*2*((ix+.5)/map_size-.5))
                     floor_depth = 64/63*(1+1/receiver_z) if receiver_floor and receiver_z < -1 else 1.0
                     data.append(min(64/63 * (1 + 1/caster_z), floor_depth) if blocked and caster_z < -1 else floor_depth)
                 else:
@@ -238,7 +249,7 @@ def run(sdl, gl):
             gl.ActiveTexture(0x84C0 + i)
             gl.BindTexture(TEXTURE, texture)
             # Match the viewer's DEPTH_COMPONENT24 sun and projector maps.
-            gl.TexImage2D(TEXTURE, 0, 0x81A6, SIZE, SIZE, 0, 0x1902, FLOAT, pixels)
+            gl.TexImage2D(TEXTURE, 0, 0x81A6, map_size, map_size, 0, 0x1902, FLOAT, pixels)
             for param, value in ((0x884C, 0x884E), (0x884D, 0x0203), (0x2801, 0x2601),
                                  (0x2800, 0x2601), (0x2802, 0x812F), (0x2803, 0x812F)):
                 gl.TexParameteri(TEXTURE, param, value)
@@ -256,6 +267,45 @@ def run(sdl, gl):
 
     def width(row):
         return sum(.08 < value < .92 for value in row)
+
+    # Projectors do not have cascades: the old one-cascade weighting divided
+    # by zero at -0.75 * shadow_clip.z. All shared receivers must also clamp
+    # their far fade, including forward alpha that skips the light-buffer clamp.
+    for spot in (0, 1, 2):
+        for angle in (0, 1.45):
+            for z in (-23.999, -24, -24.001, -48, -56, -63.99, -64):
+                for fill in ('empty', 'all'):
+                    row = render(spot=spot, angle=angle, z=z, gap=16, fill=fill)[0]
+                    expected = 1 if fill == 'empty' else min(1, max((z+32)/-32*2-1, 0))
+                    assert max(abs(v-expected) for v in row) < .002, ('shadow distance fade',spot,angle,z,fill)
+
+    # Camera-space/screen-space coordinates must not move the ordinary PCF
+    # kernel over a fixed shadow receiver. Legacy X snapping jumped up to a
+    # whole shadow texel when only the unrelated screen Y phase changed.
+    for spot in (0, 1, 2):
+        reference = render(spot=spot, angle=0)[1]
+        for phase in (.001, .003, .5, 1):
+            row = render(spot=spot, angle=0, screen_phase=phase)[1]
+            assert max(abs(a-b) for a,b in zip(reference,row)) < .001, ('PCF screen-phase shimmer',spot,phase)
+
+    # A narrow surface can be surrounded by unrelated camera depth on both
+    # sides of the reconstruction baseline. Do not invent a grazing receiver
+    # plane from those neighbours (dark patches or light through blockers).
+    edge_error = 0.0
+    for z in (-4, -40, -160):
+        for slope in (-.4, 0, .4, 4):
+            for step in (-2, 2):
+                for fill in ('self', 'all'):
+                    for strip_width in (1, 3, 7):
+                        row = render(z=z, slope=slope, fill=fill, gap=.03 if z == -4 else 1,
+                                     extent=4 if z == -4 else 128, discontinuity=2,
+                                     depth_step=step, strip_width=strip_width, prepared=True, quantized=True,
+                                     minimum=.01, angle=1.45, bias=.0035)[0]
+                        edge = (strip_width-1)//2
+                        error = max(abs(v-(1 if fill == 'self' else 0)) for v in row[128-edge:129+edge])
+                        edge_error = max(edge_error, error)
+                        assert error < .01, ('thin receiver depth discontinuity',z,slope,step,fill,strip_width,error)
+    print(f'Thin receiver visibility error: {edge_error:.6f}')
 
     # Adding the receiving plane to an otherwise identical shadow map must
     # not darken its penumbra. The centre occluder guard previously changed
@@ -463,8 +513,12 @@ def run(sdl, gl):
     assert error < .08, ('narrow blocker penumbra collapse',error)
     print(f'Narrow blocker visibility error: {error:.4f}')
     camera_error = 0.0
+    unstabilized_change = 0.0
     for quality in (0,1,2):
         reference = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,quality=quality)[0]
+        camera_aligned = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,
+                                quality=quality,stable_pattern=False)[0]
+        assert camera_aligned == reference, 'identity view uses the same axes in both modes'
         for pitch in (False,True):
             for angle in (.2,.7,1.1):
                 rotated = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,
@@ -472,7 +526,15 @@ def run(sdl, gl):
                 error = max(abs(a-b) for a,b in zip(reference,rotated))
                 camera_error = max(camera_error,error)
                 assert error < .002, ('camera rotated PCSS disk',quality,angle,pitch,error)
+                camera_aligned = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,
+                                        quality=quality,camera_angle=angle,camera_pitch=pitch,stable_pattern=False)[0]
+                unstabilized_change = max(unstabilized_change,max(abs(a-b) for a,b in zip(reference,camera_aligned)))
     print(f'Camera rotation visibility difference: {camera_error:.6f}')
+    assert unstabilized_change > .01, 'disabling stabilization must restore the camera-aligned pattern'
+    print(f'Camera rotation with stabilization off: {unstabilized_change:.6f}')
+    for spot in (1, 2):
+        args = dict(spot=spot,gap=2,emitter=.5,quality=2,camera_angle=.7,camera_pitch=True)
+        assert render(**args)[0] == render(**args,stable_pattern=False)[0], 'projector emitter axes are independent of stabilization'
     worst_penumbra_error = 0.0
     for gap in (.5,1,3):
         for angular_size in (.53,1.45,5):
@@ -487,20 +549,75 @@ def run(sdl, gl):
                 assert error < .1, ('strip penumbra',gap,angular_size,warp,error)
     print(f'Worst strip penumbra visibility error: {worst_penumbra_error:.4f}')
 
+    # Refitting a sun cascade must not change the physical search/filter disk.
+    # Keep the caster, receiver, light and texel density fixed while changing
+    # the depth range, then rotate/warp the map like generateSunShadow does.
+    # This grazing wall makes a displaced search strongly bias blocker depth.
+    depth_refit_error = 0.0
+    warp_refit_error = 0.0
+    warp_width_ratio = 1.0
+    for quality in (0, 1, 2):
+        args = dict(fill='edge', gap=.1, extent=4, view_scale=.15, angle=1.71,
+                    minimum=.01, quality=quality, slope=-20, receiver_floor=True, map_size=512)
+        reference = render(**args, depth_range=512)[0]
+        for depth_range in (64, 128):
+            row = render(**args, depth_range=depth_range)[0]
+            error = max(abs(a-b) for a,b in zip(reference, row))
+            depth_refit_error = max(depth_refit_error, error)
+            assert error < .002, ('sun cascade depth changed softness', quality, depth_range, error)
+        widths = []
+        for warp in (-.3, 0, .3):
+            for rotation in (0, .7, 1.4):
+                row = render(**args, depth_range=512, warp=warp, shadow_angle=rotation)[0]
+                error = sum(abs(a-b) for a,b in zip(reference, row)) / WIDTH
+                warp_refit_error = max(warp_refit_error, error)
+                widths.append(width(row))
+                assert error < .035, ('sun cascade warp changed softness', quality, warp, rotation, error)
+        ratio = max(widths) / min(widths)
+        warp_width_ratio = max(warp_width_ratio, ratio)
+        assert ratio < 1.15, ('sun cascade warp changed edge width', quality, widths)
+    print(f'Cascade depth-refit visibility difference: {depth_refit_error:.6f}')
+    print(f'Cascade warp-refit mean visibility difference: {warp_refit_error:.6f}; edge width ratio: {warp_width_ratio:.4f}')
+
+    # Combine real perspective camera rays, D24 reconstruction and cascade
+    # refits. Measure the 10-90% edge width on the wall, not in screen pixels.
+    wall_widths = []
+    for orbit, warp, rotation, depth_range in ((-.6,-.3,0,64), (0,0,.7,128), (.6,.3,1.4,512)):
+        slope = -4
+        camera_angle = math.atan(slope) + orbit
+        row = render(fill='edge', gap=.5, extent=4, angle=1.71, minimum=.01, quality=1, slope=slope,
+                     receiver_floor=True, map_size=512, warp=warp, shadow_angle=rotation, depth_range=depth_range,
+                     perspective=True, camera_pitch=True, camera_angle=camera_angle, prepared=True, quantized=True)[0]
+        c, s = math.cos(camera_angle), math.sin(camera_angle)
+        wall_x = []
+        for i in range(WIDTH):
+            ray = ((i+.5)/WIDTH*2-1) * .26794919
+            dx, dz = c*ray+s, s*ray-c
+            distance = (-4*slope*s-4*c) / (dz-slope*dx)
+            wall_x.append(-4*s+distance*dx)
+        def crossing(level):
+            for i in range(1, WIDTH):
+                if row[i-1] < level <= row[i]:
+                    return wall_x[i-1] + (wall_x[i]-wall_x[i-1]) * (level-row[i-1]) / (row[i]-row[i-1])
+            raise AssertionError(('wall edge outside camera', orbit, level))
+        wall_widths.append((crossing(.9)-crossing(.1)) * math.sqrt(1+slope*slope))
+    assert max(wall_widths)/min(wall_widths) < 1.08, ('orbit changed wall softness', wall_widths)
+    print('Wall penumbra width over left/front/right orbits (mm):', [round(v*1000,3) for v in wall_widths])
+
     for i in range(6, 12):
         gl.BindSampler(i, 0)
 
     # Preserve PCSS contacts in RBA while continuing to blur AO in G.
     blur = program("", (SHADERS / "blurLightF.glsl").read_text() + """
         uniform int test_surface;
-        uniform float test_scale;
+        uniform float test_scale, test_tilt;
         vec4 getPosition(vec2 tc) {
             return vec4(tc*test_scale, -4.0 + (test_surface == 1 && tc.x >= 0.5 ? 2.0 : 0.0)
-                + (test_surface == 3 ? 0.4*tc.x*test_scale : 0.0), 1);
+                + (test_surface == 3 ? test_tilt*tc.x*test_scale : 0.0), 1);
         }
         vec4 getNorm(vec2 tc) {
             if (test_surface == 2 && tc.x >= 0.5) return vec4(0,1,0,0);
-            return vec4(normalize(vec3(test_surface == 3 ? -0.4 : 0.0,0,1)),0);
+            return vec4(normalize(vec3(test_surface == 3 ? -test_tilt : 0.0,0,1)),0);
         }
     """, helpers=())
     gl.ActiveTexture(0x84C0 + 13)
@@ -547,13 +664,14 @@ def run(sdl, gl):
     # sampling, sloping planes, depth silhouettes and sharp normal boundaries.
     uniform(blur, 'pcss_enabled', 1, integer=True)
     uniform(blur, 'pcss_cleanup_only', 1, integer=True)
-    def cleanup(pattern, sigma=1.5, surface=0, vertical=False, ao=False, scale=1.024):
+    def cleanup(pattern, sigma=1.5, surface=0, vertical=False, ao=False, scale=1.024, tilt=.4):
         nonlocal cases
         pixels = [v for y in range(3) for x in range(WIDTH) for v in pattern(x,y)]
         gl.TexImage2D(TEXTURE, 0, 0x8814, WIDTH, 3, 0, RGBA, FLOAT, (F*len(pixels))(*pixels))
         uniform(blur, 'pcss_cleanup', sigma)
         uniform(blur, 'test_surface', surface, integer=True)
         uniform(blur, 'test_scale', scale)
+        uniform(blur, 'test_tilt', tilt)
         uniform(blur, 'pcss_cleanup_only', int(not ao), integer=True)
         uniform(blur, 'gtao_enabled', int(not ao), integer=True)
         uniform(blur, 'delta', 0 if vertical else 1, 1 if vertical else 0)
@@ -606,6 +724,13 @@ def run(sdl, gl):
             assert max(abs(v-float(x>=128)) for x,v in enumerate(edge)) < 1e-6, ('zoomed cleanup crossed surface',scale,surface)
     assert max(spreads)/min(spreads) < 1.08, ('cleanup vanished with magnification',spreads)
     print('Cleanup world spread over 1x/2x/4x/8x zoom (mm):', [round(v*1000,3) for v in spreads])
+    spreads = []
+    for tilt in (0, 1, 2):
+        impulse = cleanup(lambda x,y: (float(x==128),.37,0,1), surface=3, scale=.256, tilt=tilt)[0]
+        spread = math.sqrt(sum((x-128)**2*v for x,v in enumerate(impulse))/sum(impulse)) * .256/WIDTH * math.sqrt(1+tilt*tilt)
+        spreads.append(spread)
+    assert max(spreads)/min(spreads) < 1.08, ('cleanup changes world spread with wall angle', spreads)
+    print('Cleanup world spread over wall angles 0/45/63 degrees (mm):', [round(v*1000,3) for v in spreads])
     print('Cleanup: sampling steps smoothed; constants, depth/normal edges and AO preserved')
     print(f"PASS: {cases} PCSS GPU cases on {gl.GetString(0x1F01).decode()}")
 
@@ -617,8 +742,10 @@ if __name__ == "__main__":
     keys = [element.text for element in settings if element.tag == "key"]
     assert len(keys) == len(set(keys)), "duplicate saved setting"
     panel = ET.parse(ROOT / "indra/newview/skins/default/xui/en/panel_preferences_graphics1.xml")
-    for name in ("RenderPCSSEnabled", "RenderPCSSLightSize", "RenderPCSSMaxSoftness", "RenderPCSSMinSoftness", "RenderPCSSProjectorSize", "RenderPCSSBias", "RenderPCSSQuality", "RenderPCSSCleanup"):
+    for name in ("RenderPCSSEnabled", "RenderPCSSLightSize", "RenderPCSSMaxSoftness", "RenderPCSSMinSoftness", "RenderPCSSProjectorSize", "RenderPCSSBias", "RenderPCSSQuality", "RenderPCSSCleanup", "RenderPCSSStablePattern"):
         assert name in keys and panel.find(f".//*[@control_name='{name}']") is not None
+    setting = list(settings)[list(settings).index(settings.find("key[.='RenderPCSSStablePattern']"))+1]
+    assert setting.find('boolean').text == 'true', 'preserve stabilized shadows by default'
     sdl, window, ctx, gl = context()
     try:
         run(sdl, gl)

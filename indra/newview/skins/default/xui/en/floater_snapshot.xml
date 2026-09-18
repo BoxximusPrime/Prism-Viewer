@@ -202,7 +202,7 @@
             <slider name="photo_grade_gain" label="Highlights (gain)" control_name="PhotoGradeGain" enabled_control="PhotoGradeEnabled" layout="topleft" left="12" top="261" width="510" height="22" label_width="185" min_val="0.5" max_val="1.5" increment="0.05" decimal_digits="2" follows="left|right|top" />
         </panel>
         <panel name="photo_overlays" label="Overlays" layout="topleft" follows="all" width="555" height="300">
-            <text name="overlays_hint" layout="topleft" left="12" top="12" width="520" height="42" follows="left|right|top" word_wrap="true">Composition guides follow the live world viewport. They stay visible with the UI hidden and are never included in saved photos.</text>
+            <text name="overlays_hint" layout="topleft" left="12" top="12" width="520" height="42" follows="left|right|top" word_wrap="true">Black bars show the selected photo framing. Guides follow that frame. Both stay visible with the UI hidden and are excluded from saved photos.</text>
             <text name="photo_guide_label" layout="topleft" left="12" top="72" width="130" height="20">Guide:</text>
             <combo_box name="photo_composition_guide" control_name="PhotoCompositionGuide" layout="topleft" left="152" top="68" width="370" height="23" follows="left|right|top">
                 <combo_box.item label="Off" value="0" />
@@ -215,7 +215,7 @@
             </combo_box>
             <check_box name="photo_composition_white" control_name="PhotoCompositionWhite" label="White lines (uncheck for black)" layout="topleft" left="12" top="113" width="510" height="22" follows="left|right|top" />
             <slider name="photo_composition_alpha" control_name="PhotoCompositionAlpha" label="Alpha (opacity)" label_width="140" layout="topleft" left="12" top="157" width="510" height="22" min_val="0" max_val="1" increment="0.05" decimal_digits="2" can_edit_text="true" follows="left|right|top" />
-            <text name="overlays_help" layout="topleft" left="12" top="205" width="510" height="60" follows="left|right|top" word_wrap="true">Guides resize with the viewport and keep a constant line width. Golden Triangle intersections stay perpendicular in both portrait and landscape views. Close Photo Tools or choose Off to hide guides.</text>
+            <text name="overlays_help" layout="topleft" left="12" top="205" width="510" height="60" follows="left|right|top" word_wrap="true">Choose a different output aspect ratio to crop the live view. Guides keep a constant line width. Off hides guides; close Photo Tools to hide the crop bars too.</text>
         </panel>
     </tab_container>
 </floater>

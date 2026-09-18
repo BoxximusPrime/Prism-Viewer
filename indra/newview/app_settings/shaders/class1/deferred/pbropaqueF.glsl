@@ -62,22 +62,16 @@ uniform float clipSign;
 
 void mirrorClip(vec3 pos);
 vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
+float filterPBRRoughness(float perceptual_roughness, vec3 normal);
 
 uniform mat3 normal_matrix;
 
 void main()
 {
-    mirrorClip(vary_position);
-
     vec4 basecolor = texture(diffuseMap, base_color_texcoord.xy).rgba;
     basecolor.rgb = srgb_to_linear(basecolor.rgb);
 
     basecolor *= vertex_color;
-
-    if (basecolor.a < minimum_alpha)
-    {
-        discard;
-    }
 
     vec3 col = basecolor.rgb;
 
@@ -97,8 +91,12 @@ void main()
     //   metal     0.0
     vec3 spec = texture(specularMap, metallic_roughness_texcoord.xy).rgb;
 
-    spec.g *= roughnessFactor;
+    spec.g = filterPBRRoughness(spec.g * roughnessFactor, tnorm);
     spec.b *= metallicFactor;
+
+    // Keep the derivative quad intact until material filtering is complete.
+    mirrorClip(vary_position);
+    if (basecolor.a < minimum_alpha) discard;
 
     vec3 emissive = emissiveColor;
     emissive *= srgb_to_linear(texture(emissiveMap, emissive_texcoord.xy).rgb);
@@ -167,4 +165,3 @@ void main()
 }
 
 #endif
-

@@ -3646,9 +3646,11 @@ public:
     bool mPickRigged;
     bool mPickUnselectable;
     bool mPickReflectionProbe;
+    const std::function<bool(LLViewerObject*)>& mFilter;
 
     LLOctreeIntersect(const LLVector4a& start, const LLVector4a& end, bool pick_transparent, bool pick_rigged, bool pick_unselectable, bool pick_reflection_probe,
-                      S32* face_hit, LLVector4a* intersection, LLVector2* tex_coord, LLVector4a* normal, LLVector4a* tangent)
+                      S32* face_hit, LLVector4a* intersection, LLVector2* tex_coord, LLVector4a* normal, LLVector4a* tangent,
+                      const std::function<bool(LLViewerObject*)>& filter)
         : mStart(start),
           mEnd(end),
           mFaceHit(face_hit),
@@ -3660,7 +3662,8 @@ public:
           mPickTransparent(pick_transparent),
           mPickRigged(pick_rigged),
           mPickUnselectable(pick_unselectable),
-          mPickReflectionProbe(pick_reflection_probe)
+          mPickReflectionProbe(pick_reflection_probe),
+          mFilter(filter)
     {
     }
 
@@ -3736,7 +3739,7 @@ public:
         {
             LLViewerObject* vobj = drawable->getVObj();
 
-            if (vobj &&
+            if (vobj && (!mFilter || mFilter(vobj)) &&
                 (!vobj->isReflectionProbe() || mPickReflectionProbe))
             {
                 if (vobj->getClickAction() == CLICK_ACTION_IGNORE && !LLFloater::isVisible(gFloaterTools))
@@ -3751,7 +3754,7 @@ public:
                     LLVOAvatar* avatar = (LLVOAvatar*) vobj;
                     if ((mPickRigged) || ((avatar->isSelf()) && (LLFloater::isVisible(gFloaterTools))))
                     {
-                        LLViewerObject* hit = avatar->lineSegmentIntersectRiggedAttachments(mStart, mEnd, -1, mPickTransparent, mPickRigged, mPickUnselectable, mFaceHit, &intersection, mTexCoord, mNormal, mTangent);
+                        LLViewerObject* hit = avatar->lineSegmentIntersectRiggedAttachments(mStart, mEnd, -1, mPickTransparent, mPickRigged, mPickUnselectable, mFaceHit, &intersection, mTexCoord, mNormal, mTangent, mFilter);
                         if (hit)
                         {
                             mEnd = intersection;
@@ -3795,11 +3798,12 @@ LLDrawable* LLSpatialPartition::lineSegmentIntersect(const LLVector4a& start, co
                                                      LLVector4a* intersection,         // return the intersection point
                                                      LLVector2* tex_coord,            // return the texture coordinates of the intersection point
                                                      LLVector4a* normal,               // return the surface normal at the intersection point
-                                                     LLVector4a* tangent            // return the surface tangent at the intersection point
+                                                     LLVector4a* tangent,           // return the surface tangent at the intersection point
+                                                     const std::function<bool(LLViewerObject*)>& filter
     )
 
 {
-    LLOctreeIntersect intersect(start, end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, intersection, tex_coord, normal, tangent);
+    LLOctreeIntersect intersect(start, end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, intersection, tex_coord, normal, tangent, filter);
     LLDrawable* drawable = intersect.check(mOctree);
 
     return drawable;
@@ -3814,11 +3818,12 @@ LLDrawable* LLSpatialGroup::lineSegmentIntersect(const LLVector4a& start, const 
     LLVector4a* intersection,         // return the intersection point
     LLVector2* tex_coord,            // return the texture coordinates of the intersection point
     LLVector4a* normal,               // return the surface normal at the intersection point
-    LLVector4a* tangent         // return the surface tangent at the intersection point
+    LLVector4a* tangent,        // return the surface tangent at the intersection point
+    const std::function<bool(LLViewerObject*)>& filter
 )
 
 {
-    LLOctreeIntersect intersect(start, end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, intersection, tex_coord, normal, tangent);
+    LLOctreeIntersect intersect(start, end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, intersection, tex_coord, normal, tangent, filter);
     LLDrawable* drawable = intersect.check(getOctreeNode());
 
     return drawable;

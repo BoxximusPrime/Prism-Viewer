@@ -145,6 +145,7 @@ void main()
     vec3 diffuseLighting = vec3(0.0);
     vec3 transmissionLighting = vec3(0.0);
     vec3 grazingLighting = vec3(0.0);
+    float grazingDirect = 0.0;
 
     vec3 n = gb.normal;
 
@@ -205,6 +206,8 @@ void main()
                 }
 
                 dlit = getProjectedLightDiffuseColor( l_dist, proj_tc.xy );
+                grazingDirect += smoothstep(0.0, 0.10, geometricNl) * dist_atten * shadow *
+                    clamp(max(dlit.r, max(dlit.g, dlit.b)), 0.0, 1.0);
 
                 vec3 intensity = dist_atten * dlit * 3.25 * shadow; // Legacy attenuation, magic number to balance with legacy materials
 
@@ -275,6 +278,8 @@ void main()
                 lit = max(nl, 0.0) * dist_atten;
 
                 dlit = getProjectedLightDiffuseColor( l_dist, proj_tc.xy );
+                grazingDirect += smoothstep(0.0, 0.10, rawNl) * dist_atten * shadow *
+                    clamp(max(dlit.r, max(dlit.g, dlit.b)), 0.0, 1.0);
 
                 float diffuseNl = wrapStrength > 0.0 ? rawNl : nl;
                 vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
@@ -372,6 +377,7 @@ void main()
         if (sss_grazing_smoothing != 0)
         {
             sss_grazing.rgb = min(max(grazingLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_grazing.a = grazingDirect;
             sss_diffuse.rgb -= sss_grazing.rgb;
         }
     }

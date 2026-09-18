@@ -2296,7 +2296,8 @@ LLViewerObject* LLVOAvatar::lineSegmentIntersectRiggedAttachments(const LLVector
                                       LLVector4a* intersection,
                                       LLVector2* tex_coord,
                                       LLVector4a* normal,
-                                      LLVector4a* tangent)
+                                      LLVector4a* tangent,
+                                      const std::function<bool(LLViewerObject*)>& filter)
 {
     if (isSelf() && !gAgent.needsRenderAvatar())
     {
@@ -2322,7 +2323,8 @@ LLViewerObject* LLVOAvatar::lineSegmentIntersectRiggedAttachments(const LLVector
             {
                 LLViewerObject* attached_object = attachment_iter->get();
 
-                if (attached_object->lineSegmentIntersect(start, local_end, face, pick_transparent, pick_rigged, pick_unselectable, face_hit, &local_intersection, tex_coord, normal, tangent))
+                if ((!filter || filter(attached_object)) &&
+                    attached_object->lineSegmentIntersect(start, local_end, face, pick_transparent, pick_rigged, pick_unselectable, face_hit, &local_intersection, tex_coord, normal, tangent))
                 {
                     local_end = local_intersection;
                     if (intersection)

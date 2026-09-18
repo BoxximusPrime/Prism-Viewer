@@ -57,7 +57,8 @@ float pcfShadow(sampler2DShadow shadowMap, vec3 norm, vec4 stc, float bias_mul, 
     float offset = shadow_bias * bias_mul;
     stc.xyz /= stc.w;
     stc.z += offset * 2.0;
-    stc.x = floor(stc.x*shadow_res.x + fract(pos_screen.y*shadow_res.y))/shadow_res.x; // add some chaotic jitter to X sample pos according to Y to disguise the snapping going on here
+    // Preserve subtexel motion for hardware PCF. Snapping X using screen Y
+    // moved a fixed receiver's kernel by a texel as the camera/TAA moved.
     float cs = texture(shadowMap, stc.xyz);
     float shadow = cs * 4.0;
     shadow += texture(shadowMap, stc.xyz+vec3( 1.5/shadow_res.x,  0.5/shadow_res.y, 0.0));
@@ -162,11 +163,22 @@ void preparePCSSDepth(vec3 pos, vec3 normal, vec2 uv)
     if (uv.x + 2.0 * texel.x > 1.0 - edge.x) error.y = 1e20;
     if (uv.y - 2.0 * texel.y < edge.y) error.z = 1e20;
     if (uv.y + 2.0 * texel.y > 1.0 - edge.y) error.w = 1e20;
-    vec3 dx = error.x < error.y ? pos - left : right - pos;
-    vec3 dy = error.z < error.w ? pos - down : up - pos;
-    pcssSurfaceDx = dx;
-    pcssSurfaceDy = dy;
-    pcssReceiverNormal = pcssGeometricNormal(dx, dy, normal);
+    // Thin receivers can have unrelated depth on BOTH sides, especially
+    // with the wider distant baseline. Choosing the less-wrong side still
+    // invents a grazing plane and a hard horizon on clothing/silhouettes.
+    // Reject a discontinuity relative to its first difference, allowing for
+    // D24/float noise and ordinary surface curvature. Use the supplied normal
+    // only when no side on an axis describes this receiver.
+    vec4 depthStep = abs(1.0 / vec4(left.z, right.z, down.z, up.z) - 1.0 / pos.z);
+    vec4 tolerance = 0.25 * depthStep + max(4.0 * pcssDepthError, 1e-6) / abs(pos.z);
+    bvec4 continuous = lessThanEqual(error, tolerance);
+    vec3 dx = continuous.x && (!continuous.y || error.x < error.y) ? pos - left : right - pos;
+    vec3 dy = continuous.z && (!continuous.w || error.z < error.w) ? pos - down : up - pos;
+    bool reliable = (continuous.x || continuous.y) && (continuous.z || continuous.w);
+    // Discontinuous differences cannot supply a slope-uncertainty estimate.
+    pcssSurfaceDx = reliable ? dx : vec3(0.0);
+    pcssSurfaceDy = reliable ? dy : vec3(0.0);
+    pcssReceiverNormal = reliable ? pcssGeometricNormal(dx, dy, normal) : normal;
     pcssDepthPrepared = true;
 #endif
 }
@@ -191,7 +203,6 @@ float pcfSpotShadow(sampler2DShadow shadowMap, vec4 stc, float bias_scale, vec2 
 #if defined(SPOT_SHADOW)
     stc.xyz /= stc.w;
     stc.z += spot_shadow_bias * bias_scale;
-    stc.x = floor(proj_shadow_res.x * stc.x + fract(pos_screen.y*0.666666666)) / proj_shadow_res.x; // snap
 
     float cs = texture(shadowMap, stc.xyz);
     float shadow = cs;
@@ -315,8 +326,9 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
     {
         return 1.0f; // lit beyond the far split...
     }
-    //shadow = min(dp_directional_light,shadow);
-    return shadow;
+    // Forward transparency consumes this directly, without the deferred
+    // light-buffer clamp. The distance fade must never add light above 1.
+    return clamp(shadow, 0.0, 1.0);
 #else
     return 1.0;
 #endif
@@ -325,7 +337,6 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
 float sampleSpotShadow(vec3 pos, vec3 norm, int index, vec2 pos_screen)
 {
 #if defined(SPOT_SHADOW)
-    float shadow = 0.0f;
 #if defined(PCSS_SHADOW)
     if (pcss_params.x > 0.0)
     {
@@ -342,42 +353,15 @@ float sampleSpotShadow(vec3 pos, vec3 norm, int index, vec2 pos_screen)
     }
 #endif
     pos += norm * spot_shadow_offset;
-
-    vec4 spos = vec4(pos,1.0);
-    if (spos.z > -shadow_clip.w)
-    {
-        vec4 lpos;
-
-        vec4 near_split = shadow_clip*-0.75;
-        vec4 far_split = shadow_clip*-1.25;
-        vec4 transition_domain = near_split-far_split;
-        float weight = 0.0;
-
-        {
-            float w = 1.0;
-            w -= max(spos.z-far_split.z, 0.0)/transition_domain.z;
-
-            if (index == 0)
-            {
-                lpos = shadow_matrix[4]*spos;
-                shadow += pcfSpotShadow(shadowMap4, lpos, 0.8, spos.xy)*w;
-            }
-            else
-            {
-                lpos = shadow_matrix[5]*spos;
-                shadow += pcfSpotShadow(shadowMap5, lpos, 0.8, spos.xy)*w;
-            }
-            weight += w;
-            shadow += max((pos.z+shadow_clip.z)/(shadow_clip.z-shadow_clip.w)*2.0-1.0, 0.0);
-        }
-
-        shadow /= weight;
-    }
-    else
-    {
-        shadow = 1.0f;
-    }
-    return shadow;
+    if (pos.z <= -shadow_clip.w) return 1.0;
+    // A projector has one map, not cascade weights. The former weight
+    // cancelled itself except at its zero crossing, where it produced NaN.
+    vec4 spos = vec4(pos, 1.0);
+    float shadow = index == 0 ?
+        pcfSpotShadow(shadowMap4, shadow_matrix[4] * spos, 0.8, pos_screen) :
+        pcfSpotShadow(shadowMap5, shadow_matrix[5] * spos, 0.8, pos_screen);
+    float fade = max((pos.z + shadow_clip.z) / (shadow_clip.z - shadow_clip.w) * 2.0 - 1.0, 0.0);
+    return clamp(shadow + fade, 0.0, 1.0);
 #else
     return 1.0;
 #endif
