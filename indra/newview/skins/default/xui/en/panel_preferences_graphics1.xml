@@ -874,33 +874,33 @@ Combined: transmitted light from all lights, including blur.</text>
     </check_box>
     <slider name="RenderPCSSLightSize" control_name="RenderPCSSLightSize"
       label="Sun / moon size (degrees):" label_width="205" follows="left|top"
-      layout="topleft" left="30" top="117" width="450" height="20"
+      layout="topleft" left="30" top="113" width="450" height="20"
       min_val="0.1" max_val="10" increment="0.01" decimal_digits="2" show_text="true"
       tool_tip="Angular diameter of the shadow-casting light. 0.53 degrees approximates the sun. Try 1 to 3 for softer shadows; this does not resize the visible sun or moon." />
     <slider name="RenderPCSSProjectorSize" control_name="RenderPCSSProjectorSize"
       label="Projector size (m):" label_width="205" follows="left|top"
-      layout="topleft" left="30" top="148" width="450" height="20"
+      layout="topleft" left="30" top="139" width="450" height="20"
       min_val="0.01" max_val="2" increment="0.01" decimal_digits="2" show_text="true"
       tool_tip="Effective light-emitter diameter for shadow-casting projectors. Larger lights soften shadows more. Requires Sun / Moon + Projectors; this does not change the light's range or beam angle." />
     <slider name="RenderPCSSMinSoftness" control_name="RenderPCSSMinSoftness"
       label="Minimum softness (m):" label_width="205" follows="left|top"
-      layout="topleft" left="30" top="179" width="450" height="20"
+      layout="topleft" left="30" top="165" width="450" height="20"
       min_val="0" max_val="0.5" increment="0.01" decimal_digits="2" show_text="true"
       tool_tip="Minimum radius of a soft shadow edge, including close contacts. Start at 0.02 m; set to zero for physically sharp contact shadows. Limited by Maximum softness." />
     <slider name="RenderPCSSMaxSoftness" control_name="RenderPCSSMaxSoftness"
       label="Maximum softness (m):" label_width="205" follows="left|top"
-      layout="topleft" left="30" top="210" width="450" height="20"
+      layout="topleft" left="30" top="191" width="450" height="20"
       min_val="0.05" max_val="3" increment="0.05" decimal_digits="2" show_text="true"
       tool_tip="Caps the radius of the soft shadow edge in world metres. Lower values keep very distant shadows from spreading too widely." />
     <slider name="RenderPCSSBias" control_name="RenderPCSSBias"
       label="Contact bias (mm):" label_width="205" follows="left|top"
-      layout="topleft" left="30" top="241" width="450" height="20"
+      layout="topleft" left="30" top="217" width="450" height="20"
       min_val="0" max_val="30" increment="0.5" decimal_digits="1" show_text="true"
       tool_tip="Increase if surfaces develop false self-shadow spots. Lower values keep shadows closer to their caster. Start at 5 mm." />
     <text name="PCSSQualityLabel" follows="left|top" layout="topleft"
-      left="30" top="276" width="175" height="20">Sampling quality:</text>
+      left="30" top="248" width="175" height="20">Sampling quality:</text>
     <combo_box name="RenderPCSSQuality" control_name="RenderPCSSQuality"
-      follows="left|top" layout="topleft" left="235" top="273" width="245" height="23"
+      follows="left|top" layout="topleft" left="235" top="245" width="245" height="23"
       tool_tip="Higher quality smooths broad shadow edges and finds small blockers more reliably, at a higher GPU cost.">
       <combo_box.item label="Performance" value="0" />
       <combo_box.item label="Balanced" value="1" />
@@ -908,13 +908,17 @@ Combined: transmitted light from all lights, including blur.</text>
     </combo_box>
     <slider name="RenderPCSSCleanup" control_name="RenderPCSSCleanup"
       label="Cleanup smoothing:" label_width="205" follows="left|top"
-      layout="topleft" left="30" top="304" width="450" height="20"
+      layout="topleft" left="30" top="276" width="450" height="20"
       min_val="0" max_val="3" increment="0.25" decimal_digits="2" show_text="true"
       tool_tip="Smooths opaque and cutout shadow edges while respecting surface boundaries. Expands over more pixels in closeups to retain surface softness. Start at 1.50; zero disables cleanup. Higher values soften small contacts and cost more GPU time. Changes apply immediately." />
+    <check_box name="RenderPCSSStablePattern" control_name="RenderPCSSStablePattern"
+      label="Stabilize shadow pattern" follows="left|top"
+      layout="topleft" left="30" top="304" width="450" height="20"
+      tool_tip="Keep the sun/moon shadow sampling pattern aligned to the scene while orbiting. Turn off to compare with the old camera-aligned pattern. Applies immediately; projector sampling is unchanged." />
     <text name="PCSSStatus" follows="left|top|right" layout="topleft"
-      left="30" top="335" width="450" height="32" word_wrap="true" />
+      left="30" top="332" width="450" height="36" word_wrap="true" />
     <text name="PCSSHelp" follows="left|top|right" layout="topleft"
-      left="30" top="372" width="450" height="32" word_wrap="true" text_color="LtGray_50">
+      left="30" top="370" width="450" height="36" word_wrap="true" text_color="LtGray_50">
       Cleanup smoothing reduces pixel steps; set to 0 to compare. Use light size and Minimum softness for broader shadows.
     </text>
   </panel>
@@ -1005,7 +1009,7 @@ Combined: transmitted light from all lights, including blur.</text>
       label="History weight:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="97" width="450" height="20" min_val="0.5" max_val="0.97"
       increment="0.01" decimal_digits="2" show_text="true"
-      tool_tip="Maximum contribution of previous frames. Start at 0.90. Lower values respond faster but smooth less. Motion and rejected surfaces automatically use less history." />
+      tool_tip="Base contribution of previous frames. Lower values respond faster but smooth less. Fine static detail stabilization can raise stationary history to 0.97; motion and rejected surfaces use less history." />
     <slider name="RenderTAAMotionProtection" control_name="RenderTAAMotionProtection"
       label="Motion protection:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="129" width="450" height="20" min_val="0" max_val="1"
@@ -1025,7 +1029,7 @@ Combined: transmitted light from all lights, including blur.</text>
       label="Sharpening:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="225" width="450" height="20" min_val="0" max_val="2"
       increment="0.05" decimal_digits="2" show_text="true"
-      tool_tip="Restores detail after temporal smoothing. Start at 0.20. This adds to any general graphics sharpening." />
+      tool_tip="Restores detail after temporal smoothing. Post sharpening replaces this control when enabled. This adds to any general graphics sharpening." />
     <text name="TAADebugLabel" layout="topleft" left="30" top="264" width="185" height="20">Debug view:</text>
     <combo_box name="RenderTAADebug" control_name="RenderTAADebug" follows="left|top"
       layout="topleft" left="220" top="261" width="260" height="23">
@@ -1035,16 +1039,49 @@ Combined: transmitted light from all lights, including blur.</text>
         <combo_box.item label="Color clipping: white is stronger" value="3" />
         <combo_box.item label="Detail protection: green is stronger" value="4" />
         <combo_box.item label="History rejection reasons" value="5" />
+        <combo_box.item label="Repeated flicker: green is stronger" value="6" />
     </combo_box>
     <check_box name="RenderTAAStaticDetails" control_name="RenderTAAStaticDetails"
       label="Stabilize fine static details" follows="left|top" layout="topleft"
       left="30" top="291" width="450" height="18"
-        tool_tip="Preserves thin static bars and highlights through jitter and gentle camera motion. Fast motion, animation and changing surfaces reduce protection. Removed details can linger for up to eight frames." />
+        tool_tip="Stabilizes fine static patterns using more history than the base setting. Motion, animation and changing surfaces reduce protection. Removed details can linger for up to eight frames." />
+    <check_box name="RenderTAAFlickerDetection" control_name="RenderTAAFlickerDetection"
+      label="Detect repeated flicker" follows="left|top" layout="topleft"
+      left="30" top="315" width="450" height="18"
+      tool_tip="Learns repeated brightness changes over several frames. Requires fine static detail stabilization. Can smooth untracked lighting animation; turn off to compare." />
     <text name="TAAStatus" follows="left|top|right" layout="topleft"
-      left="30" top="316" width="450" height="32" word_wrap="true" />
+      left="30" top="340" width="450" height="32" word_wrap="true" />
     <text name="TAAHelp" follows="left|top|right" layout="topleft"
-      left="30" top="352" width="450" height="48" word_wrap="true" text_color="LtGray_50">
-      Start with the defaults. If motion leaves trails, raise motion protection or lower history weight. HUDs stay sharp. TAA pauses for snapshots and GTAO / skin debug views.
+      left="30" top="376" width="450" height="32" word_wrap="true" text_color="LtGray_50">
+      If motion leaves trails, raise motion protection or lower history weight. HUDs stay sharp. Diagnostics do not enter history.
+    </text>
+  </panel>
+  <panel name="graphics_post_panel" label="Post" follows="all"
+    layout="topleft" left="0" top="0" width="517" height="410">
+    <text name="PostDescription" follows="left|top|right" layout="topleft"
+      left="30" top="12" width="355" height="40" word_wrap="true">
+      Adjust the finished scene with any antialiasing mode. HUDs and interface text stay untouched.
+    </text>
+    <button name="PostDefaults" label="Default" follows="right|top"
+      layout="topleft" left="400" top="8" width="80" height="23"
+      tool_tip="Restore this page's settings to their defaults.">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults"
+        parameter="graphics_post_panel" />
+    </button>
+    <check_box name="RenderPostSharpenEnabled" control_name="RenderPostSharpenEnabled"
+      label="Sharpening" follows="left|top" layout="topleft"
+      left="30" top="64" width="450" height="20"
+      tool_tip="Enhances fine detail with SMAA, FXAA, TAA or antialiasing off. Also applies to photos.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <slider name="RenderPostSharpenStrength" control_name="RenderPostSharpenStrength"
+      enabled_control="RenderPostSharpenEnabled" label="Strength:" label_width="190"
+      follows="left|top" layout="topleft" left="30" top="100" width="450" height="20"
+      min_val="0" max_val="2" increment="0.05" decimal_digits="2" show_text="true"
+      tool_tip="Higher values emphasize fine detail. Zero adds no sharpening. Lower the strength if edges develop halos." />
+    <text name="PostHelp" follows="left|top|right" layout="topleft"
+      left="30" top="145" width="450" height="64" word_wrap="true" text_color="LtGray_50">
+      Uses the sharpening filter from TAA with any antialiasing mode. When enabled, this replaces TAA's sharpening setting. Existing Contrast Adaptive Sharpening still applies.
     </text>
   </panel>
   <panel name="graphics_bloom_panel" label="Bloom" follows="all"

@@ -67,6 +67,8 @@ class GPU:
         if 'taa_detail' in fragment:
             assert gl.GetFragDataLocation(prog,b'frag_data[0]')==0
             assert gl.GetFragDataLocation(prog,b'frag_data[1]')==1
+        if 'uniform sampler2D taa_flicker;' in fragment:
+            assert gl.GetFragDataLocation(prog,b'frag_data[2]')==2
         if 'taa_' in fragment:
             channels = {}
             active = I()
@@ -83,6 +85,7 @@ class GPU:
                 gl.Uniform1i(gl.GetUniformLocation(prog,name.value),channel)
                 channels[sampler]=channel
             self.sampler_channels[prog]=channels
+            self.uniform(prog,'taa_flicker_detection',1,integer=True)
         return prog
 
     def uniform(self, prog, name, *values, integer=False):
@@ -125,32 +128,41 @@ class GPU:
         for enum,target in bindings:
             assert enum.startswith('LLShaderMgr::'), f'{method}: texture binding must use a reserved index, not a GL location: {enum}'
             name=names[enum.split('::')[1]]
+            # The viewer ignores inactive uniforms too (older A/B shaders have
+            # no flicker attachment). Every active sampler must still be bound.
+            if name not in self.sampler_channels[prog]: continue
             tex=textures[target]
             if name=='taa_detail':
                 assert re.search(r'bindTexture\(LLShaderMgr::TAA_DETAIL,\s*&mTAAHistory\[1 - mTAAIndex\],\s*false,\s*LLTexUnit::TFO_POINT,\s*1\)',code), 'detail history must bind attachment 1'
                 tex=self.detail_target(tex)
+            if name=='taa_flicker':
+                assert re.search(r'bindTexture\(LLShaderMgr::TAA_FLICKER,\s*&mTAAHistory\[1 - mTAAIndex\],\s*false,\s*LLTexUnit::TFO_POINT,\s*2\)',code), 'flicker history must bind attachment 2'
+                tex=self.detail_target(tex,2)
             self.bind(prog,name,0,tex)
         bound={names[enum.split('::')[1]] for enum,_ in bindings}
-        assert bound==set(self.sampler_channels[prog]), f'{method}: missing or unexpected input textures'
+        assert set(self.sampler_channels[prog])<=bound, f'{method}: missing input textures'
         values=[]
-        for name in bound:
+        for name in self.sampler_channels[prog]:
             value=I(); self.gl.GetUniformiv(prog,self.gl.GetUniformLocation(prog,name.encode()),C.byref(value))
             values.append(value.value)
         assert len(values)==len(set(values)), f'{method}: aliased sampler units'
 
-    def detail_target(self, target):
-        if target not in self.detail_targets:
+    def detail_target(self, target, attachment=1):
+        key=(target,attachment)
+        if key not in self.detail_targets:
             binding=I(); self.gl.GetIntegerv(0x8069,C.byref(binding))
-            self.detail_targets[target]=self.texture([-1,0,0,0]*(W*H))
+            self.detail_targets[key]=self.texture(([-1,0,0,0] if attachment==1 else [0,0,-1,0])*(W*H))
             self.gl.BindTexture(TEXTURE,binding.value)
-        return self.detail_targets[target]
+        return self.detail_targets[key]
 
     def draw(self, prog, target, vertices=3):
         gl=self.gl; gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT,TEXTURE,target,0)
         temporal='taa_detail' in self.sampler_channels.get(prog,{})
         extra=self.detail_target(target) if temporal else 0
         gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT+1,TEXTURE,extra,0)
-        gl.DrawBuffers(2 if temporal else 1,(U*2)(COLOR_ATTACHMENT,COLOR_ATTACHMENT+1))
+        flicker='taa_flicker' in self.sampler_channels.get(prog,{})
+        gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT+2,TEXTURE,self.detail_target(target,2) if flicker else 0,0)
+        gl.DrawBuffers(3 if flicker else 2 if temporal else 1,(U*3)(COLOR_ATTACHMENT,COLOR_ATTACHMENT+1,COLOR_ATTACHMENT+2))
         assert gl.CheckFramebufferStatus(FRAMEBUFFER)==0x8CD5
         gl.UseProgram(prog); gl.DrawArrays(4,0,vertices)
 
@@ -334,7 +346,8 @@ def run(sdl,gl):
         check(crawl<.12,f'stationary silhouette must settle across jitter phases: {crawl:.4f}')
         if background_depth==8 and history_weight==.9: default_crawl=crawl
         if history_weight==.97:
-            check(crawl<default_crawl*.6,'raising history weight must improve stationary edge stability')
+            check(abs(crawl-default_crawl)<.001,
+                  'protected static edges must use the same strong accumulation at either base weight')
     gpu.uniform(resolve,'taa_history_weight',.9)
     gpu.matrix(resolve,'taa_inv_projection',inv_proj)
 
@@ -410,6 +423,50 @@ def run(sdl,gl):
         strong_change=max(abs(a-b) for i,(a,b) in enumerate(zip(strong,off)) if i%4!=3)
         check(strong_change>full_change*1.5,f'sharpening 2 must exceed the old maximum on {label}')
         check(all(math.isfinite(x) and x>=0 for x in strong),f'sharpening 2 must remain finite and nonnegative on {label}')
+
+    # Snapshot presentation: sharpen the current unjittered image directly,
+    # without a temporal resolve or history/depth stored in the alpha channel.
+    snapshot_pixels=[v for y in range(H) for x in range(W)
+                     for v in ((.5 if x%3 else .2),)*3+(x/(W-1),)]
+    gpu.upload(current,snapshot_pixels)
+    gpu.viewer_bind('copyTAA',copy,{'src':current,'mMainRT.screen':current})
+    gpu.uniform(copy,'taa_copy_mode',1,integer=True)
+    gpu.uniform(copy,'taa_jitter',0,0)
+    gpu.uniform(copy,'taa_sharpen',0)
+    gpu.draw(copy,output)
+    unsharpened=gpu.read(output)
+    check(max(abs(a-b) for a,b in zip(unsharpened,snapshot_pixels))<.001,
+          'snapshot sharpening zero must preserve current-frame color and alpha')
+    gpu.uniform(copy,'taa_sharpen',.5)
+    gpu.draw(copy,output)
+    sharpened=gpu.read(output)
+    check(max(abs(a-b) for i,(a,b) in enumerate(zip(sharpened,unsharpened)) if i%4!=3)>.015,
+          'snapshot current-frame sharpening must restore local contrast without temporal history')
+    check(max(abs(a-b) for a,b in zip(sharpened[3::4],snapshot_pixels[3::4]))<.001,
+          'snapshot presentation must retain unjittered scene alpha')
+
+    # Generic post mode uses the same RGB filter on an already antialiased
+    # image, but must preserve that image's alpha rather than the raw scene's.
+    gpu.upload(output,snapshot_pixels)
+    gpu.upload(current,constant((0,0,0,.95)))
+    gpu.viewer_bind('copyTAA',copy,{'src':output,'mMainRT.screen':current})
+    gpu.uniform(copy,'taa_jitter',.4/W,-.3/H)
+    post_results=[]
+    for strength in (0,.5,1.5,2):
+        gpu.uniform(copy,'taa_sharpen',strength)
+        gpu.uniform(copy,'taa_copy_mode',1,integer=True);gpu.draw(copy,history)
+        reference=gpu.read(history)
+        gpu.uniform(copy,'taa_copy_mode',4,integer=True);gpu.draw(copy,history)
+        actual=gpu.read(history);post_results.append(actual)
+        check(max(abs(a-b) for i,(a,b) in enumerate(zip(actual,reference)) if i%4!=3)<.001,
+              'Post must reuse the TAA RGB sharpening response')
+        check(max(abs(a-b) for a,b in zip(actual[3::4],snapshot_pixels[3::4]))<.001,
+              'Post must retain source alpha independently of raw scene/jitter')
+        check(all(math.isfinite(v) and v>=0 for v in actual),'Post must remain finite and nonnegative')
+    check(max(abs(a-b) for a,b in zip(post_results[0],snapshot_pixels))<.001,
+          'zero Post strength must preserve the input image')
+    check(max(abs(a-b) for a,b in zip(post_results[-1],post_results[1]))>.05,
+          'Post strength must change the rendered image')
 
     # Production skinned shader: two joints move independently, not just the root.
     # A D24 prepass uses the production PBR transform order and GL_EQUAL motion.

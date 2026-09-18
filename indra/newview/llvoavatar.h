@@ -33,6 +33,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <boost/signals2/trackable.hpp>
 
@@ -183,7 +184,8 @@ public:
                                                  LLVector4a* intersection = NULL,   // return the intersection point
                                                  LLVector2* tex_coord = NULL,      // return the texture coordinates of the intersection point
                                                  LLVector4a* normal = NULL,         // return the surface normal at the intersection point
-                                                 LLVector4a* tangent = NULL);     // return the surface tangent at the intersection point
+                                                 LLVector4a* tangent = NULL,      // return the surface tangent at the intersection point
+                                                 const std::function<bool(LLViewerObject*)>& filter = {});
 
     //--------------------------------------------------------------------
     // LLCharacter interface and related

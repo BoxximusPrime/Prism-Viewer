@@ -162,18 +162,24 @@ float pcssShadow(sampler2D depthMap,
     vec3 bitangent = sourceRadius > 0.0 ? normalize(inverseMatrix[1].xyz) : cross(lightDir, tangent);
     vec4 du = lightMatrix * vec4(tangent, 0.0);
     vec4 dv = lightMatrix * vec4(bitangent, 0.0);
-    mat2 footprint = mat2((du.xy - tc.xy * du.w) / start.w,
-                          (dv.xy - tc.xy * dv.w) / start.w);
+    // Keep the homogeneous denominator for each tap. A local UV derivative
+    // stretches a finite disk as the camera changes the sun cascade's warp.
+    mat2x3 footprint = mat2x3(vec3(du.xy - tc.xy * du.w, du.w) / start.w,
+                              vec3(dv.xy - tc.xy * dv.w, dv.w) / start.w);
 
-    vec4 nearPoint = inverseMatrix * vec4(tc.xy, 0.0, 1.0);
-    float nearDistance = max(dot(nearPoint.xyz / nearPoint.w - pos, lightDir), 0.0);
+    // Sun cascade near planes follow the camera, not the light source.
+    // Searching out to that plane changed the blocker average and softness
+    // on a fixed sloping caster. Cover the configured world-space limit.
+    float searchRadius = pcss_params.y;
     // For a projector, start.w is distance along its perspective axis. An
     // emitter radius produces gap / blocker-distance penumbra growth.
     float lightDistance = sourceRadius > 0.0 ? start.w : 0.0;
-    float nearAxisDistance = sourceRadius > 0.0 ? 1.0 / nearPoint.w : 0.0;
-    float searchRadius = sourceRadius > 0.0 ?
-        sourceRadius * max(lightDistance - nearAxisDistance, 0.0) / max(nearAxisDistance, 0.001) :
-        nearDistance * pcss_params.x;
+    if (sourceRadius > 0.0)
+    {
+        vec4 nearPoint = inverseMatrix * vec4(tc.xy, 0.0, 1.0);
+        float nearAxisDistance = 1.0 / nearPoint.w;
+        searchRadius = sourceRadius * max(lightDistance - nearAxisDistance, 0.0) / max(nearAxisDistance, 0.001);
+    }
     searchRadius = clamp(searchRadius, pcss_params.w, pcss_params.y);
     int searchCount = pcss_quality == 0 ? 8 : (pcss_quality == 1 ? 16 : 32);
     int filterCount = searchCount * 2;
@@ -190,9 +196,9 @@ float pcssShadow(sampler2D depthMap,
         // Search at two scales. The full cascade search alone leaves large
         // holes near the receiver, missing narrow casters in their penumbra.
         float searchScale = local ? 0.125 : 1.0;
-        vec2 offset = i == 0 ? vec2(0.0) : footprint * disk * searchRadius * searchScale;
-        vec2 uv = tc.xy + offset;
-        if (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) continue;
+        vec3 offset = i == 0 ? vec3(0.0) : footprint * disk * searchRadius * searchScale;
+        vec2 uv = tc.xy + offset.xy / (1.0 + offset.z);
+        if (offset.z <= -1.0 || any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) continue;
         ivec2 texel = ivec2(uv * vec2(size));
         uv = (vec2(texel) + 0.5) / vec2(size);
         float depth = texelFetch(depthMap, texel, 0).r;
@@ -245,9 +251,9 @@ float pcssShadow(sampler2D depthMap,
     vec3 shadow = vec3(0.0, 0.0, receiverFound);
     for (int i = 0; i < filterCount; ++i)
     {
-        vec2 offset = footprint * pcssDisk(i, filterCount) * radius;
-        vec2 uv = tc.xy + offset;
-        if (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) shadow.xy += 1.0;
+        vec3 offset = footprint * pcssDisk(i, filterCount) * radius;
+        vec2 uv = tc.xy + offset.xy / (1.0 + offset.z);
+        if (offset.z <= -1.0 || any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) shadow.xy += 1.0;
         else shadow += pcssCompare(depthMap, uv, tc, slope, bias, slopeError, receiverSlope);
     }
     // The map can already include the same horizon occlusion; cap its

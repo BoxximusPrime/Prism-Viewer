@@ -2,7 +2,7 @@
 
 Run: .venv/Scripts/python.exe scripts/tests/test_pcss_mesh_gpu.py [--images]
 Uses the production PCSS/shadow helpers, real D24 camera/shadow rasterization,
-and both deferred and forward receivers. Python stdlib + bundled SDL3 only.
+and both deferred and forward receivers. Python stdlib, bundled SDL3/GLM and g++.
 """
 import ctypes as C
 import math
@@ -13,6 +13,7 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[2]
 from test_exact_oit_gpu import context, U, I, F
+from test_pcss_depth_precision import projection_cases
 
 SIZE = 256
 SHADERS = ROOT / 'indra/newview/app_settings/shaders/class1/deferred'
@@ -105,6 +106,7 @@ def run(sdl, gl):
         float sampleDirectionalShadow(vec3 p, vec3 n, vec2 uv);
         void preparePCSSDepth(vec3 p, vec3 n, vec2 uv);
         uniform vec3 sun_dir; uniform float camera_distance;
+        uniform int planar_receiver;
     '''
     lighting = program('''void main() { vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3)); gl_Position=vec4(p[gl_VertexID],0,1); }''',
         get_pos + '''out vec4 color; void main() {
@@ -113,6 +115,7 @@ def run(sdl, gl):
             vec3 p=getPosition(uv).xyz;
             vec3 n=texture(geometryNormal,uv).xyz;
             vec3 smoothNormal=normalize(p+vec3(0,0,camera_distance));
+            if (planar_receiver != 0) smoothNormal=vec3(0,0,1);
             preparePCSSDepth(p,smoothNormal,uv);
             float s=sampleDirectionalShadow(p,smoothNormal,uv);
             color=vec4(s,dot(n,sun_dir),dot(n,-p),1);
@@ -120,6 +123,7 @@ def run(sdl, gl):
     forward = program(vertex, get_pos + '''in vec3 vpos; out vec4 color; void main() {
             vec3 n=normalize(cross(dFdx(vpos),dFdy(vpos)));
             vec3 smoothNormal=normalize(vpos+vec3(0,0,camera_distance));
+            if (planar_receiver != 0) smoothNormal=vec3(0,0,1);
             float s=sampleDirectionalShadow(vpos,smoothNormal,gl_FragCoord.xy/256.0);
             color=vec4(s,dot(n,sun_dir),dot(n,-vpos),1);
         }''', True)
@@ -187,12 +191,28 @@ def run(sdl, gl):
         for tilt in (0, 4, 20):
             for phase in (-.25, 0, .25):
                 scenarios.append((1,distance,55,None,.01,1,1,(tilt,phase)))
+    # Rasterized vertical ribbons surrounded by another depth layer on both
+    # sides. Include subpixel camera phases and near-grazing sun directions.
+    for distance in (4, 40, 160):
+        for width in (1, 3, 7):
+            for angle in (5, 55, 85):
+                for phase in (-.25, 0, .25):
+                    scenarios.append((1,distance,angle,None,.01,1,1,(0,phase,width)))
     for scale, distance, angle, wall_slope, minimum, quality, sun_up, floor in scenarios:
         points = sphere_points
+        ribbon = floor is not None and len(floor) == 3
         if floor is not None:
-            tilt, phase = floor
+            tilt, phase = floor[:2]
             points = [v for x,y in ((-256,-256),(256,-256),(-256,256),(256,-256),(256,256),(-256,256))
                       for v in (x,y,-tilt*y)]
+            if ribbon:
+                width = floor[2]
+                pixel = 2 * distance / (2.5 * SIZE)
+                left, right = .5 * pixel * (1-width), .5 * pixel * (1+width)
+                points = [v for x,y in ((left,-256),(right,-256),(left,256),(right,-256),(right,256),(left,256))
+                          for v in (x,y,0)]
+                points += [v for x,y in ((-256,-256),(256,-256),(-256,256),(256,-256),(256,256),(-256,256))
+                           for v in (x,y,-2)]
         values = (F*len(points))(*points)
         gl.BufferData(0x8892, C.sizeof(values), values, 0x88E4)
         near, far = .1*scale, 1024
@@ -253,6 +273,7 @@ def run(sdl, gl):
             matrix(prog,'projection',proj)
             uniform(prog,'camera_distance',distance)
             uniform(prog,'model_scale',scale)
+            uniform(prog,'planar_receiver',int(ribbon),integer=True)
             gl.BindFramebuffer(0x8D40,output_fbo)
             gl.FramebufferTexture2D(0x8D40,0x8D00,0x0DE1,view_depth if mode=='forward' else 0,0)
             gl.ClearColor(0,0,0,0)
@@ -268,7 +289,11 @@ def run(sdl, gl):
             gl.ReadPixels(0,0,SIZE,SIZE,0x1908,0x1406,output)
             assert gl.GetError()==0
             assert all(math.isfinite(v) for v in output)
-            if floor is not None:
+            if ribbon:
+                edge = (width-1)//2
+                visible = [output[(y*SIZE+x)*4] for y in range(64,192) for x in range(128-edge,129+edge)]
+                assert min(visible)>.99, ('ribbon self-shadow',mode,distance,width,angle,phase,min(visible))
+            elif floor is not None:
                 # Avoid silhouette/viewport boundaries; the interior of an
                 # unobstructed, light-facing square should remain fully lit.
                 visible=[output[(y*SIZE+x)*4] for y in range(16,SIZE-16) for x in range(16,SIZE-16)
@@ -302,6 +327,8 @@ def run(sdl, gl):
                 suffix='' if wall_slope is None else f'-wall-{angle}-{wall_slope}'
                 if floor is not None:
                     suffix=f'-floor-{tilt}-{phase}'
+                if ribbon:
+                    suffix=f'-ribbon-{width}-{angle}-{phase}'
                 png(directory/f'pcss-mesh-{distance}-{mode}{suffix}.png',pixels)
 
     for mode in ('deferred','forward'):
@@ -359,8 +386,95 @@ def run(sdl, gl):
                 visible=sum(nx+nz*angular_radius*y>0 for _,y in disk)/len(disk)
                 assert abs(output[i*4]-visible)<.01, ('finite emitter horizon',source_radius,sign,i,output[i*4],visible)
             cases += 1
+    # A caster outside the receiver-fitted near plane still casts a shadow
+    # with GL_DEPTH_CLAMP, but its flattened depth used to change softness.
+    # Compile the production C++ fit, rasterize both projections into D24,
+    # then check both shared receiver paths. No uploaded synthetic depths.
+    def quad(z, right=1.5):
+        return [v for x,y in ((-1.5,-1.5),(right,-1.5),(-1.5,1.5),(right,-1.5),(right,1.5),(-1.5,1.5))
+                for v in (x,y,z)]
+    floor = quad(0)
+    distance = 4.0
+    proj = [[2.5,0,0,0],[0,2.5,0,0],[0,0,-1024.1/1023.9,-204.8/1023.9],[0,0,-1,0]]
+    profiles = {}
+    for near, warp, projections in projection_cases():
+        for extended, clip_light in enumerate(projections):
+            # Shadow fit is in world space; receivers use camera space.
+            clip_light = [row[:3] + [row[3]+row[2]*distance] for row in clip_light]
+            light = [[(a+b)*.5 for a,b in zip(row,clip_light[3])] for row in clip_light[:3]]+[clip_light[3]]
+            gl.UseProgram(capture)
+            uniform(capture,'camera_distance',distance)
+            uniform(capture,'model_scale',1)
+            gl.Enable(0x0B71)
+            gl.DepthFunc(0x0201)
+            gl.DepthMask(1)
+            for fbo, projection, vertices in ((shadow_fbo,clip_light,floor+quad(2,0)),(camera_fbo,proj,floor)):
+                values = (F*len(vertices))(*vertices)
+                gl.BufferData(0x8892,C.sizeof(values),values,0x88E4)
+                gl.BindFramebuffer(0x8D40,fbo)
+                gl.ClearColor(0,0,0,0)
+                gl.Clear(0x4100)
+                matrix(capture,'projection',projection)
+                if fbo == shadow_fbo: gl.Enable(0x864F)  # GL_DEPTH_CLAMP, as in renderShadow.
+                gl.DrawArrays(4,0,len(vertices)//3)
+                gl.Disable(0x864F)
+                if fbo == shadow_fbo:
+                    depth = F()
+                    sample = [sum(row[k]*(-.3,0,2-distance,1)[k] for k in range(4)) for row in light]
+                    gl.ReadPixels(int(sample[0]/sample[3]*SIZE),int(sample[1]/sample[3]*SIZE),1,1,0x1902,0x1406,C.byref(depth))
+                    assert (depth.value > 0) == (bool(extended) or near >= 2), ('caster depth clamping',extended,near,warp,depth.value)
+            for unit,tex,sampler in ((0,shadow,compare),(1,shadow,raw),(2,view_depth,raw),(3,geom,raw)):
+                gl.ActiveTexture(0x84C0+unit)
+                gl.BindTexture(0x0DE1,tex)
+                gl.BindSampler(unit,sampler)
+            for prog, mode in ((lighting,'deferred'),(forward,'forward')):
+                gl.UseProgram(prog)
+                for i in range(4):
+                    uniform(prog,f'shadowMap{i}',0,integer=True)
+                    uniform(prog,f'pcssDepthMap{i}',1,integer=True)
+                    matrix(prog,f'shadow_matrix[{i}]',light)
+                    matrix(prog,f'pcss_inverse_matrix[{i}]',inverse(light))
+                uniform(prog,'cameraDepth',2,integer=True)
+                uniform(prog,'geometryNormal',3,integer=True)
+                uniform(prog,'sun_dir',0,0,1)
+                uniform(prog,'sun_up_factor',1,integer=True)
+                uniform(prog,'shadow_clip',8,16,32,64)
+                uniform(prog,'shadow_res',SIZE,SIZE)
+                uniform(prog,'screen_res',SIZE,SIZE)
+                uniform(prog,'pcss_params',math.tan(math.radians(5)*.5),.8,.005,.01)
+                uniform(prog,'pcss_raster_error',1/256)
+                uniform(prog,'pcss_world_up',0,0,1)
+                uniform(prog,'pcss_world_north',0,1,0)
+                uniform(prog,'pcss_quality',1,integer=True)
+                uniform(prog,'planar_receiver',1,integer=True)
+                uniform(prog,'camera_distance',distance)
+                uniform(prog,'model_scale',1)
+                matrix(prog,'inv_proj',inverse(proj))
+                matrix(prog,'projection',proj)
+                gl.BindFramebuffer(0x8D40,output_fbo)
+                gl.Disable(0x0B71)
+                gl.DrawArrays(4,0,len(floor)//3 if mode == 'forward' else 3)
+                output = (F*(SIZE*4))()
+                gl.ReadPixels(0,SIZE//2,SIZE,1,0x1908,0x1406,output)
+                profiles[mode,extended,warp,near] = list(output)[::4][96:160]
+                cases += 1
+    def transition(row):
+        def crossing(level):
+            return next(i+(level-a)/(b-a) for i,(a,b) in enumerate(zip(row,row[1:])) if a <= level < b)
+        return crossing(.9)-crossing(.1)
+    for mode in ('deferred','forward'):
+        for warp in sorted({key[2] for key in profiles}):
+            widths = [[transition(row) for (m,e,w,n),row in profiles.items() if (m,e,w)==(mode,extended,warp)]
+                      for extended in (0,1)]
+            assert max(widths[0])/min(widths[0]) > 3, ('clamping fixture no longer reproduces',mode,warp,widths)
+            assert max(widths[1])/min(widths[1]) < 1.01, ('cascade depth changed softness',mode,warp,widths)
+            reference = next(row for (m,e,w,n),row in profiles.items() if (m,e,w,n)==(mode,0,warp,4))
+            for (m,e,w,n),row in profiles.items():
+                if (m,e,w)==(mode,1,warp):
+                    assert max(abs(a-b) for a,b in zip(row,reference)) < .002, ('wrong blocker distance',mode,warp,n)
+            print(f'  {mode}, warp {warp:.1f}: clamped width {min(widths[0]):.3f}-{max(widths[0]):.3f}px; corrected {min(widths[1]):.3f}-{max(widths[1]):.3f}px')
     assert gl.GetError()==0
-    print(f'PASS: {cases} PCSS mesh/horizon GPU cases on {gl.GetString(0x1F01).decode()}')
+    print(f'PASS: {cases} PCSS mesh/horizon/cascade GPU cases on {gl.GetString(0x1F01).decode()}')
 
 
 if __name__=='__main__':

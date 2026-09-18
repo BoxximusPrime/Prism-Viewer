@@ -102,7 +102,7 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False):
     elapsed=[]
     benchmark_inputs=[]
     normal_inputs={}
-    def filter_image(light,albedo,edge=0,radius=0.02,channel=0):
+    def filter_image(light,albedo,edge=0,radius=0.02,channel=0,direct=None):
         uniform('sss_depth',radius); uniform('test_edges',edge,integer=True)
         boundary=values_by_uniform['test_boundary'][0]
         width=values_by_uniform['test_finger_width'][0]; center=values_by_uniform['test_finger_center'][0]
@@ -124,14 +124,16 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False):
                     packed.extend((nx/f+0.5,ny/f+0.5,0,0.79 if skin else 0.67))
             normal_inputs[key]=texture(packed)
         gl.BindTexture(TEXTURE,normal_inputs[key])
-        def rgba(values): return [channel for value in values for channel in (value,value,value,0)]
+        def rgba(values, alpha=None):
+            return [component for i,value in enumerate(values)
+                    for component in (value,value,value,alpha[i] if alpha else 0)]
         if benchmark_inputs:
             surface,original=benchmark_inputs
             gl.ActiveTexture(0x84C2); gl.BindTexture(TEXTURE,surface)
             gl.ActiveTexture(0x84C1); gl.BindTexture(TEXTURE,original)
         else:
             gl.ActiveTexture(0x84C2); surface=texture(rgba(albedo))
-            gl.ActiveTexture(0x84C1); original=texture(rgba(light))
+            gl.ActiveTexture(0x84C1); original=texture(rgba(light,direct))
             if benchmark: benchmark_inputs.extend((surface,original))
         gl.BeginQuery(0x88BF,query)
         if not reference:
@@ -203,6 +205,12 @@ def run(sdl, gl, reference=None, capture=None, size=64, benchmark=False):
     after=statistics.pvariance(smooth[i] for i in inner)
     assert after<before*0.1,(before,after)
     assert max(abs(a-b) for a,b in zip(filter_image(noise,white,radius=0),noise))<1e-6
+    # Alpha carries receiver exposure for isolated grazing light. Directly lit
+    # texels remain blur sources, but only the unlit side receives their spread.
+    direct=[1.0 if x<32 else 0.0 for y in range(64) for x in range(64)]
+    grazing=filter_image(direct,white,direct=direct)
+    assert max(abs(grazing[y*64+x]) for y in range(64) for x in range(32))<1e-6
+    assert grazing[32*64+34]>0.0, 'Direct receiver mask also removed the grazing blur source'
     # The blur must preserve texture detail, even with varying surface normals.
     albedo=[0.2 if (x//2+y//2)%2 else 0.9 for y in range(64) for x in range(64)]
     textured=[a*0.5 for a in albedo]

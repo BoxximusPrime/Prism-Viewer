@@ -939,7 +939,9 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
                 mTAAResolved.allocate(resX, resY, GL_RGBA16F) &&
                 mTAAHistory[0].allocate(resX, resY, GL_RGBA16F) &&
                 mTAAHistory[0].addColorAttachment(GL_RGBA16F) &&
+                mTAAHistory[0].addColorAttachment(GL_RGBA16F) &&
                 mTAAHistory[1].allocate(resX, resY, GL_RGBA16F) &&
+                mTAAHistory[1].addColorAttachment(GL_RGBA16F) &&
                 mTAAHistory[1].addColorAttachment(GL_RGBA16F))
             {
                 mRT->deferredScreen.shareDepthBuffer(mTAAMotion);
@@ -6795,7 +6797,8 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
                                                         LLVector2* tex_coord,            // return the texture coordinates of the intersection point
                                                         LLVector4a* normal,               // return the surface normal at the intersection point
                                                         LLVector4a* tangent,            // return the surface tangent at the intersection point
-                                                        bool* name_tag_hit
+                                                        bool* name_tag_hit,
+                                                        const std::function<bool(LLViewerObject*)>& filter
     )
 {
     LLDrawable* drawable = NULL;
@@ -6825,7 +6828,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
                 LLSpatialPartition* part = region->getSpatialPartition(j);
                 if (part && hasRenderType(part->mDrawableType))
                 {
-                    LLDrawable* hit = part->lineSegmentIntersect(start, local_end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, &position, tex_coord, normal, tangent);
+                    LLDrawable* hit = part->lineSegmentIntersect(start, local_end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, &position, tex_coord, normal, tangent, filter);
                     if (hit)
                     {
                         drawable = hit;
@@ -6882,7 +6885,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
             LLSpatialPartition* part = region->getSpatialPartition(LLViewerRegion::PARTITION_AVATAR);
             if (part && hasRenderType(part->mDrawableType))
             {
-                LLDrawable* hit = part->lineSegmentIntersect(start, local_end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, &position, tex_coord, normal, tangent);
+                LLDrawable* hit = part->lineSegmentIntersect(start, local_end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, face_hit, &position, tex_coord, normal, tangent, filter);
                 if (hit)
                 {
                     LLVector4a delta;
@@ -6926,7 +6929,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
     for (LLCharacter* character : LLCharacter::sInstances)
     {
         LLVOAvatar* avatar = (LLVOAvatar*)character;
-        if (avatar->mNameText.notNull() &&
+        if ((!filter || filter(avatar)) && avatar->mNameText.notNull() &&
             avatar->mNameText->lineSegmentIntersect(start, local_end, position))
         {
             drawable = avatar->mDrawable;
@@ -6937,7 +6940,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
 
     S32 node_hit = -1;
     S32 primitive_hit = -1;
-    LLDrawable* hit = LL::GLTFSceneManager::instance().lineSegmentIntersect(start, local_end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, &node_hit, &primitive_hit, &position, tex_coord, normal, tangent);
+    LLDrawable* hit = LL::GLTFSceneManager::instance().lineSegmentIntersect(start, local_end, pick_transparent, pick_rigged, pick_unselectable, pick_reflection_probe, &node_hit, &primitive_hit, &position, tex_coord, normal, tangent, filter);
     if (hit)
     {
         drawable = hit;
@@ -8415,7 +8418,7 @@ bool LLPipeline::isTAAAvailable() const
         gTAAMotionProgram[0].isComplete() && gTAAMotionProgram[1].isComplete() &&
         mTAAMotion.isComplete() && mTAAOpaque.isComplete() && mTAAResolved.isComplete() &&
         mTAAHistory[0].isComplete() && mTAAHistory[1].isComplete() &&
-        mTAAHistory[0].getNumTextures() == 2 && mTAAHistory[1].getNumTextures() == 2 &&
+        mTAAHistory[0].getNumTextures() == 3 && mTAAHistory[1].getNumTextures() == 3 &&
         mTAAMotion.getWidth() == mMainRT.screen.getWidth() && mTAAMotion.getHeight() == mMainRT.screen.getHeight();
 }
 
@@ -8499,8 +8502,12 @@ void LLPipeline::copyTAA(LLRenderTarget& src, LLRenderTarget& dst, S32 mode)
     shader.bindTexture(LLShaderMgr::TAA_SOURCE, &src);
     shader.bindTexture(LLShaderMgr::TAA_ORIGINAL, &mMainRT.screen);
     shader.uniform2f(LLStaticHashedString("taa_rcp_res"), 1.f / dst.getWidth(), 1.f / dst.getHeight());
-    shader.uniform2f(LLStaticHashedString("taa_jitter"), mTAAJitter.x, mTAAJitter.y);
-    shader.uniform1f(LLStaticHashedString("taa_sharpen"), llclamp(gSavedSettings.getF32("RenderTAASharpen"), 0.f, 2.f));
+    const glm::vec2 jitter = gSnapshot ? glm::vec2(0.f) : mTAAJitter;
+    shader.uniform2f(LLStaticHashedString("taa_jitter"), jitter.x, jitter.y);
+    // Post sharpening owns the filter when enabled; do not sharpen TAA twice.
+    const F32 sharpening = mode == 4 ? gSavedSettings.getF32("RenderPostSharpenStrength") :
+        gSavedSettings.getBOOL("RenderPostSharpenEnabled") ? 0.f : gSavedSettings.getF32("RenderTAASharpen");
+    shader.uniform1f(LLStaticHashedString("taa_sharpen"), llclamp(sharpening, 0.f, 2.f));
     shader.uniform1i(LLStaticHashedString("taa_copy_mode"), mode);
     mScreenTriangleVB->setBuffer();
     mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
@@ -8659,6 +8666,17 @@ void LLPipeline::renderTAAMotion()
 
 LLRenderTarget* LLPipeline::resolveTAA()
 {
+    // Captures cannot reuse temporal history (their projection/size may differ),
+    // but should retain the same stateless presentation sharpening as the world.
+    if (gSnapshot && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
+        LLFloaterSnapshot::photoActive() && isTAAAvailable() && !gUseWireframe &&
+        !gSavedSettings.getBOOL("RenderGTAODebug") && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
+        !gSavedSettings.getBOOL("BoxxySSSShowMask") && RenderBufferVisualization < 0 &&
+        gSavedSettings.getS32("RenderTAADebug") == 0)
+    {
+        copyTAA(mRT->screen, mTAAResolved, 1);
+        return &mTAAResolved;
+    }
     if (!mTAAFrameActive || !mTAAOpaqueReady || !mTAAMotionReady || !isTAAAvailable()) return &mRT->screen;
     LL_PROFILE_GPU_ZONE("TAA resolve");
     auto& shader = gTAAResolveProgram;
@@ -8668,6 +8686,7 @@ LLRenderTarget* LLPipeline::resolveTAA()
     shader.bindTexture(LLShaderMgr::TAA_CURRENT, &mRT->screen);
     shader.bindTexture(LLShaderMgr::TAA_HISTORY, &mTAAHistory[1 - mTAAIndex]);
     shader.bindTexture(LLShaderMgr::TAA_DETAIL, &mTAAHistory[1 - mTAAIndex], false, LLTexUnit::TFO_POINT, 1);
+    shader.bindTexture(LLShaderMgr::TAA_FLICKER, &mTAAHistory[1 - mTAAIndex], false, LLTexUnit::TFO_POINT, 2);
     shader.bindTexture(LLShaderMgr::TAA_MOTION, &mTAAMotion, false, LLTexUnit::TFO_POINT);
     shader.bindTexture(LLShaderMgr::TAA_OPAQUE, &mTAAOpaque, false, LLTexUnit::TFO_POINT);
     shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
@@ -8686,9 +8705,10 @@ LLRenderTarget* LLPipeline::resolveTAA()
     shader.uniform1f(LLStaticHashedString("taa_clip_gamma"), llclamp(gSavedSettings.getF32("RenderTAAClipGamma"), .5f, 2.f));
     shader.uniform1f(LLStaticHashedString("taa_transparency"), llclamp(gSavedSettings.getF32("RenderTAATransparency"), 0.f, 1.f));
     shader.uniform1i(LLStaticHashedString("taa_static_details"), gSavedSettings.getBOOL("RenderTAAStaticDetails") ? 1 : 0);
+    shader.uniform1i(LLStaticHashedString("taa_flicker_detection"), gSavedSettings.getBOOL("RenderTAAFlickerDetection") ? 1 : 0);
     mScreenTriangleVB->setBuffer();
     mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-    for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL, LLShaderMgr::TAA_MOTION,
+    for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL, LLShaderMgr::TAA_FLICKER, LLShaderMgr::TAA_MOTION,
         LLShaderMgr::TAA_OPAQUE, LLShaderMgr::DEFERRED_DEPTH }) shader.unbindTexture(sampler);
     shader.unbind();
     history.flush();
@@ -8706,7 +8726,7 @@ void LLPipeline::renderTAADebug(LLRenderTarget& dst)
 {
     if (mTAAFrameActive && mTAAMotionReady)
     {
-        S32 mode = llclamp(gSavedSettings.getS32("RenderTAADebug"), 0, 5);
+        S32 mode = llclamp(gSavedSettings.getS32("RenderTAADebug"), 0, 6);
         if (mode == 1) copyTAA(mTAAMotion, dst, 2);
         else if (mode >= 2)
         {
@@ -8719,13 +8739,14 @@ void LLPipeline::renderTAADebug(LLRenderTarget& dst)
             shader.bindTexture(LLShaderMgr::TAA_CURRENT, &mRT->screen);
             shader.bindTexture(LLShaderMgr::TAA_HISTORY, &mTAAHistory[mTAAIndex]);
             shader.bindTexture(LLShaderMgr::TAA_DETAIL, &mTAAHistory[mTAAIndex], false, LLTexUnit::TFO_POINT, 1);
+            shader.bindTexture(LLShaderMgr::TAA_FLICKER, &mTAAHistory[mTAAIndex], false, LLTexUnit::TFO_POINT, 2);
             shader.bindTexture(LLShaderMgr::TAA_MOTION, &mTAAMotion, false, LLTexUnit::TFO_POINT);
             shader.bindTexture(LLShaderMgr::TAA_OPAQUE, &mTAAOpaque, false, LLTexUnit::TFO_POINT);
             shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
             shader.uniform1i(LLStaticHashedString("taa_debug_mode"), mode);
             mScreenTriangleVB->setBuffer();
             mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-            for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL,
+            for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL, LLShaderMgr::TAA_FLICKER,
                 LLShaderMgr::TAA_MOTION, LLShaderMgr::TAA_OPAQUE, LLShaderMgr::DEFERRED_DEPTH }) shader.unbindTexture(sampler);
             shader.unbind();
             dst.flush();
@@ -8826,6 +8847,20 @@ void LLPipeline::renderFinalize()
     {
         generateSMAABuffers(sourceBuffer);
         applySMAA(sourceBuffer, targetBuffer);
+        std::swap(sourceBuffer, targetBuffer);
+    }
+
+    // Reuse the TAA presentation filter and existing post buffers for every AA
+    // mode. This is outside temporal history and before HUD/UI composition.
+    if (gSavedSettings.getBOOL("RenderPostSharpenEnabled") &&
+        gSavedSettings.getF32("RenderPostSharpenStrength") > 0.f && gTAACopyProgram.isComplete() &&
+        mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender && !sRenderingHUDs &&
+        RenderBufferVisualization < 0 && !(mTAAFrameActive && mTAAMotionReady && gSavedSettings.getS32("RenderTAADebug") != 0) &&
+        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
+        !gSavedSettings.getBOOL("BoxxySSSShowMask"))
+    {
+        LL_PROFILE_GPU_ZONE("Post sharpening");
+        copyTAA(*sourceBuffer, *targetBuffer, 4);
         std::swap(sourceBuffer, targetBuffer);
     }
 
@@ -8947,6 +8982,7 @@ void LLPipeline::bindLightFunc(LLGLSLShader& shader)
 void LLPipeline::bindShadowMaps(LLGLSLShader& shader)
 {
     static LLCachedControl<bool> pcss_enabled(gSavedSettings, "RenderPCSSEnabled", false);
+    static LLCachedControl<bool> pcss_stable_pattern(gSavedSettings, "RenderPCSSStablePattern", true);
     static LLCachedControl<F32> pcss_angle(gSavedSettings, "RenderPCSSLightSize", 0.53f);
     static LLCachedControl<F32> pcss_radius(gSavedSettings, "RenderPCSSMaxSoftness", 1.f);
     static LLCachedControl<F32> pcss_minimum(gSavedSettings, "RenderPCSSMinSoftness", 0.02f);
@@ -8958,8 +8994,10 @@ void LLPipeline::bindShadowMaps(LLGLSLShader& shader)
     static const LLStaticHashedString projector_radius("pcss_projector_radius");
     static const LLStaticHashedString world_up("pcss_world_up"), world_north("pcss_world_north");
     const glm::mat4& camera_view = get_current_modelview();
-    shader.uniform3fv(world_up, 1, glm::value_ptr(camera_view[2]));
-    shader.uniform3fv(world_north, 1, glm::value_ptr(camera_view[1]));
+    const glm::vec3 pattern_up = pcss_stable_pattern ? glm::vec3(camera_view[2]) : glm::vec3(0.f, 0.f, 1.f);
+    const glm::vec3 pattern_north = pcss_stable_pattern ? glm::vec3(camera_view[1]) : glm::vec3(0.f, 1.f, 0.f);
+    shader.uniform3fv(world_up, 1, glm::value_ptr(pattern_up));
+    shader.uniform3fv(world_north, 1, glm::value_ptr(pattern_north));
     static const LLStaticHashedString raster_error("pcss_raster_error");
     static const F32 subpixel_error = []()
     {
@@ -11994,6 +12032,33 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
     if (firstPerson) gAgentAvatarp->updateAttachmentVisibility(gAgentCamera.getCameraMode());
 }
 
+// PCSS needs the actual blocker depth. Fitting Z to visible receivers and
+// relying on GL_DEPTH_CLAMP for off-screen casters flattens those casters onto
+// a camera-dependent near plane. Extend only Z to the existing caster culling
+// limit; keep XY/W, the far plane, texel density and render coverage unchanged.
+static glm::mat4 extendSunShadowDepth(const glm::mat4& projection, float light_near)
+{
+    const glm::dmat4 inverse_projection = glm::inverse(glm::dmat4(projection));
+    double near_ndc = -1.0;
+    for (double x : { -1.0, 1.0 })
+    {
+        for (double y : { -1.0, 1.0 })
+        {
+            glm::dvec4 point = inverse_projection * glm::dvec4(x, y, 1.0, 1.0);
+            point /= point.w;
+            point.z = light_near;
+            const glm::dvec4 clip = glm::dmat4(projection) * point;
+            if (clip.w <= 0.0) return projection;
+            near_ndc = std::min(near_ndc, clip.z / clip.w);
+        }
+    }
+    const double scale = 2.0 / (1.0 - near_ndc);
+    glm::mat4 result = projection;
+    for (S32 column = 0; column < 4; ++column)
+        result[column][2] = F32(scale * projection[column][2] + (1.0 - scale) * projection[column][3]);
+    return result;
+}
+
 void LLPipeline::generateSunShadow(LLCamera& camera)
 {
     if (!sRenderDeferred || RenderShadowDetail <= 0)
@@ -12043,11 +12108,10 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
 
     //put together a universal "near clip" plane for shadow frusta
     LLPlane shadow_near_clip;
-    {
-        LLVector3 p = camera.getOrigin(); // gAgent.getPositionAgent();
-        p += caster_dir * RenderFarClip*2.f;
-        shadow_near_clip.setVec(p, caster_dir);
-    }
+    const LLVector3 shadow_near_origin = camera.getOrigin() + caster_dir * RenderFarClip * 2.f;
+    shadow_near_clip.setVec(shadow_near_origin, caster_dir);
+    static LLCachedControl<bool> pcss_enabled(gSavedSettings, "RenderPCSSEnabled", false);
+    const bool pcss = pcss_enabled && gGLManager.mNumTextureImageUnits >= 32 && !gCubeSnapshot && !sImpostorRender;
 
     LLVector3 lightDir = -caster_dir;
     lightDir.normVec();
@@ -12496,6 +12560,14 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
 
             //shadow_cam.ignoreAgentFrustumPlane(LLCamera::AGENT_PLANE_NEAR);
             shadow_cam.getAgentPlane(LLCamera::AGENT_PLANE_NEAR).set(shadow_near_clip);
+
+            // Keep the existing culling camera (including its corner bounds).
+            // Only shadow rasterization and the sampling matrices need this Z fit.
+            if (pcss)
+            {
+                const F32 light_near = (view[j] * glm::vec4(glm::vec3(shadow_near_origin), 1.f)).z;
+                proj[j] = extendSunShadowDepth(proj[j], light_near);
+            }
 
             //translate and scale to from [-1, 1] to [0, 1]
             glm::mat4 trans(0.5f, 0.0f, 0.0f, 0.0f,

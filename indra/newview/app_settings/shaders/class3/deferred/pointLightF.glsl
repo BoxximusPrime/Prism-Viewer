@@ -105,6 +105,7 @@ void main()
     vec3 diffuseLighting = vec3(0.0);
     vec3 transmissionLighting = vec3(0.0);
     vec3 grazingLighting = vec3(0.0);
+    float grazingDirect = 0.0;
 
     vec3 n = gb.normal;
 
@@ -123,6 +124,7 @@ void main()
     }
     float dist = lightDist / size;
     float dist_atten = calcLegacyDistanceAttenuation(dist, falloff);
+    grazingDirect = smoothstep(0.0, 0.10, dot(n, normalize(lv))) * dist_atten;
 
     if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR))
     {
@@ -224,6 +226,7 @@ void main()
         if (sss_grazing_smoothing != 0)
         {
             sss_grazing.rgb = min(max(grazingLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_grazing.a = grazingDirect;
             sss_diffuse.rgb -= sss_grazing.rgb;
         }
     }

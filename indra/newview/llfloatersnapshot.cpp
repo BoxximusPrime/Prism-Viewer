@@ -27,6 +27,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llfloatersnapshot.h"
+#include "llflyoutbutton.h"
 
 #include "llfloaterreg.h"
 #include "llimagefiltersmanager.h"
@@ -607,7 +608,9 @@ void LLFloaterSnapshot::Impl::checkAspectRatio(LLFloaterSnapshotBase *view, S32 
     if (0 == index) // current window size
     {
         enable_cb = false;
-        keep_aspect = true;
+        // Local Native uses the world viewport, which can differ from the full
+        // window. Its resolved dimensions already define the capture aspect.
+        keep_aspect = getActiveSnapshotType(view) != LLSnapshotModel::SNAPSHOT_LOCAL;
     }
     else if (-1 == index) // custom
     {
@@ -672,6 +675,21 @@ void LLFloaterSnapshot::Impl::setFinished(bool finished, bool ok, const std::str
 }
 
 // Apply a new resolution selected from the given combobox.
+// Negative pairs below -1 describe native-pixel crop ratios; -1 remains Custom.
+static bool photoViewSize(S32 x, S32 y, const LLRect& viewport, S32& width, S32& height)
+{
+    if (!((x == 0 && y == 0) || (x < -1 && y < -1))) return false;
+    width = llmax(1, viewport.getWidth());
+    height = llmax(1, viewport.getHeight());
+    if (x < -1)
+    {
+        const F64 aspect = (F64)x / y;
+        if ((F64)width / height > aspect) width = llmax(1, (S32)ll_round(height * aspect));
+        else height = llmax(1, (S32)ll_round(width / aspect));
+    }
+    return true;
+}
+
 void LLFloaterSnapshot::Impl::updateResolution(LLUICtrl* ctrl, void* data, bool do_update)
 {
     LLComboBox* combobox = (LLComboBox*)ctrl;
@@ -690,6 +708,9 @@ void LLFloaterSnapshot::Impl::updateResolution(LLUICtrl* ctrl, void* data, bool 
 
     S32 width = sdres[0];
     S32 height = sdres[1];
+    const S32 resolution_mode = width;
+    if (combobox->getName() == "local_size_combo")
+        photoViewSize(width, height, gViewerWindow->getWorldViewRectRaw(), width, height);
 
     LLSnapshotLivePreview* previewp = getPreviewView();
     if (previewp && combobox->getCurrentIndex() >= 0)
@@ -745,7 +766,7 @@ void LLFloaterSnapshot::Impl::updateResolution(LLUICtrl* ctrl, void* data, bool 
             previewp->setSize(width, height);
         }
 
-        checkAspectRatio(view, width);
+        checkAspectRatio(view, resolution_mode);
 
         previewp->getSize(width, height);
 
@@ -1465,6 +1486,21 @@ void LLFloaterSnapshot::update()
     LLFloaterSnapshot* inst = findInstance();
     if (inst != NULL)
     {
+        // Native crop choices follow viewport resizing without changing fixed/custom sizes.
+        auto* panel = inst->impl->getActivePanel(inst);
+        auto* combo = panel ? panel->findChild<LLComboBox>("local_size_combo") : nullptr;
+        auto* preview = inst->getPreviewView();
+        if (photoActive() && combo && preview)
+        {
+            const std::string selection = combo->getSelectedValue();
+            LLSD size;
+            std::stringstream stream(selection);
+            LLSDSerialize::fromNotation(size, stream, selection.size());
+            S32 width, height;
+            if (photoViewSize(size[0], size[1], gViewerWindow->getWorldViewRectRaw(), width, height) &&
+                (preview->getWidth() != width || preview->getHeight() != height))
+                static_cast<Impl*>(inst->impl)->updateResolution(combo, inst);
+        }
         inst->impl->updateLivePreview();
     }
     else
@@ -1712,6 +1748,15 @@ bool LLFloaterSnapshot::photoActive()
     return photo && photo->getVisible() && photo->hasChild("photo_tabs", true);
 }
 
+F32 LLFloaterSnapshot::photoAspectRatio()
+{
+    auto* photo = findInstance();
+    auto* preview = photo ? photo->getPreviewView() : nullptr;
+    if (!preview || preview->mKeepAspectRatio || preview->getWidth() <= 0 || preview->getHeight() <= 0)
+        return 0.f;
+    return (F32)preview->getWidth() / preview->getHeight();
+}
+
 bool LLFloaterSnapshot::photoWorldClick(S32 x, S32 y, MASK mask)
 {
     if (!photoActive() || mask != MASK_NONE || gDisconnected) return false;
@@ -1738,7 +1783,17 @@ bool LLFloaterSnapshot::photoWorldClick(S32 x, S32 y, MASK mask)
 
 bool LLFloaterSnapshot::photoKey(KEY key, MASK mask)
 {
-    if (!photoActive() || mask != MASK_NONE || key != 'F') return false;
+    if (!photoActive()) return false;
+    auto* photo = findInstance();
+    if (key == 'S' && mask == MASK_CONTROL && !photo->isMinimized())
+    {
+        auto* panel = photo->impl->getActivePanel(photo);
+        auto* save = panel ? panel->findChild<LLFlyoutButton>("save_btn") : nullptr;
+        if (save && save->isInEnabledChain() && save->isInVisibleChain() && !gKeyboard->getKeyRepeated(key))
+            save->onActionButtonClick(LLSD());
+        return true;
+    }
+    if (mask != MASK_NONE || key != 'F') return false;
     auto* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
     if (focus && focus->acceptsTextInput()) return false;
     if (!gKeyboard->getKeyRepeated(key))

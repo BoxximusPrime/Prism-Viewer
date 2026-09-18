@@ -101,6 +101,7 @@ void sampleReflectionProbes(inout vec3 ambenv, inout vec3 glossenv,
         vec2 tc, vec3 pos, vec3 norm, float glossiness, bool transparent, vec3 amblit_linear);
 
 void mirrorClip(vec3 pos);
+float filterPBRRoughness(float perceptual_roughness, vec3 normal);
 #if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
 bool isSSSOverlay(vec3 positionEye);
 #endif
@@ -137,27 +138,13 @@ vec3 pbrCalcPointLightOrSpotLight(int light_index, vec3 diffuseColor, vec3 specu
 
 void main()
 {
-    mirrorClip(vary_position);
-#if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
-    if (isSSSOverlay(vary_position)) discard;
-#endif
-
     vec3 color = vec3(0,0,0);
 
     vec3  light_dir   = (sun_up_factor == 1) ? sun_dir : moon_dir;
     vec3  pos         = vary_position;
 
-    waterClip(pos);
-
     vec4 basecolor = texture(diffuseMap, base_color_texcoord.xy).rgba;
     basecolor.rgb = srgb_to_linear(basecolor.rgb);
-#ifdef HAS_ALPHA_MASK
-    if (basecolor.a < minimum_alpha)
-    {
-        discard;
-    }
-#endif
-
     vec3 col = vertex_color.rgb * basecolor.rgb;
 
     vec3 vNt = texture(bumpMap, normal_texcoord.xy).xyz*2.0-1.0;
@@ -167,6 +154,21 @@ void main()
 
     vec3 vB = sign * cross(vN, vT);
     vec3 norm = normalize( vNt.x * vT + vNt.y * vB + vNt.z * vN );
+
+    vec3 orm = texture(specularMap, metallic_roughness_texcoord.xy).rgb;
+    float perceptualRoughness = filterPBRRoughness(orm.g * roughnessFactor, norm);
+    float metallic = orm.b * metallicFactor;
+    float ao = orm.r;
+
+    // Derivatives must precede alpha/overlay/water/mirror discards.
+    mirrorClip(vary_position);
+#if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
+    if (isSSSOverlay(vary_position)) discard;
+#endif
+    waterClip(pos);
+#ifdef HAS_ALPHA_MASK
+    if (basecolor.a < minimum_alpha) discard;
+#endif
 
     norm *= gl_FrontFacing ? 1.0 : -1.0;
 
@@ -186,12 +188,6 @@ void main()
 #ifdef HAS_SUN_SHADOW
     scol = sampleDirectionalShadow(pos.xyz, norm.xyz, frag);
 #endif
-
-    vec3 orm = texture(specularMap, metallic_roughness_texcoord.xy).rgb; //orm is packed into "emissiveRect" to keep the data in linear color space
-
-    float perceptualRoughness = orm.g * roughnessFactor;
-    float metallic = orm.b * metallicFactor;
-    float ao = orm.r;
 
     // emissiveColor is the emissive color factor from GLTF and is already in linear space
     vec3 colorEmissive = emissiveColor;

@@ -972,7 +972,8 @@ LLDrawable* GLTFSceneManager::lineSegmentIntersect(const LLVector4a& start, cons
     LLVector4a* intersection,         // return the intersection point
     LLVector2* tex_coord,            // return the texture coordinates of the intersection point
     LLVector4a* normal,               // return the surface normal at the intersection point
-    LLVector4a* tangent)            // return the surface tangent at the intersection point
+    LLVector4a* tangent,            // return the surface tangent at the intersection point
+    const std::function<bool(LLViewerObject*)>& filter)
 {
     LLDrawable* drawable = nullptr;
 
@@ -987,6 +988,8 @@ LLDrawable* GLTFSceneManager::lineSegmentIntersect(const LLVector4a& start, cons
             --i;
             continue;
         }
+
+        if (filter && !filter(mObjects[i].get())) continue;
 
         // temporary debug -- always double check objects that have GLTF scenes hanging off of them even if the ray doesn't intersect the object bounds
         if (lineSegmentIntersect((LLVOVolume*) mObjects[i].get(), mObjects[i]->mGLTFAsset.get(), start, local_end, -1, pick_transparent, pick_rigged, pick_unselectable, node_hit, primitive_hit, &position, tex_coord, normal, tangent))

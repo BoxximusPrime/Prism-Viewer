@@ -75,6 +75,7 @@ vec3 srgb_to_linear(vec3 c);
 // needed by all lit variants
 // ==================================
 #ifndef UNLIT
+float filterPBRRoughness(float perceptual_roughness, vec3 normal);
 uniform sampler2D normalMap;
 uniform sampler2D metallicRoughnessMap;
 uniform sampler2D occlusionMap;
@@ -192,7 +193,6 @@ void main()
 //   emissive
 // ==================================
     vec3 pos = vary_position;
-    mirrorClip(pos);
 
 #ifdef ALPHA_BLEND
     //waterClip(pos);
@@ -202,14 +202,13 @@ void main()
     basecolor.rgb = srgb_to_linear(basecolor.rgb);
     basecolor *= vertex_color;
 
-    if (basecolor.a < minimum_alpha)
-    {
-        discard;
-    }
-
 #ifndef ALPHA_BLEND
+    // Uniform depth-only mode needs no normal or roughness sampling. All lanes
+    // leave this branch together; shaded passes keep their derivative quad.
     if (sss_depth_pass != 0)
     {
+        mirrorClip(pos);
+        if (basecolor.a < minimum_alpha) discard;
         if ((sss_depth_pass == 1 && !gl_FrontFacing) ||
             sss_depth_pass == 2) discard;
         // GLTF scene assets have no skin tag: block at entry, never claim a skin exit.
@@ -249,9 +248,13 @@ void main()
     //   metal     0.0
     vec3 orm = texture(metallicRoughnessMap, metallic_roughness_uv.xy).rgb;
     orm.r = texture(occlusionMap, occlusion_uv.xy).r;
-    orm.g *= roughnessFactor;
+    orm.g = filterPBRRoughness(orm.g * roughnessFactor, norm);
     orm.b *= metallicFactor;
 #endif
+
+    // Preserve helper lanes for the normal derivatives above.
+    mirrorClip(pos);
+    if (basecolor.a < minimum_alpha) discard;
 // ==================================
 
 // ==================================
@@ -305,8 +308,8 @@ void main()
     scol = sampleDirectionalShadow(pos.xyz, norm.xyz, frag);
 #endif
 
-    float perceptualRoughness = orm.g * roughnessFactor;
-    float metallic = orm.b * metallicFactor;
+    float perceptualRoughness = orm.g;
+    float metallic = orm.b;
 
     // PBR IBL
     float gloss      = 1.0 - perceptualRoughness;

@@ -4,7 +4,10 @@
     <text follows="top|left|right" font="SansSerifBold" height="14" layout="topleft" left_pad="12" length="1" name="title" right="-10" text_color="white" type="string" top_delta="2">Save to Computer</text>
     <view_border bevel_style="in" follows="left|top|right" height="1" left="9" layout="topleft" name="hr" right="-5" top_pad="5" />
     <combo_box follows="left|top|right" height="20" label="Resolution" layout="topleft" left_delta="0" name="local_size_combo" right="-5" top_pad="5">
-        <combo_box.item label="Current Window" name="CurrentWindow" value="[i0,i0]" />
+        <combo_box.item label="Native (World View)" name="CurrentWindow" value="[i0,i0]" />
+        <combo_box.item label="16:9 (Native Crop)" name="Native16x9" value="[i-16,i-9]" />
+        <combo_box.item label="4:3 (Native Crop)" name="Native4x3" value="[i-4,i-3]" />
+        <combo_box.item label="1:1 (Native Crop)" name="NativeSquare" value="[i-2,i-2]" />
         <combo_box.item label="320x240" name="320x240" value="[i320,i240]" />
         <combo_box.item label="640x480" name="640x480" value="[i640,i480]" />
         <combo_box.item label="800x600" name="800x600" value="[i800,i600]" />
@@ -33,7 +36,7 @@
     <button follows="left|bottom" height="23" label="Cancel" layout="topleft" name="cancel_btn" top="250" width="195" left="10" visible="false">
         <button.commit_callback function="Local.Cancel" />
     </button>
-    <flyout_button follows="left|bottom" height="27" label="Save Photo" layout="topleft" left="10" name="save_btn" tool_tip="Save image to a file" width="195" top="215">
+    <flyout_button follows="left|bottom" height="27" label="Save Photo" layout="topleft" left="10" name="save_btn" tool_tip="Save image to a file (Ctrl+S)" width="195" top="215">
         <flyout_button.item label="Save" name="save_item" value="save" />
         <flyout_button.item label="Save As..." name="saveas_item" value="save as" />
     </flyout_button>

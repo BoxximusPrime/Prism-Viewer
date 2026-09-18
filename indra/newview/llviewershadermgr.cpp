@@ -3441,7 +3441,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         };
         const TAAStage stages[] = {
             { &gTAAResolveProgram, "TAA Resolve", "deferred/postDeferredNoTCV.glsl", "deferred/taaResolveF.glsl",
-                { TAA_CURRENT, TAA_HISTORY, TAA_DETAIL, TAA_MOTION, TAA_OPAQUE, DEFERRED_DEPTH } },
+                { TAA_CURRENT, TAA_HISTORY, TAA_DETAIL, TAA_FLICKER, TAA_MOTION, TAA_OPAQUE, DEFERRED_DEPTH } },
             { &gTAACameraProgram, "TAA Camera Motion", "deferred/postDeferredNoTCV.glsl", "deferred/taaCameraF.glsl", { DEFERRED_DEPTH } },
             { &gTAACopyProgram, "TAA Presentation", "deferred/postDeferredNoTCV.glsl", "deferred/taaCopyF.glsl", { TAA_SOURCE, TAA_ORIGINAL } },
             { &gTAAMotionProgram[0], "TAA Object Motion", "deferred/taaMotionV.glsl", "deferred/taaMotionF.glsl", {} },

@@ -403,35 +403,27 @@ bool LLManipTranslate::findSurface(S32 x, S32 y, LLVector3d& point, LLVector3& n
 {
     const LLVector3 origin = LLViewerCamera::getInstance()->getOrigin();
     const LLVector3 direction = gViewerWindow->mouseDirectionGlobal(x, y);
-    LLVector3 start = origin + direction * LLViewerCamera::getInstance()->getNear();
-    LLVector4a end;
+    LLVector4a begin, end, intersection, hit_normal;
+    begin.load3((origin + direction * LLViewerCamera::getInstance()->getNear()).mV);
     end.load3((origin + direction * 512.f).mV);
-    // ponytail: bounded traversal through selected surfaces, as in vertex
-    // snapping; add an octree exclusion filter if dense selections hit the cap.
-    for (S32 i = 0; i < 256; ++i)
+    hit_normal.clear();
+    // Reject the moving selection before intersection. Stepping past its hits
+    // also skips a coincident support surface (especially mesh shadow cards),
+    // making the object alternate between the tabletop and the floor below.
+    const auto filter = [this](LLViewerObject* object)
     {
-        LLVector4a begin, intersection, hit_normal;
-        begin.load3(start.mV);
-        hit_normal.clear();
-        // The existing ray picker intersects rendered mesh and terrain, including
-        // phantom/Physics Shape None prims, without requiring a physics collider.
-        LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
-            begin, end, false, false, true, false, nullptr, nullptr, nullptr, &intersection, nullptr, &hit_normal);
-        if (!object) return false;
         LLSelectNode* root = mObjectSelection->findNode(object->getRootEdit());
-        if (!object->isSelected() && !(root && !root->mIndividualSelection) &&
-            !object->isAvatar() && !object->isAttachment())
-        {
-            point = gAgent.getPosGlobalFromAgent(LLVector3(intersection.getF32ptr()));
-            normal = LLVector3(hit_normal.getF32ptr());
-            if (!normal.isFinite() || normal.lengthSquared() < 0.000001f)
-                normal = LLVector3::z_axis;
-            return point.isFinite();
-        }
-        start = LLVector3(intersection.getF32ptr()) + direction * 0.001f;
-        if ((start - origin) * direction >= 512.f) return false;
-    }
-    return false;
+        return !object->isSelected() && !(root && !root->mIndividualSelection) &&
+            !object->isAvatar() && !object->isAttachment();
+    };
+    // Pick rendered mesh/terrain, including phantom/Physics Shape None prims.
+    if (!gPipeline.lineSegmentIntersectInWorld(begin, end, false, false, true, false,
+            nullptr, nullptr, nullptr, &intersection, nullptr, &hit_normal, nullptr, nullptr, filter)) return false;
+    point = gAgent.getPosGlobalFromAgent(LLVector3(intersection.getF32ptr()));
+    normal = LLVector3(hit_normal.getF32ptr());
+    if (!normal.isFinite() || normal.lengthSquared() < 0.000001f)
+        normal = LLVector3::z_axis;
+    return point.isFinite();
 }
 
 bool LLManipTranslate::findVertex(S32 x, S32 y, bool source,
@@ -456,27 +448,14 @@ bool LLManipTranslate::findVertex(S32 x, S32 y, bool source,
         for (const auto& offset : offsets)
         {
             const LLVector3 direction = gViewerWindow->mouseDirectionGlobal(x + offset[0], y + offset[1]);
-            LLVector3 start = origin + direction * LLViewerCamera::getInstance()->getNear();
-            LLVector4a end;
+            LLVector4a begin, end, intersection;
+            begin.load3((origin + direction * LLViewerCamera::getInstance()->getNear()).mV);
             end.load3((origin + direction * 512.f).mV);
-            // ponytail: bounded traversal through selected surfaces; use a pipeline
-            // exclusion filter if dense selections routinely exhaust this limit.
-            for (S32 i = 0; i < 256; ++i)
-            {
-                LLVector4a begin, intersection;
-                begin.load3(start.mV);
-                LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
-                    begin, end, false, false, true, false,
-                    nullptr, nullptr, nullptr, &intersection);
-                if (!object) break;
-                if (!object->isSelected() && !object->getRootEdit()->isSelected())
-                {
-                    candidates.insert(object);
-                    break;
-                }
-                start = LLVector3(intersection.getF32ptr()) + direction * 0.001f;
-                if ((start - origin) * direction >= 512.f) break;
-            }
+            LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
+                begin, end, false, false, true, false,
+                nullptr, nullptr, nullptr, &intersection, nullptr, nullptr, nullptr, nullptr,
+                [](LLViewerObject* object) { return !object->isSelected() && !object->getRootEdit()->isSelected(); });
+            if (object) candidates.insert(object);
         }
     }
     F32 best_distance = 16.f * 16.f;

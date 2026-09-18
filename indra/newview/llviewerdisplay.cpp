@@ -1475,6 +1475,19 @@ bool setup_hud_matrices(const LLRect& screen_region)
 }
 
 // Pixel-space geometry: recompute for each viewport instead of stretching an image.
+static LLRect photoFrameRect(const LLRect& viewport, F32 aspect)
+{
+    if (aspect <= 0.f || viewport.getWidth() <= 0 || viewport.getHeight() <= 0) return viewport;
+    S32 width = viewport.getWidth(), height = viewport.getHeight();
+    if ((F32)width / height > aspect)
+        width = llclamp(ll_round(height * aspect), 1, width);
+    else
+        height = llclamp(ll_round(width / aspect), 1, height);
+    const S32 left = viewport.mLeft + (viewport.getWidth() - width) / 2;
+    const S32 bottom = viewport.mBottom + (viewport.getHeight() - height) / 2;
+    return LLRect(left, bottom + height, left + width, bottom);
+}
+
 static std::vector<std::array<F32, 4>> photoCompositionLines(S32 guide, F32 width, F32 height)
 {
     std::vector<std::array<F32, 4>> lines;
@@ -1527,14 +1540,29 @@ static void render_photo_overlays()
     if (gSnapshot || !gDisplaySwapBuffers || !LLFloaterSnapshot::photoActive()) return;
     const S32 guide = gSavedSettings.getS32("PhotoCompositionGuide");
     const F32 alpha = llclamp(gSavedSettings.getF32("PhotoCompositionAlpha"), 0.f, 1.f);
-    if (!guide || alpha <= 0.f) return;
-    const LLRect rect = gViewerWindow->getWorldViewRectRaw();
-    const auto lines = photoCompositionLines(guide, (F32)rect.getWidth(), (F32)rect.getHeight());
-    if (lines.empty()) return;
+    const LLRect viewport = gViewerWindow->getWorldViewRectRaw();
+    const LLRect rect = photoFrameRect(viewport, LLFloaterSnapshot::photoAspectRatio());
+    const auto lines = photoCompositionLines(alpha > 0.f ? guide : 0, (F32)rect.getWidth(), (F32)rect.getHeight());
 
     gViewerWindow->setup2DRender();
     gUIProgram.bind();
     gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    // Solid crop masks are independent of guide visibility, color and opacity.
+    gGL.color4f(0.f, 0.f, 0.f, 1.f);
+    auto bar = [](S32 left, S32 bottom, S32 right, S32 top)
+    {
+        if (left >= right || bottom >= top) return;
+        gGL.begin(LLRender::TRIANGLE_FAN);
+        gGL.vertex2i(left, bottom);
+        gGL.vertex2i(right, bottom);
+        gGL.vertex2i(right, top);
+        gGL.vertex2i(left, top);
+        gGL.end();
+    };
+    bar(viewport.mLeft, viewport.mBottom, rect.mLeft, viewport.mTop);
+    bar(rect.mRight, viewport.mBottom, viewport.mRight, viewport.mTop);
+    bar(rect.mLeft, viewport.mBottom, rect.mRight, rect.mBottom);
+    bar(rect.mLeft, rect.mTop, rect.mRight, viewport.mTop);
     const F32 shade = gSavedSettings.getBOOL("PhotoCompositionWhite") ? 1.f : 0.f;
     gGL.color4f(shade, shade, shade, alpha);
     gGL.setLineWidth(1.f);

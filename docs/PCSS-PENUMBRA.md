@@ -1,6 +1,6 @@
 # PCSS penumbra investigation — September 12, 2026
 
-Status: implemented and uncommitted. The first Release retest showed only slight improvement; the user's white-floor images still show blocky fragments, especially at oblique camera angles, and visible bands overhead. The receiving-floor correction below passes GPU regressions and the Release build; staged PCSS/shared-shadow/SSS shader hashes match their sources. The user reports this correction looks much better and is continuing in-world testing.
+Status: implemented and uncommitted. The user reports improvements from the receiving-floor and shadow-stability corrections, but no visible improvement in the wall's angle-dependent softness from the subsequent search/warp patch. The September 17 depth-generation correction below passes GPU regressions and the Release build; an in-world wall retest is pending.
 
 The user reports hard silhouette fragments within a soft avatar shadow, several visible visibility tiers, and softness that changes with the camera angle. Controlled regressions reproduced the defects below. They do not reproduce the full scene or establish that every reported artifact has the same cause.
 
@@ -19,6 +19,49 @@ The sun/moon sampling disk selected its tangent from fixed camera-space axes. Al
 The shader now uses world up and north transformed into camera space to construct that tangent. CPU uniform uploads supply those axes from the current view. The sampling pattern stays aligned to the scene as the camera turns. Projector sampling retains its existing emitter-plane orientation.
 
 Controlled camera pitch and roll comparisons pass at all three quality levels, with a maximum visibility difference of 0.000005. These tests hold the shadow map constant; camera-fitted cascade resolution and coverage can still change in the viewer.
+
+September 17: Graphics > PCSS now exposes **Stabilize shadow pattern** (`RenderPCSSStablePattern`), enabled and saved by default. Turning it off restores the old camera-space up/north axes so the sampling disk follows camera rotation. It updates the existing axis uniforms immediately, without a shader reload or additional rendering work. Projector emitter axes, receiver bias, geometric normals and cascade fitting are independent of this switch. The new comparison tests retain 0.000005 maximum orbit variation with stabilization on and reproduce 0.372776 variation with it off on a controlled narrow-caster case. Projector output matches exactly in both modes. All 750 PCSS GPU checks and the Release build pass. The live preference checkbox, scoped Default, Cancel restoration, OK/reopen retention and PCSS enable dependency pass using isolated login-screen settings. In-world comparison is pending; the change is uncommitted.
+
+### Camera-fitted cascades changed softness (September 17 follow-up)
+
+The user reports that the pattern toggle makes no visible difference to a much larger softness change on a vertical wall. The earlier camera-rotation tests held the shadow map fixed. New cases also refit its depth range, rotate its axes and change its perspective warp while preserving the receiver, caster and light.
+
+Two independent faults were reproduced in `pcssUtil.glsl`:
+
+- The sun blocker-search radius depended on the cascade's near plane, which follows the camera. On a sloping caster, changing the search area changed the average blocker distance and therefore softness. Sun/moon searches now cover the configured maximum world-space penumbra radius. The existing local search samples still cover nearby contacts. Projectors retain their light-based near-plane calculation.
+- The search and filter projected a finite disk using only the local UV derivative. Under a perspective warp this distorts the world-space disk as the camera refits the cascade. Each tap now includes its homogeneous denominator, projecting the intended offset exactly. Samples beyond the projection horizon are excluded.
+
+The shared fix covers deferred and forward PCSS receivers. Search/filter budgets remain 8/16, 16/32 and 32/64, with no new texture fetches, render targets or passes. The pattern stabilization toggle remains available: it changes existing axis uniforms without adding GPU samples, and its separate finite-pattern regression still demonstrates a benefit. Cleanup code is unchanged.
+
+Controlled comparisons on an RTX 5090:
+
+| Measurement | Previous | Revised |
+| --- | ---: | ---: |
+| Maximum visibility difference from cascade depth refitting | 0.236870 | 0.000002 |
+| Maximum/minimum edge width across cascade rotations/warps, all qualities | 1.8554 | 1.0702 |
+| Wall edge width across left/front/right perspective views, D24 reconstruction and cascade refitting | 78.160 / 113.721 / 109.250 mm | 112.283 / 113.721 / 116.197 mm |
+
+The perspective case measures the 10–90% transition on the wall rather than counting screen pixels. Cleanup alone measures 5.458 / 5.536 / 5.684 mm spread at 0 / 45 / 63 degree wall angles, retaining the expected small world-space footprint. Finite texels, samples and screen-space filtering still introduce small differences; these cases do not include the user's scene or TAA history.
+
+All 792 PCSS, 306 rasterized mesh/horizon, 1,786 SSS GPU and 14 alpha shader syntax checks pass. The Release build passes and the staged shader matches its source. The isolated viewer loads its shaders and shuts down cleanly. A six-case GPU microbenchmark at 256×256 measured roughly 4% more time in five cases (about 0.0004 ms per draw), with the sixth faster; this is shader timing, not a full-viewer frame-time measurement. **The user's subsequent in-world retest showed essentially no improvement in the wall's angle-dependent softness.** These shader corrections did not resolve that report. Changes are uncommitted.
+
+### Preserve caster depths before PCSS (September 17 follow-up; in progress)
+
+Comparison with [Unity HDRP's directional PCSS integration](https://raw.githubusercontent.com/Unity-Technologies/Graphics/master/Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Shadow/HDShadowSampling.hlsl) identified an upstream failure that the previous tests missed: a directional cascade's near plane moves with its receiver fit, and depth-clamped casters no longer contain their true distance. [NVIDIA's PCSS integration guide](https://developer.download.nvidia.com/assets/gamedev/docs/PCSS_Integration.pdf) relies on that blocker distance to estimate the penumbra. Correcting the sampling disk cannot recover depth already flattened during shadow rendering.
+
+The viewer fits each sun map to visible receivers, retains off-screen casters using a separate light-side culling plane, and renders with `GL_DEPTH_CLAMP`. A caster between those two near planes therefore writes zero depth. Orbiting can move the fitted plane through the same caster, changing its reconstructed gap and shadow softness. Our previous analytic maps and rasterized meshes did not exercise that combination.
+
+`extendSunShadowDepth()` now remaps only the projection's Z row to include the existing caster culling limit when PCSS is active. It handles orthographic maps and the viewer's perspective-along-Y warp. XY/W, the far plane, resolution, culling volume and submitted geometry stay unchanged. The existing inverse matrix then recovers real blocker distances. This adds a small CPU projection calculation per cascade, with no additional shader instructions, samples, maps or render passes. Projector and PCSS-off projections retain their existing behavior.
+
+The regression compiles the production C++ helper, rasterizes a caster outside the receiver fit plus a receiver into D24 with depth clamping enabled, and runs the production deferred and forward shadow functions. It varies the fitted near plane, including the viewer's actual perspective projection with 64:1 and 640:1 denominator ranges. The old projections are retained as a baseline to verify that the fixture reproduces the defect.
+
+| Shadow projection | Previous 10–90% edge width across near-plane fits | Corrected |
+| --- | ---: | ---: |
+| Orthographic | 1.808–9.596 pixels | 9.596–9.596 pixels |
+| Viewer perspective warp, 64:1 | 1.958–9.526 pixels | 9.525–9.526 pixels |
+| Viewer perspective warp, 640:1 | 1.958–9.525 pixels | 9.524–9.525 pixels |
+
+All 406 rasterized mesh/horizon/cascade checks, 792 PCSS checks, 1,786 SSS checks and 4,000 altitude/projection precision checks pass on an RTX 5090, as do 88 lit volumetric-fog checks. The Release build passes. Isolated startup completes shader loading and shuts down cleanly; cached shader binaries fell back to successful recompilation, and the timed exit fired during browser initialization before the login screen. The depth-fit checks also verify unchanged XY/W and far-plane mapping. A wider depth range reduces D24 precision, especially at the far end of an extreme perspective warp; quantization is checked explicitly, and the extended skybox cases remain below the existing 1 mm transform-error limit. Camera-dependent texel density, cascade blending and the previously deferred wall flicker are separate remaining limitations. Full-scene frame time and the user's wall have not been verified with this build. Changes are uncommitted.
 
 ## Receiving floor falsely entered the shadow
 

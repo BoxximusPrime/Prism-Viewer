@@ -47,9 +47,12 @@
      right="-5"
      top_pad="5">
         <combo_box.item
-         label="Current Window"
+         label="Native (World View)"
          name="CurrentWindow"
          value="[i0,i0]" />
+        <combo_box.item label="16:9 (Native Crop)" name="Native16x9" value="[i-16,i-9]" />
+        <combo_box.item label="4:3 (Native Crop)" name="Native4x3" value="[i-4,i-3]" />
+        <combo_box.item label="1:1 (Native Crop)" name="NativeSquare" value="[i-2,i-2]" />
         <combo_box.item
          label="320x240"
          name="320x240"
@@ -204,7 +207,7 @@
      layout="topleft"
      left="10"
      name="save_btn"
-     tool_tip="Save image to a file"
+     tool_tip="Save image to a file (Ctrl+S)"
      top_delta="0"
      width="97">
         <flyout_button.item

@@ -4,7 +4,7 @@ uniform sampler2D taa_original;
 uniform vec2 taa_rcp_res;
 uniform vec2 taa_jitter;
 uniform float taa_sharpen;
-uniform int taa_copy_mode; // 0: copy; 1: resolve presentation; 2: motion; 3: rejection
+uniform int taa_copy_mode; // 0: copy; 1: resolve presentation; 2: motion; 3: rejection; 4: post sharpen
 void main()
 {
     vec2 uv=gl_FragCoord.xy*taa_rcp_res;
@@ -16,7 +16,7 @@ void main()
         return;
     }
     if(taa_copy_mode==3) { frag_color=vec4(c.a<0.0 ? vec3(1,.15,.05) : vec3(.1,.55,.15),0); return; }
-    if(taa_copy_mode==1)
+    if(taa_copy_mode==1 || taa_copy_mode==4)
     {
         vec3 a=texture(taa_source,uv+vec2(taa_rcp_res.x,0)).rgb;
         vec3 b=texture(taa_source,uv-vec2(taa_rcp_res.x,0)).rgb;
@@ -29,7 +29,7 @@ void main()
         vec3 margin=(hi-lo)*(.25*taa_sharpen);
         vec3 detail=c.rgb-(a+b+d+e)*.25;
         c.rgb=clamp(c.rgb+detail*(2.0*taa_sharpen),max(lo-margin,vec3(0)),min(hi+margin,vec3(65000)));
-        c.a=texture(taa_original,uv+taa_jitter).a;
+        if(taa_copy_mode==1) c.a=texture(taa_original,uv+taa_jitter).a;
     }
     frag_color=c;
 }

@@ -237,6 +237,7 @@ void main()
     vec3 sssDiffuseLighting = vec3(0.0);
     vec3 sssTransmissionLighting = vec3(0.0);
     vec3 sssGrazingLighting = vec3(0.0);
+    float sssGrazingDirect = 0.0;
 
     vec3 colorEmissive = gb.emissive.rgb;
     float envIntensity = gb.envIntensity;
@@ -281,6 +282,8 @@ void main()
     sunlit = waterLitSun(pos.xyz, light_dir, sunlit, classic_mode);
     vec3 sunlit_linear = sunlit;
     vec3 amblit_linear = amblit;
+    sssGrazingDirect = smoothstep(0.0, 0.10, dot(gb.normal, light_dir.xyz)) *
+        clamp(max(sunlit_linear.r, max(sunlit_linear.g, sunlit_linear.b)), 0.0, 1.0);
 
     vec3  radiance  = vec3(0);
 
@@ -466,6 +469,7 @@ void main()
         if (sss_grazing_smoothing != 0)
         {
             sss_grazing.rgb = min(max(sssGrazingLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_grazing.a = sssGrazingDirect;
             sss_diffuse.rgb -= sss_grazing.rgb;
         }
     }

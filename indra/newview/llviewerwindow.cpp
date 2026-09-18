@@ -5370,6 +5370,16 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
 
     // Subimages are in fact partial rendering of the final view. This happens when the final view is bigger than the screen.
     // In most common cases, scale_factor is 1 and there's no more than 1 iteration on x and y
+    const F32 original_view = LLViewerCamera::getInstance()->getView();
+    if (reset_deferred && !keep_window_aspect && LLFloaterSnapshot::photoActive())
+    {
+        // Match the centered crop used by ordinary/tiled captures and the live mask.
+        // A wider output must trim vertically instead of revealing more at the sides.
+        const F32 source_aspect = (F32)window_rect.getWidth() / window_rect.getHeight();
+        const F32 output_aspect = (F32)image_width / image_height;
+        LLViewerCamera::getInstance()->setViewNoBroadcast(
+            2.f * atanf(tanf(original_view * .5f) * llmin(1.f, source_aspect / output_aspect)));
+    }
     for (int subimage_y = 0; subimage_y < scale_factor; ++subimage_y)
     {
         S32 subimage_y_offset = llclamp(buffer_y_offset - (subimage_y * window_height), 0, window_height);;
@@ -5461,6 +5471,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
         output_buffer_offset_y += subimage_y_offset;
     }
 
+    LLViewerCamera::getInstance()->setViewNoBroadcast(original_view);
     gDisplaySwapBuffers = false;
     gSnapshotNoPost = false;
     gDepthDirty = true;
@@ -5526,6 +5537,9 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
     }
     setBalanceVisible(true);
 
+    // Capture temporarily uses the full window. Restore the live viewport before
+    // snapshot-updated callbacks resolve native crop dimensions from it.
+    updateWorldViewRect(false);
     return ret;
 }
 

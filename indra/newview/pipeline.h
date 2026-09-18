@@ -43,6 +43,7 @@
 
 #include <stack>
 #include <map>
+#include <functional>
 
 class LLViewerTexture;
 class LLFace;
@@ -244,7 +245,8 @@ public:
                                                 LLVector2* tex_coord = NULL,            // return the texture coordinates of the intersection point
                                                 LLVector4a* normal = NULL,               // return the surface normal at the intersection point
                                                 LLVector4a* tangent = NULL,            // return the surface tangent at the intersection point
-                                                bool* name_tag_hit = NULL
+                                                bool* name_tag_hit = NULL,
+                                                const std::function<bool(LLViewerObject*)>& filter = {} // reject objects before shortening the ray
         );
 
     //get the closest particle to start between start and end, returns the LLVOPartGroup and particle index

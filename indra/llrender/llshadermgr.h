@@ -374,6 +374,7 @@ public:
         SMAA_BLEND_TEX,                     //  "blendTex"
 
         SSS_OVERLAY_GUIDE,                  //  "sssOverlayGuide"
+        TAA_FLICKER,                        //  "taa_flicker"
         END_RESERVED_UNIFORMS
     } eGLSLReservedUniforms;
     // clang-format on

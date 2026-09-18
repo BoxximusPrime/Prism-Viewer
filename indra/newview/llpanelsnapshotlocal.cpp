@@ -135,8 +135,9 @@ void LLPanelSnapshotLocal::updateControls(const LLSD& info)
     getChild<LLUICtrl>("image_quality_slider")->setValue(gSavedSettings.getS32("SnapshotQuality"));
     updateImageQualityLevel();
 
-    const bool have_snapshot = info.has("have-snapshot") ? info["have-snapshot"].asBoolean() : true;
-    getChild<LLUICtrl>("save_btn")->setEnabled(have_snapshot);
+    // Save Photo captures a fresh image; a stale preview must not prevent saving.
+    auto* floater = getParentByType<LLFloaterSnapshot>();
+    getChild<LLUICtrl>("save_btn")->setEnabled(floater && !floater->isWaitingState());
 }
 
 void LLPanelSnapshotLocal::onFormatComboCommit(LLUICtrl* ctrl)

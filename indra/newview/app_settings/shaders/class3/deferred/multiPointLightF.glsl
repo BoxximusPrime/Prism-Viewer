@@ -108,6 +108,7 @@ void main()
     vec3 diffuseLighting = vec3(0.0);
     vec3 transmissionLighting = vec3(0.0);
     vec3 grazingLighting = vec3(0.0);
+    float grazingDirect = 0.0;
 
     vec3 n = gb.normal;
 
@@ -153,6 +154,7 @@ void main()
                 vec3 specPunc = vec3(0);
                 pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, lv, nl, diff, specPunc);
                 float diffuseNl = wrapStrength > 0.0 ? dot(n, lv) : nl;
+                grazingDirect += smoothstep(0.0, 0.10, dot(n, lv)) * dist_atten;
                 vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
                 vec3 transmitted = pointSSSTransmission(diffuseNl, dot(n, v), wrapStrength, pos, light[light_idx].xyz) * diffuseColor / 3.14159265;
                 vec3 lightDiffuse = intensity * clamp(diffuseFactor * diff + transmitted, vec3(0), vec3(10));
@@ -196,6 +198,7 @@ void main()
                     float dist_atten = calcLegacyDistanceAttenuation(dist, fa);
 
                     float diffuseNl = wrapStrength > 0.0 ? rawNl : nl;
+                    grazingDirect += smoothstep(0.0, 0.10, rawNl) * dist_atten;
                     vec3 diffuseFactor = getSSSDiffuseFactor(diffuseNl, wrapStrength);
                     diffuseFactor += pointSSSTransmission(diffuseNl, dot(n, v), wrapStrength, pos, light[i].xyz);
                     float lit = max(nl, 0.0) * dist_atten;
@@ -247,6 +250,7 @@ void main()
         if (sss_grazing_smoothing != 0)
         {
             sss_grazing.rgb = min(max(grazingLighting * final_scale, vec3(0.0)), sss_diffuse.rgb);
+            sss_grazing.a = grazingDirect;
             sss_diffuse.rgb -= sss_grazing.rgb;
         }
     }
