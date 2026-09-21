@@ -30,10 +30,12 @@ private:
     void refreshRotation();
     void onStart();
     void onRotation();
+    void onPosition();
 
     LLScrollListCtrl* mJointList = nullptr;
     std::vector<LLScrollListItem*> mJointRows;
     LLSliderCtrl* mRotation[3] = {};
+    LLSliderCtrl* mPosition[3] = {};
     bool mStartFailed = false;
     bool mRowsBuilt = false;
     std::string mFilter;

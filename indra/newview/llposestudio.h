@@ -38,6 +38,8 @@ public:
     EndReason getEndReason() const { return mEndReason; }
     bool setRotationOffset(const std::string& name, const LLVector3& degrees);
     LLVector3 getRotationOffset(const std::string& name) const;
+    bool setPositionOffset(const std::string& name, const LLVector3& offset);
+    LLVector3 getPositionOffset(const std::string& name) const;
     void resetJoint(const std::string& name);
     void resetPose();
 
@@ -61,6 +63,7 @@ private:
         Transform animation;
         LLQuaternion rotation;
         LLVector3 degrees;
+        LLVector3 position_offset;
     };
 
     LLVOAvatar* resolveAvatar() const;

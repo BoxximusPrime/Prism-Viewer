@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<floater name="pose_studio" title="Pose Studio" width="480" height="700"
+<floater name="pose_studio" title="Pose Studio" width="480" height="820"
          layout="topleft" legacy_header_height="18" save_rect="true" single_instance="true">
   <string name="ready">Start posing to hold your current pose.</string>
   <string name="unavailable">Your avatar must be in world and ready to pose.</string>
@@ -46,7 +46,17 @@
   <slider name="rotation_z" label="Z" label_width="18" left="12" top="588" width="456" height="24"
           decimal_digits="1" min_val="-180" max_val="180" increment="0.1" initial_value="0"
           can_edit_text="true" show_text="true" text_width="64" />
-  <button name="reset_joint" label="Reset bone" left="12" top="624" width="222" height="26" />
-  <button name="reset_pose" label="Reset pose" left="246" top="624" width="222" height="26" />
-  <text name="status" left="12" top="662" width="456" height="32" word_wrap="true" text_color="LabelTextColor" />
+  <text name="position_label" left="12" top="620" width="456" height="18" text_color="LabelTextColor">Position offsets (meters)</text>
+  <slider name="position_x" label="X" label_width="18" left="12" top="644" width="456" height="24"
+          decimal_digits="3" min_val="-5" max_val="5" increment="0.001" initial_value="0"
+          can_edit_text="true" show_text="true" text_width="64" />
+  <slider name="position_y" label="Y" label_width="18" left="12" top="676" width="456" height="24"
+          decimal_digits="3" min_val="-5" max_val="5" increment="0.001" initial_value="0"
+          can_edit_text="true" show_text="true" text_width="64" />
+  <slider name="position_z" label="Z" label_width="18" left="12" top="708" width="456" height="24"
+          decimal_digits="3" min_val="-5" max_val="5" increment="0.001" initial_value="0"
+          can_edit_text="true" show_text="true" text_width="64" />
+  <button name="reset_joint" label="Reset bone" left="12" top="744" width="222" height="26" />
+  <button name="reset_pose" label="Reset pose" left="246" top="744" width="222" height="26" />
+  <text name="status" left="12" top="782" width="456" height="32" word_wrap="true" text_color="LabelTextColor" />
 </floater>

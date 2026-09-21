@@ -90,6 +90,12 @@ bool LLFloaterPoseStudio::postBuild()
         mRotation[i] = getChild<LLSliderCtrl>(fields[i]);
         mRotation[i]->setCommitCallback([this](LLUICtrl*, const LLSD&) { onRotation(); });
     }
+    const char* position_fields[] = { "position_x", "position_y", "position_z" };
+    for (S32 i = 0; i < 3; ++i)
+    {
+        mPosition[i] = getChild<LLSliderCtrl>(position_fields[i]);
+        mPosition[i]->setCommitCallback([this](LLUICtrl*, const LLSD&) { onPosition(); });
+    }
     getChild<LLButton>("start")->setClickedCallback([this](LLUICtrl*, const LLSD&) { onStart(); });
     getChild<LLButton>("end")->setClickedCallback([this](LLUICtrl*, const LLSD&) {
         LLPoseStudio::instance().end();
@@ -142,6 +148,13 @@ void LLFloaterPoseStudio::onRotation()
 {
     LLPoseStudio::instance().setRotationOffset(mJointList->getValue().asString(),
         LLVector3(mRotation[0]->getValueF32(), mRotation[1]->getValueF32(), mRotation[2]->getValueF32()));
+    refreshRows();
+}
+
+void LLFloaterPoseStudio::onPosition()
+{
+    LLPoseStudio::instance().setPositionOffset(mJointList->getValue().asString(),
+        LLVector3(mPosition[0]->getValueF32(), mPosition[1]->getValueF32(), mPosition[2]->getValueF32()));
     refreshRows();
 }
 
@@ -201,7 +214,8 @@ void LLFloaterPoseStudio::refreshRows()
     for (LLScrollListItem* row : mJointRows)
     {
         const LLVector3 degrees = LLPoseStudio::instance().getRotationOffset(row->getValue().asString());
-        const bool edited = degrees != LLVector3::zero;
+        const LLVector3 position = LLPoseStudio::instance().getPositionOffset(row->getValue().asString());
+        const bool edited = degrees != LLVector3::zero || position != LLVector3::zero;
         for (S32 column = 0; column < 4; ++column)
         {
             row->getColumn(column)->setColor(edited ? edited_color : bone_color);
@@ -216,6 +230,8 @@ void LLFloaterPoseStudio::refreshRotation()
     getChild<LLTextBox>("selected_bone")->setText(name.empty() ? getString("select_bone") : jointLabel(name));
     const LLVector3 degrees = LLPoseStudio::instance().getRotationOffset(name);
     for (S32 i = 0; i < 3; ++i) mRotation[i]->setValue(degrees.mV[i]);
+    const LLVector3 position = LLPoseStudio::instance().getPositionOffset(name);
+    for (S32 i = 0; i < 3; ++i) mPosition[i]->setValue(position.mV[i]);
 }
 
 void LLFloaterPoseStudio::refresh()
@@ -241,6 +257,7 @@ void LLFloaterPoseStudio::refresh()
     getChild<LLButton>("reset_joint")->setEnabled(can_edit);
     getChild<LLButton>("reset_pose")->setEnabled(active);
     for (LLSliderCtrl* rotation : mRotation) rotation->setEnabled(can_edit);
+    for (LLSliderCtrl* position : mPosition) position->setEnabled(can_edit);
 
     const char* status = "ready";
     if (!available) status = "unavailable";

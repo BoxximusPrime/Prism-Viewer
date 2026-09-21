@@ -967,6 +967,13 @@ void LLAudioEngine::cleanupAudioSource(LLAudioSource *asp)
 
 static std::string decoded_sound_path(const LLUUID& uuid)
 {
+    const std::string user = gDirUtilp->getExpandedFilename(
+        LL_PATH_USER_SETTINGS, "sounds", uuid.asString() + ".wav");
+    if (gDirUtilp->fileExists(user))
+    {
+        return user;
+    }
+
     const std::string bundled = gDirUtilp->getExpandedFilename(
         LL_PATH_APP_SETTINGS, "sounds", uuid.asString() + ".wav");
     if (gDirUtilp->fileExists(bundled))

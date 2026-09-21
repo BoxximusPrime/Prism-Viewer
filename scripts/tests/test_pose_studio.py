@@ -147,10 +147,13 @@ int main() {
     assert(!studio.setRotationOffset("missing",{0,0,90}));
     assert(!studio.setRotationOffset("mShoulderLeft",{0,0,std::numeric_limits<float>::infinity()}));
     assert(studio.setRotationOffset("mShoulderLeft",{0,0,90}));
+    assert(!studio.setPositionOffset("missing",{0,0,0}));
+    assert(!studio.setPositionOffset("mShoulderLeft",{std::numeric_limits<float>::infinity(),0,0}));
+    assert(studio.setPositionOffset("mShoulderLeft",{0.25f,-0.5f,0.75f}));
     studio.afterUpdate(avatar);
     // Local delta is applied BEFORE a nonidentity base and parent rotation.
-    near(elbow.worldPosition(),{0,0,1});near(wrist.worldPosition(),{0,0,2});
     near(elbow.pos,{1,0,0});same(elbow.rot,LLQuaternion());
+    near(shoulder.pos,{0.25f,-0.5f,0.75f});
     const auto held=shoulder.rot;
     // Repeat frames, including frozen frames and a changing underlying animation.
     LLQuaternion underneath=base;
@@ -159,9 +162,9 @@ int main() {
         const int writes=shoulder.writes;studio.beforeUpdate(avatar);assert(writes==shoulder.writes);
         if(frame%2) { underneath=rotation(float(frame),20,30);shoulder.rot=underneath; }
         studio.afterUpdate(avatar);same(shoulder.rot,held);
-        near(wrist.worldPosition(),{0,0,2});
+        near(wrist.worldPosition(),{0.5f,0.25f,2.75f});
     }
-    studio.resetJoint("mShoulderLeft");studio.beforeUpdate(avatar);studio.afterUpdate(avatar);same(shoulder.rot,base);
+    studio.resetJoint("mShoulderLeft");studio.beforeUpdate(avatar);studio.afterUpdate(avatar);same(shoulder.rot,base);near(shoulder.pos,{0,0,0});
     studio.setRotationOffset("mPelvis",{0,0,-90});studio.beforeUpdate(avatar);studio.afterUpdate(avatar);
     near(wrist.worldPosition(),{2,0,0});
     studio.resetPose();studio.beforeUpdate(avatar);studio.afterUpdate(avatar);near(wrist.worldPosition(),{0,2,0});
@@ -206,6 +209,9 @@ assert menu.find(".//menu[@name='Avatar']/menu_item_call[@name='Pose Studio']/me
 ui = ET.fromstring(read("indra/newview/skins/default/xui/en/floater_pose_studio.xml"))
 names = [element.get("name") for element in ui.iter() if element.get("name")]
 assert len(names) == len(set(names))
+for field in ("position_x", "position_y", "position_z"):
+    assert ui.find(f".//slider[@name='{field}']") is not None
+assert int(ui.get("height")) > int(ui.find(".//slider[@name='rotation_z']").get("top"))
 
 with tempfile.TemporaryDirectory(prefix="pose-studio-test-") as temp:
     cpp, exe = Path(temp)/"pose_studio.cpp", Path(temp)/"pose_studio.exe"

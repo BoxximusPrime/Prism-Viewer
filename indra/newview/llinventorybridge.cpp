@@ -7601,7 +7601,7 @@ void LLWearableBridge::performAction(LLInventoryModel* model, std::string action
 void LLWearableBridge::openItem()
 {
     performAction(getInventoryModel(),
-                  get_is_item_worn(mUUID) ? "take_off" : "wear");
+                  get_is_item_worn(mUUID) ? "take_off" : "wear_add");
 }
 
 void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)

@@ -43,6 +43,7 @@ class LLVisualParamHint;
 class LLViewerJointMesh;
 class LLAccordionCtrlTab;
 class LLJoint;
+class LLButton;
 class LLLineEditor;
 class LLRadioGroup;
 class LLIconCtrl;
@@ -77,6 +78,8 @@ public:
     void                onCommitSexChange();
     void                onSaveAsButtonClicked();
     void                saveAsCallback(const LLSD& notification, const LLSD& response);
+    void                onCopyHeadFace();
+    void                onPasteHeadFace();
 
     virtual void        setVisible(bool visible);
 
@@ -128,6 +131,8 @@ private:
     LLButton* mBtnSaveAs;
     LLButton *mBtnRevert;
     LLButton *mBtnBack;
+    LLButton *mBtnCopyHeadFace = nullptr;
+    LLButton *mBtnPasteHeadFace = nullptr;
     std::string mBackBtnLabel;
 
     LLTextBox *mPanelTitle;
@@ -184,6 +189,9 @@ private:
 
     typedef std::map<LLAvatarAppearanceDefines::ETextureIndex, LLUUID> s32_uuid_map_t;
     s32_uuid_map_t mPreviousAlphaTexture;
+
+    typedef std::map<S32, F32> head_face_param_map_t;
+    static head_face_param_map_t sHeadFaceClipboard;
 };
 
 #endif

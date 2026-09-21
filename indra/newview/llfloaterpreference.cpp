@@ -40,12 +40,14 @@
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llcheckboxctrl.h"
+#include "llaudioengine.h"
 #include "llcolorswatch.h"
 #include "llcombobox.h"
 #include "llcommandhandler.h"
 #include "lldirpicker.h"
 #include "lleventtimer.h"
 #include "llfeaturemanager.h"
+#include "llfile.h"
 #include "llfocusmgr.h"
 //#include "llfirstuse.h"
 #include "llfloaterreg.h"
@@ -76,6 +78,7 @@
 #include "llviewercamera.h"
 #include "llviewereventrecorder.h"
 #include "llviewermessage.h"
+#include "llviewermenufile.h"
 #include "llviewerwindow.h"
 #include "llviewerthrottle.h"
 #include "llvoavatarself.h"
@@ -98,6 +101,41 @@
 #include "llstartup.h"
 #include "lltextbox.h"
 #include "llui.h"
+
+namespace
+{
+    struct UISoundPreference
+    {
+        const char* setting_name;
+        const char* paired_setting_name;
+        const char* display_name;
+        const char* filename_setting_name;
+        const char* default_uuid;
+        const char* default_filename;
+    };
+
+    const UISoundPreference UI_SOUND_PREFERENCES[] =
+    {
+        { "UISndClick", "UISndClickRelease", "ui_sound_click_name", "UISndClickName", "dae9e30e-8719-4431-bc3c-9cdfcb2bc879", "Sharp_synthesized_UI_#3-1789876593201.wav" },
+        { "UISndWindowOpen", nullptr, "ui_sound_window_open_name", "UISndWindowOpenName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },
+        { "UISndWindowFocus", nullptr, "ui_sound_window_focus_name", "UISndWindowFocusName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },
+        { "UISndWindowClose", nullptr, "ui_sound_window_close_name", "UISndWindowCloseName", "9b19d313-5247-4f80-944e-8ce8244eab1b", "Sharp,_and_clear_int_#1-1789256697460.wav" },
+        { "UISndCheckbox", nullptr, "ui_sound_checkbox_name", "UISndCheckboxName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },
+        { "UISndNewIncomingIMSession", nullptr, "ui_sound_incoming_im_name", "UISndNewIncomingIMSessionName", "c4db972c-3828-4f3d-98ea-26bd5f989e9d", "Sharp,_and_clear_int_#1-1789256679703.wav" }
+    };
+
+    const UISoundPreference* findUISoundPreference(const std::string& setting_name)
+    {
+        for (const UISoundPreference& preference : UI_SOUND_PREFERENCES)
+        {
+            if (setting_name == preference.setting_name)
+            {
+                return &preference;
+            }
+        }
+        return nullptr;
+    }
+}
 #include "llviewerobjectlist.h"
 #include "llvovolume.h"
 #include "llwindow.h"
@@ -2275,11 +2313,24 @@ LLPanelPreference::LLPanelPreference()
     mCommitCallbackRegistrar.add("Pref.PrefDelete", boost::bind(&LLPanelPreference::deletePreset, this, _2));
     mCommitCallbackRegistrar.add("Pref.PrefSave",   boost::bind(&LLPanelPreference::savePreset, this, _2));
     mCommitCallbackRegistrar.add("Pref.PrefLoad",   boost::bind(&LLPanelPreference::loadPreset, this, _2));
+    mCommitCallbackRegistrar.add("Pref.BrowseUISound", boost::bind(&LLPanelPreference::onBrowseUISound, this, _2));
+    mCommitCallbackRegistrar.add("Pref.PreviewUISound", boost::bind(&LLPanelPreference::onPreviewUISound, this, _2));
+    mCommitCallbackRegistrar.add("Pref.ResetUISound", boost::bind(&LLPanelPreference::onResetUISound, this, _2));
 }
 
 //virtual
 bool LLPanelPreference::postBuild()
 {
+    if (hasChild("ui_sound_click_name", true))
+    {
+        for (const UISoundPreference& preference : UI_SOUND_PREFERENCES)
+        {
+            const std::string filename = gSavedSettings.getString(preference.filename_setting_name);
+            getChild<LLTextBox>(preference.display_name)->setText(
+                filename.empty() ? preference.default_filename : filename);
+        }
+    }
+
     ////////////////////// PanelGeneral ///////////////////
     if (hasChild("display_names_check", true))
     {
@@ -2475,6 +2526,104 @@ void LLPanelPreference::toggleMuteWhenMinimized()
     if (instance)
     {
         instance->getChild<LLCheckBoxCtrl>("mute_when_minimized")->setBtnFocus();
+    }
+}
+
+void LLPanelPreference::onBrowseUISound(const LLSD& user_data)
+{
+    const std::string setting_name = user_data.asString();
+    if (!findUISoundPreference(setting_name))
+    {
+        return;
+    }
+
+    LLFilePickerReplyThread::startPicker(
+        boost::bind(&LLPanelPreference::onUISoundPicked, this, _1, setting_name),
+        LLFilePicker::FFLOAD_WAV,
+        false);
+}
+
+void LLPanelPreference::onUISoundPicked(const std::vector<std::string>& filenames, const std::string& setting_name)
+{
+    if (filenames.empty())
+    {
+        return;
+    }
+
+    const UISoundPreference* preference = findUISoundPreference(setting_name);
+    if (!preference)
+    {
+        return;
+    }
+
+    const std::string sounds_dir = gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS, "sounds");
+    LLFile::mkdir(sounds_dir);
+
+    const LLUUID sound_id = LLUUID::generateNewID();
+    const std::string destination = gDirUtilp->getExpandedFilename(
+        LL_PATH_USER_SETTINGS, "sounds", sound_id.asString() + ".wav");
+    if (!LLFile::copy(filenames.front(), destination))
+    {
+        LL_WARNS("UISounds") << "Unable to copy UI sound to " << destination << LL_ENDL;
+        return;
+    }
+
+    gSavedSettings.setString(preference->setting_name, sound_id.asString());
+    if (preference->paired_setting_name)
+    {
+        gSavedSettings.setString(preference->paired_setting_name, sound_id.asString());
+    }
+    gSavedSettings.setString(preference->filename_setting_name,
+                             gDirUtilp->getBaseFileName(filenames.front()));
+
+    if (gAudiop)
+    {
+        gAudiop->preloadSound(sound_id);
+    }
+
+    if (hasChild(preference->display_name, true))
+    {
+        getChild<LLTextBox>(preference->display_name)->setText(
+            gSavedSettings.getString(preference->filename_setting_name));
+    }
+}
+
+void LLPanelPreference::onPreviewUISound(const LLSD& user_data)
+{
+    const UISoundPreference* preference = findUISoundPreference(user_data.asString());
+    if (!preference || !gAudiop)
+    {
+        return;
+    }
+
+    const LLUUID sound_id(gSavedSettings.getString(preference->setting_name));
+    if (sound_id.isNull())
+    {
+        return;
+    }
+
+    gAudiop->preloadSound(sound_id);
+    gAudiop->triggerSound(sound_id, gAgent.getID(), 1.0f, LLAudioEngine::AUDIO_TYPE_UI);
+}
+
+void LLPanelPreference::onResetUISound(const LLSD& user_data)
+{
+    const UISoundPreference* preference = findUISoundPreference(user_data.asString());
+    if (!preference)
+    {
+        return;
+    }
+
+    gSavedSettings.setString(preference->setting_name, preference->default_uuid);
+    if (preference->paired_setting_name)
+    {
+        gSavedSettings.setString(preference->paired_setting_name, preference->default_uuid);
+    }
+    gSavedSettings.setString(preference->filename_setting_name, preference->default_filename);
+
+    if (hasChild(preference->display_name, true))
+    {
+        getChild<LLTextBox>(preference->display_name)->setText(LLStringExplicit(preference->default_filename));
     }
 }
 
