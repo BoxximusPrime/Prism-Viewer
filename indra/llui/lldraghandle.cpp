@@ -273,6 +273,8 @@ void LLDragHandleLeft::reshape(S32 width, S32 height, bool called_from_parent)
 
 bool LLDragHandle::handleMouseDown(S32 x, S32 y, MASK mask)
 {
+    make_ui_sound("UISndClick");
+
     // Route future Mouse messages here preemptively.  (Release on mouse up.)
     // No handler needed for focus lost since this clas has no state that depends on it.
     gFocusMgr.setMouseCapture(this);

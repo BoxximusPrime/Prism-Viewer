@@ -112,6 +112,17 @@ using namespace LLAvatarAppearanceDefines;
 
 typedef std::vector<ESubpart> subpart_vec_t;
 
+static bool is_head_face_param(const LLViewerVisualParam* param)
+{
+        const std::string& edit_group = param->getEditGroup();
+        return edit_group == "shape_head" ||
+                edit_group == "shape_eyes" ||
+                edit_group == "shape_ears" ||
+                edit_group == "shape_nose" ||
+                edit_group == "shape_mouth" ||
+                edit_group == "shape_chin";
+}
+
 // Locally defined classes
 
 class LLEditWearableDictionary : public LLSingleton<LLEditWearableDictionary>
@@ -637,6 +648,8 @@ static void set_enabled_texture_ctrl(bool enabled, LLPanel* panel, const LLEditW
 
 // LLPanelEditWearable
 
+LLPanelEditWearable::head_face_param_map_t LLPanelEditWearable::sHeadFaceClipboard;
+
 LLPanelEditWearable::LLPanelEditWearable()
         : LLPanel()
         , mWearablePtr(NULL)
@@ -740,6 +753,10 @@ bool LLPanelEditWearable::postBuild()
         // The following panels will be shown/hidden based on what wearable we're editing
         // body parts
         mPanelShape = getChild<LLPanel>("edit_shape_panel");
+        mBtnCopyHeadFace = mPanelShape->getChild<LLButton>("copy_head_face_button");
+        mBtnPasteHeadFace = mPanelShape->getChild<LLButton>("paste_head_face_button");
+        mBtnCopyHeadFace->setClickedCallback(boost::bind(&LLPanelEditWearable::onCopyHeadFace, this));
+        mBtnPasteHeadFace->setClickedCallback(boost::bind(&LLPanelEditWearable::onPasteHeadFace, this));
         mPanelSkin = getChild<LLPanel>("edit_skin_panel");
         mPanelEyes = getChild<LLPanel>("edit_eyes_panel");
         mPanelHair = getChild<LLPanel>("edit_hair_panel");
@@ -976,6 +993,48 @@ void LLPanelEditWearable::onCommitSexChange()
 
         gAgentAvatarp->updateVisualParams();
         showWearable(mWearablePtr, true, true);
+        updateScrollingPanelUI();
+}
+
+void LLPanelEditWearable::onCopyHeadFace()
+{
+        if (!mWearablePtr || mWearablePtr->getType() != LLWearableType::WT_SHAPE)
+        {
+                return;
+        }
+
+        sHeadFaceClipboard.clear();
+        LLWearable::visual_param_vec_t params;
+        mWearablePtr->getVisualParams(params);
+        for (LLWearable::visual_param_vec_t::const_iterator it = params.begin(); it != params.end(); ++it)
+        {
+                LLViewerVisualParam* param = static_cast<LLViewerVisualParam*>(*it);
+                if (param->isTweakable() && is_head_face_param(param))
+                {
+                        sHeadFaceClipboard[param->getID()] = param->getWeight();
+                }
+        }
+}
+
+void LLPanelEditWearable::onPasteHeadFace()
+{
+        if (!mWearablePtr || mWearablePtr->getType() != LLWearableType::WT_SHAPE || sHeadFaceClipboard.empty())
+        {
+                return;
+        }
+
+        for (head_face_param_map_t::const_iterator it = sHeadFaceClipboard.begin(); it != sHeadFaceClipboard.end(); ++it)
+        {
+                if (mWearablePtr->getVisualParam(it->first))
+                {
+                        mWearablePtr->setVisualParamWeight(it->first, it->second);
+                }
+        }
+
+        mWearablePtr->writeToAvatar(gAgentAvatarp);
+        gAgentAvatarp->updateVisualParams();
+        gAgentAvatarp->wearableUpdated(LLWearableType::WT_SHAPE);
+        LLVisualParamHint::requestHintUpdates();
         updateScrollingPanelUI();
 }
 
@@ -1564,6 +1623,10 @@ void LLPanelEditWearable::updateVerbs()
 
         mBtnRevert->setEnabled(is_dirty);
         mBtnSaveAs->setEnabled(is_dirty && can_copy);
+
+        const bool is_shape = mWearablePtr && mWearablePtr->getType() == LLWearableType::WT_SHAPE;
+        mBtnCopyHeadFace->setEnabled(is_shape);
+        mBtnPasteHeadFace->setEnabled(is_shape && !sHeadFaceClipboard.empty());
 
         if (isAgentAvatarValid())
         {

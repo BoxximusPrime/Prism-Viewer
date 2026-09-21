@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<panel
+  border="false"
+  follows="all"
+  height="410"
+  label="UI Sounds"
+  layout="topleft"
+  name="UI Sounds panel"
+  width="517">
+  <text follows="left|top" height="16" layout="topleft" left="8" name="ui_sound_intro" top="8" width="490">Choose a WAV file for each interface sound.</text>
+  <text follows="left|top" height="16" layout="topleft" left="8" name="ui_sound_hint" top="28" width="490">Changes apply immediately. Use Play to preview the selected sound.</text>
+
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_click_label" top="62" width="145">Buttons</text>
+  <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_click_name" top="62" width="190">Sharp_synthesized_UI_#3-1789876593201.wav</text>
+  <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_click_browse" top="58" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndClick" /></button>
+  <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_click_preview" top="58" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndClick" /></button>
+  <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_click_reset" top="58" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndClick" /></button>
+
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_window_open_label" top="110" width="145">Floater open</text>
+  <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_window_open_name" top="110" width="190">Sharp,_and_clear_int_#2-1789256717858.wav</text>
+  <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_window_open_browse" top="106" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndWindowOpen" /></button>
+  <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_window_open_preview" top="106" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndWindowOpen" /></button>
+  <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_window_open_reset" top="106" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndWindowOpen" /></button>
+
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_window_focus_label" top="158" width="145">Floater focus</text>
+  <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_window_focus_name" top="158" width="190">Sharp,_and_clear_int_#2-1789256717858.wav</text>
+  <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_window_focus_browse" top="154" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndWindowFocus" /></button>
+  <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_window_focus_preview" top="154" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndWindowFocus" /></button>
+  <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_window_focus_reset" top="154" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndWindowFocus" /></button>
+
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_window_close_label" top="206" width="145">Floater close</text>
+  <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_window_close_name" top="206" width="190">Sharp,_and_clear_int_#1-1789256697460.wav</text>
+  <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_window_close_browse" top="202" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndWindowClose" /></button>
+  <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_window_close_preview" top="202" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndWindowClose" /></button>
+  <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_window_close_reset" top="202" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndWindowClose" /></button>
+
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_checkbox_label" top="254" width="145">Checkboxes/toggles</text>
+  <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_checkbox_name" top="254" width="190">Sharp,_and_clear_int_#2-1789256717858.wav</text>
+  <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_checkbox_browse" top="250" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndCheckbox" /></button>
+  <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_checkbox_preview" top="250" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndCheckbox" /></button>
+  <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_checkbox_reset" top="250" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndCheckbox" /></button>
+
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_incoming_im_label" top="302" width="145">Incoming IM</text>
+  <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_incoming_im_name" top="302" width="190">Sharp,_and_clear_int_#1-1789256679703.wav</text>
+  <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_incoming_im_browse" top="298" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndNewIncomingIMSession" /></button>
+  <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_incoming_im_preview" top="298" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndNewIncomingIMSession" /></button>
+  <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_incoming_im_reset" top="298" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndNewIncomingIMSession" /></button>
+</panel>

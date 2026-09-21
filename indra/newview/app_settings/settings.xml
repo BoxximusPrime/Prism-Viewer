@@ -13830,6 +13830,72 @@
       <key>Value</key>
       <string>7dd36df6-2624-5438-f988-fdf8588a0ad9</string>
     </map>
+    <key>UISndClickName</key>
+    <map>
+      <key>Comment</key>
+      <string>Display name of the selected button UI sound</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>Sharp_synthesized_UI_#3-1789876593201.wav</string>
+    </map>
+    <key>UISndWindowOpenName</key>
+    <map>
+      <key>Comment</key>
+      <string>Display name of the selected floater open UI sound</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>Sharp,_and_clear_int_#2-1789256717858.wav</string>
+    </map>
+    <key>UISndWindowFocusName</key>
+    <map>
+      <key>Comment</key>
+      <string>Display name of the selected floater focus UI sound</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>Sharp,_and_clear_int_#2-1789256717858.wav</string>
+    </map>
+    <key>UISndWindowCloseName</key>
+    <map>
+      <key>Comment</key>
+      <string>Display name of the selected floater close UI sound</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>Sharp,_and_clear_int_#1-1789256697460.wav</string>
+    </map>
+    <key>UISndCheckboxName</key>
+    <map>
+      <key>Comment</key>
+      <string>Display name of the selected checkbox UI sound</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>Sharp,_and_clear_int_#2-1789256717858.wav</string>
+    </map>
+    <key>UISndNewIncomingIMSessionName</key>
+    <map>
+      <key>Comment</key>
+      <string>Display name of the selected incoming IM UI sound</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>Sharp,_and_clear_int_#1-1789256679703.wav</string>
+    </map>
     <key>UISndClick</key>
     <map>
       <key>Comment</key>
@@ -13839,7 +13905,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-        <string>43c4ee7d-22c5-479d-8ac9-b7415e70c09d</string>
+        <string>dae9e30e-8719-4431-bc3c-9cdfcb2bc879</string>
     </map>
     <key>UISndClickRelease</key>
     <map>
@@ -13850,7 +13916,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-        <string>43c4ee7d-22c5-479d-8ac9-b7415e70c09d</string>
+        <string>dae9e30e-8719-4431-bc3c-9cdfcb2bc879</string>
     </map>
     <key>UISndDebugSpamToggle</key>
     <map>
@@ -13949,7 +14015,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>166afcab-e75a-44b5-a251-c56f57a9fc90</string>
+      <string>c4db972c-3828-4f3d-98ea-26bd5f989e9d</string>
     </map>
     <key>UISndObjectCreate</key>
     <map>
@@ -14059,7 +14125,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>43c4ee7d-22c5-479d-8ac9-b7415e70c09d</string>
+      <string>9b19d313-5247-4f80-944e-8ce8244eab1b</string>
     </map>
     <key>UISndCheckbox</key>
     <map>
@@ -14070,7 +14136,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>e16876ed-bd4b-4262-85e8-3ce3f5995c21</string>
+      <string>d9275940-9674-4081-b1ab-a61fa0043368</string>
     </map>
     <key>UISndWindowFocus</key>
     <map>
@@ -14081,7 +14147,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>0d043efb-d04d-4455-9728-bd26c7211180</string>
+      <string>d9275940-9674-4081-b1ab-a61fa0043368</string>
     </map>
     <key>UISndWindowOpen</key>
     <map>
@@ -14092,7 +14158,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-        <string>d2a01341-0605-43ce-9bb1-6019585d36c3</string>
+        <string>d9275940-9674-4081-b1ab-a61fa0043368</string>
     </map>
     <key>UISpinctrlBtnHeight</key>
     <map>

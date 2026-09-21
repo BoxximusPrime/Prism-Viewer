@@ -41,6 +41,7 @@
 #include "llresmgr.h"
 #include "llcriticaldamp.h"
 #include "llfloater.h"
+#include "llmodaldialog.h"
 #include "llfloaterreg.h"
 #include "llfocusmgr.h"
 #include "llfontgl.h"
@@ -55,6 +56,18 @@
 #include "llviewereventrecorder.h"
 
 static LLDefaultChildRegistry::Register<LLButton> r("button");
+
+static bool is_button_in_modal(const LLButton* button)
+{
+    for (const LLView* parent = button->getParent(); parent; parent = parent->getParent())
+    {
+        if (dynamic_cast<const LLModalDialog*>(parent) != nullptr)
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 // Compiler optimization, generate extern template
 template class LLButton* LLView::getChild<class LLButton>(
@@ -317,12 +330,12 @@ void LLButton::onCommit()
 
     if (mMouseUpSignal) (*mMouseUpSignal)(this, LLSD());
 
-    if (getSoundFlags() & MOUSE_DOWN)
+    if (!is_button_in_modal(this) && (getSoundFlags() & MOUSE_DOWN))
     {
         make_ui_sound("UISndClick");
     }
 
-    if (getSoundFlags() & MOUSE_UP)
+    if (!is_button_in_modal(this) && (getSoundFlags() & MOUSE_UP))
     {
         make_ui_sound("UISndClickRelease");
     }
@@ -510,7 +523,7 @@ bool LLButton::handleMouseDown(S32 x, S32 y, MASK mask)
         mMouseHeldDownCount = 0;
 
 
-        if (getSoundFlags() & MOUSE_DOWN)
+        if (!is_button_in_modal(this) && (getSoundFlags() & MOUSE_DOWN))
         {
             make_ui_sound("UISndClick");
         }
@@ -546,7 +559,7 @@ bool LLButton::handleMouseUp(S32 x, S32 y, MASK mask)
         // If mouseup in the widget, it's been clicked
         if (pointInView(x, y))
         {
-            if (getSoundFlags() & MOUSE_UP)
+            if (!is_button_in_modal(this) && (getSoundFlags() & MOUSE_UP))
             {
                 make_ui_sound("UISndClickRelease");
             }

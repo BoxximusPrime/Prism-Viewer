@@ -70,7 +70,8 @@ The committed feature list is based on the differences from the `upstream/develo
 
 - Prism product branding, separate Prism settings/cache directories and Windows installer identity; uninstall preserves preferences. Existing Boxxy AO inventory folders and saved setting keys remain compatible. (in progress; Windows Release installer built for initial testing, install/uninstall verification pending)
 
-- Bundled UI sounds for opening floaters, buttons, floater focus changes, and checkboxes, using the existing UI audio controls. (in progress)
+- Bundled UI sounds for opening floaters/modals, buttons, and checkboxes/toggles, plus incoming instant-message replies, using the existing UI audio controls. Modal button clicks are temporarily silent, while floater drag-area clicks use the button cue. (in progress; replacement 11Labs WAVs bundled, Release built, runtime verification pending)
+- Sound & Media preferences now have Prism-styled General and UI Sounds tabs; each UI sound can be browsed for a WAV, previewed with Play, or restored with Reset. Custom files are copied into the per-user settings sounds folder. (in progress; Release built, runtime verification pending)
 - Bundled incoming-IM sound, per-message DM sound defaults, Click 2 on already-focused floater clicks, and single-sound floater closing without extra button/focus cues. (in progress)
 
 - Prism Animation Overrider (AO), including animation sets, inventory-backed configuration, per-account persistence, a toolbar enable checkbox plus configuration button (in progress), animation synchronization improvements, Firestorm set-folder import/export preserving standard state options, and ZHAO-II/Oracul notecard import with ZHAO-II notecard export. Transfers create new inventory links; unsupported groups/tracks and states are reported. (in progress; transfer interoperability awaiting in-world verification)
@@ -133,7 +134,7 @@ The committed feature list is based on the differences from the `upstream/develo
 
 - Per-page Default buttons for Skin Scattering, PCSS, GTAO, TAA and Volumetric Fog restore the displayed settings to shipped defaults, with Cancel support. (0.4.0; all five live reset, category isolation and Cancel checks passed; updated defaults verified in the Release installer)
 
-- Pose Studio: local self-avatar pose capture, rotation offsets, reset and session restoration from Avatar > Pose Studio. Grouped bone rows include hierarchy indentation, name search, Rot X/Y/Z controls and edited-bone highlighting. Animation export, serialization and inventory upload are removed; posing remains local to the session. Leaves AO and animation-freeze preferences under user control. (0.4.0; Release build, session regression and login-screen UI checks passed; skeleton overlay and local pose files remain deferred)
+- Pose Studio: local self-avatar pose capture, rotation and position offsets, reset and session restoration from Avatar > Pose Studio. Grouped bone rows include hierarchy indentation, name search, Rot X/Y/Z controls and edited-bone highlighting; the selected-bone inspector now includes Pos X/Y/Z meter offsets below rotation. Animation export, serialization and inventory upload are removed; posing remains local to the session. Leaves AO and animation-freeze preferences under user control. (0.4.0; position controls in progress; skeleton overlay and local pose files remain deferred)
 
 - Refreshed graphics defaults match the supplied SSS, PCSS, GTAO and TAA settings and subsequent GTAO adjustments, with exact transparency (OIT) enabled. Higher automatic quality presets select TAA and Sun/Moon + Projector shadows; lower-tier AA/shadow safeguards and existing saved preferences remain intact. (shadow default correction in progress; uncommitted; default and High/HighUltra presets now select 2 on all platforms; settings validation and Release resource staging passed; original defaults passed Release 0.3.0.54501 installer checks)
 
@@ -213,6 +214,8 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Profiles and inventory
 
+- Double-clicking an unworn clothing wearable in inventory now adds it to the current outfit instead of replacing the existing clothing layer; body parts remain single-slot, and double-clicking a worn wearable still takes it off. (in progress; uncommitted; Release build and in-viewer verification pending)
+
 - Inventory context menus show LLM Sort only when an OpenAI-compatible endpoint and model are configured, for up to 200 selected items or regular folders using the existing translation connection. Choose a root folder, classify by selected item/folder names and category names, then review and override each destination before Approve/Skip or Create & Move. The prompt prioritizes clear clothing words over unfamiliar brand/style/color names and recognizes common category synonyms. Selected folders retain all contents. Includes 12 clothing category icons, an attention filter, cancellation/retry, and checks for changed items, destinations and folder cycles. The root is remembered for the session; invoking LLM Sort with a new selection replaces the review, cancels old requests, and automatically submits once categories load. Approved items disappear from the review; failed moves remain visible. Scrolling over destination dropdowns scrolls the review without changing values. Review controls update on state changes; idle frames no longer search the hidden inventory tree or rebuild rows on unchanged resize notifications. (0.6.0; session/wheel/idle regressions and 16 live-model prompt cases passed; updated Release build passed; in-world verification pending)
 
 - Inventory Cleanup with whole demo-folder discovery based only on folder names, with full descendant review, same-asset copy groups, possible object versions, acquired-before review, saved protected folders, and mandatory exact-identity review before bounded moves to Trash, including frozen folder membership and overlap checks. Linked targets, worn items, outfit folders, and Marketplace contents are excluded; stale reviews are rejected. (in progress; Release build and 31 regression checks verified; runtime verification pending)
@@ -254,6 +257,8 @@ The committed feature list is based on the differences from the `upstream/develo
 - Viewer crash, shutdown, and related reliability fixes.
 
 ## Interface and preferences
+
+- Shape editor adds session-local Copy Head/Face and Paste Head/Face actions for the head, eyes, ears, nose, mouth, and chin shape values. (in progress; uncommitted; Release build and in-viewer verification pending)
 
 - Graphics options use the shared charcoal-and-amber tab controls, including the raised selected tab, rounded rail, and hover/pressed states. Existing graphics panels and setting bindings are retained. (XML, binding-preservation, texture-reference, Release 0.3.0.54501 build and installer resource checks passed; in-world visual verification pending)
 

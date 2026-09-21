@@ -24,6 +24,24 @@
          top="0"
          width="310">
      </text>
+     <button
+         follows="top|left"
+         height="22"
+         label="Copy Head/Face"
+         layout="topleft"
+         left="10"
+         name="copy_head_face_button"
+         top="16"
+         width="145" />
+     <button
+         follows="top|left"
+         height="22"
+         label="Paste Head/Face"
+         layout="topleft"
+         left="160"
+         name="paste_head_face_button"
+         top="16"
+         width="145" />
      <panel
          border="false"
          bg_alpha_color="DkGray2"
@@ -31,17 +49,17 @@
          background_visible="true"
          background_opaque="true"
          follows="all"
-         height="388"
+         height="352"
          label="Shirt"
          layout="topleft"
 		 left="10"
          name="accordion_panel"
-		 top_pad="5"
+		 top_pad="10"
          width="313">
 	 <accordion
         layout="topleft"
 		follows="all"
-		height ="388"
+		height ="352"
 		left="0"
 		name="wearable_accordion"
 		top="0"
@@ -178,4 +196,3 @@
 	</accordion>
     </panel>
 </panel>
-

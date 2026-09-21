@@ -270,6 +270,11 @@ public:
     // "Streaming Music" and "Media" are unchecked. Otherwise enables it.
     void updateMediaAutoPlayCheckbox(LLUICtrl* ctrl);
 
+    void onBrowseUISound(const LLSD& user_data);
+    void onPreviewUISound(const LLSD& user_data);
+    void onResetUISound(const LLSD& user_data);
+    void onUISoundPicked(const std::vector<std::string>& filenames, const std::string& setting_name);
+
     // This function squirrels away the current values of the controls so that
     // cancel() can restore them.
     virtual void saveSettings();

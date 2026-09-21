@@ -57,7 +57,7 @@ bool LLPoseStudio::begin(LLVOAvatar& avatar)
             return false;
         }
         captured.push_back({ joint->getName(), joint, transform, transform,
-                             transform.rotation, LLVector3::zero });
+                             transform.rotation, LLVector3::zero, LLVector3::zero });
     }
 
     mJoints = std::move(captured);
@@ -136,6 +136,7 @@ void LLPoseStudio::afterUpdate(LLVOAvatar& avatar)
         // own state underneath the local preview. No motion/setting is stopped.
         pose.animation = Transform::capture(*pose.joint);
         pose.captured.apply(*pose.joint);
+        pose.joint->setPosition(pose.captured.position + pose.position_offset);
         pose.joint->setRotation(pose.rotation);
     }
     mApplied = true;
@@ -208,6 +209,25 @@ bool LLPoseStudio::setRotationOffset(const std::string& name, const LLVector3& d
     return true;
 }
 
+bool LLPoseStudio::setPositionOffset(const std::string& name, const LLVector3& offset)
+{
+    if (!isActive() || !offset.isFinite()) return false;
+    JointPose* pose = findJoint(name);
+    if (!pose) return false;
+    pose->position_offset = offset;
+    LL_INFOS("PoseStudio") << "Position offset " << name << " " << offset << LL_ENDL;
+    return true;
+}
+
+LLVector3 LLPoseStudio::getPositionOffset(const std::string& name) const
+{
+    for (const JointPose& pose : mJoints)
+    {
+        if (pose.name == name) return pose.position_offset;
+    }
+    return LLVector3::zero;
+}
+
 LLVector3 LLPoseStudio::getRotationOffset(const std::string& name) const
 {
     for (const JointPose& pose : mJoints)
@@ -224,6 +244,7 @@ void LLPoseStudio::resetJoint(const std::string& name)
     {
         pose->rotation = pose->captured.rotation;
         pose->degrees.clear();
+        pose->position_offset.clear();
     }
 }
 
@@ -234,5 +255,6 @@ void LLPoseStudio::resetPose()
     {
         pose.rotation = pose.captured.rotation;
         pose.degrees.clear();
+        pose.position_offset.clear();
     }
 }

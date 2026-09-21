@@ -1728,7 +1728,12 @@ bool LLFloater::handleMouseDown(S32 x, S32 y, MASK mask)
     const bool clicking_close = mButtons[BUTTON_CLOSE]
         && mButtons[BUTTON_CLOSE]->getVisible()
         && mButtons[BUTTON_CLOSE]->getRect().pointInRect(x, y);
+    const bool clicking_drag_handle = mDragHandle
+        && mDragHandle->getVisible()
+        && mDragHandle->pointInView(x, y);
     if (clicking_floater_count == 1 && !clicking_close && !getIsChrome()
+        && dynamic_cast<const LLModalDialog*>(this) == nullptr
+        && !clicking_drag_handle
         && getVisible() && pointInView(x, y) && getSoundFlags() != SILENT)
     {
         make_ui_sound("UISndWindowFocus");
