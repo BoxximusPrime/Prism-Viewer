@@ -78,11 +78,11 @@ h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; letter-sp
 .text-link { color: var(--text); font-size: 13px; font-weight: 600; }
 .site-footer { display: flex; justify-content: space-between; padding: 48px 0 28px; color: var(--faint); font-family: var(--mono); font-size: 10px; }
 
-.lightbox { display: none; position: fixed; inset: 0; z-index: 20; place-items: center; padding: 32px; }
+.lightbox { display: none; position: fixed; inset: 0; z-index: 20; place-items: center; padding: 52px 24px 24px; }
 .lightbox.is-open { display: grid; }
 .lightbox-backdrop { position: absolute; inset: 0; cursor: pointer; border: 0; background: rgba(2, 5, 4, .92); backdrop-filter: blur(10px); }
-.lightbox-content { max-width: min(1100px, 95vw); position: relative; z-index: 1; }
-.lightbox-content img { display: block; max-width: 100%; max-height: 78vh; border: 1px solid var(--line); }
+.lightbox-content { width: min(100%, 2200px); max-width: calc(100vw - 48px); position: relative; z-index: 1; }
+.lightbox-content img { display: block; width: auto; max-width: 100%; max-height: calc(100vh - 120px); margin: 0 auto; border: 1px solid var(--line); }
 .lightbox-content p { margin: 12px 42px 0 0; color: var(--muted); font-size: 12px; }
 .lightbox-close { width: 34px; height: 34px; position: absolute; top: -44px; right: 0; cursor: pointer; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--text); font-size: 22px; line-height: 1; }
 .lightbox-close:hover { border-color: var(--green); color: var(--green); }
