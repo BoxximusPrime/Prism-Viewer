@@ -6,6 +6,10 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Prism-specific systems
 
+- Release 0.6.3 packages UI sound, Pose Studio, wearable editing, inventory,
+  landing-page, and bundled-resource polish. (0.6.3; Release build, package
+  extraction, version, executable-hash, resource, and deletion checks passed)
+
 - Release 0.6.2 packages the current TAA stability and post-sharpening work,
   PCSS depth and sampling fixes, SSS and alpha-lighting refinements, Photo
   Tools crop bars, pick filtering, and updated graphics defaults. (0.6.2;

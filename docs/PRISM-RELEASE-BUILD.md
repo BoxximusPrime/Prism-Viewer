@@ -1,8 +1,8 @@
 # Windows release builds
 
-The current release is **Prism Viewer 0.6.2**, built as **Prism Release** from
-the `v0.6.2` source tag. The Windows installer follows the filename pattern
-`Prism_0_6_2_<revision>_x86_64_Setup.exe`. See [0.6.2 release notes](releases/0.6.2.md).
+The current release is **Prism Viewer 0.6.3**, built as **Prism Release** from
+the `v0.6.3` source tag. The Windows installer follows the filename pattern
+`Prism_0_6_3_<revision>_x86_64_Setup.exe`. See [0.6.3 release notes](releases/0.6.3.md).
 Release packaging verification checks the executable version, staged payload,
 and SHA-256 identity of `PrismViewer.exe` and `secondlife-bin.exe`.
 
