@@ -32,10 +32,9 @@ See [FEATURES.md](FEATURES.md) for the feature inventory,
 
 ## AI disclaimer
 
-Prism is a personal experiment made entirely through AI. This refers to the
-Prism-specific changes built on top of Linden Lab's open-source Second Life viewer,
-not the upstream codebase. It is an experimental project, and bugs and rough edges
-are to be expected.
+Prism began as a private experiment to see how quickly a coding agent could help me build a viewer with more advanced rendering features. The answer was about a week. At that point I had most of the functionality the viewer has at the time of this writing. I originally intended to keep it private, but decided to publish it on GitHub in case anyone found it useful.
+
+This viewer was made with assistance from a coding agent. I understand that AI use in creative and technical work is a serious and often contentious subject, and I respect that some people may not want to use software made this way. Please don’t download it, if it isn’t for you.
 
 ## Windows development build
 
