@@ -92,33 +92,76 @@
         </div>
       </div>
       <div class="gallery" data-gallery tabindex="0" aria-label="Prism gallery. Use the arrow keys to browse.">
-        <button class="gallery-item" type="button" data-lightbox="landing-assets/image1.jpg"
-          data-caption="Mountain lake landscape captured in Prism.">
+        <button class="gallery-item gallery-item-wide" type="button" data-lightbox="landing-assets/image1.jpg"
+          data-caption="Mountain lake landscape [Mindful Cove]">
           <img src="landing-assets/image1.jpg" alt="Mountain lake landscape" loading="lazy">
           <span class="gallery-label">Mountain lake <b>↗</b></span>
         </button>
         <button class="gallery-item" type="button" data-lightbox="landing-assets/image2.jpg"
-          data-caption="Water and shoreline detail captured in Prism.">
+          data-caption="Water and shoreline detail [Mindful Cove]">
           <img src="landing-assets/image2.jpg" alt="Lake water and shoreline" loading="lazy">
           <span class="gallery-label">Water detail <b>↗</b></span>
         </button>
         <button class="gallery-item" type="button" data-lightbox="landing-assets/image3.jpg"
-          data-caption="Avatar portrait captured in Prism.">
+          data-caption="Avatar portrait">
           <img src="landing-assets/image3.jpg" alt="Avatar portrait with red lighting" loading="lazy">
           <span class="gallery-label">Avatar portrait <b>↗</b></span>
         </button>
         <button class="gallery-item" type="button" data-lightbox="landing-assets/image4.jpg"
-          data-caption="Courtyard scene captured in Prism.">
-          <img src="landing-assets/image4.jpg" alt="Courtyard and stone building" loading="lazy">
-          <span class="gallery-label">Courtyard <b>↗</b></span>
+          data-caption="Avatar portrait">
+          <img src="landing-assets/image4.jpg" alt="Blonde avatar portrait" loading="lazy">
+          <span class="gallery-label">Avatar portrait <b>↗</b></span>
+        </button>
+        <button class="gallery-item" type="button" data-lightbox="landing-assets/TPM/Snapshot_2026-09-17_19371101.png"
+          data-caption="Botanical park entrance [Templemore City]">
+          <img src="landing-assets/TPM/Snapshot_2026-09-17_19371101.png" alt="Botanical park entrance" loading="lazy">
+          <span class="gallery-label">Botanical park <b>↗</b></span>
+        </button>
+        <button class="gallery-item" type="button" data-lightbox="landing-assets/TPM/Snapshot_2026-09-17_19503201.png"
+          data-caption="Ornate library interior [Templemore City]">
+          <img src="landing-assets/TPM/Snapshot_2026-09-17_19503201.png" alt="Ornate library interior" loading="lazy">
+          <span class="gallery-label">Library interior <b>↗</b></span>
+        </button>
+        <button class="gallery-item" type="button" data-lightbox="landing-assets/TPM/Snapshot_2026-09-17_19533101.png"
+          data-caption="Dark apothecary interior [Templemore City]">
+          <img src="landing-assets/TPM/Snapshot_2026-09-17_19533101.png" alt="Dark apothecary interior" loading="lazy">
+          <span class="gallery-label">Apothecary <b>↗</b></span>
+        </button>
+        <button class="gallery-item" type="button" data-lightbox="landing-assets/TPM/Snapshot_2026-09-17_20024501.png"
+          data-caption="Woodland house scene [Templemore City]">
+          <img src="landing-assets/TPM/Snapshot_2026-09-17_20024501.png" alt="Woodland house scene" loading="lazy">
+          <span class="gallery-label">Woodland house <b>↗</b></span>
+        </button>
+        <button class="gallery-item" type="button" data-lightbox="landing-assets/TPM/Snapshot_2026-09-17_20281101.png"
+          data-caption="Street market scene [Templemore City]">
+          <img src="landing-assets/TPM/Snapshot_2026-09-17_20281101.png" alt="Street market scene" loading="lazy">
+          <span class="gallery-label">Street market <b>↗</b></span>
         </button>
         <button class="gallery-item" type="button" data-lightbox="landing-assets/image5.jpg"
-          data-caption="Interior scene captured in Prism.">
-          <img src="landing-assets/image5.jpg" alt="Dark interior with seating and plants" loading="lazy">
+          data-caption="Courtyard scene [Sanctuary, EST 2008]">
+          <img src="landing-assets/image5.jpg" alt="Courtyard and stone building" loading="lazy">
+          <span class="gallery-label">Courtyard <b>↗</b></span>
+        </button>
+        <button class="gallery-item" type="button" data-lightbox="landing-assets/image6.jpg"
+          data-caption="Interior scene [Sanctuary, EST 2008]">
+          <img src="landing-assets/image6.jpg" alt="Dark interior with seating and plants" loading="lazy">
           <span class="gallery-label">Interior <b>↗</b></span>
         </button>
       </div>
       <p class="gallery-hint">Scroll to browse · click an image to expand</p>
+    </section>
+
+    <section class="ai-disclosure section-shell" aria-labelledby="ai-disclosure-title">
+      <h2 id="ai-disclosure-title">AI Use Disclosure</h2>
+      <div class="ai-disclosure-content">
+        Prism began as a private experiment to see how quickly a coding agent could help me build a viewer with more
+        advanced rendering features. The answer was about a week. At that point I had most of the functionality the
+        viewer has at the time of this writing. I originally intended to keep it private, but decided to publish it on
+        GitHub in case anyone found it useful.<br><br>This viewer was made with assistance from a coding agent. I
+        understand that AI use in creative and technical work is a serious and often contentious subject, and I
+        respect that some people may not want to use software made this way.
+        Please don’t download it, if it isn’t for you.
+      </div>
     </section>
 
     <section class="download section-shell" id="download">
@@ -143,6 +186,10 @@
   <div class="lightbox" data-lightbox-modal aria-hidden="true" role="dialog" aria-modal="true"
     aria-label="Expanded gallery image">
     <button class="lightbox-backdrop" type="button" data-lightbox-close aria-label="Close expanded image"></button>
+    <button class="lightbox-nav lightbox-prev" type="button" data-lightbox-prev
+      aria-label="Previous gallery image">←</button>
+    <button class="lightbox-nav lightbox-next" type="button" data-lightbox-next
+      aria-label="Next gallery image">→</button>
     <div class="lightbox-content">
       <button class="lightbox-close" type="button" data-lightbox-close aria-label="Close expanded image">×</button>
       <img data-lightbox-image src="" alt="">

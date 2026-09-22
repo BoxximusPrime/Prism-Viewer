@@ -59,10 +59,10 @@ h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; letter-sp
 .gallery-button:hover { border-color: var(--green); color: var(--green-bright); }
 .gallery { display: flex; gap: 12px; padding: 0 0 14px; overflow-x: auto; scroll-behavior: smooth; scrollbar-color: var(--green) var(--surface); }
 .gallery:focus-visible { outline: 1px solid var(--green); outline-offset: 6px; }
-.gallery-item { flex: 0 0 280px; height: 220px; padding: 0; position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); text-align: left; }
-.gallery-item-wide { flex-basis: min(600px, 70vw); cursor: pointer; }
+.gallery-item { flex: 0 0 280px; height: 220px; padding: 0; position: relative; overflow: hidden; cursor: pointer; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); text-align: left; }
+.gallery-item-wide { flex-basis: min(600px, 70vw); }
 .gallery-item img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
-.gallery-item-wide:hover img { transform: scale(1.03); }
+.gallery-item:hover img { transform: scale(1.03); }
 .gallery-label { position: absolute; right: 16px; bottom: 13px; left: 16px; z-index: 1; color: var(--text); font-size: 12px; font-weight: 600; }
 .gallery-label::before { content: ''; position: absolute; inset: -42px -16px -14px; z-index: -1; background: linear-gradient(transparent, rgba(0, 0, 0, .85)); }
 .gallery-label b { float: right; color: var(--green); font-size: 17px; font-weight: 400; line-height: 1; }
@@ -70,6 +70,10 @@ h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; letter-sp
 .gallery-placeholder-amber { color: rgba(221, 160, 106, .8); background: linear-gradient(135deg, #30251d, #171310); }
 .gallery-placeholder-blue { color: rgba(134, 190, 208, .8); background: linear-gradient(135deg, #18262a, #101719); }
 .gallery-hint { margin: 12px 0 0; color: var(--faint); font-family: var(--mono); font-size: 10px; }
+
+.ai-disclosure { margin-bottom: 48px; padding: 28px 32px; border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 3px; background: var(--surface); }
+.ai-disclosure h2 { margin-bottom: 12px; font-size: 1.35rem; letter-spacing: -.03em; }
+.ai-disclosure-content { min-height: 36px; color: var(--muted); font-size: 14px; line-height: 1.7; }
 
 .download { display: flex; align-items: center; justify-content: space-between; gap: 36px; padding: 42px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); }
 .download h2 { font-size: clamp(1.8rem, 3vw, 2.7rem); }
@@ -80,7 +84,11 @@ h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; letter-sp
 
 .lightbox { display: none; position: fixed; inset: 0; z-index: 20; place-items: center; padding: 52px 24px 24px; }
 .lightbox.is-open { display: grid; }
-.lightbox-backdrop { position: absolute; inset: 0; cursor: pointer; border: 0; background: rgba(2, 5, 4, .92); backdrop-filter: blur(10px); }
+.lightbox-backdrop { position: absolute; inset: 0; z-index: 0; cursor: pointer; border: 0; background: rgba(2, 5, 4, .92); backdrop-filter: blur(10px); }
+.lightbox-nav { width: 42px; height: 42px; position: fixed; top: 50%; z-index: 2; cursor: pointer; transform: translateY(-50%); border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--text); font-size: 20px; line-height: 1; }
+.lightbox-nav:hover { border-color: var(--green); color: var(--green-bright); }
+.lightbox-prev { left: 18px; }
+.lightbox-next { right: 18px; }
 .lightbox-content { width: min(100%, 2200px); max-width: calc(100vw - 48px); position: relative; z-index: 1; }
 .lightbox-content img { display: block; width: auto; max-width: 100%; max-height: calc(100vh - 120px); margin: 0 auto; border: 1px solid var(--line); }
 .lightbox-content p { margin: 12px 42px 0 0; color: var(--muted); font-size: 12px; }
@@ -99,8 +107,14 @@ h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; letter-sp
   .features { grid-template-columns: 1fr; padding-bottom: 90px; }
   .feature-card { min-height: 0; }
   .gallery-section { padding-bottom: 90px; }
+  .ai-disclosure { padding: 24px; }
   .download { display: block; padding: 28px; }
   .download-actions { justify-content: start; margin-top: 24px; }
+  .lightbox { padding-inline: 12px; }
+  .lightbox-content { max-width: calc(100vw - 24px); }
+  .lightbox-nav { width: 36px; height: 36px; }
+  .lightbox-prev { left: 8px; }
+  .lightbox-next { right: 8px; }
   .site-footer { display: block; line-height: 2.4; }
   .site-footer span { display: block; }
 }
