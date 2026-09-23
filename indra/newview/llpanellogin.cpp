@@ -66,6 +66,8 @@
 #include "llweb.h"
 #include "llmediactrl.h"
 #include "llrootview.h"
+#include "llcorehttputil.h"
+#include "llversioninfo.h"
 
 #include "llfloatertos.h"
 #include "lltrans.h"
@@ -76,6 +78,8 @@
 #endif  // LL_WINDOWS
 
 #include "llsdserialize.h"
+
+#include <cstdio>
 
 LLPanelLogin *LLPanelLogin::sInstance = NULL;
 bool LLPanelLogin::sCapslockDidNotification = false;
@@ -333,6 +337,12 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
     getChild<LLCheckBoxCtrl>("remember_password")->setCommitCallback(boost::bind(&LLPanelLogin::onRememberPasswordCheck, this));
 
     mAlertListener = LLNotifications::instance().getChannel("Alerts")->connectChanged([this](const LLSD& notify){ return onUpdateNotification(notify); });
+
+    getChild<LLTextBox>("update_status")->setText(LLStringExplicit("Checking for updates..."));
+    LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpGet(
+        "https://boxximusprime.github.io/Prism-Viewer/update.json",
+        boost::bind(&LLPanelLogin::onUpdateCheckResult, _1),
+        boost::bind(&LLPanelLogin::onUpdateCheckFailed, _1));
 }
 
 void LLPanelLogin::reshape(S32 width, S32 height, bool called_from_parent)
@@ -368,6 +378,46 @@ void LLPanelLogin::reshape(S32 width, S32 height, bool called_from_parent)
     wordmark->setVisible(!small_brand);
     getChildView("prism_footer")->setOrigin(stage_left + stage_width - 230, 12);
     getChildView("prism_grid_label")->setOrigin(stage_left, 16);
+    getChildView("update_status")->setOrigin(stage_left, 38);
+}
+
+void LLPanelLogin::onUpdateCheckResult(const LLSD& result)
+{
+    if (!sInstance)
+    {
+        return;
+    }
+
+    const std::string latest_version = result["version"].asString();
+    S32 latest_major = 0;
+    S32 latest_minor = 0;
+    S32 latest_patch = 0;
+    char extra = 0;
+    if (std::sscanf(latest_version.c_str(), "%d.%d.%d%c",
+                    &latest_major, &latest_minor, &latest_patch, &extra) != 3 ||
+        latest_major < 0 || latest_minor < 0 || latest_patch < 0)
+    {
+        onUpdateCheckFailed(LLSD());
+        return;
+    }
+
+    const LLVersionInfo& installed = LLVersionInfo::instance();
+    const bool update_available = latest_major > installed.getMajor() ||
+        (latest_major == installed.getMajor() && latest_minor > installed.getMinor()) ||
+        (latest_major == installed.getMajor() && latest_minor == installed.getMinor() &&
+         latest_patch > installed.getPatch());
+
+    sInstance->getChild<LLTextBox>("update_status")->setText(update_available
+        ? LLStringExplicit("Update available: Prism " + latest_version)
+        : LLStringExplicit("Prism " + installed.getShortVersion() + " is up to date"));
+}
+
+void LLPanelLogin::onUpdateCheckFailed(const LLSD&)
+{
+    if (sInstance)
+    {
+        sInstance->getChild<LLTextBox>("update_status")->setText(LLStringExplicit("Update check unavailable"));
+    }
 }
 
 void LLPanelLogin::draw()
