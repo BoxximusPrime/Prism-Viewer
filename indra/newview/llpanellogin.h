@@ -98,6 +98,8 @@ private:
 
     static void onClickConnect(bool commit_fields = true);
     static void onClickVersion(void*);
+    static void onUpdateCheckResult(const LLSD& result);
+    static void onUpdateCheckFailed(const LLSD& result);
     static void onClickForgotPassword(void*);
     static void onClickSignUp(void*);
     static void onUserNameTextEnty(void*);

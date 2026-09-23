@@ -80,6 +80,8 @@
   </panel>
   <text name="prism_grid_label" left="48" top="722" width="280" height="22"
    text_color="0.72 0.78 0.76 1" font="SansSerifSmall" />
+  <text name="update_status" left="48" top="698" width="380" height="20"
+   text_color="0.55 0.68 0.61 1" font="SansSerifSmall" />
   <panel name="prism_footer" follows="left|top" left="746" top="718" width="230" height="28"
    background_visible="false">
     <button name="preferences_btn" label="Preferences" left="0" top="0" width="142" height="28"
