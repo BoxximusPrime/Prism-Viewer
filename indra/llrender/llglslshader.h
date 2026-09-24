@@ -370,6 +370,7 @@ public:
 #endif
 
 private:
+    bool createShaderInternal();
     std::vector<U32> mBoundSamplerChannels;
     void unloadInternal();
     // This must be static because finishProfile() is called at least once

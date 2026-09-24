@@ -29,7 +29,7 @@
    mouse_opaque="false"
    text_color="White"
    font_shadow="hard"
-   use_ellipses="true" />
+   use_ellipses="false" />
   <text
    name="far_names"
    follows="right|bottom"
@@ -43,7 +43,7 @@
    mouse_opaque="false"
    text_color="White"
    font_shadow="hard"
-   use_ellipses="true" />
+   use_ellipses="false" />
   <text
    name="near_total"
    follows="left|bottom"

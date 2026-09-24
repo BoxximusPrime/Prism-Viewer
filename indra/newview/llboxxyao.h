@@ -101,6 +101,7 @@ public:
 
     bool tick() override;
     LLUUID overrideMotion(const LLUUID& motion, bool start);
+    bool isActiveOverride(const LLUUID& asset) const;
     void onMouselookChanged(bool mouselook);
     void onBelowWaterChanged(bool below_water);
     void onRegionChanged();

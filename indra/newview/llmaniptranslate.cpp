@@ -454,7 +454,11 @@ bool LLManipTranslate::findVertex(S32 x, S32 y, bool source,
             LLViewerObject* object = gPipeline.lineSegmentIntersectInWorld(
                 begin, end, false, false, true, false,
                 nullptr, nullptr, nullptr, &intersection, nullptr, nullptr, nullptr, nullptr,
-                [](LLViewerObject* object) { return !object->isSelected() && !object->getRootEdit()->isSelected(); });
+                [this](LLViewerObject* object)
+                {
+                    LLSelectNode* root = mObjectSelection->findNode(object->getRootEdit());
+                    return !object->isSelected() && !(root && !root->mIndividualSelection);
+                });
             if (object) candidates.insert(object);
         }
     }
@@ -1466,30 +1470,37 @@ void LLManipTranslate::render()
         //LLGLDisable gls_stencil(GL_STENCIL_TEST);
         renderTranslationHandles();
         if (!mCenterDrag && !mVertexDrag && !(vertexSnapHeld() && mVertexObject)) renderSnapGuides();
-        LLVector3 center;
-        if (!mVertexDrag && (mCenterDrag || !vertexSnapHeld()) &&
-            (mManipPart == LL_NO_PART || mCenterDrag) && getCenterHandle(center))
-        {
-            renderVertexMarker(gAgent.getPosGlobalFromAgent(center),
-                mCenterDrag || mHighlightedPart == LL_TRANSLATE_CENTER ?
-                    LLColor4(1.f, 0.8f, 0.15f, 1.f) : LLColor4(0.9f, 0.9f, 0.9f, 1.f), true);
-        }
+        renderSurfaceHandle();
         LLVector3d vertex;
-        if (mCenterDrag && mSurfaceBoundsValid)
-        {
-            vertex = gAgent.getPosGlobalFromAgent(getPivotPoint()) + LLVector3d(mSurfaceOffset);
-            renderVertexMarker(vertex, LLColor4(1.f, 0.8f, 0.15f, 1.f));
-        }
-        else if ((mVertexDrag || vertexSnapHeld()) && vertexPoint(vertex))
+        if (!mCenterDrag && (mVertexDrag || vertexSnapHeld()) && vertexPoint(vertex))
         {
             renderVertexMarker(vertex, LLColor4(1.f, 0.8f, 0.15f, 1.f));
         }
-        if (mVertexTarget && (mCenterDrag || vertexSnapHeld()))
+        if (mVertexTarget && !mCenterDrag && vertexSnapHeld())
             renderVertexMarker(mVertexDestination, LLColor4(0.2f, 1.f, 0.6f, 1.f));
     }
     gGL.popMatrix();
 
     renderText();
+}
+
+void LLManipTranslate::renderSurfaceHandle()
+{
+    LLVector3 center;
+    if (!mVertexDrag && (mCenterDrag || !vertexSnapHeld()) &&
+        (mManipPart == LL_NO_PART || mCenterDrag) && getCenterHandle(center))
+    {
+        renderVertexMarker(gAgent.getPosGlobalFromAgent(center),
+            mCenterDrag || centerHandleHit(gViewerWindow->getCurrentMouseX(), gViewerWindow->getCurrentMouseY()) ?
+                LLColor4(1.f, 0.8f, 0.15f, 1.f) : LLColor4(0.9f, 0.9f, 0.9f, 1.f), true);
+    }
+    if (mCenterDrag && mSurfaceBoundsValid)
+    {
+        const LLVector3d contact = gAgent.getPosGlobalFromAgent(getPivotPoint()) + LLVector3d(mSurfaceOffset);
+        renderVertexMarker(contact, LLColor4(1.f, 0.8f, 0.15f, 1.f));
+    }
+    if (mCenterDrag && mVertexTarget)
+        renderVertexMarker(mVertexDestination, LLColor4(0.2f, 1.f, 0.6f, 1.f));
 }
 
 void LLManipTranslate::renderSnapGuides()

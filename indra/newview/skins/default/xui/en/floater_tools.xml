@@ -76,7 +76,7 @@
         left="8"
         top="26"
         width="544"
-        height="218"
+        height="238"
         follows="left|top|right"
         layout="topleft"
         mouse_opaque="false"
@@ -1181,6 +1181,19 @@
     <!--  width="143"> -->
     <!--     Prims: [COUNT] -->
     <!-- </text> -->
+    <check_box
+        name="checkbox parcel walls"
+        control_name="ShowParcelBoundaryWalls"
+        label="Parcel walls"
+        tool_tip="Show parcel boundary walls up to 10 metres above your avatar. Off by default."
+        follows="left|top"
+        layout="topleft"
+        left="12"
+        top="244"
+        width="180"
+        height="18"
+        font="DejaVu"
+        font.size="LSmall" />
     <view_border
         bevel_style="none"
         follows="left|top"
@@ -1189,7 +1202,7 @@
         name="cost_text_border"
         width="536"
         left="12"
-        top="250" />
+        top="264" />
     <tab_container
         follows="all"
         height="646"
@@ -1277,13 +1290,13 @@
                         bg_alpha_color="DkGray"
                         border="false"
                         follows="left|top|right"
-                        height="88"
+                        height="108"
                         layout="topleft"
                         left="12"
                         name="identity_section"
                         top="0"
                         width="496" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
-                        <panel name="identity_section_fill" left="1" top="1" width="494" height="86" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
+                        <panel name="identity_section_fill" left="1" top="1" width="494" height="106" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
                         <text
                             font="DejaVu"
                             font.size="Small"
@@ -1322,6 +1335,28 @@
                             top="52"
                             width="380"
                             tool_tip="The prim description is limited to 127 bytes; longer strings are truncated." />
+                        <text font="DejaVu" font.size="LSmall" height="18" left="12" name="UUID:" top="82" width="56">UUID:</text>
+                        <line_editor
+                            follows="left|top|right"
+                            height="20"
+                            left="76"
+                            name="Object UUID"
+                            top="79"
+                            enabled="false"
+                            max_length_bytes="36"
+                            width="328"
+                            tool_tip="The selected object's UUID (read-only)." />
+                        <button
+                            font="DejaVu"
+                            font.size="LSmall"
+                            height="24"
+                            label="Copy"
+                            left="404"
+                            name="copy_object_uuid"
+                            top="77"
+                            width="80"
+                            tool_tip="Copy the selected object's UUID to the Windows clipboard."
+                            enabled="false" />
                     </panel>
                     <panel
                         background_visible="true"
@@ -1331,7 +1366,7 @@
                         height="138"
                         left="12"
                         name="ownership_section"
-                        top="100"
+                        top="120"
                         width="496" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
                         <panel name="ownership_section_fill" left="1" top="1" width="494" height="136" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
                         <text
@@ -1445,7 +1480,7 @@
                         height="124"
                         left="12"
                         name="perms_build"
-                        top="250"
+                        top="270"
                         width="496" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
                         <panel name="perms_build_fill" left="1" top="1" width="494" height="122" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
                         <text
@@ -1536,7 +1571,7 @@
                         height="58"
                         left="12"
                         name="interaction_section"
-                        top="386"
+                        top="406"
                         width="496" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
                         <panel name="interaction_section_fill" left="1" top="1" width="494" height="56" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
                         <text
@@ -1581,7 +1616,7 @@
                         height="90"
                         left="12"
                         name="sales_section"
-                        top="456"
+                        top="476"
                         width="496" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
                         <panel name="sales_section_fill" left="1" top="1" width="494" height="88" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
                         <text
@@ -1659,7 +1694,7 @@
                         height="58"
                         left="12"
                         name="pathfinding_attrs_panel"
-                        top="558"
+                        top="578"
                         width="496" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
                         <panel name="pathfinding_attrs_panel_fill" left="1" top="1" width="494" height="56" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
                         <text
@@ -1696,7 +1731,7 @@
                         left="12"
                         name="B:"
                         text_color="EmphasisColor"
-                        top="628"
+                        top="648"
                         visible="false"
                         width="72">B:</text>
                     <text

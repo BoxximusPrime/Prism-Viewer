@@ -30,11 +30,16 @@
 #include "llgl.h"
 #include "llglslshader.h"
 
+#include <string>
+
 class LLShaderMgr
 {
 public:
     LLShaderMgr();
     virtual ~LLShaderMgr();
+
+    virtual void shaderProgramStarted(const LLGLSLShader*) {}
+    virtual void shaderProgramProcessed(const LLGLSLShader*, bool) {}
 
     // Note: although you can use statically hashed strings to just bind a random uniform, it's generally preferably that you use this.
     // Always document what the actual shader uniform is next to the shader uniform in this struct.

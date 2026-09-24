@@ -68,6 +68,7 @@
 #include "llrootview.h"
 #include "llcorehttputil.h"
 #include "llversioninfo.h"
+#include "llcoros.h"
 
 #include "llfloatertos.h"
 #include "lltrans.h"
@@ -339,10 +340,7 @@ LLPanelLogin::LLPanelLogin(const LLRect &rect,
     mAlertListener = LLNotifications::instance().getChannel("Alerts")->connectChanged([this](const LLSD& notify){ return onUpdateNotification(notify); });
 
     getChild<LLTextBox>("update_status")->setText(LLStringExplicit("Checking for updates..."));
-    LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpGet(
-        "https://boxximusprime.github.io/Prism-Viewer/update.json",
-        boost::bind(&LLPanelLogin::onUpdateCheckResult, _1),
-        boost::bind(&LLPanelLogin::onUpdateCheckFailed, _1));
+    LLCoros::instance().launch("PrismVersionCheck", &LLPanelLogin::updateCheckCoro);
 }
 
 void LLPanelLogin::reshape(S32 width, S32 height, bool called_from_parent)
@@ -417,6 +415,28 @@ void LLPanelLogin::onUpdateCheckFailed(const LLSD&)
     if (sInstance)
     {
         sInstance->getChild<LLTextBox>("update_status")->setText(LLStringExplicit("Update check unavailable"));
+    }
+}
+
+void LLPanelLogin::updateCheckCoro()
+{
+    constexpr char UPDATE_MANIFEST_URL[] = "https://boxximusprime.github.io/Prism-Viewer/update.json";
+    auto http_adapter = std::make_shared<LLCoreHttpUtil::HttpCoroutineAdapter>(
+        "PrismVersionCheck", LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    auto http_request = std::make_shared<LLCore::HttpRequest>();
+    auto http_headers = std::make_shared<LLCore::HttpHeaders>();
+    http_headers->append("Accept", "application/json");
+
+    const LLSD result = http_adapter->getJsonAndSuspend(http_request, UPDATE_MANIFEST_URL, http_headers);
+    const LLSD http_results = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    const LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(http_results);
+    if (status && result.has("version"))
+    {
+        onUpdateCheckResult(result);
+    }
+    else
+    {
+        onUpdateCheckFailed(result);
     }
 }
 

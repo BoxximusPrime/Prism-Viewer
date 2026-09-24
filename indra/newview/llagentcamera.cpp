@@ -995,13 +995,15 @@ void LLAgentCamera::cameraOrbitIn(const F32 meters)
 
         mCameraZoomFraction = (mTargetCameraDistance - meters) / camera_offset_dist;
 
-        if (!gSavedSettings.getBOOL("FreezeTime") && mCameraZoomFraction < MIN_ZOOM_FRACTION && meters > 0.f)
+        const bool keep_third_person = gSavedSettings.getBOOL("BoxxyKeepThirdPersonOnZoom");
+        if (!keep_third_person && !gSavedSettings.getBOOL("FreezeTime")
+            && mCameraZoomFraction < MIN_ZOOM_FRACTION && meters > 0.f)
         {
             // No need to animate, camera is already there.
             changeCameraToMouselook(false);
         }
 
-        if (!isDisableCameraConstraints())
+        if (keep_third_person || !isDisableCameraConstraints())
         {
             mCameraZoomFraction = llclamp(mCameraZoomFraction, MIN_ZOOM_FRACTION, MAX_ZOOM_FRACTION);
         }
@@ -1684,7 +1686,6 @@ LLVector3d LLAgentCamera::calcFocusPositionTargetGlobal()
 LLVector3d LLAgentCamera::calcThirdPersonFocusOffset()
 {
     // ...offset from avatar
-    LLVector3d focus_offset;
     LLQuaternion agent_rot = gAgent.getFrameAgent().getQuaternion();
     if (isAgentAvatarValid() && gAgentAvatarp->getParent())
     {
@@ -1692,7 +1693,31 @@ LLVector3d LLAgentCamera::calcThirdPersonFocusOffset()
     }
 
     static LLCachedControl<LLVector3d> focus_offset_initial(gSavedSettings, "FocusOffsetRearView", LLVector3d());
-    return focus_offset_initial * agent_rot;
+    LLVector3d focus_offset = focus_offset_initial * agent_rot;
+    if (gAgent.isFacingBackwardWalk())
+    {
+        focus_offset.mdV[VX] = -focus_offset.mdV[VX];
+        focus_offset.mdV[VY] = -focus_offset.mdV[VY];
+    }
+    return focus_offset + LLVector3d(getDynamicShoulderOffset());
+}
+
+LLVector3 LLAgentCamera::getDynamicShoulderOffset() const
+{
+    static LLCachedControl<bool> dynamic_shoulder(gSavedSettings, "BoxxyDynamicShoulderCamera", false);
+    if (!dynamic_shoulder || mCameraMode != CAMERA_MODE_THIRD_PERSON || !mFocusOnAvatar
+        || mCameraPreset != CAMERA_PRESET_REAR_VIEW || !isAgentAvatarValid() || gAgentAvatarp->isSitting())
+    {
+        return LLVector3::zero;
+    }
+
+    F32 blend = llclamp((3.f - mCurrentCameraDistance) / 2.f, 0.f, 1.f);
+    blend = blend * blend * (3.f - 2.f * blend);
+    LLVector3 left = gAgent.getLeftAxis();
+    left.mV[VZ] = 0.f;
+    left.normalize();
+    F32 side = gAgent.isFacingBackwardWalk() ? 0.65f : -0.65f;
+    return LLVector3(left.mV[VX] * side * blend, left.mV[VY] * side * blend, -0.33f * blend);
 }
 
 void LLAgentCamera::setupSitCamera()
@@ -1853,6 +1878,11 @@ LLVector3d LLAgentCamera::calcCameraPositionTargetGlobal(bool *hit_limit)
             else
             {
                 local_camera_offset = gAgent.getFrameAgent().rotateToAbsolute( local_camera_offset );
+                if (gAgent.isFacingBackwardWalk())
+                {
+                    local_camera_offset.mV[VX] = -local_camera_offset.mV[VX];
+                    local_camera_offset.mV[VY] = -local_camera_offset.mV[VY];
+                }
             }
 
             if (!isDisableCameraConstraints() && !mCameraCollidePlane.isExactlyZero() &&
@@ -1905,6 +1935,8 @@ LLVector3d LLAgentCamera::calcCameraPositionTargetGlobal(bool *hit_limit)
 
             // Make the camera distance current
             local_camera_offset *= mCurrentCameraDistance;
+
+            local_camera_offset += getDynamicShoulderOffset();
 
             // set the global camera position
             LLVector3d camera_offset;
@@ -2087,7 +2119,8 @@ void LLAgentCamera::handleScrollWheel(S32 clicks)
         if (!mFollowCam.getPositionLocked()) // not if the followCam position is locked in place
         {
             mFollowCam.zoom(clicks);
-            if (mFollowCam.isZoomedToMinimumDistance())
+            if (mFollowCam.isZoomedToMinimumDistance()
+                && !gSavedSettings.getBOOL("BoxxyKeepThirdPersonOnZoom"))
             {
                 changeCameraToMouselook(false);
             }

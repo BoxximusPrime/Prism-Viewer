@@ -769,8 +769,10 @@ void LLWorld::updateParticles()
 void LLWorld::renderPropertyLines()
 {
     LL_PROFILE_ZONE_SCOPED;
-    for (region_list_t::iterator iter = mVisibleRegionList.begin();
-         iter != mVisibleRegionList.end(); ++iter)
+    static LLCachedControl<bool> show_walls(gSavedSettings, "ShowParcelBoundaryWalls");
+    // A region's terrain need not be visible for its walls to reach the avatar.
+    const region_list_t& regions = show_walls ? mActiveRegionList : mVisibleRegionList;
+    for (region_list_t::const_iterator iter = regions.begin(); iter != regions.end(); ++iter)
     {
         LLViewerRegion* regionp = *iter;
         regionp->renderPropertyLines();

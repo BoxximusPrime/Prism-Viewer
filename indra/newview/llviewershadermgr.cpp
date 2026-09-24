@@ -48,6 +48,7 @@
 #include "llerrorcontrol.h"
 #include "llworld.h"
 #include "llsky.h"
+#include "llstring.h"
 
 #include "pipeline.h"
 
@@ -74,6 +75,15 @@ using std::string;
 
 bool                LLViewerShaderMgr::sInitialized = false;
 bool                LLViewerShaderMgr::sSkipReload = false;
+
+static bool sShaderCompilationActive = false;
+static U32 sShaderProgramsProcessed = 0;
+static U32 sShaderProgramsTotal = 0;
+static std::set<const LLGLSLShader*> sProcessedShaderPrograms;
+static bool sShaderProgressUIReady = false;
+static LLTimer sShaderProgramTimer;
+static std::string sCurrentShaderName;
+static LLTimer sShaderProgressTimer;
 
 LLVector4           gShinyOrigin;
 
@@ -601,11 +611,39 @@ static bool hashShaderSources(HBXXH128& hash_obj, const std::filesystem::path& r
     return true;
 }
 
+// Counts program slots selected by the loaders below, not GLSL source files or
+// driver retries. Keep the fixed families in sync when adding programs; the
+// end-of-load diagnostic and shader progress regression check detect drift.
+static U32 shaderProgramCount()
+{
+    const U32 bootstrap_water_effects_object_avatar = 1 + 6 + 4 + 7 + 1;
+    const U32 interface_programs = 25 + 2 * NORMAL_DEBUG_SHADER_COUNT
+#ifdef LL_WINDOWS
+        + 2 // texture comparison/filter programs
+#endif
+        + (gSavedSettings.getBOOL("LocalTerrainPaintEnabled") ? 1 : 0)
+        + (gGLManager.mHasCubeMapArray ? 3 : 0);
+    const bool gltf = gSavedSettings.getBOOL("GLTFEnabled");
+    const U32 deferred_programs = 110 + 2 * LLMaterial::SHADER_COUNT
+        + TERRAIN_PAINT_TYPE_COUNT + LL_DEFERRED_MULTI_LIGHT_COUNT
+        + (gGLManager.mGLVersion > 3.9f ? 4 : 0)   // FXAA qualities
+        + (gGLManager.mGLVersion > 3.15f ? 12 : 0) // SMAA: 4 qualities, 3 stages
+        + (gGLManager.mGLVersion > 4.05f ? 2 : 0)  // CAS
+        + (gSavedSettings.getBOOL("RenderGTAOEnabled") ? 3 : 0)
+        + (gltf ? LLGLSLShader::NUM_GLTF_VARIANTS : 0);
+    const U32 oit_programs = FSExactOIT::isSupported()
+        ? 16 + 2 * LLMaterial::ALPHA_SHADER_COUNT
+            + (gltf ? LLGLSLShader::NUM_GLTF_VARIANTS : 0)
+        : 0;
+    return bootstrap_water_effects_object_avatar + interface_programs
+        + deferred_programs + oit_programs;
+}
+
 static void displayShaderCompilationMessage()
 {
     LLWindow* window = gViewerWindow ? gViewerWindow->getWindow() : nullptr;
     LLCoordWindow size;
-    if (!window || !window->getVisible() || window->getMinimized()
+    if (!window || !window->getVisible() || window->getMinimized() || !sShaderProgressUIReady
         || !window->getSize(&size) || size.mX <= 0 || size.mY <= 0)
     {
         return;
@@ -614,14 +652,16 @@ static void displayShaderCompilationMessage()
     // Present directly to the window: the normal progress UI and render targets
     // are not available yet during startup, and are torn down during reloads.
     gGL.flush();
-    GLint framebuffer, viewport[4];
+    GLint framebuffer, viewport[4], scissor_box[4];
     GLfloat clear_color[4];
     GLboolean color_mask[4];
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &framebuffer);
     glGetIntegerv(GL_VIEWPORT, viewport);
+    glGetIntegerv(GL_SCISSOR_BOX, scissor_box);
     glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
     glGetBooleanv(GL_COLOR_WRITEMASK, color_mask);
     const auto matrix_mode = gGL.getMatrixMode();
+    LLGLSLShader* previous_shader = LLGLSLShader::sCurBoundShaderPtr;
     LLGLSUIDefault gls_ui;
     LLGLDisable scissor(GL_SCISSOR_TEST);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -640,12 +680,56 @@ static void displayShaderCompilationMessage()
     gl_state_for_2d(size.mX, size.mY);
     LLRender2D::pushMatrix();
     LLRender2D::loadIdentity();
+    const F32 scale_x = llmax(LLFontGL::sScaleX, 0.001f);
+    const F32 scale_y = llmax(LLFontGL::sScaleY, 0.001f);
+    const F32 logical_width = size.mX / scale_x;
+    const F32 center_y = size.mY / (2.f * scale_y);
+    const auto render_centered = [logical_width](const LLFontGL* font, const std::string& text, F32 y)
+    {
+        const F32 x = llmax(0.f, (logical_width - font->getWidthF32(text)) * 0.5f);
+        font->renderUTF8(text, 0, x, y, LLColor4::white, LLFontGL::LEFT, LLFontGL::VCENTER,
+            LLFontGL::NORMAL, LLFontGL::NO_SHADOW);
+    };
+
+    LLStringUtil::format_map_t count_args;
+    count_args["[COUNT]"] = llformat("%u", sShaderProgramsProcessed);
+    count_args["[TOTAL]"] = llformat("%u", sShaderProgramsTotal);
+    const std::string count_text = LLTrans::getString("ShaderCompilationCount", count_args);
+
     gUIProgram.bind();
-    LLFontGL::getFontSansSerifBig()->renderUTF8(
-        LLTrans::getString("CompilingShaders"), 0,
-        size.mX / (2.f * LLFontGL::sScaleX), size.mY / (2.f * LLFontGL::sScaleY),
-        LLColor4::white, LLFontGL::HCENTER, LLFontGL::VCENTER,
-        LLFontGL::NORMAL, LLFontGL::NO_SHADOW);
+    render_centered(LLFontGL::getFontSansSerifBig(), LLTrans::getString("CompilingShaders"), center_y + 42.f);
+    render_centered(LLFontGL::getFontSansSerifSmall(), LLTrans::getString("CompilingShadersMessage"), center_y + 15.f);
+    render_centered(LLFontGL::getFontSansSerifSmall(), count_text, center_y - 12.f);
+    render_centered(LLFontGL::getFontSansSerifSmall(), sCurrentShaderName, center_y - 90.f);
+
+    const S32 bar_width = llmax(0, llmin(size.mX - 40, 520));
+    if (bar_width > 4)
+    {
+        // The usual untextured UI rectangles sample sWhiteTexture, which is
+        // not ready at startup. Scissored clears need no texture or shader.
+        gGL.flush();
+        LLGLEnable bar_scissor(GL_SCISSOR_TEST);
+        const auto fill_rect = [](S32 x, S32 y, S32 width, S32 height, const LLColor4& color)
+        {
+            glScissor(x, y, width, height);
+            glClearColor(color.mV[0], color.mV[1], color.mV[2], color.mV[3]);
+            glClear(GL_COLOR_BUFFER_BIT);
+        };
+        const S32 bar_height = 12;
+        const S32 bar_left = (size.mX - bar_width) / 2;
+        const S32 bar_bottom = size.mY / 2 - 65;
+        fill_rect(bar_left, bar_bottom, bar_width, bar_height, LLColor4::white);
+        fill_rect(bar_left + 1, bar_bottom + 1, bar_width - 2, bar_height - 2,
+            LLColor4(0.12f, 0.12f, 0.12f, 1.f));
+        const F32 fraction = sShaderProgramsTotal
+            ? llclamp(F32(sShaderProgramsProcessed) / sShaderProgramsTotal, 0.f, 1.f) : 0.f;
+        const S32 filled_width = ll_round((bar_width - 4) * fraction);
+        if (filled_width > 0)
+        {
+            fill_rect(bar_left + 2, bar_bottom + 2, filled_width, bar_height - 4,
+                LLColor4(0.22f, 0.62f, 0.90f, 1.f));
+        }
+    }
     gGL.flush();
     window->swapBuffers(); // Put the message on screen before blocking in the driver.
     gUIProgram.unbind();
@@ -659,8 +743,77 @@ static void displayShaderCompilationMessage()
     gGL.matrixMode(matrix_mode);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    glScissor(scissor_box[0], scissor_box[1], scissor_box[2], scissor_box[3]);
     glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
     gGL.setColorMask(color_mask[0], color_mask[1], color_mask[2], color_mask[3]);
+    if (previous_shader && previous_shader->isComplete()) previous_shader->bind();
+}
+
+class ShaderCompilationPauseGuard
+{
+public:
+    ShaderCompilationPauseGuard()
+    {
+        sShaderProgramsProcessed = 0;
+        sShaderProgramsTotal = shaderProgramCount();
+        sProcessedShaderPrograms.clear();
+        sShaderProgressUIReady = false;
+        sShaderProgressTimer.reset();
+        LL_INFOS("ShaderProgress") << "Shader compilation planned: " << sShaderProgramsTotal << " programs" << LL_ENDL;
+        sShaderCompilationActive = true;
+        LLWorld* worldp = LLWorld::getInstance();
+        mResumeAgent = !gSavedSettings.getBOOL("AgentPause")
+            && worldp && !worldp->getRegionList().empty();
+        if (mResumeAgent)
+        {
+            send_agent_pause();
+        }
+    }
+
+    ~ShaderCompilationPauseGuard()
+    {
+        sShaderCompilationActive = false;
+        if (mResumeAgent)
+        {
+            send_agent_resume();
+        }
+    }
+
+private:
+    bool mResumeAgent = false;
+};
+
+void LLViewerShaderMgr::shaderProgramStarted(const LLGLSLShader* shader)
+{
+    if (!sShaderCompilationActive) return;
+    sCurrentShaderName = shader->mName;
+    LL_INFOS("ShaderProgress") << "Compiling shader " << sShaderProgramsProcessed << "/"
+        << sShaderProgramsTotal << ": " << shader->mName << LL_ENDL;
+    if (sShaderProgressTimer.getElapsedTimeF32() >= 0.1f)
+    {
+        displayShaderCompilationMessage();
+        sShaderProgressTimer.reset();
+    }
+    sShaderProgramTimer.reset();
+}
+
+void LLViewerShaderMgr::shaderProgramProcessed(const LLGLSLShader* shader, bool success)
+{
+    if (!sShaderCompilationActive) return;
+    // A lower shader-class fallback is still the same program slot.
+    if (sProcessedShaderPrograms.insert(shader).second) ++sShaderProgramsProcessed;
+    if (shader == &gUIProgram) sShaderProgressUIReady = success;
+    const F32 seconds = sShaderProgramTimer.getElapsedTimeF32();
+    if (seconds >= 5.f || !success)
+    {
+        LL_WARNS("ShaderProgress") << "Shader " << shader->mName << " took " << seconds
+            << " seconds; success=" << success << LL_ENDL;
+    }
+    if (sShaderProgramsProcessed == 1 || sShaderProgressTimer.getElapsedTimeF32() >= 0.1f)
+    {
+        displayShaderCompilationMessage();
+        sShaderProgressTimer.reset();
+    }
 }
 
 void LLViewerShaderMgr::setShaders()
@@ -736,6 +889,8 @@ void LLViewerShaderMgr::setShaders()
         gViewerWindow->setCursor(UI_CURSOR_WAIT);
     }
 
+    ShaderCompilationPauseGuard compilation_guard;
+
     // Shaders
     LL_INFOS("ShaderLoading") << "\n~~~~~~~~~~~~~~~~~~\n Loading Shaders:\n~~~~~~~~~~~~~~~~~~" << LL_ENDL;
     LL_INFOS("ShaderLoading") << llformat("Using GLSL %d.%d", gGLManager.mGLSLVersionMajor, gGLManager.mGLSLVersionMinor) << LL_ENDL;
@@ -784,10 +939,7 @@ void LLViewerShaderMgr::setShaders()
         {"interface/uiF.glsl", GL_FRAGMENT_SHADER}};
     gUIProgram.mShaderLevel = interface_class;
     gUIProgram.mFeatures.attachNothing = true;
-    if (gUIProgram.createShader())
-    {
-        displayShaderCompilationMessage();
-    }
+    gUIProgram.createShader();
 
     std::string shader_name = loadBasicShaders();
     if (shader_name.empty())
@@ -893,6 +1045,13 @@ void LLViewerShaderMgr::setShaders()
     gPipeline.createGLBuffers();
 
     finalizeShaderList();
+    LL_INFOS("ShaderProgress") << "Shader compilation finished: " << sShaderProgramsProcessed
+        << "/" << sShaderProgramsTotal << " programs; loaded=" << loaded << LL_ENDL;
+    if (sShaderProgramsProcessed != sShaderProgramsTotal)
+    {
+        LL_WARNS("ShaderProgress") << "Shader program count differs from plan (a shader family may have failed)." << LL_ENDL;
+    }
+    displayShaderCompilationMessage();
 
     reentrance = false;
 }

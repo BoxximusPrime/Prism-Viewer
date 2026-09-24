@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="area_search" title="Area Search" layout="topleft"
+         width="800" height="520" min_width="720" min_height="350"
+         can_resize="true" can_tear_off="false" reuse_instance="true"
+         save_rect="true" single_instance="true" positioning="cascading">
+    <floater.string name="loading">Loading...</floater.string>
+    <floater.string name="unavailable">Unavailable (Refresh to retry)</floater.string>
+    <floater.string name="unnamed">(Unnamed)</floater.string>
+    <floater.string name="no_owner_selected">Not selected</floater.string>
+    <floater.string name="flag_payable">Payable</floater.string>
+    <floater.string name="flag_scripted">Scripted</floater.string>
+    <floater.string name="flag_sale">For sale</floater.string>
+    <floater.string name="status_count">[SHOWN] of [TOTAL] objects · [LOADING] loading · [UNAVAILABLE] unavailable</floater.string>
+    <floater.string name="not_connected">Log in to search nearby objects.</floater.string>
+    <floater.string name="invalid_query">Invalid query: check quotes, parentheses, and AND / OR / NOT operands.</floater.string>
+    <filter_editor name="query" label="Search object names and descriptions"
+                   left="16" top="36" width="606" height="24" follows="left|top|right"
+                   max_length_bytes="1024" />
+    <check_box name="fuzzy" label="Fuzzy matching" initial_value="false"
+               left="636" top="38" width="150" height="20" follows="right|top"
+               tool_tip="Also match misspelled words of at least four characters. Quoted phrases stay exact." />
+    <text name="query_help" left="16" top="68" width="768" height="20"
+          follows="left|top|right" font="SansSerifSmall">
+        AND / OR / NOT, parentheses, and "exact phrases". Example: (chair OR sofa) NOT demo
+    </text>
+    <spinner name="radius" label="Within (m)" left="16" top="96" width="170" height="23"
+             follows="left|top"
+             label_width="76" min_val="1" max_val="4096" initial_value="96"
+             increment="16" decimal_digits="0" />
+    <check_box name="payable" label="Is Payable" left="202" top="98" width="112" height="20" />
+    <check_box name="scripted" label="Is Scripted" left="320" top="98" width="114" height="20" />
+    <check_box name="for_sale" label="For Sale" left="440" top="98" width="96" height="20" />
+    <check_box name="mine" label="Owned by Me" left="542" top="98" width="140" height="20" />
+    <text name="owner_label" left="16" top="135" width="110" height="20"
+          follows="left|top">Specific owner:</text>
+    <text name="owner_name" left="128" top="135" width="432" height="20"
+          follows="left|top|right" use_ellipses="true" parse_urls="false">Not selected</text>
+    <button name="choose_owner" label="Choose..." left="576" top="132" width="100" height="24"
+            follows="right|top" tool_tip="Show objects owned by a specific resident. Replaces Owned by Me." />
+    <button name="clear_owner" label="Clear" left="688" top="132" width="96" height="24"
+            follows="right|top" enabled="false" tool_tip="Remove the specific owner filter." />
+    <scroll_list name="objects" left="16" top="168" width="768" height="264"
+                 follows="all" draw_heading="true" multi_select="false"
+                 column_padding="8" background_visible="true">
+        <scroll_list.columns name="distance" label="Metres" width="76" />
+        <scroll_list.columns name="name" label="Object" width="236" />
+        <scroll_list.columns name="description" label="Description" dynamic_width="true" />
+        <scroll_list.columns name="flags" label="Flags" width="180" />
+    </scroll_list>
+    <text name="status" left="16" top="442" width="640" height="20" follows="left|right|bottom"
+          font="SansSerifSmall" />
+    <button name="refresh" label="Refresh" left="676" top="440" width="108" height="24"
+            follows="right|bottom" tool_tip="Reload object properties and retry unavailable objects." />
+    <text name="scope_help" left="16" top="476" width="768" height="28"
+          follows="left|right|bottom" font="SansSerifSmall" word_wrap="true">
+        Loaded world objects only; attachments excluded. Hover a row to highlight its linkset.
+        Right-click a row for object actions. Refresh to reload names, owners and sale details.
+    </text>
+</floater>

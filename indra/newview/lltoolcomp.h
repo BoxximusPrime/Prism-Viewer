@@ -79,6 +79,7 @@ public:
 
     bool                    isSelecting();
     LLTool*                 getCurrentTool()                                { return mCur; }
+    LLManip*                getManipulator() const                          { return mManip; }
 
 protected:
     void                    setCurrentTool( LLTool* new_tool );

@@ -724,6 +724,10 @@
              function="Floater.Toggle"
              parameter="legacy_search" />
         </menu_item_call>
+        <menu_item_call label="Area Search..." name="AreaSearch">
+            <menu_item_call.on_click function="Floater.ToggleOrBringToFront"
+                                     parameter="area_search" />
+        </menu_item_call>
         <menu_item_separator/>
         <menu_item_call
          label="Teleport home"
@@ -888,6 +892,15 @@
             <menu_item_check.on_click
                function="ToggleControl"
                parameter="ShowPropertyLines" />
+          </menu_item_check>
+          <menu_item_check
+             label="Parcel Boundary Walls"
+             name="Parcel Boundary Walls">
+            <menu_item_check.on_check
+               control="ShowParcelBoundaryWalls" />
+            <menu_item_check.on_click
+               function="ToggleControl"
+               parameter="ShowParcelBoundaryWalls" />
           </menu_item_check>
           <menu_item_check
              label="Land Owners"

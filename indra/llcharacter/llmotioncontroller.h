@@ -122,6 +122,9 @@ public:
     // returns true if successful
     bool stopMotionLocally( const LLUUID &id, bool stop_immediate );
 
+    // Begin the authored ease-out now on every instance, skipping loop exits.
+    void stopMotionWithEaseOut(const LLUUID& id);
+
     // Move motions from loading to loaded
     void updateLoadingMotions();
 

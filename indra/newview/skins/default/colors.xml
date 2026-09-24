@@ -909,6 +909,9 @@
     <color
      name="llOwnerSayChatColor"
      reference="LtYellow" />
+    <color
+     name="NearbyChatNameColor"
+     reference="AccentColor" />
 
     <!-- New Colors -->
     <color
@@ -990,7 +993,7 @@
     <!-- Groups visible in own profiles -->
     <color
         name="GroupVisibleInProfile"
-        reference="TextBgFocusColor" />
+        reference="TextFgColor" />
     <color
         name="GroupHiddenInProfile"
         reference="Gray" />

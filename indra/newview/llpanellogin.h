@@ -100,6 +100,7 @@ private:
     static void onClickVersion(void*);
     static void onUpdateCheckResult(const LLSD& result);
     static void onUpdateCheckFailed(const LLSD& result);
+    static void updateCheckCoro();
     static void onClickForgotPassword(void*);
     static void onClickSignUp(void*);
     static void onUserNameTextEnty(void*);

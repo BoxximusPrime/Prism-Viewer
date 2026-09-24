@@ -640,6 +640,10 @@ void LLFloaterTools::setEditDocked(bool docked)
         gFloaterView->addChild(this);
         setResizeLimits(560, 620);
         setShape(mFloatingRect);
+        // The saved floating position may belong to a larger window or monitor.
+        gFloaterView->adjustToFitScreen(this, false);
+        mFloatingRect = getRect();
+        storeRectControl();
     }
 }
 

@@ -36,6 +36,7 @@
 #include "llfasttimerview.h"
 #include "llfloater360capture.h"
 #include "llfloaterabout.h"
+#include "llfloaterareasearch.h"
 #include "llfloateraddpaymentmethod.h"
 #include "llfloaterauction.h"
 #include "llfloaterautoreplacesettings.h"
@@ -525,6 +526,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("snapshot", "floater_snapshot.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterSnapshot>);
     LLFloaterReg::add("simple_snapshot", "floater_simple_snapshot.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterSimpleSnapshot>);
     LLFloaterReg::add("search", "floater_search.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterSearch>);
+    LLFloaterReg::add("area_search", "floater_area_search.xml", &LLFloaterReg::build<LLFloaterAreaSearch>);
     LLFloaterReg::add("legacy_search", "floater_directory.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterDirectory>);
     LLFloaterReg::add("profile", "floater_profile.xml",(LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterProfile>);
     LLFloaterReg::add("slapp_test", "floater_test_slapp.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterSLappTest>);

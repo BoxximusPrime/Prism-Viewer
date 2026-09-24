@@ -452,7 +452,50 @@ bool LLMotionController::stopMotionLocally(const LLUUID &id, bool stop_immediate
     // if already inactive, return false
     LLMotion *motion = findMotion(id);
     // SL-1290: always stop immediate if paused
-    return stopMotionInstance(motion, stop_immediate||mPaused);
+    stop_immediate = stop_immediate || mPaused;
+    bool stopped = false;
+    if (stop_immediate)
+    {
+        // Restarting a blending motion leaves older instances outside the ID
+        // map. An immediate cancellation must also remove those copies, whose
+        // keyframe loop exits can otherwise keep affecting the pose for seconds.
+        for (auto it = mDeprecatedMotions.begin(); it != mDeprecatedMotions.end();)
+        {
+            LLMotion* deprecated_motion = *it++;
+            if (deprecated_motion->getID() == id)
+            {
+                stopped = stopMotionInstance(deprecated_motion, true) || stopped;
+            }
+        }
+    }
+    return stopMotionInstance(motion, stop_immediate) || stopped;
+}
+
+void LLMotionController::stopMotionWithEaseOut(const LLUUID& id)
+{
+    if (mPaused)
+    {
+        stopMotionLocally(id, true);
+        return;
+    }
+
+    LLMotion* loading_motion = findMotion(id);
+    if (loading_motion && isMotionLoading(loading_motion))
+    {
+        loading_motion->setStopped(true);
+    }
+    for (LLMotion* motion : mActiveMotions)
+    {
+        if (motion->getID() == id &&
+            (!motion->isStopped() || motion->getStopTime() > mAnimTime))
+        {
+            // The keyframe override can postpone the stop until a long loop
+            // exit finishes. Use the base stop time, preserving authored easing
+            // and all current pose weights, including deprecated blend copies.
+            // Repeated simulator stops must not restart a fade already underway.
+            motion->LLMotion::setStopTime(mAnimTime);
+        }
+    }
 }
 
 bool LLMotionController::stopMotionInstance(LLMotion* motion, bool stop_immediate)
@@ -464,7 +507,7 @@ bool LLMotionController::stopMotionInstance(LLMotion* motion, bool stop_immediat
 
 
     // If on active list, stop it
-    if (isMotionActive(motion) && !motion->isStopped())
+    if (isMotionActive(motion) && (stop_immediate || !motion->isStopped()))
     {
         motion->setStopTime(mAnimTime);
         if (stop_immediate)
