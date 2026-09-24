@@ -51,6 +51,7 @@ public:
 
     void setClickPickPending() { mClickPickPending = true; }
     static void pickCallback(const LLPickInfo& pick_info);
+    void startMouseSteeringFromWorld(S32 down_x, S32 down_y, S32 x, S32 y, MASK mask);
     bool mouseSteerMode() { return mMouseSteering; }
 
 protected:

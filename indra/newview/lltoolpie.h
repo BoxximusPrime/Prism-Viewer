@@ -121,6 +121,7 @@ private:
 
 private:
     bool                mMouseButtonDown;
+    bool                mDeferredWorldClick;
     bool                mMouseOutsideSlop;      // for this drag, has mouse moved outside slop region
     S32                 mMouseDownX;
     S32                 mMouseDownY;

@@ -84,6 +84,7 @@ static ECursorType cursor_from_parcel_media(U8 click_action);
 LLToolPie::LLToolPie()
 :   LLTool(std::string("Pie")),
     mMouseButtonDown( false ),
+    mDeferredWorldClick( false ),
     mMouseOutsideSlop( false ),
     mMouseSteerX(-1),
     mMouseSteerY(-1),
@@ -112,6 +113,7 @@ bool LLToolPie::handleMouseDown(S32 x, S32 y, MASK mask)
     }
 
     mMouseOutsideSlop = false;
+    mDeferredWorldClick = false;
     mMouseDownX = x;
     mMouseDownY = y;
     LLTimer pick_timer;
@@ -186,6 +188,30 @@ bool LLToolPie::handleMouseDown(S32 x, S32 y, MASK mask)
     mPick.mKeyMask = mask;
 
     mMouseButtonDown = true;
+
+    // Let a world-object drag claim the gesture before sending its click.
+    static LLCachedControl<bool> drag_world_to_turn(gSavedSettings, "BoxxyDragWorldToTurnAvatar", false);
+    LLViewerObject* clicked_object = mPick.getObject();
+    if (drag_world_to_turn && mask == MASK_NONE && gAgentCamera.cameraThirdPerson()
+        && isAgentAvatarValid() && !gSavedSettings.getBOOL("FreezeTime")
+        && clicked_object && !clicked_object->isAvatar() && !clicked_object->isAttachment()
+        && !mPick.mPickHUD && !mPick.mPickNameTag)
+    {
+        LLViewerObject* parent = clicked_object->getRootEdit();
+        const LLTextureEntry* face = mPick.mObjectFace >= 0 && mPick.mObjectFace < clicked_object->getNumTEs()
+            ? clicked_object->getTE(mPick.mObjectFace) : NULL;
+        const bool touchable = clicked_object->getClickAction() != CLICK_ACTION_DISABLED
+            && (clicked_object->flagHandleTouch() || (parent && parent->flagHandleTouch()));
+        const bool physical = clicked_object->flagUsePhysics()
+            || (parent && !parent->isAvatar() && parent->flagUsePhysics());
+        if (useClickAction(mask, clicked_object, parent) || touchable || physical
+            || (face && face->hasMedia() && gSavedSettings.getBOOL("MediaOnAPrimUI")))
+        {
+            mDeferredWorldClick = true;
+            gFocusMgr.setKeyboardFocus(NULL);
+            return true;
+        }
+    }
 
     // If nothing clickable is picked, needs to return
     // false for click-to-walk or click-to-teleport to work.
@@ -556,7 +582,7 @@ bool LLToolPie::shouldBlockClickAction(MASK mask, LLViewerObject* object, LLView
 
     // Resolve inherited linkset actions just as the action cursor does.
     const U8 action = final_click_action(object);
-    return action != CLICK_ACTION_PAY && action != CLICK_ACTION_TOUCH;
+    return action != CLICK_ACTION_PAY && action != CLICK_ACTION_TOUCH && action != CLICK_ACTION_BUY;
 }
 
 ECursorType LLToolPie::cursorFromObject(LLViewerObject* object)
@@ -802,6 +828,10 @@ void LLToolPie::selectionPropertiesReceived()
 
 bool LLToolPie::handleHover(S32 x, S32 y, MASK mask)
 {
+    static LLCachedControl<bool> drag_world_to_turn(gSavedSettings, "BoxxyDragWorldToTurnAvatar", false);
+    const bool can_drag_to_turn = mDeferredWorldClick || (drag_world_to_turn && mask == MASK_NONE
+        && gAgentCamera.cameraThirdPerson() && isAgentAvatarValid()
+        && !gSavedSettings.getBOOL("FreezeTime") && !mPick.mPickHUD);
     bool pick_rigged = false; //gSavedSettings.getBOOL("AnimatedObjectsAllowLeftClick");
     mHoverPick = gViewerWindow->pickImmediate(x, y, false, pick_rigged);
     LLViewerObject *parent = NULL;
@@ -812,16 +842,24 @@ bool LLToolPie::handleHover(S32 x, S32 y, MASK mask)
         parent = object->getRootEdit();
     }
 
-    if (!handleMediaHover(mHoverPick)
+    if ((!handleMediaHover(mHoverPick) || mDeferredWorldClick)
         && !mMouseOutsideSlop
         && mMouseButtonDown
-        // disable camera steering if click on land is not used for moving
-        && gViewerInput.isMouseBindUsed(CLICK_LEFT, MASK_NONE, MODE_THIRD_PERSON))
+        // Keep the existing click-to-walk steering, or use the Prism drag option.
+        && (can_drag_to_turn || gViewerInput.isMouseBindUsed(CLICK_LEFT, MASK_NONE, MODE_THIRD_PERSON)))
     {
         S32 delta_x = x - mMouseDownX;
         S32 delta_y = y - mMouseDownY;
         if (delta_x * delta_x + delta_y * delta_y > DRAG_N_DROP_DISTANCE_THRESHOLD * DRAG_N_DROP_DISTANCE_THRESHOLD)
         {
+            if (can_drag_to_turn)
+            {
+                mMouseButtonDown = false;
+                mDeferredWorldClick = false;
+                LLToolMgr::getInstance()->setTransientTool(LLToolCamera::getInstance());
+                LLToolCamera::getInstance()->startMouseSteeringFromWorld(mMouseDownX, mMouseDownY, x, y, mask);
+                return true;
+            }
             startCameraSteering();
             steerCameraWithMouse(x, y);
             gViewerWindow->setCursor(UI_CURSOR_TOOLGRAB);
@@ -887,6 +925,30 @@ bool LLToolPie::handleMouseUp(S32 x, S32 y, MASK mask)
     else
     {
         mDoubleClickTimer.reset();
+    }
+    if (mDeferredWorldClick)
+    {
+        mDeferredWorldClick = false;
+        const S32 delta_x = x - mMouseDownX;
+        const S32 delta_y = y - mMouseDownY;
+        if (delta_x * delta_x + delta_y * delta_y >
+            DRAG_N_DROP_DISTANCE_THRESHOLD * DRAG_N_DROP_DISTANCE_THRESHOLD)
+        {
+            mDoubleClickTimer.stop();
+            mMouseButtonDown = false;
+            if (gAgentCamera.cameraThirdPerson())
+            {
+                LLToolMgr::getInstance()->setTransientTool(LLToolCamera::getInstance());
+                LLToolCamera::getInstance()->startMouseSteeringFromWorld(mMouseDownX, mMouseDownY, x, y, mPick.mKeyMask);
+                LLToolCamera::getInstance()->handleMouseUp(x, y, mask);
+            }
+            return true;
+        }
+        handleLeftClickPick();
+        if (LLToolMgr::getInstance()->getCurrentTool() == LLToolGrab::getInstance())
+        {
+            LLToolGrab::getInstance()->handleMouseUp(x, y, mask);
+        }
     }
     LLViewerObject* obj = mPick.getObject();
 
@@ -1541,6 +1603,7 @@ void LLToolPie::onMouseCaptureLost()
 {
     stopCameraSteering();
     mMouseButtonDown = false;
+    mDeferredWorldClick = false;
     handleMediaMouseUp();
 }
 

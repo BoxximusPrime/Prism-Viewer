@@ -3265,6 +3265,17 @@ void send_agent_update(bool force_send, bool send_reliable)
     // LBUTTON and ML_LBUTTON so that using the camera (alt-key) doesn't
     // trigger a control event.
     U32 control_flags = gAgent.getControlFlags();
+    if (gAgent.isFacingBackwardWalk())
+    {
+        const U32 left_flags = control_flags & (AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG |
+                                                 AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG);
+        control_flags &= ~(AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG |
+                           AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG);
+        if (left_flags & AGENT_CONTROL_LEFT_POS) control_flags |= AGENT_CONTROL_LEFT_NEG;
+        if (left_flags & AGENT_CONTROL_LEFT_NEG) control_flags |= AGENT_CONTROL_LEFT_POS;
+        if (left_flags & AGENT_CONTROL_NUDGE_LEFT_POS) control_flags |= AGENT_CONTROL_NUDGE_LEFT_NEG;
+        if (left_flags & AGENT_CONTROL_NUDGE_LEFT_NEG) control_flags |= AGENT_CONTROL_NUDGE_LEFT_POS;
+    }
     MASK key_mask = gKeyboard->currentMask(true);
     if (key_mask & MASK_ALT || key_mask & MASK_CONTROL)
     {
@@ -3836,9 +3847,21 @@ void process_sound_trigger(LLMessageSystem *msg, void **)
     // distinct audio type so they can be mixed independently from SFX.
     const bool is_gesture_sound = object_id == owner_id;
 
-    if (LLMaterialTable::basic.isCollisionSound(sound_id) && !gSavedSettings.getBOOL("EnableCollisionSounds"))
+    if (LLMaterialTable::basic.isCollisionSound(sound_id))
     {
-        return;
+        if (!gSavedSettings.getBOOL("EnableCollisionSounds"))
+        {
+            return;
+        }
+
+        LLViewerObject* sound_object = gObjectList.findObject(object_id);
+        const bool avatar_collision = object_id == owner_id || (sound_object && sound_object->isAvatar());
+        if (avatar_collision &&
+            ((object_id == gAgentID && gSavedSettings.getBOOL("BoxxyMuteOwnAvatarCollisionSounds")) ||
+             (object_id != gAgentID && gSavedSettings.getBOOL("BoxxyMuteOtherAvatarCollisionSounds"))))
+        {
+            return;
+        }
     }
 
     const LLAudioEngine::LLAudioType audio_type = is_gesture_sound

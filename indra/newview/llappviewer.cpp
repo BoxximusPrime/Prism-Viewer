@@ -45,6 +45,7 @@
 #include "llviewertexturelist.h"
 #include "llgroupmgr.h"
 #include "llagent.h"
+#include "llboxxyswim.h"
 #include "llagentcamera.h"
 #include "llagentlanguage.h"
 #include "llagentui.h"
@@ -5294,6 +5295,8 @@ void LLAppViewer::idle()
 
 
     F32 yaw = 0.f;              // radians
+
+    LLBoxxySwim::update();
 
     if (!gDisconnected)
     {

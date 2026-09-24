@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include <vector>
 #include "llfeaturemanager.h"
 #include "lldrawpoolwater.h"
 
@@ -41,6 +42,7 @@
 #include "llsky.h"
 #include "llviewertexturelist.h"
 #include "llviewerregion.h"
+#include "llvoavatarself.h"
 #include "llvowater.h"
 #include "llworld.h"
 #include "pipeline.h"
@@ -56,8 +58,87 @@ F32 LLDrawPoolWater::sWaterFogEnd = 0.f;
 
 extern bool gCubeSnapshot;
 
+namespace
+{
+constexpr S32 MAX_WATER_WAKES = 12;
+constexpr F64 WATER_WAKE_LIFETIME = 2.5;
+constexpr F64 WATER_WAKE_SPACING = 0.5;
+
+struct WaterWake
+{
+    LLVector3d position;
+    F64 born;
+    F32 strength;
+};
+
+std::vector<WaterWake> sWaterWakes;
+LLVector3d sWakeLastPosition;
+F64 sWakeLastTime = -1.0;
+F64 sWakeDistance = 0.0;
+U32 sWakeFrame = ~0U;
+
+void updateLocalWaterWake(F64 now)
+{
+    const U32 frame = LLFrameTimer::getFrameCount();
+    if (sWakeFrame == frame) return;
+    sWakeFrame = frame;
+    while (!sWaterWakes.empty() && now - sWaterWakes.front().born >= WATER_WAKE_LIFETIME)
+        sWaterWakes.erase(sWaterWakes.begin());
+
+    if (gCubeSnapshot || !isAgentAvatarValid() || !gAgent.getRegion() || gAgentAvatarp->isSitting())
+    {
+        sWakeLastTime = -1.0;
+        return;
+    }
+
+    const LLVector3d position = gAgentAvatarp->getPositionGlobal();
+    const F32 water_height = gAgent.getRegion()->getWaterHeight();
+    const F32 depth = water_height - (F32)position.mdV[VZ];
+    const F32 ground_depth = water_height - LLWorld::getInstance()->resolveLandHeightGlobal(position);
+    // Wading and surface swimming disturb the water; flying over it and deep
+    // dives do not. The simulator's mean water plane is the visual reference.
+    if (depth < -0.4f || depth > 1.2f || ground_depth < 0.15f ||
+        (gAgent.getFlying() && depth < 0.15f))
+    {
+        sWakeLastTime = -1.0;
+        return;
+    }
+
+    const LLVector3d delta = position - sWakeLastPosition;
+    const F64 traveled = sqrt(delta.mdV[VX] * delta.mdV[VX] + delta.mdV[VY] * delta.mdV[VY]);
+    const F64 dt = now - sWakeLastTime;
+    if (sWakeLastTime < 0.0 || dt <= 0.0 || dt > 0.5 || traveled > 4.0 ||
+        fabs(delta.mdV[VZ]) > 2.0)
+    {
+        if (sWakeLastTime >= 0.0 && traveled > 4.0) sWaterWakes.clear();
+        sWakeDistance = 0.0;
+    }
+    else if (traveled / dt >= 0.45)
+    {
+        const F32 strength = llclamp((F32)(traveled / dt / 2.5), 0.25f, 1.0f);
+        for (F64 next = WATER_WAKE_SPACING - sWakeDistance; next <= traveled; next += WATER_WAKE_SPACING)
+        {
+            sWaterWakes.push_back({sWakeLastPosition + delta * (next / traveled),
+                now - dt * (1.0 - next / traveled), strength});
+            if (sWaterWakes.size() > MAX_WATER_WAKES) sWaterWakes.erase(sWaterWakes.begin());
+        }
+        sWakeDistance = fmod(sWakeDistance + traveled, WATER_WAKE_SPACING);
+    }
+    else
+    {
+        sWakeDistance = 0.0;
+    }
+    sWakeLastPosition = position;
+    sWakeLastTime = now;
+}
+}
+
 LLDrawPoolWater::LLDrawPoolWater() : LLFacePool(POOL_WATER)
 {
+    sWaterWakes.clear();
+    sWakeLastTime = -1.0;
+    sWakeDistance = 0.0;
+    sWakeFrame = ~0U;
 }
 
 LLDrawPoolWater::~LLDrawPoolWater()
@@ -140,6 +221,7 @@ void LLDrawPoolWater::updateWaveField()
 {
     LL_PROFILE_GPU_ZONE("water wave field");
     const F64 now = LLFrameTimer::getElapsedSeconds();
+    updateLocalWaterWake(now);
     const F64 dt = mWaveLastTime < 0.0 ? 0.0 : llmax(0.0, now - mWaveLastTime);
     mWaveLastTime = now;
     static LLCachedControl<F32> wind_speed(gSavedSettings, "RenderWaterWindSpeed", 1.f);
@@ -258,6 +340,25 @@ void LLDrawPoolWater::prepareDisplacementDepth()
 
 void LLDrawPoolWater::bindWaveField(LLGLSLShader& shader)
 {
+    if (shader.getUniformLocation(LLStaticHashedString("water_wake_count")) >= 0)
+    {
+        F32 wakes[MAX_WATER_WAKES * 4];
+        const LLVector3d origin = gAgent.getPosGlobalFromAgent(LLVector3::zero);
+        const F64 now = LLFrameTimer::getElapsedSeconds();
+        S32 count = 0;
+        for (const WaterWake& wake : sWaterWakes)
+        {
+            const F64 age = now - wake.born;
+            if (age < 0.0 || age >= WATER_WAKE_LIFETIME) continue;
+            wakes[4 * count] = (F32)(wake.position.mdV[VX] - origin.mdV[VX]);
+            wakes[4 * count + 1] = (F32)(wake.position.mdV[VY] - origin.mdV[VY]);
+            wakes[4 * count + 2] = (F32)age;
+            wakes[4 * count + 3] = wake.strength;
+            ++count;
+        }
+        shader.uniform1i(LLStaticHashedString("water_wake_count"), count);
+        if (count) shader.uniform4fv(LLStaticHashedString("water_wakes"), count, wakes);
+    }
     static LLCachedControl<bool> procedural(gSavedSettings, "RenderWaterProceduralWaves", true);
     static LLCachedControl<F32> wave_strength(gSavedSettings, "RenderWaterWaveStrength", 1.f);
     static LLCachedControl<F32> wave_scale(gSavedSettings, "RenderWaterWaveScale", 1.f);

@@ -146,6 +146,30 @@ bool LLToolCamera::handleMouseDown(S32 x, S32 y, MASK mask)
     return true;
 }
 
+void LLToolCamera::startMouseSteeringFromWorld(S32 down_x, S32 down_y, S32 x, S32 y, MASK mask)
+{
+    mMouseDownX = down_x;
+    mMouseDownY = down_y;
+    mMouseUpX = x;
+    mMouseUpY = y;
+    mMouseUpMask = mask;
+    mAccumX = mAccumY = 0;
+    mOutsideSlopX = mOutsideSlopY = true;
+    mValidClickPoint = true;
+    mClickPickPending = false;
+    mMouseSteering = true;
+
+    gAgent.stopAutoPilot(true);
+    gAgentCamera.setFocusOnAvatar(true, true);
+    setMouseCapture(true);
+    gViewerWindow->hideCursor();
+
+    const F32 radians_per_pixel = 360.f * DEG_TO_RAD / gViewerWindow->getWorldViewWidthScaled();
+    gAgentCamera.cameraOrbitAround(-(x - down_x) * radians_per_pixel);
+    gAgentCamera.cameraOrbitOver(-(y - down_y) * radians_per_pixel);
+    gViewerWindow->moveCursorToCenter();
+}
+
 void LLToolCamera::pickCallback(const LLPickInfo& pick_info)
 {
     LLToolCamera* camera = LLToolCamera::getInstance();
