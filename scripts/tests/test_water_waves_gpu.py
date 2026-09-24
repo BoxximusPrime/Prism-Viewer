@@ -254,6 +254,24 @@ def run(sdl,gl):
                     math.fmod((-.6*256+.8*-256)/scale,256))
         check(close(slope(),original,.002),'scaled waves stay continuous across region origins')
 
+    gpu.uniform(helper,'water_wave_strength',0)
+    gpu.uniform(helper,'water_wake_count',1,integer=True)
+    gpu.uniform(helper,'water_wakes[0]',0,0,0,1)
+    gpu.uniform(helper,'fixture_position',.4,0)
+    wake=slope()
+    check(wake[0]>.05 and abs(wake[1])<.001,'local wake bends the water normal')
+    gpu.uniform(helper,'fixture_position',5,0)
+    check(close(slope(),[0,0]),'wake leaves distant water unchanged')
+    gpu.uniform(helper,'fixture_position',.4,0)
+    gpu.uniform(helper,'water_procedural_waves',0,integer=True)
+    check(close(slope(),wake),'wake also works with authored water normals')
+    gpu.uniform(helper,'water_wake_count',0,integer=True)
+    check(close(slope(),[0,0]),'zero wake count restores the baseline')
+    gpu.uniform(helper,'water_wake_count',1,integer=True)
+    gpu.uniform(helper,'water_wakes[0]',0,0,2.5,1)
+    gpu.uniform(helper,'fixture_position',3.15,0)
+    check(close(slope(),[0,0]),'expired wake fades away')
+
     for name,args in {'GenQueries':[I,C.POINTER(U)],'BeginQuery':[U,U],'EndQuery':[U],
         'GetQueryObjectui64v':[U,U,C.POINTER(C.c_uint64)],'DeleteQueries':[I,C.POINTER(U)]}.items():
         setattr(gl,name,C.WINFUNCTYPE(None,*args)(sdl.SDL_GL_GetProcAddress(('gl'+name).encode())))

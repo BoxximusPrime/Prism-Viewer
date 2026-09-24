@@ -837,7 +837,8 @@ LLBoxxyAO::State* LLBoxxyAO::stateForMotion(const LLUUID& motion) const
     if (mBelowWater)
     {
         if (motion == ANIM_AGENT_HOVER) return stateForType(mCurrentSet, STATE_FLOATING);
-        if (motion == ANIM_AGENT_FLY) return stateForType(mCurrentSet, STATE_SWIMMING_FORWARD);
+        if (motion == ANIM_AGENT_FLY || motion == ANIM_AGENT_FLYSLOW)
+            return stateForType(mCurrentSet, STATE_SWIMMING_FORWARD);
         if (motion == ANIM_AGENT_HOVER_UP) return stateForType(mCurrentSet, STATE_SWIMMING_UP);
         if (motion == ANIM_AGENT_HOVER_DOWN) return stateForType(mCurrentSet, STATE_SWIMMING_DOWN);
     }

@@ -6768,18 +6768,26 @@ bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
     if (isSelf())
     {
         LLBoxxyAO& ao = LLBoxxyAO::instance();
+        const LLBoxxyAO::State* previous_state = ao.getCurrentState();
+        const LLUUID previous_asset = previous_state ? previous_state->current_asset : LLUUID::null;
         const LLUUID override_id = ao.overrideMotion(id, true);
         if (override_id.notNull() || ao.isActiveOverride(id))
         {
             const LLUUID& asset = override_id.notNull() ? override_id : id;
-            if (override_id.notNull())
+            LLMotion* motion = mMotionController.findMotion(asset);
+            const bool already_playing = motion && mMotionController.isMotionActive(motion) && !motion->isStopped();
+            // A new stock sequence (e.g. fly <-> flyslow) can resolve to the
+            // same AO animation. Re-sending START restarts it on observers,
+            // even though our local active-motion check hides that restart.
+            // Still publish a newly selected override that was only previewed
+            // locally, and genuine starts after the animation has stopped.
+            if (override_id.notNull() && (!already_playing || previous_asset != asset))
             {
                 gAgent.sendAnimationRequest(asset, ANIM_REQUEST_START);
             }
             // Start locally so the outgoing fade overlaps the incoming motion.
             // Its simulator echo must not restart an already blending instance.
-            LLMotion* motion = mMotionController.findMotion(asset);
-            if (motion && mMotionController.isMotionActive(motion) && !motion->isStopped())
+            if (already_playing)
             {
                 return true;
             }

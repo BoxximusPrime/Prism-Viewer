@@ -58,7 +58,7 @@ int main(){
         for(int mask=0;mask<8;++mask){
             const int effective=child?child:(root==CLICK_ACTION_DISABLED?CLICK_ACTION_TOUCH:root);
             const bool actionable=(child&&child!=CLICK_ACTION_DISABLED)||(root&&root!=CLICK_ACTION_DISABLED);
-            const bool expected=enabled&&mask==MASK_NONE&&actionable&&effective!=CLICK_ACTION_PAY&&effective!=CLICK_ACTION_TOUCH;
+            const bool expected=enabled&&mask==MASK_NONE&&actionable&&effective!=CLICK_ACTION_PAY&&effective!=CLICK_ACTION_TOUCH&&effective!=CLICK_ACTION_BUY;
             assert(tool.shouldBlockClickAction(mask,&object,&parent)==expected); ++checks;
         }
     }
@@ -70,7 +70,7 @@ int main(){
     assert(!tool.shouldBlockClickAction(0,&object,&parent)); // inherited Pay
     parent.action=CLICK_ACTION_TOUCH;assert(!tool.shouldBlockClickAction(0,&object,&parent));
     object.action=CLICK_ACTION_BUY;parent.action=CLICK_ACTION_PAY;
-    assert(tool.shouldBlockClickAction(0,&object,&parent)); // Pay root does not exempt child Buy
+    assert(!tool.shouldBlockClickAction(0,&object,&parent)); // Buy is allowed on child prims
     object.avatar=true;assert(!tool.shouldBlockClickAction(0,&object,&parent));object.avatar=false;
     object.hud=true;assert(!tool.shouldBlockClickAction(0,&object,&parent));object.hud=false;
     object.attachment=true;assert(!tool.shouldBlockClickAction(0,&object,&parent));object.attachment=false;
@@ -87,4 +87,4 @@ with tempfile.TemporaryDirectory() as directory:
     cpp.write_text(harness)
     subprocess.run(["g++", "-std=c++17", str(cpp), "-o", str(exe)], check=True)
     subprocess.run([str(exe)], check=True)
-print("Left-click blocker: 1,600 action/modifier/settings combinations, inherited Pay/Touch, child overrides, HUD/avatar/attachment exceptions and both click paths passed.")
+print("Left-click blocker: 1,600 action/modifier/settings combinations, inherited Pay/Buy/Touch, child overrides and HUD/avatar/attachment exceptions passed.")

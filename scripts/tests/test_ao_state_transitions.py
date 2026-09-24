@@ -507,7 +507,68 @@ int main() {
         assert(!f.stopped(typing) && avatar.mMotionController.playing(typing) == 1);
         assert(f.event(ANIM_AGENT_TYPE, false) == typing);
     }
-    std::cout << "PASS: all primary AO state handoffs, missing/delayed stock stops, walk variants, stock fallback, "
+    // Slow-flight controls used by swimming must select the same shared AO
+    // animation as full-speed swimming, while above-water flight is unchanged.
+    {
+        Fixture f;
+        assert(f.ao.stateForMotion(ANIM_AGENT_FLYSLOW)->type == LLBoxxyAO::STATE_FLYING_SLOW);
+        f.ao.mBelowWater = true;
+        assert(f.ao.stateForMotion(ANIM_AGENT_HOVER)->type == LLBoxxyAO::STATE_FLOATING);
+        assert(f.ao.stateForMotion(ANIM_AGENT_HOVER_UP)->type == LLBoxxyAO::STATE_SWIMMING_UP);
+        assert(f.ao.stateForMotion(ANIM_AGENT_HOVER_DOWN)->type == LLBoxxyAO::STATE_SWIMMING_DOWN);
+        const LLUUID swim = f.event(ANIM_AGENT_FLYSLOW, true);
+        assert(f.ao.getCurrentState()->type == LLBoxxyAO::STATE_SWIMMING_FORWARD);
+        assert(swim.notNull());
+        assert(f.event(ANIM_AGENT_FLY, true) == swim);
+        f.ao.mBelowWater = false;
+        assert(f.ao.stateForMotion(ANIM_AGENT_FLYSLOW)->type == LLBoxxyAO::STATE_FLYING_SLOW);
+    }
+    // Observers receive each outgoing START as another animation sequence.
+    // Local playback deduplication alone must not hide repeated network starts
+    // when the simulator changes between stock fly variants of the same state.
+    {
+        Fixture f;
+        f.ao.mBelowWater = true;
+        const LLUUID idle = f.event(ANIM_AGENT_HOVER, true);
+        const LLUUID swim = f.event(ANIM_AGENT_FLYSLOW, true);
+        const auto start_count = [&](LLUUID asset) {
+            return std::count(gAgent.requests.begin(), gAgent.requests.end(),
+                std::make_pair(asset, int(ANIM_REQUEST_START)));
+        };
+        assert(start_count(swim) == 1 && f.stopped(idle));
+        avatar.mMotionController.findMotion(swim)->blending = true;
+        for (int frame = 0; frame < 100; ++frame)
+        {
+            const LLUUID stock = frame % 2 ? ANIM_AGENT_FLY : ANIM_AGENT_FLYSLOW;
+            const LLUUID old_stock = frame % 2 ? ANIM_AGENT_FLYSLOW : ANIM_AGENT_FLY;
+            avatar.mSignaledAnimations.clear();
+            avatar.mSignaledAnimations[stock] = frame + 1;
+            avatar.mSignaledAnimations[swim] = 1;
+            f.event(old_stock, false);
+            assert(f.event(stock, true) == swim);
+            avatar.startMotion(swim); // Delayed simulator echo.
+        }
+        assert(start_count(swim) == 1 && !f.stopped(swim));
+        assert(avatar.mMotionController.playing(swim) == 1);
+        avatar.mSignaledAnimations.clear();
+        avatar.mSignaledAnimations[ANIM_AGENT_HOVER] = 1;
+        f.event(ANIM_AGENT_FLY, false);
+        f.event(ANIM_AGENT_HOVER, true);
+        assert(f.stopped(swim) && start_count(idle) == 2);
+        f.event(ANIM_AGENT_FLYSLOW, true);
+        assert(start_count(swim) == 2); // A real stop/restart is still broadcast.
+    }
+    // A locally previewed animation is not already published as an AO override.
+    {
+        Fixture f;
+        f.ao.mBelowWater = true;
+        const LLUUID swim = f.state(ANIM_AGENT_FLY).animations.front().asset_id;
+        avatar.LLCharacter::startMotion(swim);
+        f.event(ANIM_AGENT_FLY, true);
+        assert(std::count(gAgent.requests.begin(), gAgent.requests.end(),
+            std::make_pair(swim, int(ANIM_REQUEST_START))) == 1);
+    }
+    std::cout << "PASS: stable observer-facing swim starts, real idle transitions, underwater slow-flight AO mapping; all primary AO state handoffs, missing/delayed stock stops, walk variants, stock fallback, "
                  "pending stand cycles, same-state rotation, layered typing, loop exits, duplicate blend instances "
                  "and delayed custom-asset echoes; authored fades and local starts without echo restarts\n";
 }

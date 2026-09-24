@@ -32,6 +32,7 @@
 #include "llfloaterreg.h"
 #include "llmath.h"
 #include "llagent.h"
+#include "llboxxyswim.h"
 #include "llagentcamera.h"
 #include "llfloaterimnearbychat.h"
 #include "llfocusmgr.h"
@@ -96,6 +97,7 @@ bool agent_jump( EKeystate s )
     if( time < FLY_TIME
         || frame_count <= FLY_FRAMES
         || gAgent.upGrabbed()
+        || LLBoxxySwim::isSwimming()
         || !gSavedSettings.getBOOL("AutomaticFly"))
     {
         gAgent.moveUp(1);

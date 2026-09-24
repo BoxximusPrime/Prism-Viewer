@@ -353,6 +353,39 @@
    top="20"
    width="320" />
   <check_box
+   control_name="BoxxyDragWorldToTurnAvatar"
+   follows="left|top"
+   height="20"
+   label="Drag anywhere in world to turn avatar"
+   layout="topleft"
+   left="30"
+   name="drag_world_to_turn_avatar"
+   tool_tip="Drag past the click threshold to turn your avatar; ordinary clicks still interact with objects"
+   top_pad="8"
+   width="390" />
+  <check_box
+   control_name="BoxxyMuteOwnAvatarCollisionSounds"
+   follows="left|top"
+   height="20"
+   label="Mute my avatar collision thuds"
+   layout="topleft"
+   left="30"
+   name="mute_own_avatar_collision_sounds"
+   tool_tip="Mute collision sounds emitted by your avatar when it bumps into things"
+   top_pad="8"
+   width="390" />
+  <check_box
+   control_name="BoxxyMuteOtherAvatarCollisionSounds"
+   follows="left|top"
+   height="20"
+   label="Mute other avatars' collision thuds"
+   layout="topleft"
+   left="30"
+   name="mute_other_avatar_collision_sounds"
+   tool_tip="Mute collision sounds emitted by other avatars when they bump into things"
+   top_pad="8"
+   width="390" />
+  <check_box
    control_name="BoxxyFaceCameraWhenWalkingBackward"
    follows="left|top"
    height="20"
@@ -385,6 +418,17 @@
    tool_tip="Stop zooming at the third-person limits instead of entering Mouselook; you can still enter Mouselook directly"
    top_pad="8"
    width="390" />
+  <check_box
+   control_name="BoxxyExperimentalSwimming"
+   follows="left|top"
+   height="20"
+   label="Enable swimming (experimental)"
+   layout="topleft"
+   left="30"
+   name="experimental_swimming"
+   tool_tip="Swim automatically in deep Linden water where flying is allowed. Jump ascends to the surface; Crouch dives. Uses AO swim animations when available; the built-in fallback is visible only to you."
+   top_pad="8"
+   width="450" />
   <check_box
    control_name="LimitSelectDistance"
    follows="left|top"

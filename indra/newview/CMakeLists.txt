@@ -83,6 +83,7 @@ set(viewer_SOURCE_FILES
     llboxxyao.cpp
     llboxxyaonotecard.cpp
     llboxxyaotransfer.cpp
+    llboxxyswim.cpp
     llboxxyvip.cpp
     gltfscenemanager.cpp
     gltf/asset.cpp
@@ -781,6 +782,8 @@ set(viewer_HEADER_FILES
     llboxxyao.h
     llboxxyaonotecard.h
     llboxxyaotransfer.h
+    llboxxyswim.h
+    llswimpolicy.h
     llboxxyvip.h
     CMakeLists.txt
     ViewerInstall.cmake
