@@ -672,6 +672,21 @@ bool LLAgent::shouldFaceBackwardWalk() const
         && isAgentAvatarValid() && !gAgentAvatarp->isSitting() && !getFlying() && !rotateGrabbed();
 }
 
+void LLAgent::updateBackwardWalk()
+{
+    // Releasing S during a strafe should only remove backward movement. Keep
+    // the current heading and lateral control until the strafe ends or forward movement starts.
+    const bool continuing_strafe = mFacingBackwardWalk && gAgentCamera.getLeftKey() != 0
+        && gAgentCamera.getAtKey() <= 0 && gAgentCamera.getWalkKey() <= 0;
+    const bool face_backward = (gAgentCamera.getAtKey() < 0 || gAgentCamera.getWalkKey() < 0 || continuing_strafe)
+        && shouldFaceBackwardWalk();
+    if (face_backward != mFacingBackwardWalk)
+    {
+        rotate(F_PI, getReferenceUpVector());
+        mFacingBackwardWalk = face_backward;
+    }
+}
+
 //-----------------------------------------------------------------------------
 // moveAt()
 //-----------------------------------------------------------------------------
@@ -693,7 +708,7 @@ void LLAgent::moveAt(S32 direction, bool reset)
     }
     else if (direction < 0)
     {
-        setControlFlags((shouldFaceBackwardWalk() ? AGENT_CONTROL_AT_POS : AGENT_CONTROL_AT_NEG) | AGENT_CONTROL_FAST_AT);
+        setControlFlags(AGENT_CONTROL_AT_NEG | AGENT_CONTROL_FAST_AT);
     }
 
     if (reset)
@@ -721,7 +736,7 @@ void LLAgent::moveAtNudge(S32 direction)
     }
     else if (direction < 0)
     {
-        setControlFlags(shouldFaceBackwardWalk() ? AGENT_CONTROL_NUDGE_AT_POS : AGENT_CONTROL_NUDGE_AT_NEG);
+        setControlFlags(AGENT_CONTROL_NUDGE_AT_NEG);
     }
 
     gAgentCamera.resetView();
@@ -1520,6 +1535,47 @@ U32 LLAgent::getControlFlags()
     return mControlFlags;
 }
 
+U32 LLAgent::prepareControlFlagsForUpdate()
+{
+    // Resolve the turn after collecting input, before serializing body rotation
+    // and controls together. Keep the stored flags in the original input frame.
+    updateBackwardWalk();
+    U32 flags = mControlFlags;
+    if (!mFacingBackwardWalk)
+    {
+        return flags;
+    }
+
+    const U32 at_flags = flags & (AGENT_CONTROL_AT_POS | AGENT_CONTROL_AT_NEG |
+                                 AGENT_CONTROL_NUDGE_AT_POS | AGENT_CONTROL_NUDGE_AT_NEG);
+    const bool left = (flags & (AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_POS)) != 0;
+    const bool right = (flags & (AGENT_CONTROL_LEFT_NEG | AGENT_CONTROL_NUDGE_LEFT_NEG)) != 0;
+    // A new strafe key should continue an ongoing walk immediately, rather than
+    // restarting the tap/nudge phase. Overlapping opposite keys cancel equally.
+    const bool held_movement = (flags & (AGENT_CONTROL_AT_POS | AGENT_CONTROL_AT_NEG |
+                                        AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG)) != 0;
+    flags &= ~(AGENT_CONTROL_AT_POS | AGENT_CONTROL_AT_NEG |
+               AGENT_CONTROL_NUDGE_AT_POS | AGENT_CONTROL_NUDGE_AT_NEG |
+               AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG |
+               AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG | AGENT_CONTROL_FAST_LEFT);
+    if (at_flags & AGENT_CONTROL_AT_POS) flags |= AGENT_CONTROL_AT_NEG;
+    if (at_flags & AGENT_CONTROL_AT_NEG) flags |= AGENT_CONTROL_AT_POS;
+    if (at_flags & AGENT_CONTROL_NUDGE_AT_POS) flags |= AGENT_CONTROL_NUDGE_AT_NEG;
+    if (at_flags & AGENT_CONTROL_NUDGE_AT_NEG) flags |= AGENT_CONTROL_NUDGE_AT_POS;
+    if (left != right)
+    {
+        if (held_movement)
+        {
+            flags |= (left ? AGENT_CONTROL_LEFT_NEG : AGENT_CONTROL_LEFT_POS) | AGENT_CONTROL_FAST_LEFT;
+        }
+        else
+        {
+            flags |= left ? AGENT_CONTROL_NUDGE_LEFT_NEG : AGENT_CONTROL_NUDGE_LEFT_POS;
+        }
+    }
+    return flags;
+}
+
 //-----------------------------------------------------------------------------
 // setControlFlags()
 //-----------------------------------------------------------------------------
@@ -2016,13 +2072,7 @@ void LLAgent::autoPilot(F32 *delta_yaw)
 //-----------------------------------------------------------------------------
 void LLAgent::propagate(const F32 dt)
 {
-    const bool face_backward = (gAgentCamera.getAtKey() < 0 || gAgentCamera.getWalkKey() < 0)
-        && shouldFaceBackwardWalk();
-    if (face_backward != mFacingBackwardWalk)
-    {
-        rotate(F_PI, getReferenceUpVector());
-        mFacingBackwardWalk = face_backward;
-    }
+    updateBackwardWalk();
 
     // Update UI based on agent motion
     LLFloaterMove *floater_move = LLFloaterReg::findTypedInstance<LLFloaterMove>("moveview");
