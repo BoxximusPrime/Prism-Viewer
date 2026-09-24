@@ -262,7 +262,7 @@
          name="description"
          prevalidator="ascii"
          select_on_focus="true"
-         text_color="Black"
+         text_color="TextFgColor"
          top_pad="3"
          width="290" />
     </panel>

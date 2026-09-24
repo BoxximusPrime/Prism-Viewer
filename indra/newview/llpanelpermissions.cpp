@@ -44,6 +44,7 @@
 #include "llresmgr.h"
 #include "lltextbox.h"
 #include "llbutton.h"
+#include "llclipboard.h"
 #include "llcheckboxctrl.h"
 #include "llviewerobject.h"
 #include "llselectmgr.h"
@@ -156,6 +157,19 @@ LLPanelPermissions::LLPanelPermissions() :
 
 bool LLPanelPermissions::postBuild()
 {
+    getChild<LLButton>("copy_object_uuid")->setCommitCallback([this](LLUICtrl*, const LLSD&)
+    {
+        refresh();
+        if (getChildView("copy_object_uuid")->getEnabled())
+        {
+            const LLWString uuid = utf8str_to_wstring(getChild<LLLineEditor>("Object UUID")->getText());
+            if (!LLClipboard::instance().copyToClipboard(uuid, 0, (S32)uuid.length()))
+            {
+                LL_WARNS("FloaterTools") << "Failed to copy selected object UUID to the system clipboard" << LL_ENDL;
+            }
+        }
+    });
+
     childSetCommitCallback("Object Name",LLPanelPermissions::onCommitName,this);
     getChild<LLLineEditor>("Object Name")->setPrevalidate(LLTextValidate::validateASCIIPrintableNoPipe);
     childSetCommitCallback("Object Description",LLPanelPermissions::onCommitDesc,this);
@@ -208,6 +222,9 @@ LLPanelPermissions::~LLPanelPermissions()
 
 void LLPanelPermissions::disableAll()
 {
+    getChild<LLLineEditor>("Object UUID")->setText(LLStringUtil::null);
+    getChildView("copy_object_uuid")->setEnabled(false);
+
     getChildView("perm_modify")->setEnabled(false);
     getChild<LLUICtrl>("perm_modify")->setValue(LLStringUtil::null);
 
@@ -329,6 +346,9 @@ void LLPanelPermissions::refresh()
 
     // figure out a few variables
     const bool is_one_object = (object_count == 1);
+    getChild<LLLineEditor>("Object UUID")->setText(is_one_object ? objectp->getID().asString() : "Multiple selection");
+    getChildView("copy_object_uuid")->setEnabled(is_one_object && !objectp->isDead());
+
 
     // BUG: fails if a root and non-root are both single-selected.
     bool is_perm_modify = (LLSelectMgr::getInstance()->getSelection()->getFirstRootNode()

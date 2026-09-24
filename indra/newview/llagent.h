@@ -540,6 +540,7 @@ public:
     void            moveUp(S32 direction);
     void            moveYaw(F32 mag, bool reset_view = true);
     void            movePitch(F32 mag);
+    bool            isFacingBackwardWalk() const { return mFacingBackwardWalk; }
 
     bool            isMovementLocked() const                { return mMovementKeysLocked; }
     void            setMovementLocked(bool set_locked)  { mMovementKeysLocked = set_locked; }
@@ -583,6 +584,7 @@ public:
     void            autoPilot(F32 *delta_yaw);          // Autopilot walking action, angles in radians
     void            renderAutoPilotTarget();
 private:
+    bool            shouldFaceBackwardWalk() const;
     bool            mAutoPilot;
     bool            mAutoPilotFlyOnStop;
     bool            mAutoPilotAllowFlying;
@@ -598,6 +600,7 @@ private:
     void*           mAutoPilotCallbackData;
     LLUUID          mLeaderID;
     bool            mMovementKeysLocked;
+    bool            mFacingBackwardWalk;
 
 /**                    Movement
  **                                                                            **

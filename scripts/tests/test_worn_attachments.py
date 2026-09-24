@@ -87,6 +87,10 @@ struct LLViewerObject {
         objects.push_back(this); objects.insert(objects.end(), children.begin(), children.end());
     }
 };
+struct LLFloaterAreaSearch {
+    static inline LLViewerObject* hovered = nullptr;
+    static LLViewerObject* getHoveredObject() { return hovered; }
+};
 struct ObjectList {
     std::map<LLUUID, LLViewerObject*> objects;
     LLViewerObject* findObject(const LLUUID& id) {
@@ -139,7 +143,7 @@ for name, result in [
 # Exercise the actual render-dispatch block as well; the Release build checks
 # its integration with the existing posed-mesh renderer and graphics types.
 selection_source = (ROOT / "indra/newview/llselectmgr.cpp").read_text()
-start = selection_source.index("    // Preview worn attachments")
+start = selection_source.index("    // Preview list-hovered objects")
 end = selection_source.index("    if (mSelectedObjects->getNumNodes())", start)
 harness += r'''
 struct LLSelectNode {
@@ -216,6 +220,14 @@ int main() {
     child.id = "child"; bad_child.id = "not-loaded";
     boots.children = {&child, &bad_child};
     render(false); assert((rendered == std::vector<LLUUID>{"boots", "child"}));
+    LLViewerObject area, area_child;
+    area.id = "area"; area.attachment = false; area.mDrawable = &drawable;
+    area_child.id = "area-child"; area_child.mDrawable = &drawable;
+    area.children = {&area_child};
+    LLFloaterAreaSearch::hovered = &area;
+    rendered.clear(); render(false);
+    assert((rendered == std::vector<LLUUID>{"area", "area-child"}));
+    LLFloaterAreaSearch::hovered = nullptr;
     rendered.clear(); render(true); assert(rendered.empty());
     boots.region = false; child.dead = true;
     render(false); assert(rendered.empty());
@@ -242,4 +254,4 @@ rows = ui.find("name_list[@name='attachments']")
 assert int(search.get("top")) + int(search.get("height")) <= int(rows.get("top"))
 assert search.get("left") == rows.get("left") and search.get("right") == rows.get("right")
 assert search.get("follows") == "left|right|top" and rows.get("follows") == "all"
-print("Worn attachments: filtering, late replies, clear/no matches, creator identity, hover lifecycle, linkset rendering dispatch, and search layout passed.")
+print("Worn attachments and area search: filtering, late replies, clear/no matches, creator identity, hover lifecycle, shared linkset rendering dispatch, and search layout passed.")

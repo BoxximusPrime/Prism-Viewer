@@ -56,6 +56,7 @@
 #include "llattachmentsmgr.h"
 #include "llviewerwindow.h"
 #include "llfloaterwornattachments.h"
+#include "llfloaterareasearch.h"
 #include "lldrawable.h"
 #include "llfloatergltfasseteditor.h"
 #include "llfloaterinspect.h"
@@ -5920,6 +5921,7 @@ void LLSelectMgr::requestObjectPropertiesFamily(LLViewerObject* object)
 void LLSelectMgr::processObjectProperties(LLMessageSystem* msg, void** user_data)
 {
     S32 i;
+    bool selection_updated = false;
     S32 count = msg->getNumberOfBlocksFast(_PREHASH_ObjectData);
     for (i = 0; i < count; i++)
     {
@@ -5979,6 +5981,7 @@ void LLSelectMgr::processObjectProperties(LLMessageSystem* msg, void** user_data
         }
 
         LLFloaterWornAttachments::processObjectProperties(id, creator_id, name);
+        LLFloaterAreaSearch::processObjectProperties(id, owner_id, name, desc, sale_info.isForSale());
 
         std::string touch_name;
         msg->getStringFast(_PREHASH_ObjectData, _PREHASH_TouchName, touch_name, i);
@@ -6016,10 +6019,16 @@ void LLSelectMgr::processObjectProperties(LLMessageSystem* msg, void** user_data
 
         if (!node)
         {
-            LL_WARNS() << "Couldn't find object " << id << " selected." << LL_ENDL;
+            // Area Search requests properties without changing the user's selection.
+            LLViewerObject* object = gObjectList.findObject(id);
+            if (object && object->isSelected())
+            {
+                LL_WARNS() << "Couldn't find object " << id << " selected." << LL_ENDL;
+            }
         }
         else
         {
+            selection_updated = true;
             // save texture data as soon as we get texture perms first time
             bool save_textures = !node->mValid;
             if (node->mInventorySerial != inv_serial && node->getObject())
@@ -6127,10 +6136,13 @@ void LLSelectMgr::processObjectProperties(LLMessageSystem* msg, void** user_data
         }
     }
 
-    dialog_refresh_all();
+    if (selection_updated)
+    {
+        dialog_refresh_all();
 
-    // hack for left-click buy object
-    LLToolPie::selectionPropertiesReceived();
+        // hack for left-click buy object
+        LLToolPie::selectionPropertiesReceived();
+    }
 }
 
 // static
@@ -6174,6 +6186,8 @@ void LLSelectMgr::processObjectPropertiesFamily(LLMessageSystem* msg, void** use
         object->setCachedObjectName(name);
         object->setCachedObjectDescription(desc);
     }
+
+    LLFloaterAreaSearch::processObjectProperties(id, owner_id, name, desc, sale_info.isForSale());
 
     // the reporter widget askes the server for info about picked objects
     if (request_flags & COMPLAINT_REPORT_REQUEST )
@@ -6658,14 +6672,16 @@ void LLSelectMgr::renderSilhouettes(bool for_hud)
         }
     };
 
-    // Preview worn attachments with the existing posed wireframe renderer.
+    // Preview list-hovered objects with the existing posed wireframe renderer.
     // These temporary nodes never enter the edit, hover-pick or rectangle selection.
     if (!for_hud)
     {
-        if (LLViewerObject* attachment = LLFloaterWornAttachments::getHoveredAttachment())
+        LLViewerObject* preview = LLFloaterAreaSearch::getHoveredObject();
+        if (!preview) preview = LLFloaterWornAttachments::getHoveredAttachment();
+        if (preview)
         {
             std::vector<LLViewerObject*> objects;
-            attachment->addThisAndNonJointChildren(objects);
+            preview->addThisAndNonJointChildren(objects);
             for (LLViewerObject* object : objects)
             {
                 if (!object || object->isDead() || !object->getRegion()

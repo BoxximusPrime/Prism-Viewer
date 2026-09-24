@@ -407,6 +407,16 @@ void LLGLSLShader::unloadInternal()
 
 bool LLGLSLShader::createShader()
 {
+    // Report one program, including all lower-level fallback attempts. Keep
+    // progress drawing outside the compiler's recursive call stack.
+    LLShaderMgr::instance()->shaderProgramStarted(this);
+    const bool success = createShaderInternal();
+    LLShaderMgr::instance()->shaderProgramProcessed(this, success);
+    return success;
+}
+
+bool LLGLSLShader::createShaderInternal()
+{
     LL_PROFILE_ZONE_SCOPED_CATEGORY_SHADER;
 
     unloadInternal();
@@ -502,7 +512,7 @@ bool LLGLSLShader::createShader()
             // Drain error queue before trying again
             log_glerror();
 
-            return createShader();
+            return createShaderInternal();
         }
         else
         {

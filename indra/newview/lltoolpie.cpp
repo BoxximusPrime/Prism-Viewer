@@ -221,6 +221,26 @@ bool LLToolPie::handleRightMouseUp(S32 x, S32 y, MASK mask)
     return LLTool::handleRightMouseUp(x, y, mask);
 }
 
+void LLToolPie::showObjectContextMenu(LLViewerObject* object, S32 x, S32 y)
+{
+    if (!object || object->isDead() || !object->getRegion() || !gMenuHolder || !gMenuObject)
+    {
+        return;
+    }
+    // A row identifies an object, not a surface hit. Never reuse a previous
+    // world's face/UV/offset, or an unrelated multi-object selection.
+    mPick = LLPickInfo(LLCoordGL(x, y), MASK_NONE,
+                      /*pick_transparent*/ false, /*pick_rigged*/ false,
+                      /*pick_particle*/ false, /*pick_reflection_probe*/ false,
+                      /*pick_surface_info*/ false, /*pick_unselectable*/ true, nullptr);
+    mPick.mObjectID = object->getID();
+    mPick.mPickType = LLPickInfo::PICK_OBJECT;
+    mPick.mPosGlobal = object->getPositionGlobal();
+    mPick.mObjectOffset.clear();
+    LLSelectMgr::getInstance()->deselectAll();
+    handleRightClickPick();
+}
+
 bool LLToolPie::handleScrollWheelAny(S32 x, S32 y, S32 clicks_x, S32 clicks_y)
 {
     bool res = false;

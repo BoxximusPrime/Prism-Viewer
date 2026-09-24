@@ -36,7 +36,7 @@ harness = r"""
 #include <set>
 using S32=int; using F32=float; using MASK=int;
 constexpr int VX=0, VY=1, VZ=2, SELECT_TYPE_WORLD=0, SELECT_TYPE_HUD=1;
-constexpr int MASK_CONTROL=1, MASK_SHIFT=2, MOUSE_DRAG_SLOP=2, CENTER_HANDLE_RADIUS=7;
+constexpr int MASK_NONE=0, MASK_CONTROL=1, MASK_SHIFT=2, MOUSE_DRAG_SLOP=2, CENTER_HANDLE_RADIUS=7;
 constexpr int UI_CURSOR_TOOLTRANSLATE=0, UI_CURSOR_NOLOCKED=1;
 constexpr float F32_MAX=FLT_MAX;
 template<class T> T llmin(T a,T b){return std::min(a,b);}
@@ -189,13 +189,23 @@ for signature in (
     harness += function(source, signature) + "\n"
 harness += r"""
 struct LLTool {virtual ~LLTool()=default;};
-struct LLToolComposite:LLTool {LLTool* getOverrideTool(MASK){return nullptr;}};
-struct LLToolCompRotate:LLTool {static LLTool* getInstance(){static LLToolCompRotate t;return &t;}};
-struct LLToolCompScale:LLTool {static LLTool* getInstance(){static LLToolCompScale t;return &t;}};
-struct LLToolCompTranslate:LLToolComposite {
-    LLManipTranslate* mManip; LLTool* getOverrideTool(MASK);
+struct LLToolComposite:LLTool {
+    LLManipTranslate* mManip=nullptr;
+    LLManipTranslate* getManipulator() const{return mManip;}
+    LLTool* getOverrideTool(MASK){return nullptr;}
 };
-""" + function(composite, "LLTool* LLToolCompTranslate::getOverrideTool") + r"""
+struct LLToolCompRotate:LLTool {static LLTool* getInstance(){static LLToolCompRotate t;return &t;}};
+struct LLToolCompScale:LLToolComposite {
+    static LLToolCompScale* getInstance(){static LLToolCompScale t;return &t;}
+    LLTool* getOverrideTool(MASK);
+};
+struct LLToolCompTranslate:LLToolComposite {
+    LLTool* getOverrideTool(MASK);
+    static LLToolCompTranslate* instance;
+    static LLToolCompTranslate* getInstance(){return instance;}
+};
+LLToolCompTranslate* LLToolCompTranslate::instance=nullptr;
+""" + function(composite, "LLTool* LLToolCompTranslate::getOverrideTool") + "\n" + function(composite, "LLTool* LLToolCompScale::getOverrideTool") + r"""
 int main(){
     LLVOVolume a,b; LLSelectNode na{&a},nb{&b}; selection.nodes={&na,&nb};
     a.position={0,0,10}; b.position={0,0,7}; b.scale={2,3,4};
@@ -229,11 +239,17 @@ int main(){
     assert(near(m.getSurfaceOffset({1,0,1}),{0,0,-7})); // stable Z tie-break
 
     // Modifier routing works even while the Move manipulator is deselected.
-    LLToolCompTranslate tool; tool.mManip=&m; m.mObjectSelection=nullptr;
+    LLToolCompTranslate tool; tool.mManip=&m; LLToolCompTranslate::instance=&tool; m.mObjectSelection=nullptr;
     assert(tool.getOverrideTool(3)==&tool);
     window.x=108; assert(tool.getOverrideTool(3)==LLToolCompScale::getInstance());
     window.x=100; assert(tool.getOverrideTool(1)==LLToolCompRotate::getInstance());
     assert(tool.getOverrideTool(0)==nullptr);
+    assert(LLToolCompScale::getInstance()->getOverrideTool(0)==&tool);
+    assert(LLToolCompScale::getInstance()->getOverrideTool(2)==&tool);
+    assert(LLToolCompScale::getInstance()->getOverrideTool(3)==&tool);
+    assert(LLToolCompScale::getInstance()->getOverrideTool(1)==LLToolCompRotate::getInstance());
+    window.x=108; assert(LLToolCompScale::getInstance()->getOverrideTool(0)==nullptr);
+    window.x=100;
     selection.type=SELECT_TYPE_HUD; assert(!m.centerHandleHit(100,100)); selection.type=SELECT_TYPE_WORLD;
     LLManipTranslate::vheld=true; assert(!m.centerHandleHit(100,100)); LLManipTranslate::vheld=false;
     m.mObjectSelection=&selection;
@@ -302,6 +318,14 @@ int main(){
     LLPointer<LLViewerObject> vertex_object; Vec local;
     assert(m.findVertex(100,100,false,vertex_object,local));
     assert(vertex_object.get()==&mesh_target && near(local,{0,0,0}) && gPipeline.calls==9);
+    mesh_target.root=&a; // a selected root, with this child not selected
+    na.mIndividualSelection=true; gPipeline.calls=0;
+    assert(m.findVertex(100,100,false,vertex_object,local));
+    assert(vertex_object.get()==&mesh_target && gPipeline.calls==9);
+    na.mIndividualSelection=false;
+    assert(!m.findVertex(100,100,false,vertex_object,local)); // whole linkset moves
+    na.mIndividualSelection=true; mesh_target.selected=true;
+    assert(!m.findVertex(100,100,false,vertex_object,local)); // target part itself moves
 }
 """
 

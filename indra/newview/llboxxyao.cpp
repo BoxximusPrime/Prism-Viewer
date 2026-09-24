@@ -861,6 +861,20 @@ LLBoxxyAO::State* LLBoxxyAO::getCurrentState() const
     return stateForMotion(mLastMotion);
 }
 
+bool LLBoxxyAO::isActiveOverride(const LLUUID& asset) const
+{
+    if (!mEnabled || !mCurrentSet || asset.isNull())
+    {
+        return false;
+    }
+    if (asset == mPendingCycleStop)
+    {
+        return true;
+    }
+    return std::any_of(mCurrentSet->states.begin(), mCurrentSet->states.end(),
+        [&asset](const State& state) { return state.current_asset == asset; });
+}
+
 bool LLBoxxyAO::isTransientMotion(const LLUUID& motion) const
 {
     return motion == ANIM_AGENT_SIT_GROUND || motion == ANIM_AGENT_SIT_GROUND_CONSTRAINED ||
@@ -909,6 +923,21 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
     State* state = stateForMotion(motion);
     if (!state)
     {
+        // Simulator replies stop the custom asset UUID, not its stock state.
+        // A late start echo can have revived it after a state change; cancel
+        // that playback with its ease-out, without waiting for a long loop exit.
+        if (!start && mEnabled && mCurrentSet)
+        {
+            for (const State& candidate : mCurrentSet->states)
+            {
+                if (std::any_of(candidate.animations.begin(), candidate.animations.end(),
+                    [&motion](const Animation& animation) { return animation.asset_id == motion; }))
+                {
+                    gAgentAvatarp->getMotionController().stopMotionWithEaseOut(motion);
+                    break;
+                }
+            }
+        }
         return LLUUID::null;
     }
 
@@ -964,7 +993,7 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
     }
 
     if (state->type != STATE_TYPING && mPendingCycleStop.notNull() &&
-        (!start || motion != mLastMotion))
+        (start ? state != getCurrentState() : state == getCurrentState()))
     {
         // A locomotion/state change must not leave the older stand running
         // while a pending replacement finishes loading.
@@ -982,7 +1011,24 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
         // differs from Firestorm's AO state tracking.
         if (motion != ANIM_AGENT_TYPE)
         {
+            State* previous_state = getCurrentState();
             mLastMotion = motion;
+            if (previous_state && previous_state != state)
+            {
+                // The old stock stop may already have been consumed when we
+                // suppressed it, or retained across a gap in simulator updates.
+                // Retire its override on state entry, even if the new state
+                // falls back to a stock animation (empty/unresolved/disabled).
+                if (previous_state->current_asset.notNull())
+                {
+                    gAgent.sendAnimationRequest(previous_state->current_asset, ANIM_REQUEST_STOP);
+                    gAgentAvatarp->getMotionController().stopMotionWithEaseOut(previous_state->current_asset);
+                    previous_state->current_asset.setNull();
+                }
+                mCycleTimer.stop();
+                mOverrideApplyPending = false;
+                mChangedSignal();
+            }
         }
         if (motion == ANIM_AGENT_SIT && !mCurrentSet->override_sits)
         {
@@ -1021,7 +1067,7 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
         if (old_asset.notNull() && old_asset != state->current_asset)
         {
             gAgent.sendAnimationRequest(old_asset, ANIM_REQUEST_STOP);
-            gAgentAvatarp->LLCharacter::stopMotion(old_asset);
+            gAgentAvatarp->getMotionController().stopMotionWithEaseOut(old_asset);
         }
         if (state->type != STATE_TYPING)
         {
@@ -1045,17 +1091,24 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
         if (isTransientMotion(motion))
         {
             gAgent.sendAnimationRequest(state->current_asset, ANIM_REQUEST_START);
+            gAgentAvatarp->startMotion(state->current_asset);
             return LLUUID::null;
         }
         return state->current_asset;
     }
 
     const LLUUID result = state->current_asset;
+    if (result.notNull())
+    {
+        // Begin the local fade before forgetting its asset. The normal stock
+        // stop path otherwise only sends a request and waits for a server echo.
+        gAgentAvatarp->getMotionController().stopMotionWithEaseOut(result);
+    }
     LL_INFOS("BoxxyAO") << "Clearing " << state->name
                          << " override " << result
                          << " for stock motion stop " << motion << LL_ENDL;
     state->current_asset.setNull();
-    if (state->type != STATE_TYPING)
+    if (state->type != STATE_TYPING && state == getCurrentState())
     {
         mCycleTimer.stop();
     }
@@ -1063,7 +1116,6 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
     if (isTransientMotion(motion) && result.notNull())
     {
         gAgent.sendAnimationRequest(result, ANIM_REQUEST_STOP);
-        gAgentAvatarp->LLCharacter::stopMotion(result);
         return LLUUID::null;
     }
     return result;
@@ -1141,7 +1193,7 @@ void LLBoxxyAO::stopStockMotionVariants(const LLUUID& motion)
         }
         mIgnoredStockStops.insert(stock_motion);
         gAgent.sendAnimationRequest(stock_motion, ANIM_REQUEST_STOP);
-        gAgentAvatarp->LLCharacter::stopMotion(stock_motion);
+        gAgentAvatarp->getMotionController().stopMotionWithEaseOut(stock_motion);
     }
 }
 
@@ -1156,6 +1208,7 @@ void LLBoxxyAO::startCurrentOverride()
     if (animation.notNull())
     {
         gAgent.sendAnimationRequest(animation, ANIM_REQUEST_START);
+        gAgentAvatarp->startMotion(animation);
         stopStockMotionVariants(mLastMotion);
     }
 }
@@ -1206,7 +1259,7 @@ void LLBoxxyAO::stopCurrentOverride(bool restore_stock)
         if (state.current_asset.notNull())
         {
             gAgent.sendAnimationRequest(state.current_asset, ANIM_REQUEST_STOP);
-            gAgentAvatarp->LLCharacter::stopMotion(state.current_asset);
+            gAgentAvatarp->getMotionController().stopMotionWithEaseOut(state.current_asset);
             state.current_asset.setNull();
         }
     }
@@ -1722,7 +1775,7 @@ void LLBoxxyAO::performCycle(S32 direction)
         // Waiting for the simulator's animation-state echo left the avatar in
         // the neutral pose for a visible fraction of a second between stands.
         gAgent.sendAnimationRequest(state->current_asset, ANIM_REQUEST_START);
-        gAgentAvatarp->LLCharacter::startMotion(state->current_asset);
+        gAgentAvatarp->startMotion(state->current_asset);
         if (old_asset.notNull())
         {
             // Motion startup can return success while its asset is still
@@ -1766,7 +1819,7 @@ void LLBoxxyAO::completePendingCycleStop(bool force)
     gAgent.sendAnimationRequest(mPendingCycleStop, ANIM_REQUEST_STOP);
     if (isAgentAvatarValid())
     {
-        gAgentAvatarp->LLCharacter::stopMotion(mPendingCycleStop);
+        gAgentAvatarp->getMotionController().stopMotionWithEaseOut(mPendingCycleStop);
     }
     mPendingCycleStart.setNull();
     mPendingCycleStop.setNull();

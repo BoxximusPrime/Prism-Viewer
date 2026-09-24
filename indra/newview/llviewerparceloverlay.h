@@ -94,6 +94,7 @@ private:
 
     void    updateOverlayTexture();
     void    updatePropertyLines();
+    void    renderPropertyWalls();
 
 private:
     // Back pointer to the region that owns this structure.

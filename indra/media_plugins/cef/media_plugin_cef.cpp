@@ -699,7 +699,7 @@ void MediaPluginCEF::receiveMessage(const char* message_string)
 
                 settings.flip_mouse_y = false;
                 settings.flip_pixels_y = true;
-                settings.frame_rate = 60;
+                settings.frame_rate = 120;
                 settings.force_wave_audio = true;
                 settings.initial_height = 1024;
                 settings.initial_width = 1024;

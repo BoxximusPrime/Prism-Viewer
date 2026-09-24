@@ -52,6 +52,8 @@ public:
     void initAttribsAndUniforms(void);
     void setShaders();
     void unloadShaders();
+    void shaderProgramStarted(const LLGLSLShader* shader) override;
+    void shaderProgramProcessed(const LLGLSLShader* shader, bool success) override;
     S32  getShaderLevel(S32 type);
 
     // loadBasicShaders in case of a failure returns

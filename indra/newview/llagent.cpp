@@ -444,6 +444,7 @@ LLAgent::LLAgent() :
     mAutoPilotCallbackData(nullptr),
 
     mMovementKeysLocked(false),
+    mFacingBackwardWalk(false),
 
     mEffectColor(new LLUIColor(LLColor4(0.f, 1.f, 1.f, 1.f))),
 
@@ -663,6 +664,13 @@ void LLAgent::ageChat()
     }
 }
 
+bool LLAgent::shouldFaceBackwardWalk() const
+{
+    static LLCachedControl<bool> face_backward_walk(gSavedSettings, "BoxxyFaceCameraWhenWalkingBackward", false);
+    return face_backward_walk && gAgentCamera.getCameraMode() == CAMERA_MODE_THIRD_PERSON
+        && isAgentAvatarValid() && !gAgentAvatarp->isSitting() && !getFlying() && !rotateGrabbed();
+}
+
 //-----------------------------------------------------------------------------
 // moveAt()
 //-----------------------------------------------------------------------------
@@ -684,7 +692,7 @@ void LLAgent::moveAt(S32 direction, bool reset)
     }
     else if (direction < 0)
     {
-        setControlFlags(AGENT_CONTROL_AT_NEG | AGENT_CONTROL_FAST_AT);
+        setControlFlags((shouldFaceBackwardWalk() ? AGENT_CONTROL_AT_POS : AGENT_CONTROL_AT_NEG) | AGENT_CONTROL_FAST_AT);
     }
 
     if (reset)
@@ -712,7 +720,7 @@ void LLAgent::moveAtNudge(S32 direction)
     }
     else if (direction < 0)
     {
-        setControlFlags(AGENT_CONTROL_NUDGE_AT_NEG);
+        setControlFlags(shouldFaceBackwardWalk() ? AGENT_CONTROL_NUDGE_AT_POS : AGENT_CONTROL_NUDGE_AT_NEG);
     }
 
     gAgentCamera.resetView();
@@ -2006,6 +2014,14 @@ void LLAgent::autoPilot(F32 *delta_yaw)
 //-----------------------------------------------------------------------------
 void LLAgent::propagate(const F32 dt)
 {
+    const bool face_backward = (gAgentCamera.getAtKey() < 0 || gAgentCamera.getWalkKey() < 0)
+        && shouldFaceBackwardWalk();
+    if (face_backward != mFacingBackwardWalk)
+    {
+        rotate(F_PI, getReferenceUpVector());
+        mFacingBackwardWalk = face_backward;
+    }
+
     // Update UI based on agent motion
     LLFloaterMove *floater_move = LLFloaterReg::findTypedInstance<LLFloaterMove>("moveview");
     if (floater_move)

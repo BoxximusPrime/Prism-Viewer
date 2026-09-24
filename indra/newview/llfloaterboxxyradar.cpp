@@ -55,6 +55,7 @@ constexpr F32 RADAR_REFRESH_SECONDS = 0.5f;
 constexpr S32 SIMPLE_RADAR_NORMAL_LIMIT = 5;
 constexpr S32 SIMPLE_RADAR_LINE_HEIGHT  = 16;
 constexpr S32 SIMPLE_RADAR_TEXT_GAP     = 10;
+constexpr S32 SIMPLE_RADAR_NAME_LIMIT   = 12;
 
 std::string formatDistance(F64 distance_yards)
 {
@@ -68,6 +69,19 @@ std::string formatDistance(F64 distance_yards)
 std::string formatSimpleDistance(F64 distance_yards)
 {
     return llformat("%.0f yd", distance_yards);
+}
+
+std::string truncateSimpleName(const std::string& name, S32 character_limit)
+{
+    if (character_limit <= 0)
+    {
+        return std::string();
+    }
+
+    const std::string truncated = utf8str_symbol_truncate(name, character_limit);
+    return truncated == name
+        ? name
+        : utf8str_symbol_truncate(name, character_limit - 1) + "…";
 }
 
 void getLocalRegionAvatars(uuid_vec_t& avatar_ids, std::vector<LLVector3d>& positions)
@@ -821,8 +835,20 @@ void LLFloaterBoxxyRadarSimple::refreshRadar()
             first = false;
             LLStyle::Params name_style;
             name_style.color(entry.blocked ? blocked_color : entry.vip ? vip_color : entry.is_friend ? friend_color : normal_color);
-            box->appendText((entry.typing ? "[...] " : "") + entry.name, false, name_style);
-            box->appendText("  " + formatSimpleDistance(entry.distance_yards), false,
+            const std::string typing = entry.typing ? "[...] " : "";
+            const std::string distance = "  " + formatSimpleDistance(entry.distance_yards);
+            S32 name_limit = SIMPLE_RADAR_NAME_LIMIT;
+            std::string name = truncateSimpleName(entry.name, name_limit);
+            if (const LLFontGL* font = box->getFont())
+            {
+                const F32 available_width = box->getRect().getWidth() - 4.f;
+                while (!name.empty() && font->getWidthF32(typing + name + distance) > available_width)
+                {
+                    name = truncateSimpleName(entry.name, --name_limit);
+                }
+            }
+            box->appendText(typing + name, false, name_style);
+            box->appendText(distance, false,
                             LLStyle::Params().color(normal_color));
         }
     };

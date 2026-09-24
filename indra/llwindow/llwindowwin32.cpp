@@ -1179,8 +1179,12 @@ bool LLWindowWin32::getSize(LLCoordScreen *size)
 
 bool LLWindowWin32::getSize(LLCoordWindow *size)
 {
-    size->mX = mClientRect.right - mClientRect.left;
-    size->mY = mClientRect.bottom - mClientRect.top;
+    // Resize notifications may still be queued while the main thread compiles
+    // shaders. Query the drawable's current size instead of that queued cache.
+    RECT client_rect;
+    if (!GetClientRect(mWindowHandle, &client_rect)) return false;
+    size->mX = client_rect.right - client_rect.left;
+    size->mY = client_rect.bottom - client_rect.top;
     return true;
 }
 
@@ -2348,6 +2352,16 @@ void LLWindowWin32::gatherInput()
         }
     }
 
+    // Publish the latest position before either callback queue handles buttons.
+    {
+        LLMutexLock lock(&mRawMouseMutex);
+        if (mCursorPositionPending)
+        {
+            mCursorPosition = mPendingCursorPosition;
+            mMouseMask = gKeyboard->currentMask(true);
+            mCursorPositionPending = false;
+        }
+    }
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("gi - function queue");
         //process any pending functions
@@ -3330,16 +3344,11 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
         case WM_MOUSEMOVE:
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_MOUSEMOVE");
-            // DO NOT use mouse event queue for move events to ensure cursor position is updated
-            // when button events are handled
-            WINDOW_IMP_POST(
-                {
-                    LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_MOUSEMOVE lambda");
-
-                    MASK mask = gKeyboard->currentMask(true);
-                    window_imp->mMouseMask = mask;
-                    window_imp->mCursorPosition = window_coord;
-                });
+            // Coalesce moves instead of blocking the window thread when the
+            // main thread cannot drain its bounded callback queue.
+            LLMutexLock lock(&window_imp->mRawMouseMutex);
+            window_imp->mPendingCursorPosition = window_coord;
+            window_imp->mCursorPositionPending = true;
             return 0;
         }
 
@@ -5586,7 +5595,13 @@ void LLWindowWin32::LLWindowWin32Thread::run()
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
 
-                mMessageQueue.pushFront(msg);
+                // gatherInput only consumes DNS replies. Forwarding every
+                // mouse/paint message fills this bounded queue during a long
+                // shader compile and blocks the native window message pump.
+                if (msg.message == LL_WM_HOST_RESOLVED)
+                {
+                    mMessageQueue.pushFront(msg);
+                }
             }
         }
 

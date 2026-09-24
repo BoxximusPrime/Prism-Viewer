@@ -76,6 +76,7 @@ public:
 
     static void         showAvatarInspector(const LLUUID& avatar_id);
     static void         showObjectInspector(const LLUUID& object_id);
+    void                showObjectContextMenu(LLViewerObject* object, S32 x, S32 y);
     static void         showObjectInspector(const LLUUID& object_id, const S32& object_face);
     static void         playCurrentMedia(const LLPickInfo& info);
     static void         VisitHomePage(const LLPickInfo& info);

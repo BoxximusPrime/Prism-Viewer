@@ -10,6 +10,7 @@
 #include "llbutton.h"
 #include "llflatlistview.h"
 #include "llfloaterreg.h"
+#include "llresmgr.h"
 #include "lltextbox.h"
 #include "lluicolortable.h"
 
@@ -29,9 +30,11 @@ public:
         setTransparentColor(LLUIColorTable::instance().getColor(
             outgoing ? "MoneyLogDebitBgColor" : "MoneyLogCreditBgColor"));
 
+        std::string formatted_amount;
+        LLResMgr::getInstance()->getIntegerString(formatted_amount, amount);
         getChild<LLTextBox>("transaction")->setValue(outgoing
-            ? llformat("- L$%d to %s", amount, display_name.c_str())
-            : llformat("+ L$%d from %s", amount, display_name.c_str()));
+            ? llformat("- L$%s to %s", formatted_amount.c_str(), display_name.c_str())
+            : llformat("+ L$%s from %s", formatted_amount.c_str(), display_name.c_str()));
         getChild<LLTextBox>("username")->setValue(detail.empty()
             ? username
             : username + "  -  " + detail);

@@ -220,6 +220,10 @@ protected:
     LLCoordWindow mCursorPosition;  // mouse cursor position, should only be mutated on main thread
     bool        mAbsoluteCursorPosition; // true if last position was received in absolute coordinates.
     LLMutex mRawMouseMutex;
+    // Mouse movement is sampled once per frame, including after long shader
+    // compiles. Do not enqueue an unbounded stream of move callbacks.
+    LLCoordWindow mPendingCursorPosition;
+    bool mCursorPositionPending = false;
     RAWINPUTDEVICE mRawMouse;
     LLCoordWindow mLastCursorPosition; // mouse cursor position from previous frame
     LLCoordCommon mRawMouseDelta; // raw mouse delta according to window thread

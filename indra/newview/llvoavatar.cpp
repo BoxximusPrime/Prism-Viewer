@@ -6767,11 +6767,23 @@ bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
 
     if (isSelf())
     {
-        const LLUUID override_id = LLBoxxyAO::instance().overrideMotion(id, true);
-        if (override_id.notNull())
+        LLBoxxyAO& ao = LLBoxxyAO::instance();
+        const LLUUID override_id = ao.overrideMotion(id, true);
+        if (override_id.notNull() || ao.isActiveOverride(id))
         {
-            gAgent.sendAnimationRequest(override_id, ANIM_REQUEST_START);
-            return true;
+            const LLUUID& asset = override_id.notNull() ? override_id : id;
+            if (override_id.notNull())
+            {
+                gAgent.sendAnimationRequest(asset, ANIM_REQUEST_START);
+            }
+            // Start locally so the outgoing fade overlaps the incoming motion.
+            // Its simulator echo must not restart an already blending instance.
+            LLMotion* motion = mMotionController.findMotion(asset);
+            if (motion && mMotionController.isMotionActive(motion) && !motion->isStopped())
+            {
+                return true;
+            }
+            return LLCharacter::startMotion(asset);
         }
     }
 

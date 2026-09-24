@@ -38,6 +38,7 @@
 #include "v2math.h"
 
 // newview includes
+#include "llagent.h"
 #include "llagentcamera.h"
 #include "llviewertexture.h"
 #include "llviewercontrol.h"
@@ -661,6 +662,12 @@ void LLViewerParcelOverlay::idleUpdate(bool force_update)
 void LLViewerParcelOverlay::renderPropertyLines()
 {
     static LLCachedControl<bool> show(gSavedSettings, "ShowPropertyLines");
+    static LLCachedControl<bool> show_walls(gSavedSettings, "ShowParcelBoundaryWalls");
+
+    if (show_walls)
+    {
+        renderPropertyWalls();
+    }
 
     if (!show)
         return;
@@ -770,6 +777,97 @@ void LLViewerParcelOverlay::renderPropertyLines()
         }
     }
 
+    gGL.popMatrix();
+}
+
+void LLViewerParcelOverlay::renderPropertyWalls()
+{
+    constexpr F32 PADDING = 10.f;
+    constexpr F32 GRID_STEP = PARCEL_GRID_STEP_METERS;
+    const LLVector3 origin = mRegion->getOriginAgent();
+    const LLVector3 camera = LLViewerCamera::getInstance()->getOrigin() - origin;
+    const F32 top = gAgent.getPositionAgent().mV[VZ] - origin.mV[VZ] + PADDING;
+    const F32 clip_distance = llmin(256.f, LLViewerCamera::getInstance()->getFar());
+    const S32 grids = mParcelGridsPerEdge;
+    LLSurface& land = mRegion->getLand();
+
+    // Keep culling horizontal: the terrain can be far below the camera.
+    const S32 first_col = llclamp((S32)floorf((camera.mV[VX] - clip_distance) / GRID_STEP), 0, grids);
+    const S32 last_col = llclamp((S32)ceilf((camera.mV[VX] + clip_distance) / GRID_STEP), 0, grids);
+    const S32 first_row = llclamp((S32)floorf((camera.mV[VY] - clip_distance) / GRID_STEP), 0, grids);
+    const S32 last_row = llclamp((S32)ceilf((camera.mV[VY] + clip_distance) / GRID_STEP), 0, grids);
+
+    std::vector<LLVector3> walls;
+    auto add_wall = [&](F32 x1, F32 y1, F32 x2, F32 y2)
+    {
+        const LLVector3 center((x1 + x2) * 0.5f, (y1 + y2) * 0.5f, 0.f);
+        if (dist_vec_squared2D(center, camera) > clip_distance * clip_distance)
+        {
+            return;
+        }
+
+        // Sample each metre, matching the terrain-following property lines.
+        for (S32 step = 0; step < (S32)GRID_STEP; ++step)
+        {
+            const F32 t1 = step / GRID_STEP;
+            const F32 t2 = (step + 1) / GRID_STEP;
+            LLVector3 bottom1(x1 + (x2 - x1) * t1, y1 + (y2 - y1) * t1, 0.f);
+            LLVector3 bottom2(x1 + (x2 - x1) * t2, y1 + (y2 - y1) * t2, 0.f);
+            bottom1.mV[VZ] = land.resolveHeightRegion(bottom1.mV[VX], bottom1.mV[VY]);
+            bottom2.mV[VZ] = land.resolveHeightRegion(bottom2.mV[VX], bottom2.mV[VY]);
+            LLVector3 top1 = bottom1;
+            LLVector3 top2 = bottom2;
+            top1.mV[VZ] = llmax(top, bottom1.mV[VZ] + PADDING);
+            top2.mV[VZ] = llmax(top, bottom2.mV[VZ] + PADDING);
+            walls.insert(walls.end(), {bottom1, bottom2, top2, top1});
+        }
+    };
+
+    // Each shared boundary is emitted once, using the simulator's parcel grid.
+    for (S32 row = first_row; row <= last_row; ++row)
+    {
+        for (S32 col = first_col; col <= last_col; ++col)
+        {
+            const U8 flags = (row < grids && col < grids) ? mOwnership[row * grids + col] : 0;
+            const F32 x = col * GRID_STEP;
+            const F32 y = row * GRID_STEP;
+            if (row < grids && (col == grids || (flags & PARCEL_WEST_LINE)))
+            {
+                add_wall(x, y, x, y + GRID_STEP);
+            }
+            if (col < grids && (row == grids || (flags & PARCEL_SOUTH_LINE)))
+            {
+                add_wall(x, y, x + GRID_STEP, y);
+            }
+        }
+    }
+
+    LLGLSUIDefault gls_ui;
+    LLGLDepthTest depth(GL_TRUE, GL_FALSE);
+    gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    gGL.matrixMode(LLRender::MM_MODELVIEW);
+    gGL.pushMatrix();
+    gGL.translatef(origin.mV[VX], origin.mV[VY], origin.mV[VZ]);
+
+    gGL.color4f(1.f, 1.f, 0.f, 0.2f);
+    gGL.begin(LLRender::TRIANGLES);
+    for (size_t i = 0; i < walls.size(); i += 4)
+    {
+        for (const S32 corner : {0, 1, 2, 0, 2, 3})
+        {
+            gGL.vertex3fv(walls[i + corner].mV);
+        }
+    }
+    gGL.end();
+
+    gGL.color4f(1.f, 1.f, 0.f, 1.f);
+    gGL.begin(LLRender::LINES);
+    for (size_t i = 0; i < walls.size(); i += 4)
+    {
+        gGL.vertex3fv(walls[i + 2].mV);
+        gGL.vertex3fv(walls[i + 3].mV);
+    }
+    gGL.end();
     gGL.popMatrix();
 }
 

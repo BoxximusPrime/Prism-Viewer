@@ -67,7 +67,7 @@ std::string LLViewerChat::getSenderLabel(const LLChat& chat)
 
 LLColor4 LLViewerChat::getSenderNameColor(const LLChat&)
 {
-    return LLUIColorTable::instance().getColor("AccentColor").get();
+    return LLUIColorTable::instance().getColor("NearbyChatNameColor").get();
 }
 
 //static

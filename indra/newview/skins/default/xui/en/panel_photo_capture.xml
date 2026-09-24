@@ -36,10 +36,11 @@
     <button follows="left|bottom" height="23" label="Cancel" layout="topleft" name="cancel_btn" top="250" width="195" left="10" visible="false">
         <button.commit_callback function="Local.Cancel" />
     </button>
+    <check_box control_name="QuietSnapshotSound" follows="left|top" height="16" label="Silence sound" layout="topleft" left="10" name="silence_sound" top="195" width="105" />
+    <text halign="right" height="15" layout="topleft" left="120" name="image_quality_level" top="195" visible="false" width="85">[QLVL]</text>
     <flyout_button follows="left|bottom" height="27" label="Save Photo" layout="topleft" left="10" name="save_btn" tool_tip="Save image to a file (Ctrl+S)" width="195" top="215">
         <flyout_button.item label="Save" name="save_item" value="save" />
         <flyout_button.item label="Save As..." name="saveas_item" value="save as" />
     </flyout_button>
     <button name="photo_destinations" label="Other destinations..." layout="topleft" left="10" top="250" width="195" height="25" />
-    <text name="image_quality_level" visible="false" left="10" top="195" width="190" height="15" layout="topleft">[QLVL]</text>
 </panel>

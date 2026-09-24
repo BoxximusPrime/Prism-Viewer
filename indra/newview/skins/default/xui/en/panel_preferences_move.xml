@@ -353,6 +353,39 @@
    top="20"
    width="320" />
   <check_box
+   control_name="BoxxyFaceCameraWhenWalkingBackward"
+   follows="left|top"
+   height="20"
+   label="Face camera while walking backward"
+   layout="topleft"
+   left="30"
+   name="face_camera_when_walking_backward"
+   tool_tip="Turn toward the camera and play the forward walk animation while moving backward"
+   top_pad="8"
+   width="390" />
+  <check_box
+   control_name="BoxxyDynamicShoulderCamera"
+   follows="left|top"
+   height="20"
+   label="Dynamic shoulder camera when zoomed in"
+   layout="topleft"
+   left="30"
+   name="dynamic_shoulder_camera"
+   tool_tip="Keep the distant camera centered, then move it right and slightly down as you zoom in"
+   top_pad="8"
+   width="390" />
+  <check_box
+   control_name="BoxxyKeepThirdPersonOnZoom"
+   follows="left|top"
+   height="20"
+   label="Keep third person at zoom limits"
+   layout="topleft"
+   left="30"
+   name="keep_third_person_on_zoom"
+   tool_tip="Stop zooming at the third-person limits instead of entering Mouselook; you can still enter Mouselook directly"
+   top_pad="8"
+   width="390" />
+  <check_box
    control_name="LimitSelectDistance"
    follows="left|top"
    height="20"

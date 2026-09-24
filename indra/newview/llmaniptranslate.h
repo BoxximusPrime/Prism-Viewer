@@ -66,6 +66,7 @@ public:
     virtual void    onMouseCaptureLost() override;
     static bool     vertexSnapHeld();
     bool            centerHandleHit(S32 x, S32 y) const;
+    void            renderSurfaceHandle();
 
 
 protected:
