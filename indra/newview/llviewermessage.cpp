@@ -3264,18 +3264,7 @@ void send_agent_update(bool force_send, bool send_reliable)
     // If a modifier key is held down, turn off
     // LBUTTON and ML_LBUTTON so that using the camera (alt-key) doesn't
     // trigger a control event.
-    U32 control_flags = gAgent.getControlFlags();
-    if (gAgent.isFacingBackwardWalk())
-    {
-        const U32 left_flags = control_flags & (AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG |
-                                                 AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG);
-        control_flags &= ~(AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG |
-                           AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG);
-        if (left_flags & AGENT_CONTROL_LEFT_POS) control_flags |= AGENT_CONTROL_LEFT_NEG;
-        if (left_flags & AGENT_CONTROL_LEFT_NEG) control_flags |= AGENT_CONTROL_LEFT_POS;
-        if (left_flags & AGENT_CONTROL_NUDGE_LEFT_POS) control_flags |= AGENT_CONTROL_NUDGE_LEFT_NEG;
-        if (left_flags & AGENT_CONTROL_NUDGE_LEFT_NEG) control_flags |= AGENT_CONTROL_NUDGE_LEFT_POS;
-    }
+    U32 control_flags = gAgent.prepareControlFlagsForUpdate();
     MASK key_mask = gKeyboard->currentMask(true);
     if (key_mask & MASK_ALT || key_mask & MASK_CONTROL)
     {

@@ -473,6 +473,7 @@ public:
     //--------------------------------------------------------------------
 public:
     U32             getControlFlags();
+    U32             prepareControlFlagsForUpdate();
     void            setControlFlags(U32 mask);      // Performs bitwise mControlFlags |= mask
     void            clearControlFlags(U32 mask);    // Performs bitwise mControlFlags &= ~mask
     bool            controlFlagsDirty() const;
@@ -585,6 +586,7 @@ public:
     void            renderAutoPilotTarget();
 private:
     bool            shouldFaceBackwardWalk() const;
+    void            updateBackwardWalk();
     bool            mAutoPilot;
     bool            mAutoPilotFlyOnStop;
     bool            mAutoPilotAllowFlying;
