@@ -124,6 +124,9 @@
 #include "llimagej2c.h"
 #include "llimageworker.h"
 #include "llkeyboard.h"
+#include "llfolderview.h"
+#include "llinventorypanel.h"
+#include "llpanelmaininventory.h"
 #include "lllineeditor.h"
 #include "llmenugl.h"
 #include "llmenuoptionpathfindingrebakenavmesh.h"
@@ -1644,6 +1647,8 @@ void LLViewerWindow::handleFocus(LLWindow *window)
 // The top-level window has lost focus (e.g. via ALT-TAB)
 void LLViewerWindow::handleFocusLost(LLWindow *window)
 {
+    mInventoryFolderKeyHandled = false;
+    mInventoryFolderCharHandled = false;
     gFocusMgr.setAppHasFocus(false);
     //LLModalDialog::onAppFocusLost();
     LLToolMgr::getInstance()->onAppFocusLost();
@@ -2971,6 +2976,11 @@ void LLViewerWindow::draw()
 // Takes a single keyup event, usually when UI is visible
 bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
 {
+    if (key == 'E' && mInventoryFolderKeyHandled)
+    {
+        mInventoryFolderKeyHandled = false;
+        return true;
+    }
     if (LLSetKeyBindDialog::recordKey(key, mask, false))
     {
         LL_DEBUGS() << "KeyUp handled by LLSetKeyBindDialog" << LL_ENDL;
@@ -3024,6 +3034,84 @@ bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
         || (gMenuBarView && gMenuBarView->getHighlightedItem() && gMenuBarView->getHighlightedItem()->isActive());
 }
 
+bool LLViewerWindow::handleInventoryFolderKey(MASK mask)
+{
+    if ((mask != MASK_NONE && mask != (MASK_CONTROL | MASK_SHIFT))
+        || !mMouseInWindow || gAgentCamera.cameraMouselook()
+        || !gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI)
+        || gFocusMgr.focusLocked() || gFocusMgr.getMouseCapture() || gFocusMgr.getTopCtrl()
+        || (gMenuHolder && gMenuHolder->hasVisibleMenu()))
+    {
+        return false;
+    }
+
+    // Use the same occlusion-aware hover set as mouse input. The main inventory
+    // panel also covers its toolbar, where there may be no hovered tree row.
+    LLInventoryPanel* panel = nullptr;
+    LLPanelMainInventory* main_inventory = nullptr;
+    LLFloater* hovered_floater = nullptr;
+    for (const auto& handle : mMouseHoverViews)
+    {
+        LLView* view = handle.get();
+        if (!view || !view->isInVisibleChain() || !view->isInEnabledChain()
+            || !view->calcScreenBoundingRect().pointInRect(mCurrentMousePoint.mX, mCurrentMousePoint.mY))
+        {
+            continue;
+        }
+        if (auto inventory_panel = dynamic_cast<LLInventoryPanel*>(view))
+        {
+            panel = inventory_panel;
+        }
+        if (auto main_panel = dynamic_cast<LLPanelMainInventory*>(view))
+        {
+            main_inventory = main_panel;
+        }
+        if (auto floater = dynamic_cast<LLFloater*>(view))
+        {
+            hovered_floater = floater;
+        }
+    }
+    // Include the inventory window's title bar and border in the shortcut area.
+    if (!main_inventory && hovered_floater)
+        main_inventory = hovered_floater->findChild<LLPanelMainInventory>("panel_main_inventory");
+    if (!panel && main_inventory) panel = main_inventory->getActivePanel();
+    if (!panel || !panel->isInVisibleChain() || !panel->isInEnabledChain()) return false;
+
+    // Inventory search and inline rename retain normal text editing. Chat in
+    // another window does not take these keys while the pointer is over inventory.
+    LLUICtrl* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
+    LLFloater* floater = gFloaterView->getParentFloater(panel);
+    if (focus && focus->acceptsTextInput()
+        && (focus->hasAncestor(panel)
+            || (main_inventory && focus->hasAncestor(main_inventory))
+            || (floater && focus->hasAncestor(floater))))
+    {
+        return false;
+    }
+
+    LLFolderView* root = panel->getRootFolder();
+    if (root && !gKeyboard->getKeyRepeated('E'))
+    {
+        if (mask == (MASK_CONTROL | MASK_SHIFT))
+        {
+            root->closeAllFolders();
+        }
+        else if (auto folder = dynamic_cast<LLFolderViewFolder*>(root->getHoveredItem()))
+        {
+            LLRect title = folder->calcScreenRect();
+            title.mBottom = title.mTop - folder->getItemHeight();
+            if (folder != root && folder->isInVisibleChain()
+                && title.pointInRect(mCurrentMousePoint.mX, mCurrentMousePoint.mY))
+            {
+                // Opening reveals this folder; closing also resets its children.
+                folder->setOpenArrangeRecursively(!folder->isOpen(),
+                    folder->isOpen() ? LLFolderViewFolder::RECURSE_DOWN : LLFolderViewFolder::RECURSE_NO);
+            }
+        }
+    }
+    return true;
+}
+
 // Takes a single keydown event, usually when UI is visible
 bool LLViewerWindow::handleKey(KEY key, MASK mask)
 {
@@ -3040,6 +3128,15 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
     }
 
     if (LLFloaterSnapshot::photoKey(key, mask)) return true;
+
+    if (key == 'E')
+    {
+        mInventoryFolderKeyHandled = mInventoryFolderKeyHandled || handleInventoryFolderKey(mask);
+        // Character messages can arrive after key-up, so retain their routing
+        // separately until the next E press, including any queued repeats.
+        mInventoryFolderCharHandled = mInventoryFolderKeyHandled;
+        if (mInventoryFolderKeyHandled) return true;
+    }
 
     LLFocusableElement* keyboard_focus = gFocusMgr.getKeyboardFocus();
 
@@ -3317,6 +3414,10 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
 
 bool LLViewerWindow::handleUnicodeChar(llwchar uni_char, MASK mask)
 {
+    if (mInventoryFolderCharHandled && (uni_char == 'e' || uni_char == 'E' || uni_char == 5))
+    {
+        return true;
+    }
     // HACK:  We delay processing of return keys until they arrive as a Unicode char,
     // so that if you're typing chat text at low frame rate, we don't send the chat
     // until all keystrokes have been entered. JC

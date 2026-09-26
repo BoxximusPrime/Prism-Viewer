@@ -3387,9 +3387,10 @@
                     name="content_actions_heading"
                     top="8"
                     width="180" text_color="EditSectionHeading">Scripts and inventory</text>
-                <flyout_button height="24" label="New Script" left="12" name="button new script" top="30" width="116">
+                <flyout_button height="24" label="Create New" left="12" name="button new script" top="30" width="116">
                     <flyout_button.item label="New LSL Script" name="new_lsl_script" value="lsl" />
                     <flyout_button.item label="New Lua Script" name="new_lua_script" value="lua" />
+                    <flyout_button.item label="New Notecard" name="new_notecard" value="notecard" />
                 </flyout_button>
                 <button height="24" label="New Notecard" left="136" name="button new notecard" top="30" width="116" />
                 <button height="24" label="Permissions" left="260" name="button permissions" top="30" width="116" />

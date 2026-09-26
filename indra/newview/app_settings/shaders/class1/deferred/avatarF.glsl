@@ -53,6 +53,7 @@ void main()
     frag_data[1] = vec4(0,0,0,0);
     vec3 nvn = normalize(vary_normal);
     frag_data[2] = encodeNormal(nvn.xyz, 0, GBUFFER_FLAG_HAS_ATMOS);
+    frag_data[2].w += 0.04; // Classic avatar body; independent of the skin-scattering mask.
 
 #if defined(HAS_EMISSIVE)
     frag_data[3] = vec4(0);

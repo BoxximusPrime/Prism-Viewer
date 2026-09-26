@@ -30,6 +30,8 @@ layout(location = 1) out vec4 sss_diffuse;
 layout(location = 2) out vec4 sss_transmitted;
 uniform int sss_transmission_smoothing;
 layout(location = 3) out vec4 sss_grazing;
+layout(location = 4) out vec4 ssgi_donor;
+uniform int ssgi_capture;
 uniform int sss_grazing_smoothing;
 uniform float sss_point_transmission_boost;
 
@@ -363,6 +365,10 @@ void main()
     //output linear
     frag_color.rgb = final_color * final_scale;
     frag_color.a = 0.0;
+    ssgi_donor = vec4(ssgi_capture != 0 &&
+        !GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_HDRI) &&
+        !GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_SKIP_ATMOS) ?
+        max(diffuseLighting * final_scale, vec3(0.0)) : vec3(0.0), 0.0);
     sss_diffuse = vec4(0.0);
     sss_transmitted = vec4(0.0);
     sss_grazing = vec4(0.0);

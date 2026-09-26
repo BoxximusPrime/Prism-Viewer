@@ -143,6 +143,7 @@ public:
     virtual void update() {}    //called when drawing
     virtual const std::string& getName() const = 0;
     virtual const std::string& getDisplayName() const = 0;
+    virtual std::vector<std::pair<S32, S32>> getLabelHighlightRanges() const { return {}; }
     virtual const std::string& getSearchableName() const = 0;
 
     virtual std::string getSearchableDescription() const = 0;
@@ -305,6 +306,7 @@ public:
         mChildren.remove(child);
         dirtyDescendantsFilter();
         dirtyFilter();
+        requestSort();
     }
 
     virtual void clearChildren() override

@@ -486,6 +486,7 @@ public:
 
 private:
     bool                    shouldShowToolTipFor(LLMouseHandler *mh);
+    bool            handleInventoryFolderKey(MASK mask);
 
     void            switchToolByMask(MASK mask);
     void            destroyWindow();
@@ -535,6 +536,8 @@ private:
     LLRect          mToolTipStickyRect;         // Once a tool tip is shown, it will stay visible until the mouse leaves this rect.
 
     bool            mMouseInWindow;             // True if the mouse is over our window or if we have captured the mouse.
+    bool            mInventoryFolderKeyHandled = false;
+    bool            mInventoryFolderCharHandled = false;
     bool            mFocusCycleMode;
     bool            mAllowMouseDragging;
     LLFrameTimer    mMouseDownTimer;

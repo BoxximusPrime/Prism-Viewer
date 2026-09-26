@@ -1394,11 +1394,12 @@ void LLFloaterPreference::refreshEnabledState()
         "Changes apply immediately. Quality keeps your selected light limit and shadow setting.");
     const bool taa_enabled = gSavedSettings.getU32("RenderFSAAType") == 3;
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
-        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAADebug", "TAADebugLabel" })
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAAFreezeJitter", "RenderTAADebug", "TAADebugLabel" })
         getChildView(control)->setEnabled(taa_enabled);
     getChildView("RenderTAASharpen")->setEnabled(taa_enabled && !gSavedSettings.getBOOL("RenderPostSharpenEnabled"));
     getChild<LLTextBox>("TAAStatus")->setValue(!taa_enabled ? "Choose TAA above to enable temporal antialiasing." :
         !gPipeline.isTAAAvailable() ? "TAA is waiting for graphics resources. The camera remains unjittered until ready." :
+        gSavedSettings.getBOOL("RenderTAAFreezeJitter") ? "Camera jitter is frozen. TAA history blending remains active. Turn off after comparing shimmer." :
         "TAA is enabled. Motion protection favors clear moving avatars over long history.");
     const bool gtao_supported = LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred") &&
         LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferredSSAO");
@@ -1415,6 +1416,22 @@ void LLFloaterPreference::refreshEnabledState()
         gPipeline.mShadersLoaded && gPipeline.mMainRT.deferredScreen.isComplete() && !gPipeline.isGTAOAvailable() ?
         "GTAO could not initialize. Legacy SSAO is active." :
         "GTAO is enabled. Adjustments apply immediately.");
+
+    const bool ssgi_supported = LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred");
+    const bool ssgi_enabled = ssgi_supported && gSavedSettings.getBOOL("RenderSSGIEnabled");
+    getChildView("RenderSSGIEnabled")->setEnabled(ssgi_supported);
+    for (const char* control : { "RenderSSGIRadius", "RenderSSGIStrength", "RenderSSGIAvatarStrength", "RenderSSGIQuality",
+        "SSGIQualityLabel", "RenderSSGIDenoise", "SSGIDenoiseLabel", "RenderSSGIDebug", "SSGIDebugLabel" })
+        getChildView(control)->setEnabled(ssgi_enabled);
+    getChild<LLTextBox>("SSGIStatus")->setValue(!ssgi_supported ?
+        "SSGI is unavailable with this graphics configuration." :
+        !ssgi_enabled ? "SSGI is off. Enable it to test local color bounce." :
+        gPipeline.mShadersLoaded && gPipeline.mMainRT.deferredScreen.isComplete() &&
+            gSavedSettings.getF32("RenderSSGIStrength") > 0.f && !gPipeline.isSSGIAvailable() ?
+        "SSGI could not initialize. Ordinary lighting is active." :
+        gSavedSettings.getF32("RenderSSGIStrength") <= 0.f && gSavedSettings.getS32("RenderSSGIDebug") == 0 ?
+        "SSGI strength is zero; its passes are skipped." :
+        "SSGI is active. GPU timing is available in the profiler.");
 
     const bool pcss_supported = gGLManager.mNumTextureImageUnits >= 32;
     const bool pcss_shadows = gSavedSettings.getS32("RenderShadowDetail") > 0;
@@ -1448,6 +1465,8 @@ void LLFloaterPreference::refreshEnabledState()
     getChildView("BoxxySSSShadowThickness")->setEnabled(sss_combined);
     getChildView("BoxxySSSPenetration")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
     getChildView("BoxxySSSPointDepth")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
+    getChildView("BoxxySSSLocalDepthResolution")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
+    getChildView("SSSLocalDepthResolutionLabel")->setEnabled(sss_combined && gSavedSettings.getBOOL("BoxxySSSShadowThickness"));
 
     // Cannot have floater active until caps have been received
     getChild<LLButton>("default_creation_permissions")->setEnabled(LLStartUp::getStartupState() >= STATE_STARTED);
@@ -2956,7 +2975,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
         "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
-        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAADebug" })
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAAFreezeJitter", "RenderTAADebug" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderPostSharpenEnabled", "RenderPostSharpenStrength" })
         gSavedSettings.getControl(control)->resetToDefault(true);
@@ -2965,6 +2984,9 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     {
         gSavedSettings.getControl(control)->resetToDefault(true);
     }
+    for (const char* control : { "RenderSSGIEnabled", "RenderSSGIRadius", "RenderSSGIStrength", "RenderSSGIAvatarStrength",
+        "RenderSSGIQuality", "RenderSSGIDenoise", "RenderSSGIDebug" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSEnabled")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSLightSize")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSMaxSoftness")->resetToDefault(true);
@@ -2997,6 +3019,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("BoxxySSSThickness")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSShadowThickness")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSPointDepth")->resetToDefault(true);
+    gSavedSettings.getControl("BoxxySSSLocalDepthResolution")->resetToDefault(true);
     resetDirtyChilds();
 }
 

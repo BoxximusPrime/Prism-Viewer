@@ -44,12 +44,17 @@ LLViewerChat::font_change_signal_t LLViewerChat::sChatFontChangedSignal;
 
 std::string LLViewerChat::getSenderLabel(const LLChat& chat)
 {
+    const auto format_names = [](const std::string& display_name, const std::string& username)
+    {
+        return display_name == username ? display_name : display_name + " | " + username;
+    };
+
     if (chat.mSourceType == CHAT_SOURCE_AGENT && chat.mFromID.notNull())
     {
         LLAvatarName avatar_name;
         if (LLAvatarNameCache::get(chat.mFromID, &avatar_name))
         {
-            return avatar_name.getDisplayName() + " | " + avatar_name.getUserName();
+            return format_names(avatar_name.getDisplayName(), avatar_name.getUserName());
         }
     }
 
@@ -58,9 +63,9 @@ std::string LLViewerChat::getSenderLabel(const LLChat& chat)
     if (username_start != std::string::npos &&
         username_end == chat.mFromName.length() - 1)
     {
-        return chat.mFromName.substr(0, username_start) + " | "
-            + chat.mFromName.substr(username_start + 2,
-                username_end - username_start - 2);
+        return format_names(chat.mFromName.substr(0, username_start),
+            chat.mFromName.substr(username_start + 2,
+                username_end - username_start - 2));
     }
     return chat.mFromName;
 }

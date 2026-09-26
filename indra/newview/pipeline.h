@@ -165,7 +165,8 @@ public:
     bool isTAAAvailable() const;
     void beginTAAFrame(bool for_snapshot);
     void endTAAFrame();
-    void renderTAAMotion();
+    void renderTAAMotion(bool for_ssgi = false);
+    bool isTemporalMotionAvailable() const;
     void captureTAAOpaque();
     LLRenderTarget* resolveTAA();
     void copyTAA(LLRenderTarget& src, LLRenderTarget& dst, S32 mode = 0);
@@ -191,6 +192,9 @@ public:
     bool isGTAOActive() const;
     void renderGTAO();
     void renderGTAODebug(LLRenderTarget* dst);
+    bool isSSGIAvailable() const;
+    void renderSSGI(bool sss_diffusion);
+    void renderSSGIDebug(LLRenderTarget* dst);
 
     void init();
     void cleanup();
@@ -793,6 +797,15 @@ public:
     LLRenderTarget          mVolumeFogComposite;
     LLRenderTarget          mGTAO[2]; // visibility + geometry mask; spatial ping-pong
     bool                    mGTAOReady = false;
+    LLRenderTarget          mSSGISource; // opaque direct diffuse and emission, before bounce
+    LLRenderTarget          mSSGI[2]; // half-resolution primary gather and spatial filter
+    LLRenderTarget          mSSGIResolved; // full-resolution incoming light, then optional diagnostic
+    LLRenderTarget          mSSGIHistory[2]; // incoming light/depth and normal/history age
+    U32                     mSSGIIndex = 0;
+    U32                     mSSGILastFrame = 0;
+    glm::vec2               mSSGIPreviousJitter = glm::vec2(0.f);
+    glm::vec3               mSSGIHistoryConfig = glm::vec3(0.f);
+    bool                    mSSGIReady = false;
 
     // exposure map for getting average color in scene
     LLRenderTarget          mLuminanceMap;
@@ -810,6 +823,7 @@ public:
     LLRenderTarget          mTAAOpaque;
     LLRenderTarget          mTAAResolved;
     bool                   mTAAFrameActive = false;
+    bool                   mTemporalFrameActive = false; // Motion tracking also serves SSGI with spatial AA.
     bool                   mTAAHistoryValid = false;
     bool                   mTAAOpaqueReady = false;
     bool                   mTAAMotionReady = false;

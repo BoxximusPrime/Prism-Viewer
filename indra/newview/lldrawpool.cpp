@@ -682,7 +682,8 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
     if (!LLPipeline::sShadowRender && LLGLSLShader::sCurBoundShaderPtr)
     {
         static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
-        static const LLStaticHashedString sss_object("sss_object");
+        static const LLStaticHashedString sss_object("sss_object"), ssgi_avatar("ssgi_avatar");
+        LLGLSLShader::sCurBoundShaderPtr->uniform1f(ssgi_avatar, params.mSSGIAvatar ? 1.f : 0.f);
         const bool skin = params.mSSS && sss_enabled && !gCubeSnapshot && !LLPipeline::sImpostorRender;
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(sss_object, skin ? 1.f : 0.f);
         if (skin && LLGLSLShader::sCurBoundShaderPtr->getUniformLocation(sss_object) >= 0)

@@ -31,11 +31,89 @@
 #include "llinventorypanel.h"
 #include "lltooldraganddrop.h"
 #include "llfavoritesbar.h"
+#include "llviewercontrol.h"
 
 //
 // class LLFolderViewModelInventory
 //
 static LLTrace::BlockTimerStatHandle FTM_INVENTORY_SORT("Inventory Sort");
+
+namespace
+{
+std::vector<std::string> inventory_keywords(const std::string& setting)
+{
+    std::vector<std::string> keywords;
+    std::string::size_type start = 0;
+    while (start <= setting.size())
+    {
+        const auto comma = setting.find(',', start);
+        std::string keyword = setting.substr(start, comma == std::string::npos ? comma : comma - start);
+        LLStringUtil::trim(keyword);
+        LLStringUtil::toLower(keyword);
+        if (!keyword.empty()) keywords.push_back(keyword);
+        if (comma == std::string::npos) break;
+        start = comma + 1;
+    }
+    return keywords;
+}
+
+bool priority_match(const LLFolderViewModelItemInventory* item, const std::vector<std::string>& keywords)
+{
+    std::string name = item->getDisplayName();
+    LLStringUtil::toLower(name);
+    return std::any_of(keywords.begin(), keywords.end(), [&name](const std::string& keyword)
+    {
+        return name.find(keyword) != std::string::npos;
+    });
+}
+
+bool in_small_attachment_folder(const LLFolderViewModelItemInventory* item)
+{
+    if (item->getSortGroup() != SG_ITEM) return false;
+    const LLInventoryObject* object = item->getInventoryObject();
+    const LLViewerInventoryCategory* folder = object ? gInventory.getCategory(object->getParentUUID()) : nullptr;
+    if (!folder) return false;
+
+    // A known total of 50 or fewer descendants also bounds the item count while a folder loads.
+    const S32 total = folder->getDescendentCount();
+    if ((total < 0 || total > 50) && !gInventory.isCategoryComplete(folder->getUUID())) return false;
+
+    LLInventoryModel::cat_array_t* folders = nullptr;
+    LLInventoryModel::item_array_t* items = nullptr;
+    gInventory.getDirectDescendentsOf(object->getParentUUID(), folders, items);
+    if (!items || items->size() > 50) return false;
+    return std::any_of(items->begin(), items->end(), [](const LLPointer<LLViewerInventoryItem>& child)
+    {
+        return child && child->getType() == LLAssetType::AT_OBJECT;
+    });
+}
+}
+
+LLFolderViewModelInventory::LLFolderViewModelInventory(const std::string& name)
+:   base_t(new LLInventorySort(), new LLInventoryFilter(LLInventoryFilter::Params().name(name)))
+{
+    mPriorityKeywordsChanged = gSavedSettings.getControl("InventoryDemoHelperKeywords")->getSignal()->connect(
+        [this](LLControlVariable*, const LLSD&, const LLSD&)
+        {
+            setSorter(LLInventorySort(getSorter().getSortOrder()));
+            if (mFolderView) mFolderView->arrangeAll();
+        });
+}
+
+LLInventorySort::LLInventorySort(S32 order)
+{
+    fromParams(Params().order(order));
+}
+
+void LLInventorySort::fromParams(Params& p)
+{
+    mSortOrder = p.order;
+    mByDate = (mSortOrder & LLInventoryFilter::SO_DATE);
+    mSystemToTop = (mSortOrder & LLInventoryFilter::SO_SYSTEM_FOLDERS_TO_TOP);
+    mFoldersByName = (mSortOrder & LLInventoryFilter::SO_FOLDERS_BY_NAME);
+    mFoldersByWeight = (mSortOrder & LLInventoryFilter::SO_FOLDERS_BY_WEIGHT);
+    mPriorityKeywords = inventory_keywords(gSavedSettings.getString("InventoryDemoHelperKeywords"));
+}
 
 bool LLFolderViewModelInventory::startDrag(std::vector<LLFolderViewModelItem*>& items)
 {
@@ -333,6 +411,19 @@ bool LLFolderViewModelItemInventory::filter(LLFolderViewFilter& filter)
 
 bool LLInventorySort::operator()(const LLFolderViewModelItemInventory* const& a, const LLFolderViewModelItemInventory* const& b) const
 {
+    if (!mPriorityKeywords.empty() && a->getSortGroup() == SG_ITEM && b->getSortGroup() == SG_ITEM)
+    {
+        const LLInventoryObject* object_a = a->getInventoryObject();
+        const LLInventoryObject* object_b = b->getInventoryObject();
+        if (object_a && object_b && object_a->getParentUUID() == object_b->getParentUUID()
+            && in_small_attachment_folder(a))
+        {
+            const bool a_matches = priority_match(a, mPriorityKeywords);
+            const bool b_matches = priority_match(b, mPriorityKeywords);
+            if (a_matches != b_matches) return a_matches;
+        }
+    }
+
     // Ignore sort order for landmarks in the Favorites folder.
     // In that folder, landmarks should be always sorted as in the Favorites bar. See EXT-719
     if (a->getSortGroup() == SG_ITEM
@@ -427,6 +518,47 @@ bool LLInventorySort::operator()(const LLFolderViewModelItemInventory* const& a,
             return (first_create > second_create);
         }
     }
+}
+
+std::vector<std::pair<S32, S32>> LLFolderViewModelItemInventory::getLabelHighlightRanges() const
+{
+    std::vector<std::pair<S32, S32>> ranges;
+    // Folder tags are independent of item priority and the attachment/count limit.
+    // Parse only on edits; visible rows can read the result directly while drawing.
+    static LLCachedControl<std::string> folder_setting(gSavedSettings, "InventoryFolderHighlightKeywords", "");
+    static std::string last_folder_setting;
+    static std::vector<std::string> folder_keywords;
+    if (last_folder_setting != folder_setting())
+    {
+        last_folder_setting = folder_setting();
+        folder_keywords = inventory_keywords(last_folder_setting);
+    }
+    const bool folder = getSortGroup() != SG_ITEM;
+    const auto& keywords = folder ? folder_keywords
+        : static_cast<const LLFolderViewModelInventory&>(mRootViewModel).getSorter().getPriorityKeywords();
+    if (keywords.empty() || (!folder && !in_small_attachment_folder(this))) return ranges;
+
+    LLWString name = utf8str_to_wstring(getDisplayName());
+    LLWStringUtil::toLower(name);
+    std::vector<bool> highlighted(name.size(), false);
+    for (const std::string& keyword : keywords)
+    {
+        LLWString term = utf8str_to_wstring(keyword);
+        LLWStringUtil::toLower(term);
+        if (term.empty()) continue;
+        for (size_t pos = name.find(term); pos != LLWString::npos; pos = name.find(term, pos + term.size()))
+        {
+            std::fill(highlighted.begin() + pos, highlighted.begin() + pos + term.size(), true);
+        }
+    }
+    for (size_t pos = 0; pos < highlighted.size();)
+    {
+        if (!highlighted[pos]) { ++pos; continue; }
+        const size_t start = pos;
+        while (pos < highlighted.size() && highlighted[pos]) ++pos;
+        ranges.emplace_back(static_cast<S32>(start), static_cast<S32>(pos - start));
+    }
+    return ranges;
 }
 
 LLFolderViewModelItemInventory::LLFolderViewModelItemInventory( class LLFolderViewModelInventory& root_view_model ) :

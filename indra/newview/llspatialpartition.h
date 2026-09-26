@@ -137,6 +137,7 @@ public:
     U8   mShiny = 0;
     bool mFullbright = false;
     bool mSSS = false;
+    bool mSSGIAvatar = false;
     bool mSSSOverlay = false;
     U32 mSSSOverlayFrameTag = 0; // Submitted to this frame's skin colour pass.
     bool mHasGlow = false;

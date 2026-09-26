@@ -23,10 +23,13 @@
  * $/LicenseInfo$
  */
 
-// Capture derivatives before per-pixel backlight tests and light-volume discards.
-// They describe the receiver's geometry, independently of its normal map.
+uniform vec2 screen_res;
+vec4 getPosition(vec2 tc);
+
+// Capture a fallback before per-pixel backlight tests and light-volume discards.
 vec3 sssSurfaceDx = vec3(0.0);
 vec3 sssSurfaceDy = vec3(0.0);
+bool sssGeometryPrepared = false;
 float sssDepthCoverage = 1.0;
 float getSSSDepthCoverage() { return sssDepthCoverage; }
 void prepareSSSDepth(vec3 pos)
@@ -34,6 +37,29 @@ void prepareSSSDepth(vec3 pos)
     sssDepthCoverage = 1.0;
     sssSurfaceDx = dFdx(pos);
     sssSurfaceDy = dFdy(pos);
+    sssGeometryPrepared = false;
+}
+
+void prepareSSSGeometry(vec3 pos)
+{
+    if (sssGeometryPrepared) return;
+    sssGeometryPrepared = true;
+    if (any(lessThan(screen_res, vec2(2.0)))) return;
+
+    // A screen derivative quad can straddle a finger and the background.
+    // Choose each tangent from the neighbor closest in depth instead, so
+    // moving across quad boundaries cannot flip the entry/exit test or slope.
+    // Only measured skin transmission pays for these four depth reads, once
+    // per fragment even when several local lights share this invocation.
+    vec2 tc = gl_FragCoord.xy / screen_res;
+    vec2 dx = vec2(1.0 / screen_res.x, 0.0), dy = vec2(0.0, 1.0 / screen_res.y);
+    vec2 lo = 0.5 / screen_res, hi = 1.0 - lo;
+    vec3 left = getPosition(clamp(tc - dx, lo, hi)).xyz;
+    vec3 right = getPosition(clamp(tc + dx, lo, hi)).xyz;
+    vec3 down = getPosition(clamp(tc - dy, lo, hi)).xyz;
+    vec3 up = getPosition(clamp(tc + dy, lo, hi)).xyz;
+    sssSurfaceDx = tc.x <= lo.x || (tc.x < hi.x && abs(right.z - pos.z) < abs(pos.z - left.z)) ? right - pos : pos - left;
+    sssSurfaceDy = tc.y <= lo.y || (tc.y < hi.y && abs(up.z - pos.z) < abs(pos.z - down.z)) ? up - pos : pos - down;
 }
 
 // Reconstruct one texel's entry distance. Sample at its center so the depth
@@ -83,6 +109,7 @@ vec2 sssReceiverSlope(mat4 lightMatrix, vec4 start)
 // neighboring triangles above its extrapolated plane are not valid thickness.
 bool sssIsEntrySurface(vec3 pos, vec3 lightDir)
 {
+    prepareSSSGeometry(pos);
     vec3 normal = cross(sssSurfaceDx, sssSurfaceDy);
     if (dot(normal, normal) <= 1e-20) return false;
     if (dot(normal, -pos) < 0.0) normal = -normal;

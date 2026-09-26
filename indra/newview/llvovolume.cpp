@@ -5811,6 +5811,9 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
     LLVOVolume* volume = facep->getDrawable()->getVOVolume();
     const bool sss = volume && volume->isSSSEnabled();
     const bool sss_overlay = volume && volume->isSSSOverlayEnabled();
+    const LLViewerObject* attachment_root = volume ? volume->getRootEdit() : nullptr;
+    const bool ssgi_avatar = (attachment_root && attachment_root->isAttachment()) ||
+        (facep->mAvatar && !facep->mAvatar->isControlAvatar());
     const bool taa_static = !rigged && drawable->isStatic() &&
         !drawable->isState(LLDrawable::ANIMATED_CHILD) &&
         !facep->isState(LLFace::TEXTURE_ANIM) && volume && !volume->isFlexible();
@@ -5831,6 +5834,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         info->mModelMatrix == model_mat &&
         info->mShaderMask == shader_mask &&
         info->mSSS == sss &&
+        info->mSSGIAvatar == ssgi_avatar &&
         info->mSSSOverlay == sss_overlay &&
         info->mSSSObject == (sss ? volume : nullptr) &&
         info->mAvatar == facep->mAvatar &&
@@ -5882,6 +5886,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_info->mGLTFMaterial = gltf_mat;
         draw_info->mShaderMask = shader_mask;
         draw_info->mSSS = sss;
+        draw_info->mSSGIAvatar = ssgi_avatar;
         draw_info->mSSSOverlay = sss_overlay;
         draw_info->mSSSObject = sss ? volume : nullptr;
         draw_info->mAvatar = facep->mAvatar;
