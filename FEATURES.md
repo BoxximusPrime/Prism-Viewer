@@ -6,6 +6,11 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Prism-specific systems
 
+- Release 0.7.0 packages Pose Studio and experimental swimming, SSGI, expanded
+  inventory and Area Search controls, movement/camera refinements, and the
+  login update check. (0.7.0; Release build, extracted installer version and
+  executable hash, 35 packaged resource checks, and update manifest verified)
+
 - The local avatar leaves short-lived surface wake trails while moving through shallow water or swimming near the surface. Distance-spaced ripples affect above- and below-water normals, reflections and refraction without changing mesh height or simulator water physics. The trail fades on stopping and resets across teleports. (in progress; uncommitted; Release build, staged shader and 584 water GPU checks passed; in-world appearance/performance review pending)
 
 - Release 0.6.3 packages UI sound, Pose Studio, wearable editing, inventory,
