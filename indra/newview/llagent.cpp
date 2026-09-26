@@ -1462,6 +1462,7 @@ LLVector3 LLAgent::getReferenceUpVector()
 //-----------------------------------------------------------------------------
 void LLAgent::pitch(F32 angle)
 {
+    if (LLPoseStudio::instanceExists() && LLPoseStudio::instance().isActive()) return;
     // don't let user pitch if pointed almost all the way down or up
 
     // A dot B = mag(A) * mag(B) * cos(angle between A and B)
@@ -1512,6 +1513,7 @@ void LLAgent::roll(F32 angle)
 //-----------------------------------------------------------------------------
 void LLAgent::yaw(F32 angle)
 {
+    if (LLPoseStudio::instanceExists() && LLPoseStudio::instance().isActive()) return;
     if (!rotateGrabbed())
     {
         mFrameAgent.rotate(angle, getReferenceUpVector());
@@ -2139,7 +2141,8 @@ void LLAgent::updateAgentPosition(const F32 dt, const F32 yaw_radians, const S32
 
     // static S32 cameraUpdateCount = 0;
 
-    rotate(yaw_radians, 0, 0, 1);
+    if (!LLPoseStudio::instanceExists() || !LLPoseStudio::instance().isActive())
+        rotate(yaw_radians, 0, 0, 1);
 
     //
     // Check for water and land collision, set underwater flag

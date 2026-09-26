@@ -85,7 +85,6 @@ bool LLPanelContents::postBuild()
     setMouseOpaque(false);
 
     getChild<LLUICtrl>("button new script")->setCommitCallback(boost::bind(&LLPanelContents::onNewScriptFlyoutCommit, this, _1));
-    childSetAction("button new notecard", boost::bind(&LLPanelContents::onNewNotecardCommit, this));
     childSetAction("button permissions",&LLPanelContents::onClickPermissions, this);
 
     mPublishButton = getChild<LLButton>("button publish");
@@ -120,7 +119,6 @@ void LLPanelContents::getState(LLViewerObject *objectp )
     if( !objectp )
     {
         getChildView("button new script")->setEnabled(false);
-        getChildView("button new notecard")->setEnabled(false);
         mPublishButton->setEnabled(false);
         mPublishButton->setToggleState(false);
         return;
@@ -160,10 +158,9 @@ void LLPanelContents::getState(LLViewerObject *objectp )
 
 
 
-    // New Notecard button - requires the CreateTaskInventoryItem cap.
-    bool has_create_cap = region && !region->getCapability("CreateTaskInventoryItem").empty();
-    getChildView("button new notecard")->setEnabled(has_create_cap && new_button_enabled);
-    getChild<LLComboBox>("button new script")->setEnabledByValue("notecard", has_create_cap);
+    // Notecards require direct task inventory creation support from the region.
+    const bool has_create_cap = region && !region->getCapability("CreateTaskInventoryItem").empty();
+    getChild<LLComboBox>("button new script")->setEnabledByValue("notecard", new_button_enabled && has_create_cap);
 
     // Publish button - enabled only when WS server is configured, and a single editable root object is selected.
     mPublishButton->setEnabled(LLScriptEditorWSServer::isEnabled() && new_button_enabled);
@@ -322,6 +319,8 @@ void LLPanelContents::createTaskInventoryItemHelper(
     const std::string& name,
     const LLSD& params)
 {
+    if (!object || !object->getRegion()) return;
+
     const char* perm_key = (asset_type == LLAssetType::AT_LSL_TEXT) ? "Scripts" : "Notecards";
 
     LLPermissions perm;
@@ -336,7 +335,7 @@ void LLPanelContents::createTaskInventoryItemHelper(
     std::string desc;
     LLViewerAssetType::generateDescriptionFor(asset_type, desc);
 
-    // Use cap if available, fall back to saveScript for scripts
+    // Use the direct task capability when available; scripts also support legacy creation.
     if (!object->getRegion()->getCapability("CreateTaskInventoryItem").empty())
     {
         object->createInventoryItem(asset_type, inventory_type, sub_type,

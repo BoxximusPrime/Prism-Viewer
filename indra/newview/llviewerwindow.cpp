@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "lltoolposeik.h"
 #include "llpanelboxxynowplaying.h"
 #include "llviewerwindow.h"
 
@@ -1185,7 +1186,17 @@ bool LLViewerWindow::handleAnyMouseClick(LLWindow *window, LLCoordGL pos, MASK m
             }
     }
 
+    if (down && clicktype == CLICK_LEFT && LLToolPoseIK::getInstance()->handleMouseDown(x, y, mask))
+        return true;
+
     if (down && clicktype == CLICK_LEFT && LLFloaterSnapshot::photoWorldClick(x, y, mask))
+        return true;
+
+    // Unmodified world clicks belong to pose editing for the whole session,
+    // including when its gizmos are hidden. Keep UI, photo picks and Alt camera
+    // gestures above/outside this guard; never start ordinary drag steering.
+    if ((clicktype == CLICK_LEFT || clicktype == CLICK_DOUBLELEFT) && mask == MASK_NONE
+        && LLPoseStudio::instanceExists() && LLPoseStudio::instance().isActive())
         return true;
 
     // Do not allow tool manager to handle mouseclicks if we have disconnected
@@ -3127,6 +3138,7 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
         return true;
     }
 
+    if (LLToolPoseIK::getInstance()->handleKey(key, mask)) return true;
     if (LLFloaterSnapshot::photoKey(key, mask)) return true;
 
     if (key == 'E')
@@ -3659,6 +3671,10 @@ void LLViewerWindow::updateUI()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI;
 
+    // Hover routing below gives windows, menus and mouse captors first refusal.
+    // Clear last frame's pose highlight even when they consume this frame.
+    if (LLToolPoseIK::instanceExists()) LLToolPoseIK::instance().clearHover();
+
     static std::string last_handle_msg;
 
     if (gLoggedInTime.getStarted())
@@ -3984,7 +4000,9 @@ void LLViewerWindow::updateUI()
             {
                 LLTool *tool = LLToolMgr::getInstance()->getCurrentTool();
 
-                if(mMouseInWindow && tool)
+                if (mMouseInWindow && LLToolPoseIK::getInstance()->handleHover(x, y, mask))
+                    handled = true;
+                else if(mMouseInWindow && tool)
                 {
                     handled = tool->handleHover(x, y, mask);
                 }

@@ -20,6 +20,8 @@ public:
     ~LLFloaterPoseStudio() override;
     bool postBuild() override;
     void draw() override;
+    void onPoseChanged();
+    void selectJoint(const std::string& name);
 
 private:
     void onOpen(const LLSD& key) override;
@@ -28,7 +30,9 @@ private:
     void buildJointRows();
     void refreshRows();
     void refreshRotation();
+    void onJointSelection();
     void onStart();
+    void onResetPose();
     void onRotation();
     void onPosition();
 
@@ -38,6 +42,7 @@ private:
     LLSliderCtrl* mPosition[3] = {};
     bool mStartFailed = false;
     bool mRowsBuilt = false;
+    bool mUpdatingSelection = false;
     std::string mFilter;
     std::string mSelectedJoint = "mPelvis";
 };

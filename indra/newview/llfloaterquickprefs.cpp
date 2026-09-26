@@ -2,6 +2,7 @@
 #include "llfloaterquickprefs.h"
 
 #include "llagent.h"
+#include "llboxxyao.h"
 #include "llcombobox.h"
 #include "llenvironment.h"
 #include "llinventorymodel.h"
@@ -14,6 +15,8 @@
 #include "llviewerregion.h"
 #include "llvoavatarself.h"
 
+#include <set>
+
 namespace
 {
     const char* const GRAPHICS_SETTINGS[] = {
@@ -24,6 +27,14 @@ namespace
     LLSD quickGraphicsDefault(const std::string& name, LLControlVariable* control)
     {
         return name == "RenderPCSSQuality" ? LLSD(0) : control->getDefault();
+    }
+
+    bool canCycleStand(const LLBoxxyAO& ao)
+    {
+        const auto* state = ao.getCurrentState();
+        return ao.isEnabled() && isAgentAvatarValid() && !gAgent.getFlying() && !gAgentAvatarp->mInAir &&
+            state && state->type == LLBoxxyAO::STATE_STANDING &&
+            state->animations.size() > 1 && state->current_asset.notNull();
     }
 }
 
@@ -61,6 +72,15 @@ bool LLFloaterQuickPrefs::postBuild()
     };
     hover->setSliderMouseUpCallback(save_hover);
     hover->setSliderEditorCommitCallback(save_hover);
+    for (const S32 direction : {-1, 1})
+    {
+        getChild<LLUICtrl>(direction < 0 ? "stand_prev" : "stand_next")->setCommitCallback(
+            [direction](LLUICtrl*, const LLSD&)
+            {
+                auto& ao = LLBoxxyAO::instance();
+                if (canCycleStand(ao)) ao.cycle(direction);
+            });
+    }
     for (const std::string name : ENV_ROWS)
     {
         getChild<LLComboBox>(name)->setCommitCallback([this, name](LLUICtrl*, const LLSD&) { applyEnvironment(name); });
@@ -99,6 +119,7 @@ void LLFloaterQuickPrefs::populateEnvironments()
     LLInventoryModel::item_array_t items;
     gInventory.collectDescendents(gInventory.getRootFolderID(), categories, items, LLInventoryModel::EXCLUDE_TRASH);
     gInventory.collectDescendents(gInventory.getLibraryRootFolderID(), categories, items, LLInventoryModel::EXCLUDE_TRASH);
+    std::set<LLUUID> added_assets;
     for (const auto& item : items)
     {
         if (item->getType() != LLAssetType::AT_SETTINGS || item->getAssetUUID().isNull())
@@ -111,7 +132,9 @@ void LLFloaterQuickPrefs::populateEnvironments()
         case LLSettingsType::ST_DAYCYCLE: row = "day"; break;
         default: break;
         }
-        if (row)
+        // Inventory copies and links can share a Library asset. Duplicate values
+        // make draw() select the first copy again, trapping cycling in a short loop.
+        if (row && added_assets.insert(item->getAssetUUID()).second)
             getChild<LLComboBox>(row)->add(item->getName(), item->getAssetUUID());
     }
     for (const std::string name : ENV_ROWS)
@@ -186,6 +209,9 @@ void LLFloaterQuickPrefs::draw()
     getChild<LLSliderCtrl>("hover")->setEnabled(isAgentAvatarValid() && gAgent.getRegion() && gAgent.getRegion()->avatarHoverHeightEnabled());
     if (!getChild<LLSliderCtrl>("hover")->hasFocus())
         getChild<LLSliderCtrl>("hover")->setValue(gSavedPerAccountSettings.getF32("AvatarHoverOffsetZ"));
+    const bool can_cycle_stand = canCycleStand(LLBoxxyAO::instance());
+    getChild<LLUICtrl>("stand_prev")->setEnabled(can_cycle_stand);
+    getChild<LLUICtrl>("stand_next")->setEnabled(can_cycle_stand);
     auto& env = LLEnvironment::instance();
     const bool local = env.getSelectedEnvironment() == LLEnvironment::ENV_LOCAL &&
         (env.getEnvironmentDay(LLEnvironment::ENV_LOCAL) || env.getEnvironmentFixedSky(LLEnvironment::ENV_LOCAL) || env.getEnvironmentFixedWater(LLEnvironment::ENV_LOCAL));

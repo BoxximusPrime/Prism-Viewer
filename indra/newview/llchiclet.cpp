@@ -910,8 +910,8 @@ void LLChicletPanel::trimChiclets()
 
         if (chiclets_width <= scroll_width)
         {
-            // Keep the active-DM strip visually centered beneath the top bar.
-            shiftChiclets(((scroll_width - chiclets_width) / 2) - first_chiclet_left);
+            // Keep both DM and object buttons aligned to the right of their row.
+            shiftChiclets(scroll_width - last_chiclet_right);
         }
         else if(last_chiclet_right < scroll_width || first_chiclet_left > 0)
         {

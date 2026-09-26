@@ -229,6 +229,7 @@ set(viewer_SOURCE_FILES
     llfloaterboxxytpose.cpp
     llfloaterposestudio.cpp
     llposestudio.cpp
+    lltoolposeik.cpp
     llfloaterconversationpreview.cpp
     llfloatercreatelandmark.cpp
     llfloaterdeleteprefpreset.cpp
@@ -935,6 +936,7 @@ set(viewer_HEADER_FILES
     llfloaterboxxytpose.h
     llfloaterposestudio.h
     llposestudio.h
+    lltoolposeik.h
     llfloaterconversationpreview.h
     llfloatercreatelandmark.h
     llfloaterdeleteprefpreset.h

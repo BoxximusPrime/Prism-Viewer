@@ -4650,6 +4650,20 @@
         <key>Type</key><string>Boolean</string>
         <key>Value</key><boolean>true</boolean>
     </map>
+    <key>PoseStudioShowIKHandles</key>
+    <map>
+        <key>Comment</key><string>Show bone gizmos and hand/foot IK handles while using Pose Studio.</string>
+        <key>Persist</key><integer>1</integer>
+        <key>Type</key><string>Boolean</string>
+        <key>Value</key><boolean>true</boolean>
+    </map>
+    <key>PoseStudioLocalAxes</key>
+    <map>
+        <key>Comment</key><string>Align Pose Studio gizmos with the selected bone instead of world axes.</string>
+        <key>Persist</key><integer>1</integer>
+        <key>Type</key><string>Boolean</string>
+        <key>Value</key><boolean>true</boolean>
+    </map>
     <key>PhotoCompositionAlpha</key>
     <map>
         <key>Comment</key><string>Opacity of live-only Photo Tools composition guides (0 to 1).</string>

@@ -339,11 +339,6 @@ LLTool* LLToolCompTranslate::getOverrideTool(MASK mask)
     }
     else if (mask == (MASK_CONTROL | MASK_SHIFT))
     {
-        if (static_cast<LLManipTranslate*>(mManip)->centerHandleHit(
-                gViewerWindow->getCurrentMouseX(), gViewerWindow->getCurrentMouseY()))
-        {
-            return this;
-        }
         return LLToolCompScale::getInstance();
     }
     return LLToolComposite::getOverrideTool(mask);
@@ -459,12 +454,6 @@ bool LLToolCompScale::handleMouseUp(S32 x, S32 y, MASK mask)
 
 LLTool* LLToolCompScale::getOverrideTool(MASK mask)
 {
-    if ((mask == MASK_NONE || mask == MASK_SHIFT || mask == (MASK_CONTROL | MASK_SHIFT)) &&
-        static_cast<LLManipTranslate*>(LLToolCompTranslate::getInstance()->getManipulator())->centerHandleHit(
-            gViewerWindow->getCurrentMouseX(), gViewerWindow->getCurrentMouseY()))
-    {
-        return LLToolCompTranslate::getInstance();
-    }
     if (mask == MASK_CONTROL)
     {
         return LLToolCompRotate::getInstance();
@@ -501,7 +490,6 @@ void LLToolCompScale::render()
         LLGLDepthTest gls_depth(GL_TRUE, GL_FALSE);
         mManip->renderGuidelines();
     }
-    static_cast<LLManipTranslate*>(LLToolCompTranslate::getInstance()->getManipulator())->renderSurfaceHandle();
 }
 
 //-----------------------------------------------------------------------

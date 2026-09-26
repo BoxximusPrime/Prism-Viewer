@@ -39,6 +39,7 @@
 #include "llkeybind.h" // LLKeyData
 #include "llmorphview.h"
 #include "llmoveview.h"
+#include "llposestudio.h"
 #include "llsetkeybinddialog.h"
 #include "lltoolfocus.h"
 #include "lltoolpie.h"
@@ -1549,6 +1550,24 @@ EKeyboardMode LLViewerInput::getMode() const
     }
 }
 
+namespace
+{
+bool poseBlocksMovement(const std::string& action)
+{
+    if (!LLPoseStudio::instanceExists() || !LLPoseStudio::instance().isActive()) return false;
+    // Filter actions, not physical keys: remapped movement is blocked while
+    // text editing, shortcuts and deliberate camera controls still work.
+    const char* const movement[] = {
+        "jump", "push_down", "push_forward", "push_backward", "look_up", "look_down",
+        "turn_left", "turn_right", "slide_left", "slide_right", "toggle_fly", "toggle_sit",
+        "run_forward", "run_backward", "run_left", "run_right", "toggle_run", "walk_to",
+        "spin_around_ccw_sitting", "spin_around_cw_sitting", "spin_over_sitting",
+        "spin_under_sitting", "move_forward_sitting", "move_backward_sitting"
+    };
+    return std::find(std::begin(movement), std::end(movement), action) != std::end(movement);
+}
+}
+
 bool LLViewerInput::scanKey(const std::vector<LLKeyboardBinding> &binding,
                                S32 binding_count,
                                KEY key,
@@ -1564,6 +1583,12 @@ bool LLViewerInput::scanKey(const std::vector<LLKeyboardBinding> &binding,
         {
             if ((binding[i].mMask & mask) == binding[i].mMask)
             {
+                // Always deliver release so temporary run/jump state clears.
+                if (poseBlocksMovement(binding[i].mFunctionName))
+                {
+                    if (key_up) binding[i].mFunction(KEYSTATE_UP);
+                    return true;
+                }
                 bool res = false;
                 if (key_down && !repeat)
                 {
@@ -1711,6 +1736,11 @@ bool LLViewerInput::scanMouse(
     {
         if (binding[i].mMouse == mouse && (ignore_additional_masks ? (binding[i].mMask & mask) == binding[i].mMask : binding[i].mMask == mask))
         {
+            if (poseBlocksMovement(binding[i].mFunctionName))
+            {
+                if (state == MOUSE_STATE_UP || state == MOUSE_STATE_CLICK) binding[i].mFunction(KEYSTATE_UP);
+                return true;
+            }
             bool res = false;
             switch (state)
             {
