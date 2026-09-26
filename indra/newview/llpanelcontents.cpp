@@ -163,6 +163,7 @@ void LLPanelContents::getState(LLViewerObject *objectp )
     // New Notecard button - requires the CreateTaskInventoryItem cap.
     bool has_create_cap = region && !region->getCapability("CreateTaskInventoryItem").empty();
     getChildView("button new notecard")->setEnabled(has_create_cap && new_button_enabled);
+    getChild<LLComboBox>("button new script")->setEnabledByValue("notecard", has_create_cap);
 
     // Publish button - enabled only when WS server is configured, and a single editable root object is selected.
     mPublishButton->setEnabled(LLScriptEditorWSServer::isEnabled() && new_button_enabled);
@@ -271,7 +272,12 @@ void LLPanelContents::onNewScriptFlyoutCommit(LLUICtrl* ctrl)
 
     U8 script_language;
     const std::string value = ctrl->getValue().asString();
-    if (value == "lsl")
+    if (value == "notecard")
+    {
+        onNewNotecardCommit();
+        return;
+    }
+    else if (value == "lsl")
     {
         script_language = SST_LSL;
     }

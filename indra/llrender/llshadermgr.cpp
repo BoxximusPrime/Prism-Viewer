@@ -655,8 +655,9 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_ATMOS    0.34\n"); // bit 0
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_PBR      0.67\n"); // bit 1
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_HDRI      1.0\n");  // bit 2
-    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_SSS_FLAG(data) ((abs((data)-0.46)<0.025 || abs((data)-0.79)<0.025) ? 1.0 : 0.0)\n");
-    extra_code_text[extra_code_count++] = strdup("#define GET_GBUFFER_FLAG(data, flag) (abs((data)-0.12*GBUFFER_SSS_FLAG(data)-(flag))<0.1)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_AVATAR_FLAG(data) ((abs((data)-0.38)<0.015 || abs((data)-0.50)<0.015 || abs((data)-0.71)<0.015 || abs((data)-0.83)<0.015) ? 1.0 : 0.0)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_SSS_FLAG(data) ((abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.46)<0.025 || abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.79)<0.025) ? 1.0 : 0.0)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GET_GBUFFER_FLAG(data, flag) (abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.12*GBUFFER_SSS_FLAG(data)-(flag))<0.1)\n");
 
     if (defines)
     {
@@ -1526,6 +1527,11 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("lightFunc");
     mReservedUniforms.push_back("lightMap");
     mReservedUniforms.push_back("gtaoMap");
+    mReservedUniforms.push_back("ssgiSource");
+    mReservedUniforms.push_back("ssgiGeometry");
+    mReservedUniforms.push_back("ssgiIndirect");
+    mReservedUniforms.push_back("ssgiHistory");
+    mReservedUniforms.push_back("ssgiHistoryGuide");
     mReservedUniforms.push_back("taa_current");
     mReservedUniforms.push_back("taa_history");
     mReservedUniforms.push_back("taa_detail");

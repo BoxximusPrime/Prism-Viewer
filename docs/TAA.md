@@ -25,6 +25,27 @@ or additional render-target allocation is required. Work is in progress/uncommit
 | Stabilize fine static details | On | Gives validated fine static geometry and highlights stronger accumulation and bounded retention through jitter and gentle camera motion. |
 | Detect repeated flicker | On | Learns recurring luminance changes across frames and relaxes color rejection. Requires static-detail stabilization; can smooth untracked lighting animation. |
 | Debug view | Normal | Motion/reactivity, actual history weight, clipping amount, detail protection, rejection reasons, or repeated-flicker protection. Session-only. |
+| Freeze camera jitter (diagnostic) | Off | Uses zero camera offset while retaining TAA motion tracking and history blending. Session-only; changing it resets TAA and SSGI history. |
+
+To isolate SSGI shimmer, keep **TAA** selected and compare **Freeze camera jitter
+(diagnostic)** off and on in Graphics → TAA, allowing a moment for history to
+rebuild after each change. Keep lighting, GI and sharpening settings the same.
+Compare both a stationary view and a moving avatar. If freezing the offset
+stops the shimmer, projection jitter or its interaction with upstream rendering
+is implicated. If it persists, the TAA resolve/presentation path remains a
+candidate. This is a diagnostic, not a finished stability fix; without the
+sample sequence, TAA loses its normal subpixel sampling. Turn the checkbox off
+after testing; it also resets to off when the viewer restarts.
+
+The SSGI follow-up keeps jitter enabled and corrects three upstream sources of
+instability: ray hits now use depth-derived physical normals, history depth
+validation compares the previous surface plane rather than neighboring raw
+view depths, and lighting-history clipping allows residual sample variance.
+Physical normals occupy an RG16F attachment prepared once per frame; material
+normals still orient the receiving hemisphere. The `--jitter` mode in
+`scripts/tests/test_ssgi_gpu.py` exercises actual jittered geometry through the
+production GI trace, filter, reconstruction, temporal filter and TAA resolve.
+Live scene confirmation is pending; leave **Freeze camera jitter** off to test.
 
 ## Rendering
 

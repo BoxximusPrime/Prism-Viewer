@@ -32,6 +32,7 @@
 #include "llinventory.h"
 #include "llwearabletype.h"
 #include "lltooldraganddrop.h"
+#include <boost/signals2/connection.hpp>
 
 class LLFolderViewModelItemInventory
     :   public LLFolderViewModelItemCommon
@@ -58,6 +59,7 @@ public:
     virtual LLSettingsType::type_e getSettingsType() const = 0;
     virtual EInventorySortGroup getSortGroup() const = 0;
     virtual LLInventoryObject* getInventoryObject() const = 0;
+    std::vector<std::pair<S32, S32>> getLabelHighlightRanges() const override;
     virtual void requestSort();
     virtual bool canSortContent() const { return getUUID().notNull(); }
     virtual void setPassedFilter(bool filtered, S32 filter_generation, std::string::size_type string_offset = std::string::npos, std::string::size_type string_size = 0);
@@ -83,24 +85,15 @@ public:
         {}
     };
 
-    LLInventorySort(S32 order = 0)
-    {
-        fromParams(Params().order(order));
-    }
+    LLInventorySort(S32 order = 0);
 
     bool isByDate() const { return mByDate; }
     bool isFoldersByName() const { return (!mByDate || mFoldersByName) && !mFoldersByWeight; }
     bool isFoldersByDate() const { return mByDate && !mFoldersByName && !mFoldersByWeight; }
     U32 getSortOrder() const { return mSortOrder; }
+    const std::vector<std::string>& getPriorityKeywords() const { return mPriorityKeywords; }
     void toParams(Params& p) { p.order(mSortOrder);}
-    void fromParams(Params& p)
-    {
-        mSortOrder = p.order;
-        mByDate = (mSortOrder & LLInventoryFilter::SO_DATE);
-        mSystemToTop = (mSortOrder & LLInventoryFilter::SO_SYSTEM_FOLDERS_TO_TOP);
-        mFoldersByName = (mSortOrder & LLInventoryFilter::SO_FOLDERS_BY_NAME);
-        mFoldersByWeight = (mSortOrder & LLInventoryFilter::SO_FOLDERS_BY_WEIGHT);
-    }
+    void fromParams(Params& p);
 
     bool operator()(const LLFolderViewModelItemInventory* const& a, const LLFolderViewModelItemInventory* const& b) const;
 private:
@@ -109,6 +102,7 @@ private:
     bool mSystemToTop;
     bool mFoldersByName;
     bool mFoldersByWeight;
+    std::vector<std::string> mPriorityKeywords;
 };
 
 class LLFolderViewModelInventory
@@ -117,9 +111,7 @@ class LLFolderViewModelInventory
 public:
     typedef LLFolderViewModel<LLInventorySort,   LLFolderViewModelItemInventory, LLFolderViewModelItemInventory,   LLInventoryFilter> base_t;
 
-    LLFolderViewModelInventory(const std::string& name)
-    :   base_t(new LLInventorySort(), new LLInventoryFilter(LLInventoryFilter::Params().name(name)))
-    {}
+    LLFolderViewModelInventory(const std::string& name);
 
     void setTaskID(const LLUUID& id) {mTaskID = id;}
 
@@ -130,5 +122,6 @@ public:
 
 private:
     LLUUID mTaskID;
+    boost::signals2::scoped_connection mPriorityKeywordsChanged;
 };
 #endif // LL_LLFOLDERVIEWMODELINVENTORY_H

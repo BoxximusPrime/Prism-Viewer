@@ -843,7 +843,8 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "RenderDepthOfField", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderFSAAType", handleReleaseGLBufferChanged);
     for (const char* setting : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
-        "RenderTAATransparency", "RenderTAAStaticDetails", "RenderGTAORadius", "RenderGTAOStrength", "RenderGTAOQuality",
+        "RenderTAATransparency", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderGTAORadius", "RenderGTAOStrength", "RenderGTAOQuality",
+        "RenderSSGIRadius", "RenderSSGIStrength", "RenderSSGIQuality", "RenderSSGIDenoise", "RenderSSGIDebug",
         "RenderGTAOFalloff", "RenderGTAOThinOccluder", "RenderGTAODenoise" })
         setting_setup_signal_listener(gSavedSettings, setting, handleTAAHistoryChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderHighPrecisionPostProcess", handleReleaseGLBufferChanged);
@@ -893,6 +894,7 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "RenderAlphaProjectors", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderDeferredSSAO", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderGTAOEnabled", handleSetShaderChanged);
+    setting_setup_signal_listener(gSavedSettings, "RenderSSGIEnabled", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderPerformanceTest", handleRenderPerfTestChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderAvatarCloth", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "ChatFontSize", handleChatFontSizeChanged);

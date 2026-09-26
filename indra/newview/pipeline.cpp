@@ -379,8 +379,9 @@ bool addDeferredAttachments(LLRenderTarget& target, bool for_impostor = false)
         emissive = GL_RGB;
     }
 
-    // The skin marker needs more than the two alpha bits of RGB10_A2.
-    if (gSavedSettings.getBOOL("BoxxySSSEnabled") && !for_impostor && !gCubeSnapshot)
+    // Skin and avatar markers need more than the two alpha bits of RGB10_A2.
+    if ((gSavedSettings.getBOOL("BoxxySSSEnabled") && !for_impostor && !gCubeSnapshot) ||
+        gSavedSettings.getBOOL("RenderSSGIEnabled"))
     {
         norm = GL_RGBA16;
     }
@@ -558,6 +559,7 @@ void LLPipeline::init()
     connectRefreshCachedSettingsSafe("RenderShadowSplits");
     connectRefreshCachedSettingsSafe("RenderDeferredSSAO");
     connectRefreshCachedSettingsSafe("RenderGTAOEnabled");
+    connectRefreshCachedSettingsSafe("RenderSSGIEnabled");
     connectRefreshCachedSettingsSafe("RenderShadowResolutionScale");
     connectRefreshCachedSettingsSafe("RenderDelayCreation");
     connectRefreshCachedSettingsSafe("RenderAnimateRes");
@@ -932,26 +934,28 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
         mTAAOpaque.release();
         mTAAResolved.release();
         for (auto& target : mTAAHistory) target.release();
-        if (RenderFSAAType == 3)
+        if (RenderFSAAType == 3 || gSavedSettings.getBOOL("RenderSSGIEnabled"))
         {
-            if (mTAAMotion.allocate(resX, resY, GL_RGBA16F) &&
-                mTAAOpaque.allocate(resX, resY, GL_RGBA16F) &&
-                mTAAResolved.allocate(resX, resY, GL_RGBA16F) &&
-                mTAAHistory[0].allocate(resX, resY, GL_RGBA16F) &&
-                mTAAHistory[0].addColorAttachment(GL_RGBA16F) &&
-                mTAAHistory[0].addColorAttachment(GL_RGBA16F) &&
-                mTAAHistory[1].allocate(resX, resY, GL_RGBA16F) &&
-                mTAAHistory[1].addColorAttachment(GL_RGBA16F) &&
-                mTAAHistory[1].addColorAttachment(GL_RGBA16F))
+            if (!mTAAMotion.allocate(resX, resY, GL_RGBA16F) ||
+                !mTAAResolved.allocate(resX, resY, GL_RGBA16F))
             {
-                mRT->deferredScreen.shareDepthBuffer(mTAAMotion);
+                mTAAMotion.release(); mTAAResolved.release();
+                LL_WARNS("Render") << "Temporal motion buffers unavailable." << LL_ENDL;
             }
-            else
-            {
-                mTAAMotion.release(); mTAAOpaque.release(); mTAAResolved.release();
-                for (auto& target : mTAAHistory) target.release();
-                LL_WARNS("Render") << "TAA buffers unavailable; leaving the camera unjittered." << LL_ENDL;
-            }
+            else mRT->deferredScreen.shareDepthBuffer(mTAAMotion);
+        }
+        if (RenderFSAAType == 3 &&
+            (!mTAAOpaque.allocate(resX, resY, GL_RGBA16F) ||
+             !mTAAHistory[0].allocate(resX, resY, GL_RGBA16F) ||
+             !mTAAHistory[0].addColorAttachment(GL_RGBA16F) ||
+             !mTAAHistory[0].addColorAttachment(GL_RGBA16F) ||
+             !mTAAHistory[1].allocate(resX, resY, GL_RGBA16F) ||
+             !mTAAHistory[1].addColorAttachment(GL_RGBA16F) ||
+             !mTAAHistory[1].addColorAttachment(GL_RGBA16F)))
+        {
+            mTAAOpaque.release();
+            for (auto& target : mTAAHistory) target.release();
+            LL_WARNS("Render") << "TAA history buffers unavailable; leaving the camera unjittered." << LL_ENDL;
         }
         mGTAOReady = false;
         for (auto& target : mGTAO) target.release();
@@ -960,6 +964,34 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
         {
             for (auto& target : mGTAO) target.release();
             LL_WARNS("Render") << "GTAO buffers unavailable; using legacy SSAO." << LL_ENDL;
+        }
+        mSSGISource.release();
+        mSSGIResolved.release();
+        for (auto& target : mSSGIHistory) target.release();
+        for (auto& target : mSSGI) target.release();
+        mSSGIReady = false;
+        if (gSavedSettings.getBOOL("RenderSSGIEnabled"))
+        {
+            GLint draw_buffers = 0, color_attachments = 0;
+            glGetIntegerv(GL_MAX_DRAW_BUFFERS, &draw_buffers);
+            glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &color_attachments);
+            if (draw_buffers < 5 || color_attachments < 5 ||
+                !mSSGISource.allocate(resX, resY, GL_RGBA16F) ||
+                !mSSGISource.addColorAttachment(GL_RG16F) ||
+                !mSSGI[0].allocate((resX + 1) / 2, (resY + 1) / 2, GL_RGBA16F) ||
+                !mSSGI[1].allocate((resX + 1) / 2, (resY + 1) / 2, GL_RGBA16F) ||
+                !mSSGIResolved.allocate(resX, resY, GL_RGBA16F) ||
+                !mSSGIHistory[0].allocate(resX, resY, GL_RGBA16F) ||
+                !mSSGIHistory[0].addColorAttachment(GL_RGBA16F) ||
+                !mSSGIHistory[1].allocate(resX, resY, GL_RGBA16F) ||
+                !mSSGIHistory[1].addColorAttachment(GL_RGBA16F))
+            {
+                mSSGISource.release();
+                mSSGIResolved.release();
+                for (auto& target : mSSGIHistory) target.release();
+                for (auto& target : mSSGI) target.release();
+                LL_WARNS("Render") << "SSGI buffers or five draw buffers unavailable; using ordinary deferred lighting." << LL_ENDL;
+            }
         }
         mSSSTransmission.release();
         mSSSGrazing.release();
@@ -1422,6 +1454,11 @@ void LLPipeline::releaseScreenBuffers()
     for (auto& target : mTAAHistory) target.release();
     mGTAOReady = false;
     for (auto& target : mGTAO) target.release();
+    mSSGISource.release();
+    mSSGIResolved.release();
+    for (auto& target : mSSGIHistory) target.release();
+    for (auto& target : mSSGI) target.release();
+    mSSGIReady = false;
     mRT->screen.release();
     mRT->deferredScreen.release();
     mRT->deferredLight.release();
@@ -8411,6 +8448,14 @@ void LLPipeline::renderDoF(LLRenderTarget* src, LLRenderTarget* dst)
     }
 }
 
+bool LLPipeline::isTemporalMotionAvailable() const
+{
+    return gTAACameraProgram.isComplete() && gTAACopyProgram.isComplete() &&
+        gTAAMotionProgram[0].isComplete() && gTAAMotionProgram[1].isComplete() &&
+        mTAAMotion.isComplete() && mTAAResolved.isComplete() &&
+        mTAAMotion.getWidth() == mMainRT.screen.getWidth() && mTAAMotion.getHeight() == mMainRT.screen.getHeight();
+}
+
 bool LLPipeline::isTAAAvailable() const
 {
     return RenderFSAAType == 3 && gTAAResolveProgram.isComplete() &&
@@ -8429,15 +8474,18 @@ void LLPipeline::resetTAAHistory()
     mTAAMotionReady = false;
     mTAASequence = 0;
     mTAALastFrame = 0;
+    mSSGILastFrame = 0;
 }
 
 void LLPipeline::beginTAAFrame(bool for_snapshot)
 {
     mTAAFrameActive = false;
+    mTemporalFrameActive = false;
+    mTAAJitter = glm::vec2(0.f);
     mTAAOpaqueReady = false;
     mTAAMotionReady = false;
     if (for_snapshot || gSnapshot || gCubeSnapshot || sImpostorRender || mRT != &mMainRT ||
-        gUseWireframe || !isTAAAvailable() || gSavedSettings.getBOOL("RenderGTAODebug") ||
+        gUseWireframe || (!isTAAAvailable() && !(isSSGIAvailable() && isTemporalMotionAvailable())) || gSavedSettings.getBOOL("RenderGTAODebug") ||
         gSavedSettings.getBOOL("BoxxySSSShowDepth") || gSavedSettings.getBOOL("BoxxySSSShowMask") || RenderBufferVisualization >= 0)
     {
         resetTAAHistory();
@@ -8457,15 +8505,21 @@ void LLPipeline::beginTAAFrame(bool for_snapshot)
         glm::length(glm::vec3(camera[3] - previous_camera[3])) > 4.f ||
         glm::dot(glm::vec3(camera[2]), glm::vec3(previous_camera[2])) < .8f)
         resetTAAHistory();
+    mTemporalFrameActive = true;
+    if (!isTAAAvailable()) return; // SMAA/FXAA retain an unjittered projection.
     auto halton = [](U32 index, U32 base)
     {
         F32 result = 0.f, fraction = 1.f;
         while (index) { fraction /= base; result += fraction * (index % base); index /= base; }
         return result;
     };
-    U32 sample = mTAASequence % 8 + 1;
-    mTAAJitter = glm::vec2(halton(sample, 2) - .5f, halton(sample, 3) - .5f) /
-        glm::vec2(mTAAMotion.getWidth(), mTAAMotion.getHeight());
+    // Isolate projection jitter without disabling motion tracking or the TAA resolve.
+    if (!gSavedSettings.getBOOL("RenderTAAFreezeJitter"))
+    {
+        U32 sample = mTAASequence % 8 + 1;
+        mTAAJitter = glm::vec2(halton(sample, 2) - .5f, halton(sample, 3) - .5f) /
+            glm::vec2(mTAAMotion.getWidth(), mTAAMotion.getHeight());
+    }
     glm::mat4 jitter(1.f);
     jitter[3][0] = 2.f * mTAAJitter.x;
     jitter[3][1] = 2.f * mTAAJitter.y;
@@ -8479,6 +8533,13 @@ void LLPipeline::beginTAAFrame(bool for_snapshot)
 
 void LLPipeline::endTAAFrame()
 {
+    if (mTemporalFrameActive && !mTAAFrameActive && mTAAMotionReady)
+    {
+        mTAAPreviousView = mTAAView;
+        mTAAPreviousProjection = mTAAProjection;
+        mTAALastFrame = gFrameCount;
+    }
+    mTemporalFrameActive = false;
     if (mTAAFrameActive)
     {
         // World labels, picking and HUDs use an unjittered projection.
@@ -8527,9 +8588,9 @@ void LLPipeline::captureTAAOpaque()
     }
 }
 
-void LLPipeline::renderTAAMotion()
+void LLPipeline::renderTAAMotion(bool for_ssgi)
 {
-    if (!mTAAFrameActive || gCubeSnapshot || sImpostorRender || mRT != &mMainRT || !sCull) return;
+    if (!(for_ssgi ? mTemporalFrameActive : mTAAFrameActive) || gCubeSnapshot || sImpostorRender || mRT != &mMainRT || !sCull) return;
     LL_PROFILE_GPU_ZONE("TAA motion");
     LLGLDisable blend(GL_BLEND);
     LLGLDisable cull(GL_CULL_FACE);
@@ -8629,7 +8690,7 @@ void LLPipeline::renderTAAMotion()
                 if (!info || !info->mCount || !visited.insert(info).second) continue;
                 LLMatrix4 model;
                 if (info->mModelMatrix) model = *info->mModelMatrix;
-                bool valid = mTAAHistoryValid && info->mTAAFrame == mTAALastFrame;
+                bool valid = mTAALastFrame + 1 == gFrameCount && info->mTAAFrame == mTAALastFrame;
                 glm::mat4 previous_model = glm::make_mat4(&(valid ? info->mTAAModel : model).mMatrix[0][0]);
                 if (rigged)
                 {
@@ -8652,7 +8713,13 @@ void LLPipeline::renderTAAMotion()
                 LLRenderPass::applyModelMatrix(info->mModelMatrix);
                 info->mVertexBuffer->setBuffer();
                 info->mVertexBuffer->drawRange(LLRender::TRIANGLES, info->mStart, info->mEnd, info->mCount, info->mOffset);
-                info->mTAAModel = model; info->mTAAFrame = gFrameCount;
+                // GI needs opaque motion before skin diffusion. TAA still runs
+                // its later pass after transparent depth changes; keep the old
+                // pose available until that pass has consumed it.
+                if (!for_ssgi || !mTAAFrameActive)
+                {
+                    info->mTAAModel = model; info->mTAAFrame = gFrameCount;
+                }
             }
         }
         shader.unbind();
@@ -8831,12 +8898,15 @@ void LLPipeline::renderFinalize()
 
     // Inspect the AO signal after exposure, tone mapping, glow and DoF. The
     // geometry mask was captured with GTAO, before transparency changes depth.
-    if (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug"))
+    const bool ssgi_debug = mSSGIReady && isSSGIAvailable() && gSavedSettings.getS32("RenderSSGIDebug") != 0;
+    if (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug") && !ssgi_debug)
     {
         renderGTAODebug(sourceBuffer);
     }
 
-    renderTAADebug(*sourceBuffer);
+    if (ssgi_debug) renderSSGIDebug(sourceBuffer);
+
+    if (!ssgi_debug) renderTAADebug(*sourceBuffer);
 
     if (RenderFSAAType == 1)
     {
@@ -8856,7 +8926,7 @@ void LLPipeline::renderFinalize()
         gSavedSettings.getF32("RenderPostSharpenStrength") > 0.f && gTAACopyProgram.isComplete() &&
         mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender && !sRenderingHUDs &&
         RenderBufferVisualization < 0 && !(mTAAFrameActive && mTAAMotionReady && gSavedSettings.getS32("RenderTAADebug") != 0) &&
-        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
+        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !ssgi_debug && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
         !gSavedSettings.getBOOL("BoxxySSSShowMask"))
     {
         LL_PROFILE_GPU_ZONE("Post sharpening");
@@ -8901,7 +8971,7 @@ void LLPipeline::renderFinalize()
     // Present the screen target.
 
     // Keep the diagnostic free of the final presentation noise.
-    LLGLSLShader& final_shader = isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug") ?
+    LLGLSLShader& final_shader = ssgi_debug || (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) ?
         gDeferredPostNoDoFProgram : gDeferredPostNoDoFNoiseProgram;
     final_shader.bind();
     static LLCachedControl<bool> photo_grade(gSavedSettings, "PhotoGradeEnabled", false);
@@ -8915,7 +8985,7 @@ void LLPipeline::renderFinalize()
     // Leave diagnostic views ungraded. This stage is downstream of exposure and
     // temporal history, and runs for both the live scene and snapshot renders.
     const bool grade = photo_grade && RenderBufferVisualization < 0 &&
-        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) &&
+        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !ssgi_debug &&
         gSavedSettings.getS32("RenderTAADebug") == 0;
     final_shader.uniform1i(LLStaticHashedString("photo_grade_enabled"), grade ? 1 : 0);
     final_shader.uniform4f(LLStaticHashedString("photo_grade_color"),
@@ -9293,6 +9363,7 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
         gtaoStrength("gtao_strength"), gtaoQuality("gtao_quality"), gtaoNoise("gtao_noise_index");
     const bool gtao_active = isGTAOActive();
     shader.uniform1i(gtaoEnabled, gtao_active ? 1 : 0);
+    shader.uniform1i(LLStaticHashedString("ssgi_capture"), isSSGIAvailable() ? 1 : 0);
     shader.uniform4f(gtaoParams, llclamp(F32(gtao_radius), 0.05f, 3.f),
         llclamp(F32(gtao_falloff), 0.1f, 1.f), llclamp(F32(gtao_thin), 0.f, 1.f),
         llclamp(F32(gtao_denoise), 0.f, 2.f));
@@ -9391,6 +9462,7 @@ void LLPipeline::renderDeferredLighting()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("renderDeferredLighting");
+    if (mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender) mSSGIReady = false;
     if (!sCull)
     {
         return;
@@ -9426,6 +9498,7 @@ void LLPipeline::renderDeferredLighting()
     const bool sss_diffusion = mHasSSSGeometry && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
         gSavedSettings.getBOOL("BoxxySSSEnabled") && gSavedSettings.getS32("BoxxySSSMode") >= 1 &&
         gSavedSettings.getF32("BoxxySSSStrength") > 0.f && mSSSDiffuse.isComplete();
+    const bool ssgi_active = isSSGIAvailable();
     const bool sss_debug_combined = gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
         gSavedSettings.getS32("BoxxySSSDebugLight") == 3;
     const bool sss_transmission_blur = gSavedSettings.getF32("BoxxySSSTransmissionSmoothing") > 0.f;
@@ -9575,17 +9648,23 @@ void LLPipeline::renderDeferredLighting()
         }
 
         screen_target->bindTarget();
-        if (sss_diffusion)
+        if (sss_diffusion || ssgi_active)
         {
-            // Capture diffuse illumination alongside scene color, only during opaque lighting.
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mSSSDiffuse.getTexture(), 0);
-            if (mSSSTransmissionSmoothing)
+            // Keep the donor lighting isolated from probes, specular, and the GI result.
+            if (sss_diffusion)
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mSSSDiffuse.getTexture(), 0);
+            if (sss_diffusion && mSSSTransmissionSmoothing)
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, mSSSTransmission.getTexture(), 0);
-            if (mSSSGrazingSmoothing)
+            if (sss_diffusion && mSSSGrazingSmoothing)
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, mSSSGrazing.getTexture(), 0);
-            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-                GLenum(mSSSTransmissionSmoothing ? GL_COLOR_ATTACHMENT2 : GL_NONE), GL_COLOR_ATTACHMENT3};
-            glDrawBuffers(mSSSGrazingSmoothing ? 4 : mSSSTransmissionSmoothing ? 3 : 2, buffers);
+            if (ssgi_active)
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, mSSGISource.getTexture(), 0);
+            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0,
+                GLenum(sss_diffusion ? GL_COLOR_ATTACHMENT1 : GL_NONE),
+                GLenum(sss_diffusion && mSSSTransmissionSmoothing ? GL_COLOR_ATTACHMENT2 : GL_NONE),
+                GLenum(sss_diffusion && mSSSGrazingSmoothing ? GL_COLOR_ATTACHMENT3 : GL_NONE),
+                GLenum(ssgi_active ? GL_COLOR_ATTACHMENT4 : GL_NONE)};
+            glDrawBuffers(ssgi_active ? 5 : mSSSGrazingSmoothing ? 4 : mSSSTransmissionSmoothing ? 3 : 2, buffers);
         }
         // clear color buffer here - zeroing alpha (glow) is important or it will accumulate against sky
         glClearColor(0, 0, 0, 0);
@@ -9883,6 +9962,14 @@ void LLPipeline::renderDeferredLighting()
         gGL.setColorMask(true, true);
     }
 
+    if (ssgi_active)
+    {
+        gGL.flush();
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, 0, 0);
+        renderTAAMotion(true);
+        renderSSGI(sss_diffusion);
+    }
+
     if (sss_diffusion)
     {
         gGL.flush();
@@ -10004,6 +10091,202 @@ bool LLPipeline::isGTAOAvailable() const
         mGTAO[0].isComplete() && mGTAO[1].isComplete() &&
         mGTAO[0].getWidth() == mMainRT.deferredScreen.getWidth() &&
         mGTAO[0].getHeight() == mMainRT.deferredScreen.getHeight();
+}
+
+bool LLPipeline::isSSGIAvailable() const
+{
+    return gSavedSettings.getBOOL("RenderSSGIEnabled") &&
+        (gSavedSettings.getF32("RenderSSGIStrength") > 0.f || gSavedSettings.getS32("RenderSSGIDebug") != 0) &&
+        !gCubeSnapshot && !sImpostorRender && !gUseWireframe && mRT == &mMainRT &&
+        gSSGITraceProgram.isComplete() && gSSGIFilterProgram.isComplete() &&
+        gSSGICompositeProgram.isComplete() && gSSGIDebugProgram.isComplete() &&
+        gSSGIResolveProgram.isComplete() && gSSGITemporalProgram.isComplete() && gSSGIGeometryProgram.isComplete() &&
+        mSSGIResolved.isComplete() && mSSGIHistory[0].isComplete() && mSSGIHistory[1].isComplete() &&
+        mSSGISource.isComplete() && mSSGI[0].isComplete() && mSSGI[1].isComplete() &&
+        mSSGISource.getWidth() == mRT->deferredScreen.getWidth() &&
+        mSSGISource.getHeight() == mRT->deferredScreen.getHeight() &&
+        mSSGI[0].getWidth() == (mSSGISource.getWidth() + 1) / 2 &&
+        mSSGI[0].getHeight() == (mSSGISource.getHeight() + 1) / 2 &&
+        mSSGI[1].getWidth() == mSSGI[0].getWidth() && mSSGI[1].getHeight() == mSSGI[0].getHeight();
+}
+
+void LLPipeline::renderSSGI(bool sss_diffusion)
+{
+    LL_PROFILE_GPU_ZONE("SSGI");
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    LLGLDisable cull(GL_CULL_FACE);
+    LLGLDisable blend(GL_BLEND);
+    gGL.setColorMask(true, true);
+    static const LLStaticHashedString halfRes("ssgi_half_res"), radius("ssgi_radius"), quality("ssgi_quality"),
+        strength("ssgi_strength"), sssActive("ssgi_sss_active");
+    const F32 bounce_radius = llclamp(gSavedSettings.getF32("RenderSSGIRadius"), 0.1f, 3.f);
+    const F32 half_width = F32(mSSGI[0].getWidth()), half_height = F32(mSSGI[0].getHeight());
+    const S32 diagnostic = llclamp(gSavedSettings.getS32("RenderSSGIDebug"), 0, 4);
+    const bool capture_diagnostic = diagnostic == 1 || diagnostic >= 3;
+    {
+        LL_PROFILE_GPU_ZONE("SSGI geometry");
+        // Keep physical normals separate from normal-map shading. Reconstruct
+        // once per pixel, rather than fetching four extra depths at every ray step.
+        mSSGISource.bindTarget();
+        glDrawBuffer(GL_COLOR_ATTACHMENT1);
+        bindDeferredShader(gSSGIGeometryProgram);
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mSSGISource.flush();
+        unbindDeferredShader(gSSGIGeometryProgram);
+    }
+    {
+        LL_PROFILE_GPU_ZONE("SSGI trace");
+        mSSGI[0].bindTarget();
+        bindDeferredShader(gSSGITraceProgram);
+        gSSGITraceProgram.bindTexture(LLShaderMgr::SSGI_SOURCE, &mSSGISource, false, LLTexUnit::TFO_POINT);
+        gSSGITraceProgram.bindTexture(LLShaderMgr::SSGI_GEOMETRY, &mSSGISource, false, LLTexUnit::TFO_POINT, 1);
+        gSSGITraceProgram.uniform2f(halfRes, half_width, half_height);
+        gSSGITraceProgram.uniform1f(radius, bounce_radius);
+        gSSGITraceProgram.uniform1i(quality, llclamp(gSavedSettings.getS32("RenderSSGIQuality"), 0, 2));
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mSSGI[0].flush();
+        gSSGITraceProgram.unbindTexture(LLShaderMgr::SSGI_SOURCE);
+        gSSGITraceProgram.unbindTexture(LLShaderMgr::SSGI_GEOMETRY);
+        unbindDeferredShader(gSSGITraceProgram);
+    }
+    {
+        LL_PROFILE_GPU_ZONE("SSGI filter");
+        static const LLStaticHashedString denoiseMode("ssgi_denoise_mode"), filterStride("ssgi_filter_stride");
+        const S32 denoise = llclamp(gSavedSettings.getS32("RenderSSGIDenoise"), 0, 2);
+        const S32 passes = denoise == 0 ? 1 : 3;
+        for (S32 pass = 0; pass < passes; ++pass)
+        {
+            auto& source = mSSGI[pass % 2];
+            auto& target = mSSGI[(pass + 1) % 2];
+            target.bindTarget();
+            bindDeferredShader(gSSGIFilterProgram);
+            gSSGIFilterProgram.bindTexture(LLShaderMgr::SSGI_INDIRECT, &source, false, LLTexUnit::TFO_POINT);
+            gSSGIFilterProgram.uniform2f(halfRes, half_width, half_height);
+            gSSGIFilterProgram.uniform1f(radius, bounce_radius);
+            gSSGIFilterProgram.uniform1i(denoiseMode, denoise);
+            gSSGIFilterProgram.uniform1i(filterStride, 1 << pass);
+            mScreenTriangleVB->setBuffer();
+            mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+            target.flush();
+            gSSGIFilterProgram.unbindTexture(LLShaderMgr::SSGI_INDIRECT);
+            unbindDeferredShader(gSSGIFilterProgram);
+        }
+    }
+    {
+        LL_PROFILE_GPU_ZONE("SSGI receiver resolve");
+        mSSGIResolved.bindTarget();
+        auto& shader = gSSGIResolveProgram;
+        bindDeferredShader(shader);
+        shader.bindTexture(LLShaderMgr::SSGI_SOURCE, &mSSGISource, false, LLTexUnit::TFO_POINT);
+        shader.bindTexture(LLShaderMgr::SSGI_GEOMETRY, &mSSGISource, false, LLTexUnit::TFO_POINT, 1);
+        shader.bindTexture(LLShaderMgr::SSGI_INDIRECT, &mSSGI[1], false, LLTexUnit::TFO_POINT);
+        shader.uniform2f(halfRes, half_width, half_height);
+        shader.uniform1f(radius, bounce_radius);
+        shader.uniform1i(quality, llclamp(gSavedSettings.getS32("RenderSSGIQuality"), 0, 2));
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mSSGIResolved.flush();
+        shader.unbindTexture(LLShaderMgr::SSGI_SOURCE);
+        shader.unbindTexture(LLShaderMgr::SSGI_GEOMETRY);
+        shader.unbindTexture(LLShaderMgr::SSGI_INDIRECT);
+        unbindDeferredShader(shader);
+    }
+    {
+        LL_PROFILE_GPU_ZONE("SSGI temporal denoise");
+        auto& shader = gSSGITemporalProgram;
+        auto& target = mSSGIHistory[mSSGIIndex];
+        auto& history = mSSGIHistory[1 - mSSGIIndex];
+        target.bindTarget();
+        bindDeferredShader(shader);
+        shader.bindTexture(LLShaderMgr::SSGI_INDIRECT, &mSSGIResolved, false, LLTexUnit::TFO_POINT);
+        shader.bindTexture(LLShaderMgr::SSGI_HISTORY, &history, false, LLTexUnit::TFO_POINT);
+        shader.bindTexture(LLShaderMgr::SSGI_HISTORY_GUIDE, &history, false, LLTexUnit::TFO_POINT, 1);
+        shader.bindTexture(LLShaderMgr::SSGI_GEOMETRY, &mSSGISource, false, LLTexUnit::TFO_POINT, 1);
+        shader.bindTexture(LLShaderMgr::TAA_MOTION, mTAAMotion.isComplete() ? &mTAAMotion : &mSSGIResolved, false, LLTexUnit::TFO_POINT);
+        glm::vec3 config(bounce_radius, gSavedSettings.getS32("RenderSSGIQuality"), gSavedSettings.getS32("RenderSSGIDenoise"));
+        const bool valid = mTemporalFrameActive && mTAAMotionReady &&
+            mSSGILastFrame + 1 == gFrameCount && config == mSSGIHistoryConfig;
+        shader.uniform1i(LLStaticHashedString("ssgi_history_valid"), valid ? 1 : 0);
+        const glm::vec2 delta = mSSGIPreviousJitter - mTAAJitter;
+        shader.uniform2f(LLStaticHashedString("ssgi_jitter_delta"), delta.x, delta.y);
+        const glm::mat4 current_from_previous = glm::mat4(glm::dmat4(mTAAView) * glm::inverse(glm::dmat4(mTAAPreviousView)));
+        shader.uniformMatrix4fv(LLStaticHashedString("ssgi_previous_to_current"), 1, false, glm::value_ptr(current_from_previous));
+        shader.uniform1f(radius, bounce_radius);
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        target.flush();
+        for (S32 sampler : { LLShaderMgr::SSGI_INDIRECT, LLShaderMgr::SSGI_HISTORY, LLShaderMgr::SSGI_HISTORY_GUIDE,
+            LLShaderMgr::SSGI_GEOMETRY, LLShaderMgr::TAA_MOTION })
+            shader.unbindTexture(sampler);
+        unbindDeferredShader(shader);
+        mSSGILastFrame = mTemporalFrameActive && mTAAMotionReady ? gFrameCount : 0;
+        mSSGIPreviousJitter = mTAAJitter;
+        mSSGIHistoryConfig = config;
+    }
+    {
+        LL_PROFILE_GPU_ZONE("SSGI compose");
+        const GLenum compose_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+        if (sss_diffusion) glDrawBuffers(2, compose_buffers);
+        else glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        gGL.setSceneBlendType(LLRender::BT_ADD);
+        glEnable(GL_BLEND);
+        gGL.setColorMask(true, false); // Preserve the scene's glow/alpha channel.
+        bindDeferredShader(gSSGICompositeProgram);
+        gSSGICompositeProgram.bindTexture(LLShaderMgr::SSGI_INDIRECT, &mSSGIHistory[mSSGIIndex], false, LLTexUnit::TFO_POINT);
+        gSSGICompositeProgram.uniform1f(strength, llclamp(gSavedSettings.getF32("RenderSSGIStrength"), 0.f, 30.f));
+        gSSGICompositeProgram.uniform1f(LLStaticHashedString("ssgi_avatar_strength"),
+            llclamp(gSavedSettings.getF32("RenderSSGIAvatarStrength"), 0.f, 2.f));
+        gSSGICompositeProgram.uniform1i(sssActive, sss_diffusion ? 1 : 0);
+        const LLStaticHashedString debugMode("ssgi_debug");
+        gSSGICompositeProgram.uniform1i(debugMode, 0);
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        if (capture_diagnostic)
+        {
+            // Temporal filtering has consumed the resolve target. Reuse it for
+            // diagnostics; the composite now reads the separate history target.
+            glDisable(GL_BLEND);
+            mSSGIResolved.bindTarget();
+            gSSGICompositeProgram.uniform1i(debugMode, diagnostic);
+            gSSGICompositeProgram.uniform1i(sssActive, 0);
+            mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+            mSSGIResolved.flush();
+        }
+        gSSGICompositeProgram.unbindTexture(LLShaderMgr::SSGI_INDIRECT);
+        unbindDeferredShader(gSSGICompositeProgram);
+        gGL.setColorMask(true, true);
+        glDisable(GL_BLEND);
+        if (sss_diffusion)
+        {
+            const GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+                GLenum(mSSSTransmissionSmoothing ? GL_COLOR_ATTACHMENT2 : GL_NONE),
+                GLenum(mSSSGrazingSmoothing ? GL_COLOR_ATTACHMENT3 : GL_NONE)};
+            glDrawBuffers(mSSSGrazingSmoothing ? 4 : mSSSTransmissionSmoothing ? 3 : 2, buffers);
+        }
+        mSSGIIndex = 1 - mSSGIIndex;
+        mSSGIReady = true;
+    }
+}
+
+void LLPipeline::renderSSGIDebug(LLRenderTarget* dst)
+{
+    LL_PROFILE_GPU_ZONE("SSGI diagnostic");
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    LLGLDisable cull(GL_CULL_FACE);
+    LLGLDisable blend(GL_BLEND);
+    dst->bindTarget();
+    bindDeferredShader(gSSGIDebugProgram);
+    gSSGIDebugProgram.bindTexture(LLShaderMgr::SSGI_SOURCE,
+        gSavedSettings.getS32("RenderSSGIDebug") == 2 ? &mSSGISource : &mSSGIResolved, false, LLTexUnit::TFO_POINT);
+    gSSGIDebugProgram.uniform1i(LLStaticHashedString("ssgi_debug"),
+        llclamp(gSavedSettings.getS32("RenderSSGIDebug"), 1, 4));
+    mScreenTriangleVB->setBuffer();
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    dst->flush();
+    gSSGIDebugProgram.unbindTexture(LLShaderMgr::SSGI_SOURCE);
+    unbindDeferredShader(gSSGIDebugProgram);
 }
 
 bool LLPipeline::isGTAOActive() const
@@ -11834,6 +12117,8 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
     mSSSDepthRenderedFocus = center;
     const F32 radius = 2.5f;
     const bool points = gSavedSettings.getBOOL("BoxxySSSPointDepth");
+    const S32 requestedResolution = gSavedSettings.getS32("BoxxySSSLocalDepthResolution");
+    const U32 localResolution = requestedResolution >= 2048 ? 2048 : requestedResolution >= 1024 ? 1024 : 512;
     LLDrawable* desired[2] = {};
     F32 scores[2] = {};
     S32 count = 0;
@@ -11957,7 +12242,7 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
             view = glm::lookAt(origin, center, up);
         }
         LLRenderTarget& target = mSSSDepth[i];
-        const U32 resolution = i == 0 ? 1024 : 512;
+        const U32 resolution = i == 0 ? 1024 : localResolution;
         if (target.getWidth() != resolution || !target.isComplete())
         {
             target.release();

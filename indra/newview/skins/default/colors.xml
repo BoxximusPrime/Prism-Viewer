@@ -485,6 +485,12 @@
      name="InventoryFavoriteColor"
      reference="Yellow" />
     <color
+     name="InventoryPriorityColor"
+     reference="Yellow" />
+    <color
+     name="InventoryFolderKeywordColor"
+     value="0.85 0.60 0.20 1" />
+    <color
      name="InventoryFocusOutlineColor"
      reference="AccentColor_75" />
     <color

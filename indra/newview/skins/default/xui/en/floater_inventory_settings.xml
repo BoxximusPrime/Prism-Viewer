@@ -4,10 +4,28 @@
  can_minimize="true"
  can_resize="false"
  save_rect="true"
- height="483"
+ height="655"
  width="483"
  name="inventory_settings"
  title="INVENTORY SETTINGS">
+ <scroll_container
+  name="settings_scroll"
+  layout="topleft"
+  follows="all"
+  left="0"
+  top="18"
+  width="483"
+  height="637"
+  opaque="false"
+  border_visible="false">
+ <panel
+  name="settings_content"
+  layout="topleft"
+  follows="left|top"
+  left="0"
+  top="0"
+  width="467"
+  height="755">
  <icon
   follows="top|left"
   height="18"
@@ -69,6 +87,33 @@
       top_pad ="3"
       width="200" />
  </radio_group>
+ <text
+  type="string"
+  length="1"
+  follows="left|top|right"
+  height="13"
+  layout="topleft"
+  left="60"
+  top_pad="6"
+  name="multi_alt_click_label"
+  text_color="White"
+  width="300">
+  Alt+click on folder:
+ </text>
+ <combo_box
+  control_name="MultiModeAltClickFolder"
+  follows="left|top"
+  height="24"
+  layout="topleft"
+  left="60"
+  top_pad="3"
+  name="multi_alt_click_setting"
+  width="300">
+   <combo_box.item label="Expands &amp; collapses folder" name="0" value="0"/>
+   <combo_box.item label="Opens a new window" name="1" value="1"/>
+   <combo_box.item label="Switches view" name="2" value="2"/>
+   <combo_box.item label="Expands &amp; collapses all subfolders" name="3" value="3"/>
+ </combo_box>
  <icon
   follows="top|left"
   height="18"
@@ -120,6 +165,32 @@
       top_pad ="3"
       width="200" />
  </radio_group>
+ <text
+  type="string"
+  length="1"
+  follows="left|top|right"
+  height="13"
+  layout="topleft"
+  left="60"
+  top_pad="6"
+  name="single_alt_click_label"
+  text_color="White"
+  width="300">
+  Alt+click on folder:
+ </text>
+ <combo_box
+  control_name="SingleModeAltClickFolder"
+  follows="left|top"
+  height="24"
+  layout="topleft"
+  left="60"
+  top_pad="3"
+  name="single_alt_click_setting"
+  width="300">
+   <combo_box.item label="Selects folder" name="0" value="0"/>
+   <combo_box.item label="Stays in current window" name="1" value="1"/>
+   <combo_box.item label="Opens a new window" name="2" value="2"/>
+ </combo_box>
   <icon
    follows="top|left"
    height="15"
@@ -288,4 +359,113 @@
       name="1"
       value="1"/>
   </combo_box>
+  <text
+   type="string"
+   length="1"
+   follows="left|top|right"
+   height="18"
+   layout="topleft"
+   left="18"
+   top_pad="22"
+   name="priority_helper_label"
+   text_color="White"
+   width="430">
+   Attachment folder helper (50 items max)
+  </text>
+  <text
+   type="string"
+   length="1"
+   follows="left|top|right"
+   height="16"
+   layout="topleft"
+   left="60"
+   top_pad="5"
+   name="priority_keywords_label"
+   text_color="White"
+   width="380">
+   Item keywords (comma separated) and text color:
+  </text>
+  <line_editor
+   control_name="InventoryDemoHelperKeywords"
+   follows="left|top|right"
+   height="23"
+   layout="topleft"
+   left="60"
+   top_pad="5"
+   name="priority_keywords"
+   width="330" />
+  <color_swatch
+   can_apply_immediately="true"
+   follows="left|top"
+   layout="topleft"
+   height="23"
+   label_height="0"
+   left_pad="16"
+   name="priority_swatch"
+   tooltip="Item keyword text color"
+   top_delta="0"
+   width="44">
+    <color_swatch.init_callback
+     function="ScriptPref.getUIColor"
+     parameter="InventoryPriorityColor" />
+    <color_swatch.commit_callback
+     function="ScriptPref.applyUIColor"
+     parameter="InventoryPriorityColor" />
+  </color_swatch>
+  <text
+   type="string"
+   length="1"
+   follows="left|top|right"
+   height="18"
+   layout="topleft"
+   left="18"
+   top_pad="22"
+   name="folder_highlight_label"
+   text_color="White"
+   width="430">
+   Folder keyword highlights
+  </text>
+  <text
+   type="string"
+   length="1"
+   follows="left|top|right"
+   height="16"
+   layout="topleft"
+   left="60"
+   top_pad="5"
+   name="folder_keywords_label"
+   text_color="White"
+   width="390">
+   Folder keywords (comma separated) and box color:
+  </text>
+  <line_editor
+   control_name="InventoryFolderHighlightKeywords"
+   follows="left|top|right"
+   height="23"
+   layout="topleft"
+   left="60"
+   top_pad="5"
+   name="folder_keywords"
+   tooltip="Highlight matching parts of folder names, ignoring case. For example: demo, legacy"
+   width="330" />
+  <color_swatch
+   can_apply_immediately="true"
+   follows="left|top"
+   layout="topleft"
+   height="23"
+   label_height="0"
+   left_pad="16"
+   name="folder_keyword_swatch"
+   tooltip="Folder keyword background color"
+   top_delta="0"
+   width="44">
+    <color_swatch.init_callback
+     function="ScriptPref.getUIColor"
+     parameter="InventoryFolderKeywordColor" />
+    <color_swatch.commit_callback
+     function="ScriptPref.applyUIColor"
+     parameter="InventoryFolderKeywordColor" />
+  </color_swatch>
+ </panel>
+ </scroll_container>
 </floater>

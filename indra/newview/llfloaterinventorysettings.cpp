@@ -29,6 +29,7 @@
 #include "llfloaterinventorysettings.h"
 
 #include "llcolorswatch.h"
+#include "lllineeditor.h"
 #include "llviewercontrol.h"
 
 LLFloaterInventorySettings::LLFloaterInventorySettings(const LLSD& key)
@@ -46,6 +47,14 @@ bool LLFloaterInventorySettings::postBuild()
     getChild<LLButton>("ok_btn")->setCommitCallback(boost::bind(&LLFloater::closeFloater, this, false));
 
     getChild<LLUICtrl>("favorites_color")->setCommitCallback(boost::bind(&LLFloaterInventorySettings::updateColorSwatch, this));
+    getChild<LLLineEditor>("priority_keywords")->setKeystrokeCallback([](LLLineEditor* editor, void*)
+    {
+        gSavedSettings.setString("InventoryDemoHelperKeywords", editor->getText());
+    }, nullptr);
+    getChild<LLLineEditor>("folder_keywords")->setKeystrokeCallback([](LLLineEditor* editor, void*)
+    {
+        gSavedSettings.setString("InventoryFolderHighlightKeywords", editor->getText());
+    }, nullptr);
 
     bool enable_color = gSavedSettings.getBOOL("InventoryFavoritesColorText");
     getChild<LLUICtrl>("favorites_swatch")->setEnabled(enable_color);
@@ -69,4 +78,3 @@ void LLFloaterInventorySettings::getUIColor(LLUICtrl* ctrl, const LLSD& param)
     LLColorSwatchCtrl* color_swatch = (LLColorSwatchCtrl*)ctrl;
     color_swatch->setOriginal(LLUIColorTable::instance().getColor(param.asString()));
 }
-

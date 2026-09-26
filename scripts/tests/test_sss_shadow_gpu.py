@@ -7,6 +7,7 @@ composition with ordinary shadows both enabled and disabled. This does not measu
 
 import ctypes as C
 import math
+import statistics
 from pathlib import Path
 
 from test_exact_oit_gpu import context, U, I, F, TEXTURE, FRAMEBUFFER, COLOR_ATTACHMENT, RGBA, FLOAT
@@ -97,7 +98,7 @@ void main() {
 
 
 def run(sdl, gl):
-    for name, args in {"Clear": [U], "Enable": [U], "Disable": [U], "DepthFunc": [U], "Uniform3f": [I, F, F, F], "Uniform4f": [I, F, F, F, F],
+    for name, args in {"Clear": [U], "Enable": [U], "Disable": [U], "DepthFunc": [U], "Uniform2f": [I, F, F], "Uniform3f": [I, F, F, F], "Uniform4f": [I, F, F, F, F],
                        "DeleteProgram": [U], "ActiveTexture": [U], "ReadBuffer": [U],
                        "DrawBuffers": [I, C.POINTER(U)],
                        "UniformMatrix4fv": [I, I, C.c_ubyte, C.POINTER(F)]}.items():
@@ -147,6 +148,7 @@ def run(sdl, gl):
         gl.GetProgramInfoLog(result, len(log), None, log)
         assert ok.value, log.value.decode()
         gl.UseProgram(result)
+        uniform(result, "screen_res", 1, 1)
         for name, unit in (("diffuseRect",0), ("specularRect",2), ("lightMap",3)):
             uniform(result, name, unit, integer=True)
         for i in range(6):
@@ -1010,6 +1012,49 @@ def run(sdl, gl):
     assert pixel()[0]==0, "Footprint tolerance admitted a separate surface 30 mm behind the arm"
     checks+=1
     print(f"100 mm arm: maximum reconstruction error {max(arm_errors)*1000:.2f} mm; minimum coverage {min(arm_coverage):.3f}")
+    # Thin moving fingers cross whole light-map cells even with a stationary
+    # camera and no TAA. Track the same surface points through a 512-map texel
+    # of motion, retaining the viewer's absorption and receiver matching.
+    uniform(prog,"sss_lighting",0,4,9)
+    uniform(prog,"sss_penetration",0.08)
+    motion_metrics={}
+    for resolution in (512,1024,2048):
+        # Eight identical cylinder rows suffice; scale Y to keep square world
+        # texels and the exact footprint tolerance of a full-resolution map.
+        matrix(prog,"sss_depth_matrix[0]",[[1/span,0,0,0.5],[0,resolution/(span*8),0,0.5],
+                                          [0,0,1,5.5],[0,0,0,1]])
+        for radius in (0.008,0.012):
+            frames=[]
+            for phase in range(33):
+                offset=(phase/32-0.5)*span/512
+                row=[]
+                for i in range(resolution):
+                    x=((i+0.5)/resolution-0.5)*span-offset
+                    z=math.sqrt(max(0,radius*radius-x*x))
+                    row.extend((0.5-z,1,0.5+z,1) if abs(x)<radius else (1,0,1,0))
+                gl.ActiveTexture(0x84C0+10)
+                gl.TexImage2D(TEXTURE,0,0x8814,resolution,8,0,RGBA,FLOAT,
+                              (F*(4*resolution*8))(*(row*8)))
+                frame=[]
+                for sample in range(-8,9):
+                    x=radius*sample/10
+                    z=math.sqrt(radius*radius-x*x)
+                    uniform(prog,"test_pos",x+offset,0,-5+z)
+                    uniform(prog,"test_surface_dx",0.0001,0,-x/z*0.0001)
+                    uniform(prog,"test_surface_dy",0,0.0001,0)
+                    frame.append(pixel()[0])
+                frames.append(frame)
+            delta=math.sqrt(statistics.mean((a-b)**2 for p,q in zip(frames,frames[1:]) for a,b in zip(p,q)))
+            variation=max(max(p)-min(p) for p in zip(*frames))
+            assert all(math.isfinite(v) and v>=0 for frame in frames for v in frame)
+            assert statistics.mean(v for frame in frames for v in frame)>0.05, "Lost thin-finger transmission"
+            motion_metrics[resolution,radius]=(delta,variation)
+            checks+=1
+            print(f"{radius*2000:.0f} mm moving finger at {resolution}: motion RMS {delta:.6f}; max range {variation:.6f}",flush=True)
+    for radius in (0.008,0.012):
+        for metric in (0,1):
+            assert motion_metrics[2048,radius][metric]<motion_metrics[512,radius][metric]*0.7, motion_metrics
+        checks+=1
     gl.DeleteProgram(prog)
     # Certified depth must be one closed object, and the receiver its first exit.
     prog=program(PROBE, "")

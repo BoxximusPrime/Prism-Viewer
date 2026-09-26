@@ -32,6 +32,8 @@ layout(location = 1) out vec4 sss_diffuse;
 layout(location = 2) out vec4 sss_transmitted;
 uniform int sss_transmission_smoothing;
 layout(location = 3) out vec4 sss_grazing;
+layout(location = 4) out vec4 ssgi_donor;
+uniform int ssgi_capture;
 uniform int sss_grazing_smoothing;
 
 const float M_PI = 3.14159265;
@@ -237,6 +239,7 @@ void main()
     vec3 sssDiffuseLighting = vec3(0.0);
     vec3 sssTransmissionLighting = vec3(0.0);
     vec3 sssGrazingLighting = vec3(0.0);
+    vec3 ssgiSource = vec3(0.0);
     float sssGrazingDirect = 0.0;
 
     vec3 colorEmissive = gb.emissive.rgb;
@@ -329,6 +332,23 @@ void main()
                                 irradiance, colorEmissive, ao, 0.0, -1.0, sssDiffuseLighting, sssTransmissionLighting, sssGrazingLighting);
             }
         }
+        if (ssgi_capture != 0)
+        {
+            // The donor is outgoing direct diffuse plus emission. Probe irradiance
+            // and specular reflections are deliberately excluded.
+            float nl = 0.0;
+            vec3 directDiffuse = vec3(0.0), directSpecular = vec3(0.0);
+            pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic,
+                        gb.normal, v, normalize(light_dir), nl, directDiffuse, directSpecular);
+            if (classic_mode > 0)
+            {
+                vec3 sun = srgb_to_linear(linear_to_srgb(vec3(min(pow(nl, 1.2), scol))) * sunlit_linear * 0.7) * M_PI;
+                ssgiSource = srgb_to_linear(linear_to_srgb(clamp(sun * directDiffuse * scol, vec3(0.0), vec3(10.0))) * 1.1);
+            }
+            else
+                ssgiSource = clamp(nl * directDiffuse, vec3(0.0), vec3(10.0)) * sunlit_linear * 3.0 * scol;
+            ssgiSource += colorEmissive;
+        }
     }
     else if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_HDRI))
     {
@@ -376,6 +396,8 @@ void main()
             if (sssPath < 0.0) diffuse_factor += transmission;
             vec3 sun_contrib = min(pow(diffuse_factor, vec3(1.2)), vec3(scol));
             if (sssPath >= 0.0) sun_contrib += transmission;
+            if (ssgi_capture != 0)
+                ssgiSource = srgb_to_linear(linear_to_srgb(sun_contrib) * sunlit_linear * 0.7) * baseColor.rgb;
 
             vec3 plainSun = min(pow(getSSSDiffuseFactor(raw_da, wrapStrength), vec3(1.2)), vec3(scol));
             vec3 withoutTransmission = srgb_to_linear(color.rgb * 0.9 +
@@ -396,6 +418,7 @@ void main()
             if (sssPath < 0.0) diffuse_factor += transmission;
             vec3 sun_contrib = min(diffuse_factor, vec3(scol)) * sunlit_linear;
             if (sssPath >= 0.0) sun_contrib += transmission * sunlit_linear;
+            if (ssgi_capture != 0) ssgiSource = sun_contrib * baseColor.rgb;
             color.rgb += sun_contrib;
             sssTransmissionLighting = sun_contrib -
                 min(getSSSDiffuseFactor(raw_da, wrapStrength), vec3(scol)) * sunlit_linear;
@@ -406,6 +429,7 @@ void main()
 
         color.rgb *= baseColor.rgb;
         sssDiffuseLighting = color.rgb;
+        ssgiSource *= 1.0 - baseColor.a;
         sssTransmissionLighting *= baseColor.rgb;
         sssGrazingLighting *= baseColor.rgb;
 
@@ -455,6 +479,7 @@ void main()
 
     frag_color.rgb = clampHDRRange(color.rgb * final_scale); //output linear since local lights will be added to this shader's results
     frag_color.a = 0.0;
+    ssgi_donor = vec4(max(ssgiSource * final_scale, vec3(0.0)), 0.0);
     sss_diffuse = vec4(0.0);
     sss_transmitted = vec4(0.0);
     sss_grazing = vec4(0.0);

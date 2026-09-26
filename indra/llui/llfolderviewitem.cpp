@@ -451,9 +451,12 @@ void LLFolderViewItem::addToFolder(LLFolderViewFolder* folder)
 // makes sure that this view and its children are the right size.
 S32 LLFolderViewItem::arrange( S32* width, S32* height )
 {
-    // Only indent deeper items in hierarchy
+    // Single-folder windows use a negative offset for their top-level rows.
+    // Children expanded inline with E need positive indentation instead.
+    const S32 local_indentation = mSingleFolderMode && getParentFolder() != getRoot()
+        ? llabs(mLocalIndentation) : mLocalIndentation;
     mIndentation = (getParentFolder())
-        ? getParentFolder()->getIndentation() + mLocalIndentation
+        ? getParentFolder()->getIndentation() + local_indentation
         : 0;
     if (mLabelWidthDirty)
     {
@@ -1063,6 +1066,39 @@ void LLFolderViewItem::draw()
     F32 text_left = (F32)getLabelXPos();
     LLWString combined_string = mLabel + mLabelSuffix;
 
+    const auto keyword_ranges = mViewModelItem->getLabelHighlightRanges();
+    const bool folder_keywords = dynamic_cast<LLFolderViewFolder*>(this) != nullptr;
+    static LLUIColor priority_color = LLUIColorTable::instance().getColor("InventoryPriorityColor", DEFAULT_WHITE);
+    static LLUIColor folder_keyword_color = LLUIColorTable::instance().getColor("InventoryFolderKeywordColor", DEFAULT_WHITE);
+    LLColor4 keyword_color = priority_color;
+    S32 visible_keyword_chars = 0;
+    if (!keyword_ranges.empty())
+    {
+        // Match drawLabel's ellipsis padding so tags never paint hidden text.
+        F32 available_width = static_cast<F32>(llmax(0, getRect().getWidth() - (S32)text_left - mLabelPaddingRight));
+        if (font->getWidthF32(mLabel.c_str()) > available_width)
+            available_width = llmax(0.f, available_width - font->getWidthF32(LLWString(4, '.').c_str()));
+        visible_keyword_chars = font->maxDrawableChars(mLabel.c_str(), available_width);
+        if (folder_keywords)
+        {
+            LLColor4 background = folder_keyword_color;
+            // Keep the matched word readable with either a light or dark swatch.
+            const F32 brightness = 0.2126f * background.mV[VRED]
+                + 0.7152f * background.mV[VGREEN] + 0.0722f * background.mV[VBLUE];
+            keyword_color = brightness > 0.5f ? LLColor4::black : LLColor4::white;
+            if (isFadeItem()) background.mV[VALPHA] *= 0.5f;
+            for (const auto& range : keyword_ranges)
+            {
+                const S32 length = llmin(range.second, visible_keyword_chars - range.first);
+                if (length <= 0) continue;
+                const S32 left = ll_round(text_left + font->getWidthF32(mLabel.c_str(), 0, range.first));
+                const S32 right = left + font->getWidth(mLabel.c_str(), range.first, length);
+                gl_rect_2d(left, rect_height - sTopPad, right,
+                    rect_height - line_height - 3 - sTopPad, background);
+            }
+        }
+    }
+
     S32 filter_offset = static_cast<S32>(mViewModelItem->getFilterStringOffset());
     if (filter_string_length > 0)
     {
@@ -1119,6 +1155,17 @@ void LLFolderViewItem::draw()
          color.mV[VALPHA] *= 0.5f;
     }
     drawLabel(font, text_left, y, color, right_x);
+
+    if (isFadeItem()) keyword_color.mV[VALPHA] *= 0.5f;
+    for (const auto& range : keyword_ranges)
+    {
+        const S32 length = llmin(range.second, visible_keyword_chars - range.first);
+        if (length <= 0) continue;
+        const F32 match_left = text_left + font->getWidthF32(mLabel.c_str(), 0, range.first);
+        font->render(mLabel, range.first, match_left, y, keyword_color,
+            LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
+            length, getRect().getWidth() - (S32)match_left - mLabelPaddingRight);
+    }
 
     //--------------------------------------------------------------------------------//
     // Draw label suffix
@@ -2349,12 +2396,31 @@ bool LLFolderViewFolder::handleMouseDown( S32 x, S32 y, MASK mask )
     }
     if( !handled )
     {
-        if ((mask & MASK_ALT) && !mSingleFolderMode)
+        if (mask & MASK_ALT)
         {
-            setOpenArrangeRecursively(!isOpen(), RECURSE_DOWN);
-            handled = true;
+            static LLUICachedControl<U32> multi_alt_action("MultiModeAltClickFolder", 1);
+            static LLUICachedControl<U32> single_alt_action("SingleModeAltClickFolder", 2);
+            const U32 action = mSingleFolderMode ? (U32)single_alt_action
+                : (mDoubleClickOverride ? (U32)multi_alt_action : 3);
+            if (!mSingleFolderMode && (action == 0 || action == 3))
+            {
+                if (action == 3) setOpenArrangeRecursively(!isOpen(), RECURSE_DOWN);
+                else toggleOpen();
+                return true;
+            }
+            if (action == 1 || action == 2)
+            {
+                LLPointer<LLFolderViewModelItem> view_model_item = getViewModelItem();
+                const bool new_window = mSingleFolderMode ? action == 2 : action == 1;
+                const bool change_mode = !mSingleFolderMode && action == 2;
+                doOnIdleOneTime([view_model_item, new_window, change_mode]() mutable
+                {
+                    view_model_item->navigateToFolder(new_window, change_mode);
+                });
+                return true;
+            }
         }
-        else if((mIndentation < x && x < mIndentation + (isCollapsed() ? 0 : mArrowSize) + mTextPad)
+        if((mIndentation < x && x < mIndentation + (isCollapsed() ? 0 : mArrowSize) + mTextPad)
            && !mSingleFolderMode)
         {
             toggleOpen();
@@ -2372,6 +2438,8 @@ bool LLFolderViewFolder::handleMouseDown( S32 x, S32 y, MASK mask )
 
 bool LLFolderViewFolder::handleDoubleClick( S32 x, S32 y, MASK mask )
 {
+    // Alt+click has its own action; do not also run the double-click action.
+    if (mask & MASK_ALT) return true;
     bool handled = false;
     if(mSingleFolderMode)
     {

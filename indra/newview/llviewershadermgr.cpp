@@ -190,6 +190,13 @@ LLGLSLShader            gDeferredBlurLightProgram;
 LLGLSLShader            gGTAOProgram;
 LLGLSLShader            gGTAOBlurProgram;
 LLGLSLShader            gGTAODebugProgram;
+LLGLSLShader            gSSGITraceProgram;
+LLGLSLShader            gSSGIGeometryProgram;
+LLGLSLShader            gSSGIFilterProgram;
+LLGLSLShader            gSSGIResolveProgram;
+LLGLSLShader            gSSGITemporalProgram;
+LLGLSLShader            gSSGICompositeProgram;
+LLGLSLShader            gSSGIDebugProgram;
 LLGLSLShader            gDeferredSoftenProgram;
 LLGLSLShader            gDeferredShadowProgram;
 LLGLSLShader            gDeferredSkinnedShadowProgram;
@@ -630,6 +637,7 @@ static U32 shaderProgramCount()
         + (gGLManager.mGLVersion > 3.15f ? 12 : 0) // SMAA: 4 qualities, 3 stages
         + (gGLManager.mGLVersion > 4.05f ? 2 : 0)  // CAS
         + (gSavedSettings.getBOOL("RenderGTAOEnabled") ? 3 : 0)
+        + (gSavedSettings.getBOOL("RenderSSGIEnabled") ? 7 : 0)
         + (gltf ? LLGLSLShader::NUM_GLTF_VARIANTS : 0);
     const U32 oit_programs = FSExactOIT::isSupported()
         ? 16 + 2 * LLMaterial::ALPHA_SHADER_COUNT
@@ -1509,6 +1517,13 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gGTAOProgram.unload();
         gGTAOBlurProgram.unload();
         gGTAODebugProgram.unload();
+        gSSGITraceProgram.unload();
+        gSSGIGeometryProgram.unload();
+        gSSGIFilterProgram.unload();
+        gSSGIResolveProgram.unload();
+        gSSGITemporalProgram.unload();
+        gSSGICompositeProgram.unload();
+        gSSGIDebugProgram.unload();
         gDeferredSoftenProgram.unload();
         gDeferredShadowProgram.unload();
         gDeferredSkinnedShadowProgram.unload();
@@ -3680,6 +3695,62 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gGTAOProgram.unload();
         gGTAOBlurProgram.unload();
         gGTAODebugProgram.unload();
+    }
+
+    // SSGI is optional: a shader failure leaves the opaque lighting path unchanged.
+    if (success && gSavedSettings.getBOOL("RenderSSGIEnabled"))
+    {
+        struct SSGIStage { LLGLSLShader* shader; const char* name; const char* file; std::initializer_list<S32> samplers; };
+        const SSGIStage stages[] = {
+            { &gSSGIGeometryProgram, "SSGI Geometry", "deferred/ssgiGeometryF.glsl", { DEFERRED_DEPTH, NORMAL_MAP } },
+            { &gSSGITraceProgram, "SSGI Trace", "deferred/ssgiTraceF.glsl", { SSGI_SOURCE, SSGI_GEOMETRY, DEFERRED_DEPTH, NORMAL_MAP } },
+            { &gSSGIFilterProgram, "SSGI Filter", "deferred/ssgiFilterF.glsl", { SSGI_INDIRECT, DEFERRED_DEPTH, NORMAL_MAP } },
+            { &gSSGIResolveProgram, "SSGI Receiver Resolve", "deferred/ssgiResolveF.glsl",
+                { SSGI_SOURCE, SSGI_GEOMETRY, SSGI_INDIRECT, DEFERRED_DEPTH, NORMAL_MAP } },
+            { &gSSGITemporalProgram, "SSGI Temporal Denoise", "deferred/ssgiTemporalF.glsl",
+                { SSGI_INDIRECT, SSGI_HISTORY, SSGI_HISTORY_GUIDE, SSGI_GEOMETRY, TAA_MOTION, DEFERRED_DEPTH, NORMAL_MAP } },
+            { &gSSGICompositeProgram, "SSGI Composite", "deferred/ssgiCompositeF.glsl",
+                { SSGI_INDIRECT, DEFERRED_DEPTH, DEFERRED_DIFFUSE, DEFERRED_SPECULAR, NORMAL_MAP } },
+            { &gSSGIDebugProgram, "SSGI Diagnostic", "deferred/ssgiDebugF.glsl",
+                { SSGI_SOURCE, DEFERRED_DEPTH } }
+        };
+        for (const auto& stage : stages)
+        {
+            auto& shader = *stage.shader;
+            shader.mName = stage.name;
+            shader.mShaderFiles = { make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+                                    make_pair(stage.file, GL_FRAGMENT_SHADER) };
+            if (stage.shader == &gSSGITraceProgram || stage.shader == &gSSGIResolveProgram)
+                shader.mShaderFiles.emplace_back("deferred/ssgiUtilF.glsl", GL_FRAGMENT_SHADER);
+            shader.mFeatures.isDeferred = true;
+            shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+            shader.clearPermutations();
+            add_common_permutations(&shader);
+            bool complete = shader.createShader();
+            std::set<S32> channels;
+            if (complete)
+                for (S32 sampler : stage.samplers)
+                {
+                    S32 channel = shader.getTextureChannel(sampler);
+                    complete &= channel >= 0 && channel < gGLManager.mNumTextureImageUnits && channels.insert(channel).second;
+                }
+            if (!complete)
+            {
+                for (const auto& cleanup : stages) cleanup.shader->unload();
+                LL_WARNS("ShaderLoading") << "SSGI unavailable; using ordinary deferred lighting." << LL_ENDL;
+                break;
+            }
+        }
+    }
+    else
+    {
+        gSSGITraceProgram.unload();
+        gSSGIGeometryProgram.unload();
+        gSSGIFilterProgram.unload();
+        gSSGIResolveProgram.unload();
+        gSSGITemporalProgram.unload();
+        gSSGICompositeProgram.unload();
+        gSSGIDebugProgram.unload();
     }
 
     success = FSExactOIT::loadShaders(success, mShaderLevel[SHADER_DEFERRED], use_sun_shadow,
