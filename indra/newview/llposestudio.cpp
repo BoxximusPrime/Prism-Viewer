@@ -8,10 +8,32 @@
 #include "llposestudio.h"
 
 #include "lljoint.h"
+#include "lljointsolverrp3.h"
 #include "llviewerobjectlist.h"
 #include "llvoavatar.h"
 
 #include <algorithm>
+
+namespace
+{
+const char* const IK_JOINTS[4][3] = {
+    {"mShoulderLeft", "mElbowLeft", "mWristLeft"},
+    {"mShoulderRight", "mElbowRight", "mWristRight"},
+    {"mHipLeft", "mKneeLeft", "mAnkleLeft"},
+    {"mHipRight", "mKneeRight", "mAnkleRight"}
+};
+
+LLVector3 perpendicular(LLVector3 pole, const LLVector3& direction)
+{
+    pole -= direction * (pole * direction);
+    if (pole.normalize() < 0.001f)
+    {
+        pole = (fabsf(direction.mV[VZ]) < 0.9f ? LLVector3::z_axis : LLVector3::y_axis) % direction;
+        pole.normalize();
+    }
+    return pole;
+}
+}
 
 LLPoseStudio::LLPoseStudio() = default;
 
@@ -67,6 +89,7 @@ bool LLPoseStudio::begin(LLVOAvatar& avatar)
     mSkeletonSerial = avatar.getSkeletonSerialNum();
     mApplied = false;
     mEndReason = EndReason::USER;
+    ++mSession;
     LL_INFOS("PoseStudio") << "Started local pose with " << mJoints.size() << " joints" << LL_ENDL;
     return true;
 }
@@ -257,4 +280,180 @@ void LLPoseStudio::resetPose()
         pose.degrees.clear();
         pose.position_offset.clear();
     }
+}
+
+const char* LLPoseStudio::getIKJointName(S32 limb)
+{
+    return limb >= 0 && limb < 4 ? IK_JOINTS[limb][2] : "";
+}
+
+bool LLPoseStudio::getIKPose(S32 limb, IKPose& pose)
+{
+    LLVOAvatar* avatar = resolveAvatar();
+    if (limb < 0 || limb >= 4 || !avatar || !matchesSkeleton(*avatar) || !mApplied) return false;
+    LLJoint* parent = nullptr;
+    for (S32 i = 0; i < 3; ++i)
+    {
+        JointPose* joint = findJoint(IK_JOINTS[limb][i]);
+        if (!joint || (i > 0 && joint->joint->getParent() != parent)) return false;
+        parent = joint->joint;
+        pose.positions[i] = parent->getWorldPosition();
+        pose.rotations[i] = parent->getWorldRotation();
+        if (!pose.positions[i].isFinite() || !pose.rotations[i].isFinite()) return false;
+    }
+    LLVector3 direction = pose.positions[2] - pose.positions[0];
+    if (direction.normalize() < 0.001f) direction = pose.positions[1] - pose.positions[0];
+    direction.normalize();
+    LLVector3 bend = pose.positions[1] - pose.positions[0];
+    bend -= direction * (bend * direction);
+    // Keep the existing elbow/knee bend. A straight limb needs a preferred
+    // direction: elbows back, knees forward, in the avatar's frame.
+    if (bend.lengthSquared() < 0.000001f)
+        bend = LLVector3(limb < 2 ? -1.f : 1.f, 0.f, 0.f) * avatar->getRootJoint()->getWorldRotation();
+    pose.pole = perpendicular(bend, direction);
+    pose.session = mSession;
+    pose.limb = limb;
+    return true;
+}
+
+bool LLPoseStudio::IKPose::solve(const LLVector3& target, std::array<LLQuaternion, 3>& result) const
+{
+    if (!target.isFinite() || !pole.isFinite()) return false;
+    for (S32 i = 0; i < 3; ++i)
+        if (!positions[i].isFinite() || !rotations[i].isFinite()) return false;
+    const F32 upper_length = (positions[1] - positions[0]).length();
+    const F32 lower_length = (positions[2] - positions[1]).length();
+    if (upper_length < 0.001f || lower_length < 0.001f) return false;
+
+    LLVector3 direction = target - positions[0];
+    const F32 distance = direction.normalize();
+    if (distance < 0.0001f)
+    {
+        direction = positions[2] - positions[0];
+        if (direction.normalize() < 0.0001f)
+        {
+            direction = positions[1] - positions[0];
+            direction.normalize();
+        }
+    }
+    // Avoid both singular ends of the reachable interval; never stretch bones.
+    const F32 margin = llmin(upper_length, lower_length) * 0.001f;
+    const F32 reach = llclamp(distance, fabsf(upper_length - lower_length) + margin,
+                             upper_length + lower_length - margin);
+    LLJoint upper("pose_ik_upper"), lower("pose_ik_lower", &upper), end("pose_ik_end", &lower), goal("pose_ik_goal");
+    upper.setPosition(positions[0]);
+    upper.setRotation(rotations[0]);
+    lower.setPosition((positions[1] - positions[0]) * ~rotations[0]);
+    lower.setRotation(rotations[1] * ~rotations[0]);
+    end.setPosition((positions[2] - positions[1]) * ~rotations[1]);
+    goal.setPosition(positions[0] + direction * reach);
+    LLJointSolverRP3 solver;
+    solver.setupJoints(&upper, &lower, &end, &goal);
+    solver.setPoleVector(perpendicular(pole, direction));
+    solver.solve();
+    result = {upper.getWorldRotation(), lower.getWorldRotation(), rotations[2]};
+    return result[0].isFinite() && result[1].isFinite();
+}
+
+bool LLPoseStudio::setIKTarget(const IKPose& pose, const LLVector3& target)
+{
+    IKPose current;
+    if (pose.session != mSession || !getIKPose(pose.limb, current)) return false;
+    std::array<LLQuaternion, 3> world_rotations;
+    if (!pose.solve(target, world_rotations)) return false;
+    std::array<LLQuaternion, 3> local_rotations;
+    std::array<LLVector3, 3> degrees;
+    std::array<JointPose*, 3> joints;
+    for (S32 i = 0; i < 3; ++i)
+    {
+        joints[i] = findJoint(IK_JOINTS[pose.limb][i]);
+        LLJoint* parent = joints[i]->joint->getParent();
+        const LLQuaternion parent_rotation = i > 0 ? world_rotations[i - 1] :
+            (parent ? parent->getWorldRotation() : LLQuaternion());
+        local_rotations[i] = world_rotations[i] * ~parent_rotation;
+        local_rotations[i].normalize();
+        const LLQuaternion offset = local_rotations[i] * ~joints[i]->captured.rotation;
+        offset.getEulerAngles(&degrees[i].mV[VX], &degrees[i].mV[VY], &degrees[i].mV[VZ]);
+        degrees[i] *= RAD_TO_DEG;
+        if (!local_rotations[i].isFinite() || !degrees[i].isFinite()) return false;
+    }
+    for (S32 i = 0; i < 3; ++i)
+    {
+        joints[i]->rotation = local_rotations[i];
+        joints[i]->degrees = degrees[i];
+        joints[i]->joint->setRotation(local_rotations[i]);
+    }
+    if (LLVOAvatar* avatar = resolveAvatar())
+    {
+        avatar->getRootJoint()->updateWorldMatrixChildren();
+        avatar->dirtyMesh();
+    }
+    return true;
+}
+
+bool LLPoseStudio::getBonePose(const std::string& name, BonePose& pose)
+{
+    LLVOAvatar* avatar = resolveAvatar();
+    if (!avatar || !matchesSkeleton(*avatar) || !mApplied) return false;
+    JointPose* joint = findJoint(name);
+    if (!joint) return false;
+    pose = {name, joint->joint->getWorldPosition(), joint->joint->getWorldRotation(), mSession};
+    return pose.position.isFinite() && pose.rotation.isFinite();
+}
+
+bool LLPoseStudio::setBonePosition(const BonePose& pose, const LLVector3& world_position)
+{
+    BonePose current;
+    if (!world_position.isFinite() || pose.session != mSession || !getBonePose(pose.name, current)) return false;
+    JointPose* joint = findJoint(pose.name);
+    LLVector3 local = world_position;
+    if (LLJoint* parent = joint->joint->getParent())
+    {
+        local = (world_position - parent->getWorldPosition()) * ~parent->getWorldRotation();
+        // Invert LLXformMatrix::update(): child offsets use the parent's local
+        // scale, only when that parent enables scale-child-offset behavior.
+        if (parent->getXform()->getScaleChildOffset())
+        {
+            const LLVector3 scale = parent->getScale();
+            for (S32 axis = 0; axis < 3; ++axis)
+            {
+                if (fabsf(scale.mV[axis]) < 0.000001f) return false;
+                local.mV[axis] /= scale.mV[axis];
+            }
+        }
+    }
+    const LLVector3 offset = local - joint->captured.position;
+    if (!local.isFinite() || !offset.isFinite()) return false;
+    joint->position_offset = offset;
+    joint->joint->setPosition(local);
+    if (LLVOAvatar* avatar = resolveAvatar())
+    {
+        avatar->getRootJoint()->updateWorldMatrixChildren();
+        avatar->dirtyMesh();
+    }
+    return true;
+}
+
+bool LLPoseStudio::setBoneRotation(const BonePose& pose, const LLQuaternion& world_rotation)
+{
+    BonePose current;
+    if (!world_rotation.isFinite() || pose.session != mSession || !getBonePose(pose.name, current)) return false;
+    JointPose* joint = findJoint(pose.name);
+    LLJoint* parent = joint->joint->getParent();
+    LLQuaternion local = parent ? world_rotation * ~parent->getWorldRotation() : world_rotation;
+    local.normalize();
+    const LLQuaternion offset = local * ~joint->captured.rotation;
+    LLVector3 degrees;
+    offset.getEulerAngles(&degrees.mV[VX], &degrees.mV[VY], &degrees.mV[VZ]);
+    degrees *= RAD_TO_DEG;
+    if (!local.isFinite() || !degrees.isFinite()) return false;
+    joint->rotation = local;
+    joint->degrees = degrees;
+    joint->joint->setRotation(local);
+    if (LLVOAvatar* avatar = resolveAvatar())
+    {
+        avatar->getRootJoint()->updateWorldMatrixChildren();
+        avatar->dirtyMesh();
+    }
+    return true;
 }

@@ -12479,6 +12479,19 @@ Are you sure you want to continue?
 
   <notification
    icon="alertmodal.tga"
+   name="PoseStudioConfirmReset"
+   type="alertmodal">
+Reset the entire pose to the pose captured when you started?
+All bone rotation and position edits will be discarded.
+    <tag>confirm</tag>
+    <form>
+      <button index="0" name="Reset" text="Reset pose" />
+      <button default="true" index="1" name="Cancel" text="Cancel" />
+    </form>
+  </notification>
+
+  <notification
+   icon="alertmodal.tga"
    name="SettingsConfirmReset"
    type="alertmodal">
 You are about to remove all applied settings.

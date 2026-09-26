@@ -1034,6 +1034,13 @@ bool LLFloater::applyDockState()
 
 void LLFloater::applyPositioning(LLFloater* other, bool on_open)
 {
+    // Dock controls own the position while attached. Applying the saved free
+    // position during layout makes the floater jump before its dock redraws it.
+    if (isDocked())
+    {
+        return;
+    }
+
     // Otherwise position according to the positioning code
     switch (mPositioning)
     {

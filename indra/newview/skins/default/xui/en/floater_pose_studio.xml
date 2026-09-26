@@ -26,8 +26,14 @@
   <text name="scope" left="12" top="53" width="456" height="20" text_color="LabelTextColor">Local preview — only you see these edits</text>
   <button name="start" label="Start posing" left="12" top="82" width="222" height="28" />
   <button name="end" label="End posing" left="246" top="82" width="222" height="28" />
-  <filter_editor name="bone_search" label="Search bones" left="12" top="118" width="456" height="24" />
-  <scroll_list name="joints" left="12" top="148" width="456" height="336"
+  <check_box name="show_ik_handles" label="Show pose gizmos" control_name="PoseStudioShowIKHandles"
+             left="12" top="116" width="222" height="22"
+             tool_tip="Select a bone below to move or rotate it directly, or click a hand or foot handle to pose its limb with IK. Drag the center freely, arrows along one axis, or rings to rotate. X is red, Y green, Z blue. Alt-drag keeps camera control." />
+  <check_box name="local_axes" label="Local axes" control_name="PoseStudioLocalAxes"
+             left="246" top="116" width="222" height="22"
+             tool_tip="Checked: move and rotate along the selected bone's current local axes. Unchecked: use world axes. Applies to bone and IK gizmos." />
+  <filter_editor name="bone_search" label="Search bones" left="12" top="146" width="456" height="24" />
+  <scroll_list name="joints" left="12" top="176" width="456" height="308"
                multi_select="false" draw_heading="true" heading_height="24"
                can_sort="false" sort_column="-1" draw_stripes="false" row_padding="4"
                commit_on_selection_change="true" commit_on_keyboard_movement="true">

@@ -68,6 +68,7 @@
 #include "lltooldraganddrop.h"
 #include "lltoolfocus.h"
 #include "lltoolmgr.h"
+#include "lltoolposeik.h"
 #include "lltoolpie.h"
 #include "lltracker.h"
 #include "lltrans.h"
@@ -1644,6 +1645,7 @@ void render_ui(F32 zoom_factor, int subfield)
             LLHUDObject::renderAllForTimer();
         }
 
+        LLToolPoseIK::getInstance()->render();
         render_photo_overlays();
 
         if (render_ui)

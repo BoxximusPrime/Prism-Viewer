@@ -14,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 class LLJoint;
 class LLVOAvatar;
@@ -34,6 +35,7 @@ public:
     void afterUpdate(LLVOAvatar& avatar);
 
     bool isActive() const { return mAvatarID.notNull(); }
+    U32 getSession() const { return mSession; }
     bool isActiveFor(const LLVOAvatar& avatar) const;
     EndReason getEndReason() const { return mEndReason; }
     bool setRotationOffset(const std::string& name, const LLVector3& degrees);
@@ -42,6 +44,32 @@ public:
     LLVector3 getPositionOffset(const std::string& name) const;
     void resetJoint(const std::string& name);
     void resetPose();
+
+    struct BonePose
+    {
+        std::string name;
+        LLVector3 position;
+        LLQuaternion rotation;
+        U32 session = 0;
+    };
+    bool getBonePose(const std::string& name, BonePose& pose);
+    bool setBonePosition(const BonePose& pose, const LLVector3& world_position);
+    bool setBoneRotation(const BonePose& pose, const LLQuaternion& world_rotation);
+
+    // A pointer-free drag snapshot. Solve on a private chain so IK never feeds
+    // presentation transforms back into the avatar's motion controller.
+    struct IKPose
+    {
+        std::array<LLVector3, 3> positions;
+        std::array<LLQuaternion, 3> rotations;
+        LLVector3 pole;
+        U32 session = 0;
+        S32 limb = -1; // left/right hand, left/right foot
+        bool solve(const LLVector3& target, std::array<LLQuaternion, 3>& result) const;
+    };
+    bool getIKPose(S32 limb, IKPose& pose);
+    static const char* getIKJointName(S32 limb);
+    bool setIKTarget(const IKPose& pose, const LLVector3& target);
 
 private:
     struct Transform
@@ -78,6 +106,7 @@ private:
     std::vector<JointPose> mJoints;
     bool mApplied = false;
     EndReason mEndReason = EndReason::USER;
+    U32 mSession = 0;
 };
 
 #endif

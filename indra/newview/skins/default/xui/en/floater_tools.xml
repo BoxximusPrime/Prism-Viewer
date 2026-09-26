@@ -3392,14 +3392,13 @@
                     <flyout_button.item label="New Lua Script" name="new_lua_script" value="lua" />
                     <flyout_button.item label="New Notecard" name="new_notecard" value="notecard" />
                 </flyout_button>
-                <button height="24" label="New Notecard" left="136" name="button new notecard" top="30" width="116" />
-                <button height="24" label="Permissions" left="260" name="button permissions" top="30" width="116" />
+                <button height="24" label="Permissions" left="136" name="button permissions" top="30" width="116" />
                 <button
                     height="24"
                     is_toggle="true"
                     label="Explore in IDE"
                     label_selected="Stop Exploring"
-                    left="384"
+                    left="260"
                     name="button publish"
                     top="30"
                     width="116" />

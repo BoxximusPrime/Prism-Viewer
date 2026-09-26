@@ -23,7 +23,7 @@
   });
 
   gallery.addEventListener('wheel', (event) => {
-    const distance = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const distance = (Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY) * 2.5;
     const maxScroll = gallery.scrollWidth - gallery.clientWidth;
     const nextScroll = gallery.scrollLeft + distance;
     const atStart = distance < 0 && gallery.scrollLeft <= 0;

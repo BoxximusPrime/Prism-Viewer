@@ -8,13 +8,17 @@
 #include "llfloaterposestudio.h"
 
 #include "llagent.h"
+#include "llagentcamera.h"
 #include "llbutton.h"
 #include "llfiltereditor.h"
+#include "llfloaterreg.h"
 #include "lljoint.h"
+#include "llnotificationsutil.h"
 #include "llposestudio.h"
 #include "llscrolllistctrl.h"
 #include "llsliderctrl.h"
 #include "lltextbox.h"
+#include "lltoolposeik.h"
 #include "llviewercontrol.h"
 #include "llvoavatarself.h"
 
@@ -72,8 +76,7 @@ bool LLFloaterPoseStudio::postBuild()
 {
     mJointList = getChild<LLScrollListCtrl>("joints");
     mJointList->setCommitCallback([this](LLUICtrl*, const LLSD&) {
-        if (mJointList->hasSelectedItem()) mSelectedJoint = mJointList->getValue().asString();
-        refreshRotation();
+        if (!mUpdatingSelection) onJointSelection();
     });
     mJointList->setCommentText(getString("no_matches"));
     getChild<LLFilterEditor>("bone_search")->setCommitCallback([this](LLUICtrl*, const LLSD& value) {
@@ -107,9 +110,7 @@ bool LLFloaterPoseStudio::postBuild()
         refreshRotation();
     });
     getChild<LLButton>("reset_pose")->setClickedCallback([this](LLUICtrl*, const LLSD&) {
-        LLPoseStudio::instance().resetPose();
-        refreshRows();
-        refreshRotation();
+        onResetPose();
     });
     refresh();
     return true;
@@ -139,7 +140,15 @@ void LLFloaterPoseStudio::onStart()
     mStartFailed = !isAgentAvatarValid() || gDisconnected
         || gAgent.getTeleportState() != LLAgent::TELEPORT_NONE
         || !LLPoseStudio::instance().begin(*gAgentAvatarp);
+    if (!mStartFailed)
+    {
+        gAgent.stopAutoPilot(true);
+        gAgent.resetControlFlags();
+        gAgent.setControlFlags(AGENT_CONTROL_STOP);
+        gAgentCamera.clearGeneralKeys();
+    }
     buildJointRows();
+    LLToolPoseIK::instance().selectJoint(mJointList->getValue().asString());
     refreshRotation();
     refresh();
 }
@@ -151,6 +160,21 @@ void LLFloaterPoseStudio::onRotation()
     refreshRows();
 }
 
+void LLFloaterPoseStudio::onResetPose()
+{
+    if (!LLPoseStudio::instance().isActive()) return;
+    const U32 session = LLPoseStudio::instance().getSession();
+    LLNotificationsUtil::add("PoseStudioConfirmReset", LLSD(), LLSD(),
+        [session](const LLSD& notification, const LLSD& response) {
+            LLPoseStudio& studio = LLPoseStudio::instance();
+            if (LLNotificationsUtil::getSelectedOption(notification, response) != 0
+                || !studio.isActive() || studio.getSession() != session) return;
+            studio.resetPose();
+            if (auto* floater = LLFloaterReg::findTypedInstance<LLFloaterPoseStudio>("pose_studio"))
+                floater->onPoseChanged();
+        });
+}
+
 void LLFloaterPoseStudio::onPosition()
 {
     LLPoseStudio::instance().setPositionOffset(mJointList->getValue().asString(),
@@ -158,13 +182,49 @@ void LLFloaterPoseStudio::onPosition()
     refreshRows();
 }
 
+void LLFloaterPoseStudio::onPoseChanged()
+{
+    refreshRows();
+    refreshRotation();
+}
+
+void LLFloaterPoseStudio::onJointSelection()
+{
+    mSelectedJoint = mJointList->getValue().asString();
+    LLToolPoseIK::instance().selectJoint(mSelectedJoint);
+    refreshRotation();
+}
+
+void LLFloaterPoseStudio::selectJoint(const std::string& name)
+{
+    // World-handle selection must reveal its row without the list's commit
+    // callback switching the gizmo from IK into direct bone editing.
+    mSelectedJoint = name;
+    mUpdatingSelection = true;
+    const bool found = mJointList->setSelectedByValue(name, true);
+    mUpdatingSelection = false;
+    if (!found)
+    {
+        mFilter.clear();
+        getChild<LLFilterEditor>("bone_search")->setValue(LLSD(""));
+        buildJointRows();
+    }
+    mJointList->scrollToShowSelected();
+    refreshRotation();
+}
+
 void LLFloaterPoseStudio::buildJointRows()
 {
+    mUpdatingSelection = true;
     const S32 scroll = mJointList->getScrollPos();
     mJointRows.clear();
     mJointList->deleteAllItems();
     mRowsBuilt = isAgentAvatarValid() && gAgentAvatarp->isBuilt();
-    if (!mRowsBuilt) return;
+    if (!mRowsBuilt)
+    {
+        mUpdatingSelection = false;
+        return;
+    }
 
     std::array<std::vector<std::pair<std::string, size_t>>, std::size(GROUPS)> groups;
     for (size_t i = 0; i < gAgentAvatarp->getSkeletonJointCount(); ++i)
@@ -203,6 +263,8 @@ void LLFloaterPoseStudio::buildJointRows()
     }
     if (!mJointList->setSelectedByValue(mSelectedJoint, true) && !mJointRows.empty())
         mJointList->setSelectedByValue(mJointRows.front()->getValue(), true);
+    mUpdatingSelection = false;
+    if (mSelectedJoint != mJointList->getValue().asString()) onJointSelection();
     mJointList->setScrollPos(scroll);
     refreshRows();
 }

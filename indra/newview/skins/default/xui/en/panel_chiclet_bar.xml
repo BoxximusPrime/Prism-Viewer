@@ -3,7 +3,7 @@
  background_visible="false"
  chrome="true"
  follows="left|top|right"
- height="64"
+ height="96"
  layout="topleft"
  mouse_opaque="false"
  name="chiclet_bar"
@@ -11,7 +11,7 @@
   <layout_stack
      border_size="0"
      clip="false"
-     follows="all"
+     follows="left|top|right"
      height="64"
      layout="topleft"
      left="0"
@@ -19,7 +19,7 @@
      name="toolbar_stack"
      orientation="horizontal"
      top="0"
-     width="1310">
+     width="1306">
         <layout_panel
          follows="left|right"
          height="64"
@@ -35,7 +35,7 @@
              follows="left|right"
              height="60"
              layout="topleft"
-             left="1"
+             left="0"
              min_width="95"
              mouse_opaque="false"
              name="chiclet_list"
@@ -81,13 +81,13 @@
   <chiclet_panel
          chiclet_padding="4"
          follows="right|top"
-         height="60"
+         height="28"
          layout="topleft"
          min_width="95"
          mouse_opaque="false"
          name="object_chiclet_list"
          right="-45"
-         top="2"
+         top="64"
          width="220">
     <button
            auto_resize="false"
@@ -103,7 +103,7 @@
            layout="topleft"
            name="chicklet_left_scroll_button"
            tab_stop="false"
-           top="-28"
+           top="0"
            visible="false"
            width="12" />
     <button
@@ -120,7 +120,7 @@
            layout="topleft"
            name="chicklet_right_scroll_button"
            tab_stop="false"
-           top="-28"
+           top="0"
            visible="false"
            width="12" />
   </chiclet_panel>
@@ -131,7 +131,7 @@
        mouse_opaque="false"
        name="notification_well_panel"
        right="-4"
-       top="0"
+       top="64"
        width="37">
     <chiclet_notification
          follows="right"
