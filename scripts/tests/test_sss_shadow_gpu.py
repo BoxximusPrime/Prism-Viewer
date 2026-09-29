@@ -8,18 +8,15 @@ composition with ordinary shadows both enabled and disabled. This does not measu
 import ctypes as C
 import math
 import statistics
+import re
 from pathlib import Path
 
 from test_exact_oit_gpu import context, U, I, F, TEXTURE, FRAMEBUFFER, COLOR_ATTACHMENT, RGBA, FLOAT
 
 ROOT = Path(__file__).resolve().parents[2]
 SHADERS = ROOT / "indra/newview/app_settings/shaders"
-PREAMBLE = """
-#define GBUFFER_FLAG_SKIP_ATMOS 0.0
-#define GBUFFER_FLAG_HAS_PBR 0.67
-#define GBUFFER_FLAG_HAS_HDRI 1.0
-#define GBUFFER_SSS_FLAG(d) ((abs((d)-0.46)<0.025 || abs((d)-0.79)<0.025) ? 1.0 : 0.0)
-#define GET_GBUFFER_FLAG(d,f) (abs((d)-0.12*GBUFFER_SSS_FLAG(d)-(f))<0.1)
+PREAMBLE = '\n'.join(re.findall(r'strdup\("(#define (?:GBUFFER_|GET_GBUFFER_).*?)\\n"\)',
+    (ROOT / 'indra/llrender/llshadermgr.cpp').read_text())) + """
 struct GBufferInfo { vec4 albedo; vec4 specular; vec3 normal; vec4 emissive;
     float gbufferFlag; float envIntensity; float sss; };
 """

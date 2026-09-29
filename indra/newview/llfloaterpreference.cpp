@@ -121,7 +121,8 @@ namespace
         { "UISndWindowFocus", nullptr, "ui_sound_window_focus_name", "UISndWindowFocusName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },
         { "UISndWindowClose", nullptr, "ui_sound_window_close_name", "UISndWindowCloseName", "9b19d313-5247-4f80-944e-8ce8244eab1b", "Sharp,_and_clear_int_#1-1789256697460.wav" },
         { "UISndCheckbox", nullptr, "ui_sound_checkbox_name", "UISndCheckboxName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },
-        { "UISndNewIncomingIMSession", nullptr, "ui_sound_incoming_im_name", "UISndNewIncomingIMSessionName", "c4db972c-3828-4f3d-98ea-26bd5f989e9d", "Sharp,_and_clear_int_#1-1789256679703.wav" }
+        { "UISndNewIncomingIMSession", nullptr, "ui_sound_incoming_im_name", "UISndNewIncomingIMSessionName", "c4db972c-3828-4f3d-98ea-26bd5f989e9d", "Sharp,_and_clear_int_#1-1789256679703.wav" },
+        { "UISndNewIncomingDM", nullptr, "ui_sound_new_dm_name", "UISndNewIncomingDMName", "56dad84d-f292-4dae-bea5-5295cfea3546", "Sharp,_and_clear_int_#2-1789256661936.wav" }
     };
 
     const UISoundPreference* findUISoundPreference(const std::string& setting_name)
@@ -1384,6 +1385,11 @@ void LLFloaterPreference::refreshEnabledState()
     getChild<LLTextBox>("WaterStatus")->setValue(!water_enabled ? "Water rendering is disabled in Debug Settings." :
         !evolving_water ? "Using the environment's scrolling wave texture." : "Changes apply immediately.");
     const bool fog_enabled = gSavedSettings.getBOOL("RenderVolumeFog");
+    const bool clouds_enabled = gSavedSettings.getBOOL("RenderVolumeClouds");
+    for (const char* control : { "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight", "RenderVolumeCloudQuality", "CloudQualityLabel" })
+        getChildView(control)->setEnabled(clouds_enabled);
+    getChild<LLTextBox>("CloudStatus")->setValue(!clouds_enabled ? "Using the original clouds." :
+        "Volumetric clouds are enabled. Changes apply immediately; turn off to restore the original clouds.");
     for (const char* control : { "RenderVolumeFogIntensity", "RenderVolumeFogLightStrength", "RenderVolumeFogQuality", "VolumeFogQualityLabel",
         "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
         getChildView(control)->setEnabled(fog_enabled);
@@ -2973,6 +2979,8 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogLightStrength", "RenderVolumeFogQuality",
         "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
+    for (const char* control : { "RenderVolumeClouds", "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight", "RenderVolumeCloudQuality" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
         "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAAFreezeJitter", "RenderTAADebug" })

@@ -28,6 +28,8 @@
 #define LL_LLVIEWERCAMERA_H
 
 #include "llcamera.h"
+#include "llquaternion.h"
+#include "v3dmath.h"
 #include "llsingleton.h"
 #include "lltimer.h"
 #include "m4math.h"
@@ -63,6 +65,11 @@ public:
     bool updateCameraLocation(const LLVector3 &center,
                                 const LLVector3 &up_direction,
                                 const LLVector3 &point_of_interest);
+
+    void prepareCameraSmoothing();
+    void applyCameraSmoothing();
+    void resetCameraSmoothing();
+    LLVector3d getTargetPositionGlobal() const;
 
     static void updateFrustumPlanes(LLCamera& camera, bool ortho = false, bool zflip = false, bool no_hacks = false);
     void setPerspective(bool for_selection, S32 x, S32 y_from_bot, S32 width, S32 height, bool limit_select_distance, F32 z_near = 0, F32 z_far = 0);
@@ -123,6 +130,16 @@ protected:
     S32                 mScreenPixelArea; // Pixel area of entire window
     F32                 mZoomFactor;
     S16                 mZoomSubregion;
+
+    // World-space history survives changes to the region's local origin.
+    LLVector3d          mSmoothingTargetPosition;
+    LLQuaternion        mSmoothingTargetRotation;
+    F32                 mSmoothingTargetFOV = DEFAULT_FIELD_OF_VIEW;
+    LLVector3d          mSmoothedPosition;
+    LLQuaternion        mSmoothedRotation;
+    F32                 mSmoothedFOV = DEFAULT_FIELD_OF_VIEW;
+    bool                mSmoothingInitialized = false;
+    bool                mSmoothingApplied = false;
 
 public:
 };

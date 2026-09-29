@@ -54,7 +54,7 @@ void main()
 
     frag_data[0] = vec4(col.rgb, 0.0);
     frag_data[1] = spec;
-    frag_data[2] = vec4(norm.xyz, GBUFFER_FLAG_HAS_ATMOS);
+    frag_data[2] = vec4(norm.xyz, GBUFFER_FLAG_IMPOSTOR);
 
 #if defined(HAS_EMISSIVE)
     frag_data[3] = vec4(0);

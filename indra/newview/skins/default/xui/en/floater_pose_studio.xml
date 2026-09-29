@@ -62,7 +62,14 @@
   <slider name="position_z" label="Z" label_width="18" left="12" top="708" width="456" height="24"
           decimal_digits="3" min_val="-5" max_val="5" increment="0.001" initial_value="0"
           can_edit_text="true" show_text="true" text_width="64" />
-  <button name="reset_joint" label="Reset bone" left="12" top="744" width="222" height="26" />
-  <button name="reset_pose" label="Reset pose" left="246" top="744" width="222" height="26" />
+  <button name="save_pose" label="Save…" left="12" top="744" width="108" height="26"
+          tool_tip="Save the current pose's bone rotations and positions to a Pose Studio XML file. Start posing to enable." />
+  <button name="load_pose" label="Load…" left="128" top="744" width="108" height="26"
+          tool_tip="Replace the current pose with a saved Pose Studio XML file. Start posing to enable." />
+  <button name="reset_joint" label="Reset bone" left="244" top="744" width="108" height="26" />
+  <button name="reset_pose" label="Reset pose" left="360" top="744" width="108" height="26" />
+  <string name="save_failed">The pose could not be saved. Check that the folder is writable and the disk has room. Any existing pose file was kept.</string>
+  <string name="load_failed">The pose could not be loaded. Choose a valid Pose Studio XML file saved for this skeleton. The current pose was kept.</string>
+  <string name="load_session_changed">The posing session changed while the file picker was open. Start posing and load the file again.</string>
   <text name="status" left="12" top="782" width="456" height="32" word_wrap="true" text_color="LabelTextColor" />
 </floater>

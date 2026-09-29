@@ -486,10 +486,10 @@
      reference="Yellow" />
     <color
      name="InventoryPriorityColor"
-     reference="Yellow" />
+     value="0.521569 0.588235 0.945098 1" />
     <color
      name="InventoryFolderKeywordColor"
-     value="0.85 0.60 0.20 1" />
+     value="0.392157 0.239216 0.192157 1" />
     <color
      name="InventoryFocusOutlineColor"
      reference="AccentColor_75" />
@@ -510,7 +510,7 @@
      value="0.68 0.69 0.71 1" />
     <color
      name="InventoryMouseOverColor"
-     value="0.12 0.125 0.145 1" />
+     value="1 1 1 0.10" />
     <color
      name="InventorySearchStatusColor"
      reference="EmphasisColor" />

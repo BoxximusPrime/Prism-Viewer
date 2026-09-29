@@ -44,6 +44,7 @@
 
 // Linden library includes
 #include "lldrawable.h"
+#include "llcriticaldamp.h"
 #include "llface.h"
 #include "llgl.h"
 #include "llglheaders.h"
@@ -59,6 +60,8 @@ LLTrace::CountStatHandle<> LLViewerCamera::sVelocityStat("camera_velocity");
 LLTrace::CountStatHandle<> LLViewerCamera::sAngularVelocityStat("camera_angular_velocity");
 
 LLViewerCamera::eCameraID LLViewerCamera::sCurCameraID = LLViewerCamera::CAMERA_WORLD;
+
+extern bool gCubeSnapshot;
 
 LLViewerCamera::LLViewerCamera() : LLCamera()
 {
@@ -81,6 +84,60 @@ LLViewerCamera::LLViewerCamera() : LLCamera()
             LLViewerCamera::getInstance()->setDefaultFOV((F32)value.asReal());
         });
     }
+}
+
+void LLViewerCamera::resetCameraSmoothing()
+{
+    mSmoothingInitialized = false;
+    mSmoothingApplied = false;
+}
+
+LLVector3d LLViewerCamera::getTargetPositionGlobal() const
+{
+    return mSmoothingApplied ? mSmoothingTargetPosition : gAgent.getPosGlobalFromAgent(getOrigin());
+}
+
+void LLViewerCamera::prepareCameraSmoothing()
+{
+    if (gCubeSnapshot || !mSmoothingApplied) return;
+
+    // Controllers must advance their target, not feed last frame's lag back
+    // into their inputs. Also lets smoothing finish when a controller is idle.
+    setOrigin(gAgent.getPosAgentFromGlobal(mSmoothingTargetPosition));
+    setAxes(mSmoothingTargetRotation);
+    setViewNoBroadcast(mSmoothingTargetFOV);
+    mSmoothingApplied = false;
+}
+
+void LLViewerCamera::applyCameraSmoothing()
+{
+    if (gCubeSnapshot) return;
+
+    static LLCachedControl<F32> smoothing(gSavedSettings, "BoxxyCameraSmoothing");
+    const F32 half_life = llclamp((F32)smoothing, 0.f, 1.f);
+    mSmoothingTargetPosition = gAgent.getPosGlobalFromAgent(getOrigin());
+    mSmoothingTargetRotation = getQuaternion();
+    mSmoothingTargetFOV = getView();
+
+    if (mSmoothingInitialized && half_life > 0.f && gAgent.getTeleportState() == LLAgent::TELEPORT_NONE)
+    {
+        const F32 blend = LLSmoothInterpolation::getInterpolant(half_life, false);
+        mSmoothedPosition = lerp(mSmoothedPosition, mSmoothingTargetPosition, blend);
+        mSmoothedRotation = slerp(blend, mSmoothedRotation, mSmoothingTargetRotation);
+        mSmoothedFOV = lerp(mSmoothedFOV, mSmoothingTargetFOV, blend);
+        setOrigin(gAgent.getPosAgentFromGlobal(mSmoothedPosition));
+        setAxes(mSmoothedRotation);
+        setViewNoBroadcast(mSmoothedFOV);
+        mCosHalfCameraFOV = cosf(0.5f * getView() * llmax(1.0f, getAspect()));
+        mSmoothingApplied = true;
+    }
+    else
+    {
+        mSmoothedPosition = mSmoothingTargetPosition;
+        mSmoothedRotation = mSmoothingTargetRotation;
+        mSmoothedFOV = mSmoothingTargetFOV;
+    }
+    mSmoothingInitialized = true;
 }
 
 bool LLViewerCamera::updateCameraLocation(const LLVector3 &center, const LLVector3 &up_direction, const LLVector3 &point_of_interest)
@@ -777,8 +834,6 @@ bool LLViewerCamera::areVertsVisible(LLViewerObject* volumep, bool all_verts)
     return all_verts;
 }
 
-extern bool gCubeSnapshot;
-
 // changes local camera and broadcasts change
 /* virtual */ void LLViewerCamera::setView(F32 vertical_fov_rads)
 {
@@ -831,4 +886,3 @@ bool LLViewerCamera::isDefaultFOVChanged()
     }
     return false;
 }
-

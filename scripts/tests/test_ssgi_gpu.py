@@ -69,7 +69,7 @@ void main() {
     if (blocker==1 && abs(gl_FragCoord.x/screen_res.x-.5)<.035) {
         t=1.5; n=vec3(0,0,1); light=vec3(0); valid=true;
     }
-    if (blocker>=2 && ray.x>0) {
+    if (blocker>=2 && ray.x>0 && (blocker!=4 || abs(gl_FragCoord.y/screen_res.y-.5)<.1)) {
         float sheet=.25/ray.x;
         if (sheet>2.5 && sheet<8 && sheet<t) {
             t=sheet; n=vec3(blocker==3 ? 1 : -1,0,0); light=vec3(0); valid=true;
@@ -161,7 +161,8 @@ def run(sdl, gl, benchmark=False):
             split=prefix.index(declaration)
             body=prefix[:split]+body+prefix[split+len(declaration):]
         else: body=prefix+body
-        library=(SHADERS/'ssgiUtilF.glsl').read_text() if name in ('ssgiTraceF','ssgiResolveF') else None
+        library=(PREFACE.split('uniform sampler2D normalMap;')[0]+(SHADERS/'ssgiUtilF.glsl').read_text()
+                 if name in ('ssgiTraceF','ssgiResolveF') else None)
         programs.append(compile_source(body+helpers,library))
     trace,blur,compose,debug,resolve,temporal,geometry_program=programs
     scene=compile_source(SCENE)
@@ -489,6 +490,7 @@ def run(sdl, gl, benchmark=False):
             (.67,(1,1,1,0),(0,.5,0,0),0),
             (.67,(1,1,1,0),(.5,.5,.8,0),.096),
             (.34,(1,1,1,0),(1,.5,0,0),1),
+            (.30,(1,1,1,0),(1,.5,0,0),0),
             (.34,(1,1,1,1),(1,.5,0,0),0),
             (.79,(1,1,1,0),(1,.5,0,0),.96),
             (0,(1,1,1,0),(1,.5,0,0),0),
@@ -501,7 +503,7 @@ def run(sdl, gl, benchmark=False):
             composite(diagnostic=3); assert tuple(read())==tuple(applied)
             composite(diagnostic=4); assert max(abs(v-expected) for v in read()[::4])<.001
             composite(diagnostic=1,strength=2)
-            assert max(abs(v-(0 if flag in (0,1) else 2)) for v in read()[::4])<.001
+            assert max(abs(v-(0 if flag in (0,.30,1) else 2)) for v in read()[::4])<.001
             composite(strength=0); assert max(read()[::4])==0
             composite(strength=30,overlay=True); overlaid=read()
             assert max(abs(v-(.1+30*expected)) for v in overlaid[::4])<.04
@@ -522,6 +524,71 @@ def run(sdl, gl, benchmark=False):
             assert max(abs(v-expected) for v in read()[::4])<.002,(flag,multiplier)
             assert max(abs(v-(expected if is_skin else 0)) for v in read(1)[::4])<.002
             checks+=2
+
+    # Run the real impostor writer: its marker must survive the normal target's
+    # half-float storage while preserving billboard color/material/normal XYZ.
+    impostor=compile_source(PREFACE.split('uniform sampler2D normalMap;')[0]+
+        (SHADERS/'impostorF.glsl').read_text().replace('vary_texcoord0','vary_fragcoord'))
+    bind(impostor,'diffuseMap',0,albedo); bind(impostor,'specularMap',1,material)
+    bind(impostor,'normalMap',2,normals)
+    target((output,resolved,skin)); draw(impostor)
+    tag=read(2)[3]
+    assert abs(tag-.30)<.001 and abs(read()[0]-1)<.001
+    assert tuple(read(2)[:3])==(0,0,1)
+    checks+=1
+
+    # An impostor receiver must remain invalid through half-res filtering,
+    # repair and temporal accumulation, even with bright stale avatar history.
+    for half in (False,True):
+        resize(64,48,half=half); geometry(mode=2)
+        upload(normals,width,height,(float('nan'),0,0,tag)*(width*height))
+        prepare_geometry(); gather()
+        assert all(v==0 for v in read()), 'Impostor receiver traced'
+        denoise(); assert all(v==0 for v in read()), 'Filter filled an excluded receiver'
+        upload(filtered,gi_width,gi_height,(8,4,2,1)*(gi_width*gi_height))
+        receiver_resolve(); assert all(v==0 for v in read()), 'Repair filled an excluded receiver'
+        upload(histories[history_index],width,height,(8,4,2,4)*(width*height))
+        upload(guides[history_index],width,height,(0,0,1,-16)*(width*height))
+        stabilize(True)
+        assert all(v==0 for v in read()) and all(v==0 for v in read(1)), 'Impostor retained history'
+        # Return to full geometry at the same depth: history starts fresh.
+        upload(normals,width,height,(0,0,1,.71)*(width*height))
+        prepare_geometry(); upload(resolved,width,height,(1,.5,.25,0)*(width*height))
+        stabilize(True)
+        assert all(abs(v+1)<.001 for v in read(1)[3::4]), 'Returning avatar reused impostor history'
+        checks+=5
+
+    # Excluded neighbors cannot darken a repaired full-geometry receiver.
+    geometry(mode=2)
+    ns=[v for y in range(height) for x in range(width) for v in (0,0,1,tag if x>=width//2 else .71)]
+    values=[v for y in range(height) for x in range(width) for v in (0 if x>=width//2 else 1,0,0,1)]
+    upload(normals,width,height,ns); upload(resolved,width,height,values)
+    stabilize(False); result=read()
+    assert all(abs(result[(y*width+x)*4]-1)<.001 for y in range(height) for x in range(width//2))
+    checks+=1
+
+    # Exclude a lit billboard as a donor and a black billboard as a blocker.
+    # The two-wall fixture still has real donors/receivers behind the latter.
+    resize(96,64); geometry(); gather(); reference=statistics.mean(roi(read()))
+    assert reference>.01
+    target((normals,)); ns=list(read())
+    for y in range(height):
+        for x in range(width//2,width): ns[(y*width+x)*4+3]=tag
+    upload(normals,width,height,ns); prepare_geometry(); gather()
+    assert max(roi(read()))==0, 'Impostor donated light'
+    checks+=1
+    geometry(blocker=4); gather(); blocked=statistics.mean(roi(read()))
+    target((depth,)); ds=read(); target((normals,)); ns=list(read())
+    # The intervening x=.25 sheet is nearer than either real wall (x=+/-.6).
+    for y in range(height):
+        for x in range(width//2,width):
+            k=(y*width+x)*4
+            if ds[k]<1 and abs((y+.5)/height-.5)<.1: ns[k+3]=tag
+    upload(normals,width,height,ns); prepare_geometry(); gather()
+    ignored=statistics.mean(roi(read()))
+    assert ignored>blocked+.01, ('Impostor still blocks paths to visible donors',blocked,ignored)
+    print(f'Impostor sheet: blocked {blocked:.6f}; ignored {ignored:.6f}',flush=True)
+    checks+=1
 
     # Noisy lighting on a translating avatar, with and without subpixel jitter.
     # Compare against the known moving illumination field, excluding boundaries.

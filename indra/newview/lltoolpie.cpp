@@ -224,9 +224,9 @@ bool LLToolPie::handleRightMouseDown(S32 x, S32 y, MASK mask)
 {
     bool pick_reflection_probe = gSavedSettings.getBOOL("SelectReflectionProbes");
 
-    // don't pick transparent so users can't "pay" transparent objects
+    // Include transparent objects when opening their context menu if enabled.
     mPick = gViewerWindow->pickImmediate(x, y,
-                                         /*bool pick_transparent*/ false,
+                                         /*bool pick_transparent*/ gSavedSettings.getBOOL("BoxxyRightClickTransparentObjects"),
                                          /*bool pick_rigged*/ true,
                                          /*bool pick_particle*/ true,
                                          /*bool pick_unselectable*/ true,

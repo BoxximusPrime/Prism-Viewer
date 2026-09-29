@@ -155,6 +155,15 @@ def run(sdl, gl):
                     scale = 1.1 if classic else 1
                     assert max(abs(result[i] - value * scale) for i, value in enumerate((2, .5, .125))) < 1e-5
                     emit([0, 0, 0, 0]); checks += 1
+            # The impostor tag retains ordinary legacy lighting but no donor
+            # radiance, in every direct-light path and both lighting modes.
+            uniform(prog, 'sss_params', 0, 1, .5, 40)
+            uniform(prog, 'test_sun', 1, .5, .25); uniform(prog, 'test_ambient', 4, 2, 1)
+            uniform(prog, 'test_flag', .34); full=draw(prog, 1)
+            uniform(prog, 'test_flag', .30); billboard=draw(prog, 1)
+            assert billboard[:4]==full[:4], ('impostor marker changed normal lighting',name,classic)
+            assert billboard[4]==(0,0,0,0), ('impostor donor',name,classic)
+            checks+=2
         for flag in (0, 1):
             uniform(prog, 'test_flag', flag)
             assert max(map(abs, draw(prog, 1)[4])) < 1e-6, ('sky donor', name, flag)

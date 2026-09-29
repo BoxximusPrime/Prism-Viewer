@@ -34,6 +34,7 @@
 #include "llbutton.h"
 #include "lldate.h"
 #include "llfirstuse.h"
+#include "llfocusmgr.h"
 #include "llfloaterreg.h"
 #include "llfloatersidepanelcontainer.h"
 #include "llfoldertype.h"
@@ -387,7 +388,8 @@ void LLSidepanelInventory::onToggleInboxBtn()
 void LLSidepanelInventory::onOpen(const LLSD& key)
 {
     LLFirstUse::newInventory(false);
-    mPanelMainInventory->setFocusOnFilterEditor();
+    // Focus the container itself so reopening never restores typing focus to search.
+    gFocusMgr.setKeyboardFocus(mPanelMainInventory);
 #if AUTO_EXPAND_INBOX
     // Expand the inbox if we have fresh items
     LLPanelMarketplaceInbox * inbox = findChild<LLPanelMarketplaceInbox>(MARKETPLACE_INBOX_PANEL);

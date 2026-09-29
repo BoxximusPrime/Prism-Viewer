@@ -233,6 +233,9 @@ void LLAudioSourceVO::update()
         return;
     }
 
+    setType(mObjectp->getRootEdit()->isAttachment()
+        ? LLAudioEngine::AUDIO_TYPE_GESTURE : LLAudioEngine::AUDIO_TYPE_SFX);
+
     if (mSourceMuted)
     {
         return;

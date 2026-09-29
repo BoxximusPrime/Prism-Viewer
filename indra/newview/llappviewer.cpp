@@ -5585,6 +5585,8 @@ void LLAppViewer::idle()
 
     LLWorld::getInstance()->updateParticles();
 
+    LLViewerCamera::getInstance()->prepareCameraSmoothing();
+
     if (gAgentPilot.isPlaying() && gAgentPilot.getOverrideCamera())
     {
         gAgentPilot.moveCamera();
@@ -5602,6 +5604,8 @@ void LLAppViewer::idle()
 
         gAgentCamera.updateCamera();
     }
+
+    LLViewerCamera::getInstance()->applyCameraSmoothing();
 
     // update media focus
     LLViewerMediaFocus::getInstance()->update();

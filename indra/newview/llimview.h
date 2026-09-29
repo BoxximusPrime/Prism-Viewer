@@ -237,7 +237,8 @@ public:
                     const std::string& utf8_text,
                     bool log2file = true,
                     bool is_region_msg = false,
-                    U32 time_stamp = 0);
+                    U32 time_stamp = 0,
+                    bool new_session = false);
 
     void processAddingMessage(const LLUUID& session_id,
                     const std::string& from,
@@ -246,7 +247,8 @@ public:
                     bool log2file,
                     bool is_region_msg,
                     U32 time_stamp,
-                    const LLUUID& translation_id = LLUUID::null);
+                    const LLUUID& translation_id = LLUUID::null,
+                    bool new_session = false);
 
     /**
      * Similar to addMessage(...) above but won't send a signal about a new message added

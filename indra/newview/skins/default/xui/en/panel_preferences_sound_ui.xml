@@ -40,9 +40,15 @@
   <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_checkbox_preview" top="250" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndCheckbox" /></button>
   <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_checkbox_reset" top="250" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndCheckbox" /></button>
 
-  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_incoming_im_label" top="302" width="145">Incoming IM</text>
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_incoming_im_label" top="302" width="145">IM replies / chat</text>
   <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_incoming_im_name" top="302" width="190">Sharp,_and_clear_int_#1-1789256679703.wav</text>
   <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_incoming_im_browse" top="298" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndNewIncomingIMSession" /></button>
   <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_incoming_im_preview" top="298" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndNewIncomingIMSession" /></button>
   <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_incoming_im_reset" top="298" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndNewIncomingIMSession" /></button>
+
+  <text follows="left|top" height="20" layout="topleft" left="8" name="ui_sound_new_dm_label" top="350" width="145">New DM</text>
+  <text follows="left|top" height="20" layout="topleft" left="155" name="ui_sound_new_dm_name" top="350" width="190">Sharp,_and_clear_int_#2-1789256661936.wav</text>
+  <button follows="left|top" height="23" label="Browse" layout="topleft" left="347" name="ui_sound_new_dm_browse" top="346" width="55"><button.commit_callback function="Pref.BrowseUISound" parameter="UISndNewIncomingDM" /></button>
+  <button follows="left|top" height="23" label="Play" layout="topleft" left="404" name="ui_sound_new_dm_preview" top="346" width="45"><button.commit_callback function="Pref.PreviewUISound" parameter="UISndNewIncomingDM" /></button>
+  <button follows="left|top" height="23" label="Reset" layout="topleft" left="451" name="ui_sound_new_dm_reset" top="346" width="55"><button.commit_callback function="Pref.ResetUISound" parameter="UISndNewIncomingDM" /></button>
 </panel>

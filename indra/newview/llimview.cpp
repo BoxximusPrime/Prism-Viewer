@@ -242,20 +242,23 @@ void notify_of_message(const LLSD& msg, bool is_dnd_msg)
     }
     else if (session->isP2PSessionType())
     {
+        const bool new_conversation = msg["new_session"].asBoolean();
+        const bool play_new_conversation = new_conversation && gSavedSettings.getBOOL("PlaySoundNewConversation");
+        const char* sound = new_conversation ? "UISndNewIncomingDM" : "UISndNewIncomingIMSession";
         if (LLAvatarTracker::instance().isBuddy(participant_id))
         {
             user_preferences = gSavedSettings.getString("NotificationFriendIMOptions");
-            if (!gAgent.isDoNotDisturb() && (gSavedSettings.getBOOL("PlaySoundFriendIM")) && !play_snd_mention)
+            if (!gAgent.isDoNotDisturb() && (gSavedSettings.getBOOL("PlaySoundFriendIM") || play_new_conversation) && !play_snd_mention)
             {
-                make_ui_sound("UISndNewIncomingIMSession");
+                make_ui_sound(sound);
             }
         }
         else
         {
             user_preferences = gSavedSettings.getString("NotificationNonFriendIMOptions");
-            if (!gAgent.isDoNotDisturb() && (gSavedSettings.getBOOL("PlaySoundNonFriendIM")) && !play_snd_mention)
+            if (!gAgent.isDoNotDisturb() && (gSavedSettings.getBOOL("PlaySoundNonFriendIM") || play_new_conversation) && !play_snd_mention)
             {
-                make_ui_sound("UISndNewIncomingIMSession");
+                make_ui_sound(sound);
             }
         }
     }
@@ -1726,7 +1729,8 @@ void LLIMModel::proccessOnlineOfflineNotification(
 }
 
 void LLIMModel::addMessage(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
-                           const std::string& utf8_text, bool log2file /* = true */, bool is_region_msg, /* = false */ U32 time_stamp /* = 0 */)
+                           const std::string& utf8_text, bool log2file /* = true */, bool is_region_msg, /* = false */ U32 time_stamp /* = 0 */,
+                           bool new_session /* = false */)
 {
     if (from_id == gAgentID)
     {
@@ -1753,7 +1757,7 @@ void LLIMModel::addMessage(const LLUUID& session_id, const std::string& from, co
         LLUUID request_id;
         request_id.generate();
         processAddingMessage(session_id, from, from_id, utf8_text + " [...]",
-                             false, is_region_msg, time_stamp, request_id);
+                             false, is_region_msg, time_stamp, request_id, new_session);
         LLIMSession* session = findIMSession(session_id);
         const bool prioritize = session && session->isP2PSessionType();
         LLTranslate::translateMessage(from_lang, to_lang, utf8_text,
@@ -1763,13 +1767,13 @@ void LLIMModel::addMessage(const LLUUID& session_id, const std::string& from, co
     }
     else
     {
-        processAddingMessage(session_id, from, from_id, utf8_text, log2file, is_region_msg, time_stamp);
+        processAddingMessage(session_id, from, from_id, utf8_text, log2file, is_region_msg, time_stamp, LLUUID::null, new_session);
     }
 }
 
 void LLIMModel::processAddingMessage(const LLUUID& session_id, const std::string& from, const LLUUID& from_id,
     const std::string& utf8_text, bool log2file, bool is_region_msg, U32 time_stamp,
-    const LLUUID& translation_id)
+    const LLUUID& translation_id, bool new_session)
 {
     LLIMSession* session = addMessageSilently(session_id, from, from_id, utf8_text,
                                               log2file, is_region_msg, time_stamp, translation_id);
@@ -1793,6 +1797,7 @@ void LLIMModel::processAddingMessage(const LLUUID& session_id, const std::string
     arg["time"] = LLLogChat::timestamp2LogString(time_stamp, true);
     arg["session_type"] = session->mSessionType;
     arg["is_region_msg"] = is_region_msg;
+    arg["new_session"] = new_session;
 
     mNewMsgSignal(arg);
 }
@@ -3363,13 +3368,10 @@ void LLIMMgr::addMessage(
                 }
             }
 
-            //Play sound for new conversations
-            const bool play_message_sound = session->isP2PSessionType()
-                ? gSavedSettings.getBOOL(LLAvatarTracker::instance().isBuddy(other_participant_id)
-                    ? "PlaySoundFriendIM" : "PlaySoundNonFriendIM")
-                : gSavedSettings.getBOOL(session->isGroupSessionType()
-                    ? "PlaySoundGroupChatIM" : "PlaySoundConferenceIM");
-            if (!skip_message && !play_message_sound && !gAgent.isDoNotDisturb()
+            // P2P opening sounds are handled with the message notification.
+            const bool play_message_sound = gSavedSettings.getBOOL(session->isGroupSessionType()
+                ? "PlaySoundGroupChatIM" : "PlaySoundConferenceIM");
+            if (!session->isP2PSessionType() && !skip_message && !play_message_sound && !gAgent.isDoNotDisturb()
                 && gSavedSettings.getBOOL("PlaySoundNewConversation"))
             {
                 static LLCachedControl<bool> play_snd_mention_pref(gSavedSettings, "PlaySoundChatMention", false);
@@ -3388,7 +3390,7 @@ void LLIMMgr::addMessage(
 
     if (!LLMuteList::getInstance()->isMuted(other_participant_id, LLMute::flagTextChat) && !skip_message)
     {
-        LLIMModel::instance().addMessage(new_session_id, message_display_name, display_id, msg, true, is_region_msg, timestamp);
+        LLIMModel::instance().addMessage(new_session_id, message_display_name, display_id, msg, true, is_region_msg, timestamp, new_session);
 
         // Only accepted resident chat requests attention, including the first
         // message delivered with a group/conference session invitation.

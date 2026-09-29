@@ -33,6 +33,9 @@
 
 // llui
 #include "lliconctrl.h"
+#include "llattachmentsmgr.h"
+#include "llloadingindicator.h"
+#include "lluicolortable.h"
 #include "lltextbox.h"
 #include "lltextutil.h"
 
@@ -98,7 +101,8 @@ void LLPanelInventoryListItemBase::draw()
     LLRect local_rect = getLocalRect();
     if (mHovered && mHoverImage)
     {
-        mHoverImage->draw(local_rect);
+        static LLUIColor hover_color = LLUIColorTable::instance().getColor("InventoryMouseOverColor");
+        gl_rect_2d(local_rect, hover_color.get() % getDrawContext().mAlpha, true);
     }
     else if (mIsFavorite && draw_star())
     {
@@ -127,6 +131,11 @@ void LLPanelInventoryListItemBase::draw()
     }
 
     LLPanel::draw();
+    if (mIconCtrl && mIconCtrl->getVisible()
+        && LLAttachmentsMgr::instance().isAttachmentPending(mInventoryItemUUID))
+    {
+        LLLoadingIndicator::drawSmall(mIconCtrl->getRect(), getDrawContext().mAlpha);
+    }
 }
 
 // virtual

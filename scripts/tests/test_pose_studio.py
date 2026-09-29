@@ -38,7 +38,8 @@ harness = r'''
 #include <map>
 #include <string>
 #include <vector>
-using F32=float; using U32=unsigned; using S32=int;
+using F32=float; using F64=double; using U32=unsigned; using S32=int;
+constexpr float F32_MAX=std::numeric_limits<float>::max();
 constexpr int VX=0,VY=1,VZ=2,VW=3,VS=3;
 constexpr float DEG_TO_RAD=3.14159265358979323846f/180.f;
 constexpr float F_PI=3.14159265358979323846f, F_PI_BY_TWO=F_PI/2, RAD_TO_DEG=180.f/F_PI, GIMBAL_THRESHOLD=0.000436f;
@@ -131,6 +132,23 @@ for path, signatures in [
         harness += function(path, signature)
 
 harness += r'''
+// Value storage double; the production pose schema/validation runs below.
+struct LLSD {
+    enum Type {UNDEFINED,MAP,ARRAY,STRING,INTEGER,REAL,BOOLEAN} type=UNDEFINED;
+    std::map<std::string,LLSD> fields;std::vector<LLSD> values;std::string text;double number=0;
+    LLSD()=default;LLSD(const char* v):type(STRING),text(v){}LLSD(std::string v):type(STRING),text(v){}
+    LLSD(int v):type(INTEGER),number(v){}LLSD(float v):type(REAL),number(v){}LLSD(double v):type(REAL),number(v){}
+    LLSD(bool v):type(BOOLEAN),number(v){}
+    bool isMap()const{return type==MAP;}bool isArray()const{return type==ARRAY;}bool isString()const{return type==STRING;}
+    bool isInteger()const{return type==INTEGER;}bool isReal()const{return type==REAL;}
+    int asInteger()const{return int(number);}double asReal()const{return number;}std::string asString()const{return text;}
+    int size()const{return isMap()?int(fields.size()):int(values.size());}
+    LLSD& operator[](const std::string& k){type=MAP;return fields[k];}
+    const LLSD& operator[](const std::string& k)const{static const LLSD empty;auto it=fields.find(k);return it==fields.end()?empty:it->second;}
+    LLSD& operator[](int i){type=ARRAY;if(int(values.size())<=i)values.resize(i+1);return values[i];}
+    const LLSD& operator[](int i)const{static const LLSD empty;return i>=0&&i<int(values.size())?values[i]:empty;}
+    void append(LLSD v){type=ARRAY;values.push_back(v);}
+};
 struct LLMatrix4 {LLQuaternion rot;};
 LLVector3 rotate_vector(const LLVector3& v,const LLMatrix4& m){return v*m.rot;}
 struct LLJoint {
@@ -239,13 +257,12 @@ struct LLFloaterPoseStudio {
     void onPoseChanged(){++changes;}void selectJoint(const std::string& name){selected=name;}
 } pose_floater;
 struct LLFloaterReg {template<class T>static T* findTypedInstance(const char*){return &pose_floater;}};
-struct LLSD {int option=1;};
 struct LLNotificationsUtil {
     static inline std::function<void(const LLSD&,const LLSD&)> response;
     static void add(const char* name,LLSD,LLSD,std::function<void(const LLSD&,const LLSD&)> callback) {
         assert(std::string(name)=="PoseStudioConfirmReset");response=callback;
     }
-    static int getSelectedOption(const LLSD&,const LLSD& value){return value.option;}
+    static int getSelectedOption(const LLSD&,const LLSD& value){return value.asInteger();}
 };
 struct LLTool {
     bool captured=false;LLTool(const char*){}virtual ~LLTool()=default;
@@ -368,13 +385,16 @@ int main() {
         const auto end_position=end.pos;
         const float upper_length=(seed.positions[1]-seed.positions[0]).length();
         const float lower_length=(seed.positions[2]-seed.positions[1]).length();
-        const float margin=std::min(upper_length,lower_length)*0.001f;
+        const float squared=upper_length*upper_length+lower_length*lower_length;
+        const float product=2.f*upper_length*lower_length;
+        const float min_reach=std::sqrt(squared+product*std::cos((limb<2?150.f:160.f)*DEG_TO_RAD));
+        const float max_reach=std::sqrt(squared+product*std::cos(5.f*DEG_TO_RAD));
         for(int step=0;step<240;++step) {
             LLVector3 direction(std::cos(step*0.07f),std::sin(step*0.07f),std::sin(step*0.13f));direction.normalize();
             const float distance=(step%4==0)?4.f:((step%4==1)?0.01f:0.8f);
             const auto target=seed.positions[0]+direction*distance;
             assert(studio.setIKTarget(seed,target));
-            const auto expected=seed.positions[0]+direction*std::clamp(distance,std::abs(upper_length-lower_length)+margin,upper_length+lower_length-margin);
+            const auto expected=seed.positions[0]+direction*std::clamp(distance,min_reach,max_reach);
             const float error=(end.getWorldPosition()-expected).length();
             if(error>0.003f) {std::cerr<<"IK miss limb "<<limb<<" step "<<step<<" error "<<error<<"\n";return 1;}
             assert(std::abs((lower.getWorldPosition()-upper.getWorldPosition()).length()-upper_length)<0.0001f);
@@ -430,6 +450,90 @@ int main() {
     assert(folded.solve({0,1,0},solution)); // goal parallel to original pole
     folded.positions[1]=folded.positions[0];assert(!folded.solve({0,1,0},solution));
     std::cout<<"PASS: 1920 straight/bent four-limb IK solves, clamped reach/lengths, hand/foot orientation, animation persistence, slider round-trip, reset and stale-drag rejection\n";
+    // Sweep through the old pole singularity and continue across repeated
+    // grabs. Elbows and knees must keep the same side of their moving plane.
+    for(int limb=0;limb<4;++limb) {
+        LLVOAvatar rig;
+        LLJoint upper{IK_JOINTS[limb][0],&rig.root},middle{IK_JOINTS[limb][1],&upper},tip{IK_JOINTS[limb][2],&middle};
+        const LLVector3 direction=limb<2?LLVector3(0,limb==0?1.f:-1.f,0):LLVector3(0,0,-1);
+        const LLVector3 pole(limb<2?-1.f:1.f,0,0);
+        const float a=limb<2?.248f:.491f,b=limb<2?.205f:.469f;
+        middle.pos=direction*a;tip.pos=direction*b;rig.joints={&upper,&middle,&tip};
+        gObjectList.objects[1]=&rig;assert(studio.begin(rig));studio.afterUpdate(rig);
+        LLPoseStudio::IKPose grab;assert(studio.getIKPose(limb,grab));near(grab.pole,pole);
+        for(int step=0;step<=720;++step) {
+            const float angle=step*DEG_TO_RAD;
+            const auto aim=direction*std::cos(angle)+pole*std::sin(angle);
+            const auto preferred=pole*std::cos(angle)-direction*std::sin(angle);
+            // Alternate near-root, reachable, and fully extended requests.
+            const float radius=step%120<40?(a+b)*.8f:(step%120<80?10.f:.0001f);
+            assert(studio.setIKTarget(grab,aim*radius));
+            auto bend=middle.getWorldPosition()-aim*(middle.getWorldPosition()*aim);bend.normalize();
+            if(bend*preferred<.99f){std::cerr<<"Bend flip limb "<<limb<<" step "<<step<<" dot "<<bend*preferred<<"\n";return 1;}
+            auto ab=middle.getWorldPosition(),bc=tip.getWorldPosition()-middle.getWorldPosition();ab.normalize();bc.normalize();
+            const float flex=std::acos(std::clamp(ab*bc,-1.f,1.f))*RAD_TO_DEG;
+            assert(flex>=4.9f&&flex<=(limb<2?150.1f:160.1f));
+            if(step>=360 && step%30==0)assert(studio.getIKPose(limb,grab));
+        }
+        studio.end();
+    }
+    std::cout<<"PASS: 2884 arm/leg pole-crossing solves, repeated grabs, bend-side continuity and elbow/knee flexion limits\n";
+
+    // Saved local transforms survive a new session with a different animation.
+    LLVOAvatar saved_rig;
+    LLJoint saved_parent{"mPelvis",&saved_rig.root},saved_child{"mSpine1",&saved_parent};
+    saved_parent.pos={.1f,.2f,.3f};saved_parent.rot=rotation(10,20,30);
+    saved_child.pos={0,0,.2f};saved_child.rot=rotation(-10,40,80);
+    saved_rig.joints={&saved_parent,&saved_child};gObjectList.objects[1]=&saved_rig;
+    assert(studio.begin(saved_rig));studio.afterUpdate(saved_rig);
+    studio.setRotationOffset("mPelvis",{45,-25,75});studio.setPositionOffset("mPelvis",{.15f,-.1f,.25f});
+    studio.setRotationOffset("mSpine1",{-20,30,10});studio.setPositionOffset("mSpine1",{-.03f,.02f,.04f});
+    studio.beforeUpdate(saved_rig);studio.afterUpdate(saved_rig);
+    const auto saved=studio.serializePose();
+    const auto saved_pos=saved_parent.pos,child_pos=saved_child.pos;
+    const auto saved_rot=saved_parent.rot,child_rot=saved_child.rot;
+    // Presentation-only changes (e.g. photo eye overrides) must not enter files.
+    saved_child.rot=rotation(80,70,60);
+    for(int i=0;i<4;++i)assert(studio.serializePose()["joints"]["mSpine1"]["rotation"][i].asReal()==saved["joints"]["mSpine1"]["rotation"][i].asReal());
+    studio.end();assert(!studio.serializePose().isMap());assert(!studio.loadPose(saved));
+    saved_parent.pos={.2f,.3f,.4f};saved_parent.rot=rotation(70,80,90);
+    saved_child.pos={.1f,.1f,.4f};saved_child.rot=rotation(-50,5,-20);
+    const auto reset_pos=saved_parent.pos;const auto reset_rot=saved_parent.rot;
+    assert(studio.begin(saved_rig));studio.afterUpdate(saved_rig);
+    LLPoseStudio::BonePose stale_bone;assert(studio.getBonePose("mPelvis",stale_bone));
+    const auto old_session=studio.getSession();assert(studio.loadPose(saved));assert(studio.getSession()!=old_session);
+    assert(!studio.setBonePosition(stale_bone,{1,2,3}));
+    near(saved_parent.pos,saved_pos);same(saved_parent.rot,saved_rot);near(saved_child.pos,child_pos);same(saved_child.rot,child_rot);
+    for(int frame=0;frame<10;++frame){studio.beforeUpdate(saved_rig);saved_parent.rot=rotation(5,10,15);studio.afterUpdate(saved_rig);same(saved_parent.rot,saved_rot);}
+    const auto held_session=studio.getSession();const int held_writes=saved_parent.writes+saved_child.writes;
+    for(int invalid=0;invalid<14;++invalid) {
+        LLSD bad=saved;
+        auto& joint=bad["joints"]["mSpine1"];
+        switch(invalid) {
+        case 0:bad["format"]="another format";break;
+        case 1:bad["version"]=2;break;
+        case 2:bad["version"]="1";break;
+        case 3:bad["joints"].fields.erase("mSpine1");break;
+        case 4:bad["joints"]["unknown"]=joint;break;
+        case 5:joint["rotation"][0]="0";break;
+        case 6:joint["position"][0]=true;break;
+        case 7:joint["position"][1]=std::numeric_limits<double>::infinity();break;
+        case 8:joint["rotation"][1]=std::numeric_limits<double>::quiet_NaN();break;
+        case 9:joint["position"].values.pop_back();break;
+        case 10:for(int i=0;i<4;++i)joint["rotation"][i]=0.;break;
+        case 11:joint["rotation"][0]=std::numeric_limits<double>::max();break;
+        case 12:bad["joints"]["renamed"]=joint;bad["joints"].fields.erase("mSpine1");break;
+        case 13:joint["rotation"].append(1.);break;
+        }
+        assert(!studio.loadPose(bad));assert(studio.getSession()==held_session);
+        assert(saved_parent.writes+saved_child.writes==held_writes);same(saved_parent.rot,saved_rot);near(saved_child.pos,child_pos);
+    }
+    studio.resetPose();studio.beforeUpdate(saved_rig);studio.afterUpdate(saved_rig);near(saved_parent.pos,reset_pos);same(saved_parent.rot,reset_rot);
+    assert(studio.loadPose(saved));studio.beforeUpdate(saved_rig);same(saved_parent.rot,rotation(5,10,15)); // underlying animation survives import
+    studio.afterUpdate(saved_rig);studio.end();near(saved_parent.pos,reset_pos);same(saved_parent.rot,reset_rot);
+    assert(studio.begin(saved_rig));assert(studio.loadPose(saved));studio.afterUpdate(saved_rig);same(saved_parent.rot,saved_rot);studio.end();
+    assert(studio.begin(saved_rig));++saved_rig.serial;assert(!studio.loadPose(saved));studio.end();
+    std::cout<<"PASS: pose serialization across sessions, atomic rejection of 14 malformed/incompatible poses, stale-drag invalidation and reset/animation restoration\n";
     // Handle projection must match mouse rays at different camera rotations,
     // viewport offsets and UI-scaled viewport sizes.
     auto& camera=LLViewerCamera::instance();LLVector2 screen;
@@ -779,6 +883,8 @@ assert menu.find(".//menu[@name='Avatar']/menu_item_call[@name='Pose Studio']/me
 ui = ET.fromstring(read("indra/newview/skins/default/xui/en/floater_pose_studio.xml"))
 names = [element.get("name") for element in ui.iter() if element.get("name")]
 assert len(names) == len(set(names))
+for button in ("save_pose", "load_pose", "reset_joint", "reset_pose"):
+    assert ui.find(f".//button[@name='{button}']") is not None
 for field in ("position_x", "position_y", "position_z"):
     assert ui.find(f".//slider[@name='{field}']") is not None
 assert int(ui.get("height")) > int(ui.find(".//slider[@name='rotation_z']").get("top"))

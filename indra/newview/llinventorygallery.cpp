@@ -32,6 +32,8 @@
 #include "llclipboard.h"
 #include "llcommonutils.h"
 #include "lliconctrl.h"
+#include "llattachmentsmgr.h"
+#include "llloadingindicator.h"
 #include "llinventorybridge.h"
 #include "llinventoryfunctions.h"
 #include "llinventoryicon.h"
@@ -2931,6 +2933,11 @@ void LLInventoryGalleryItem::draw()
         border.mRight = border.mRight + 1;
         border.mTop = border.mTop + 1;
         gl_rect_2d(border, border_color, false);
+    }
+    if (!mIsFolder && LLAttachmentsMgr::instance().isAttachmentPending(mUUID))
+    {
+        LLLoadingIndicator::drawSmall(getChild<LLIconCtrl>("item_type")->getRect(),
+            getDrawContext().mAlpha * (isFadeItem() ? 0.5f : 1.f));
     }
 }
 

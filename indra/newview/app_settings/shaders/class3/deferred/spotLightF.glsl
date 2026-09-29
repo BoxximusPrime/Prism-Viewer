@@ -365,7 +365,7 @@ void main()
     //output linear
     frag_color.rgb = final_color * final_scale;
     frag_color.a = 0.0;
-    ssgi_donor = vec4(ssgi_capture != 0 &&
+    ssgi_donor = vec4(ssgi_capture != 0 && !GBUFFER_IMPOSTOR_FLAG(gb.gbufferFlag) &&
         !GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_HDRI) &&
         !GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_SKIP_ATMOS) ?
         max(diffuseLighting * final_scale, vec3(0.0)) : vec3(0.0), 0.0);

@@ -32,6 +32,7 @@
 #include "lltooldraganddrop.h"
 #include "llfavoritesbar.h"
 #include "llviewercontrol.h"
+#include "llattachmentsmgr.h"
 
 //
 // class LLFolderViewModelInventory
@@ -520,12 +521,18 @@ bool LLInventorySort::operator()(const LLFolderViewModelItemInventory* const& a,
     }
 }
 
+bool LLFolderViewModelItemInventory::isAttachmentPending() const
+{
+    return getInventoryType() == LLInventoryType::IT_OBJECT
+        && LLAttachmentsMgr::instance().isAttachmentPending(getUUID());
+}
+
 std::vector<std::pair<S32, S32>> LLFolderViewModelItemInventory::getLabelHighlightRanges() const
 {
     std::vector<std::pair<S32, S32>> ranges;
     // Folder tags are independent of item priority and the attachment/count limit.
     // Parse only on edits; visible rows can read the result directly while drawing.
-    static LLCachedControl<std::string> folder_setting(gSavedSettings, "InventoryFolderHighlightKeywords", "");
+    static LLCachedControl<std::string> folder_setting(gSavedSettings, "InventoryFolderHighlightKeywords", "demo");
     static std::string last_folder_setting;
     static std::vector<std::string> folder_keywords;
     if (last_folder_setting != folder_setting())

@@ -11,22 +11,67 @@
 #include "llagentcamera.h"
 #include "llbutton.h"
 #include "llfiltereditor.h"
+#include "llfile.h"
 #include "llfloaterreg.h"
 #include "lljoint.h"
 #include "llnotificationsutil.h"
 #include "llposestudio.h"
 #include "llscrolllistctrl.h"
+#include "llsdserialize.h"
 #include "llsliderctrl.h"
 #include "lltextbox.h"
 #include "lltoolposeik.h"
 #include "llviewercontrol.h"
+#include "llviewermenufile.h"
 #include "llvoavatarself.h"
 
 #include <array>
 #include <cctype>
+#include <filesystem>
+#include <sstream>
 
 namespace
 {
+bool writePoseFile(const std::string& filename, const LLSD& data)
+{
+    // Write beside the destination and replace it only after a complete write.
+    const std::string temporary = filename + "." + LLUUID::generateNewID().asString() + ".tmp";
+    llofstream output(temporary, std::ios::binary | std::ios::trunc);
+    const bool serialized = output.is_open() && LLSDSerialize::toPrettyXML(data, output) > 0;
+    output.close();
+    // Report errors in the UI; formatting a native Unicode path into the
+    // narrow LLFile warning stream can itself throw on Windows.
+    std::error_code error;
+    if (serialized && !output.fail())
+    {
+        std::filesystem::rename(fsyspath(temporary), fsyspath(filename), error);
+        if (!error) return true;
+    }
+    std::filesystem::remove(fsyspath(temporary), error);
+    return false;
+}
+
+LLSD readPoseFile(const std::string& filename)
+{
+    llifstream input(filename, std::ios::binary | std::ios::ate);
+    const auto length = input.tellg();
+    if (!input.is_open() || length <= 0 || length > 2 * 1024 * 1024) return LLSD();
+    std::string contents(static_cast<size_t>(length), '\0');
+    input.seekg(0);
+    if (!input.read(&contents[0], contents.size())) return LLSD();
+    std::istringstream stream(contents);
+    LLSD data;
+    if (LLSDSerialize::fromXMLDocument(data, stream) <= 0) return LLSD();
+    return data;
+}
+
+void poseFileError(const std::string& reason)
+{
+    LLSD args;
+    args["REASON"] = reason;
+    LLNotificationsUtil::add("PoseStudioFileError", args);
+}
+
 // Keep skeleton order and indent ancestry within each body area. Canonical
 // names remain the row IDs and tooltips, never joint pointers.
 const char* const GROUPS[] = { "body", "left_arm", "right_arm", "left_leg", "right_leg",
@@ -112,6 +157,8 @@ bool LLFloaterPoseStudio::postBuild()
     getChild<LLButton>("reset_pose")->setClickedCallback([this](LLUICtrl*, const LLSD&) {
         onResetPose();
     });
+    getChild<LLButton>("save_pose")->setClickedCallback([this](LLUICtrl*, const LLSD&) { onSavePose(); });
+    getChild<LLButton>("load_pose")->setClickedCallback([this](LLUICtrl*, const LLSD&) { onLoadPose(); });
     refresh();
     return true;
 }
@@ -158,6 +205,43 @@ void LLFloaterPoseStudio::onRotation()
     LLPoseStudio::instance().setRotationOffset(mJointList->getValue().asString(),
         LLVector3(mRotation[0]->getValueF32(), mRotation[1]->getValueF32(), mRotation[2]->getValueF32()));
     refreshRows();
+}
+
+void LLFloaterPoseStudio::onSavePose()
+{
+    const LLSD data = LLPoseStudio::instance().serializePose();
+    if (!data.isMap()) return;
+    // Snapshot at click time; the picker can outlive the floater or session.
+    const std::string error = getString("save_failed");
+    LLFilePickerReplyThread::startPicker(
+        [data, error](const std::vector<std::string>& filenames, LLFilePicker::ELoadFilter, LLFilePicker::ESaveFilter) {
+            if (!filenames.empty() && !writePoseFile(filenames.front(), data)) poseFileError(error);
+        }, LLFilePicker::FFSAVE_XML, "Prism Pose.xml");
+}
+
+void LLFloaterPoseStudio::onLoadPose()
+{
+    if (!LLPoseStudio::instance().isActive()) return;
+    const U32 session = LLPoseStudio::instance().getSession();
+    const std::string error = getString("load_failed");
+    const std::string changed = getString("load_session_changed");
+    LLFilePickerReplyThread::startPicker(
+        [session, error, changed](const std::vector<std::string>& filenames, LLFilePicker::ELoadFilter, LLFilePicker::ESaveFilter) {
+            if (filenames.empty()) return;
+            LLPoseStudio& studio = LLPoseStudio::instance();
+            if (!studio.isActive() || studio.getSession() != session)
+            {
+                poseFileError(changed);
+                return;
+            }
+            if (!studio.loadPose(readPoseFile(filenames.front())))
+            {
+                poseFileError(error);
+                return;
+            }
+            if (auto* floater = LLFloaterReg::findTypedInstance<LLFloaterPoseStudio>("pose_studio"))
+                floater->onPoseChanged();
+        }, LLFilePicker::FFLOAD_XML, false);
 }
 
 void LLFloaterPoseStudio::onResetPose()
@@ -318,6 +402,8 @@ void LLFloaterPoseStudio::refresh()
     getChild<LLButton>("end")->setEnabled(active);
     getChild<LLButton>("reset_joint")->setEnabled(can_edit);
     getChild<LLButton>("reset_pose")->setEnabled(active);
+    getChild<LLButton>("save_pose")->setEnabled(active);
+    getChild<LLButton>("load_pose")->setEnabled(active);
     for (LLSliderCtrl* rotation : mRotation) rotation->setEnabled(can_edit);
     for (LLSliderCtrl* position : mPosition) position->setEnabled(can_edit);
 

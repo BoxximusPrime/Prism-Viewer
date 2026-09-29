@@ -273,6 +273,7 @@ LLGLSLShader            gSSSOverlayCompositeProgram;
 LLGLSLShader            gVolumeFogProgram;
 LLGLSLShader            gVolumeFogLitProgram;
 LLGLSLShader            gVolumeFogCompositeProgram;
+LLGLSLShader            gVolumeCloudProgram;
 LLGLSLShader            gSSSMaskProgram;
 
 // Deferred materials shaders
@@ -1602,6 +1603,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gVolumeFogProgram.unload();
         gVolumeFogLitProgram.unload();
         gVolumeFogCompositeProgram.unload();
+        gVolumeCloudProgram.unload();
         gSSSMaskProgram.unload();
 
         for (U32 i = 0; i < LLMaterial::SHADER_COUNT*2; ++i)
@@ -3599,6 +3601,34 @@ bool LLViewerShaderMgr::loadShadersDeferred()
             LL_WARNS("VolumeFog") << "Fog composite unavailable; continuing without fog boxes." << LL_ENDL;
         }
         else LL_INFOS("VolumeFog") << "Loaded volume fog composite and validated 3 texture samplers." << LL_ENDL;
+    }
+
+    // Optional clouds retain the original sky renderer if loading fails.
+    if (success)
+    {
+        auto& shader = gVolumeCloudProgram;
+        shader.mName = "Volumetric Clouds";
+        shader.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/volumeCloudF.glsl", GL_FRAGMENT_SHADER)};
+        shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        shader.clearPermutations();
+        bool complete = shader.createShader();
+        if (complete)
+        {
+            std::set<S32> channels;
+            for (S32 sampler : { DEFERRED_DEPTH, DIFFUSE_MAP, CLOUD_NOISE_MAP, CLOUD_NOISE_MAP_NEXT })
+            {
+                const S32 channel = shader.getTextureChannel(sampler);
+                complete &= channel >= 0 && channel < gGLManager.mNumTextureImageUnits && channels.insert(channel).second;
+            }
+        }
+        if (!complete)
+        {
+            shader.unload();
+            LL_WARNS("VolumeClouds") << "Volumetric clouds unavailable; retaining classic clouds." << LL_ENDL;
+        }
+        else LL_INFOS("VolumeClouds") << "Loaded volumetric clouds and validated 4 texture samplers." << LL_ENDL;
     }
 
     // Optional temporal shaders are loaded for the AA menu, independently of the

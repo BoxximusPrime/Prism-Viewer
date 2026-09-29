@@ -1368,6 +1368,13 @@ void LLPipeline::releaseGLBuffers()
     mSceneMap.release();
     mVolumeFog.release();
     mVolumeFogComposite.release();
+    mVolumeClouds.release();
+    mVolumeCloudsComposite.release();
+    if (mVolumeCloudNoise)
+    {
+        LLImageGL::deleteTextures(1, &mVolumeCloudNoise);
+        mVolumeCloudNoise = 0;
+    }
 
     mWaterExclusionMask.release();
 
@@ -4217,6 +4224,7 @@ U32 LLPipeline::sCurRenderPoolType = 0 ;
 
 void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
 {
+    mVolumeCloudsActive = false;
     mWaterLightingReady = false;
     if (!gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
     {
@@ -4445,6 +4453,7 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
         {
             // Include post-deferred opaque/fullbright/masked surfaces and water
             // haze, but stop before blended geometry and the water surface.
+            renderVolumeClouds();
             captureTAAOpaque();
             done_taa_opaque = true;
         }
@@ -4496,7 +4505,11 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
         stop_glerror();
     }
 
-    if (!done_taa_opaque) captureTAAOpaque();
+    if (!done_taa_opaque)
+    {
+        renderVolumeClouds();
+        captureTAAOpaque();
+    }
 
     gGLLastMatrix = NULL;
     gGL.matrixMode(LLRender::MM_MODELVIEW);
@@ -10497,6 +10510,167 @@ void LLPipeline::renderSSSDiffusion(LLRenderTarget& source, F32 radius, bool smo
     shader.unbindTexture(LLShaderMgr::BUMP_MAP);
     shader.unbindTexture(LLShaderMgr::SPECULAR_MAP);
     unbindDeferredShader(shader);
+}
+
+bool LLPipeline::prepareVolumeClouds()
+{
+    if (gCubeSnapshot || sReflectionRender || sImpostorRender || sRenderingHUDs || mRT != &mMainRT) return false;
+    if (!gSavedSettings.getBOOL("RenderVolumeClouds") || !gVolumeCloudProgram.isComplete() ||
+        !gVolumeFogCompositeProgram.isComplete())
+    {
+        mVolumeClouds.release();
+        mVolumeCloudsComposite.release();
+        return false;
+    }
+    const U32 width = mRT->screen.getWidth(), height = mRT->screen.getHeight();
+    if (!width || !height) return false;
+    const U32 divisor = gSavedSettings.getS32("RenderVolumeCloudQuality") < 2 ? 2 : 1;
+    const U32 cloud_width = (width+divisor-1)/divisor, cloud_height = (height+divisor-1)/divisor;
+    if ((!mVolumeClouds.isComplete() || mVolumeClouds.getWidth() != cloud_width || mVolumeClouds.getHeight() != cloud_height) &&
+        !mVolumeClouds.allocate(cloud_width, cloud_height, GL_RGBA16F)) return false;
+    if ((!mVolumeCloudsComposite.isComplete() || mVolumeCloudsComposite.getWidth() != width || mVolumeCloudsComposite.getHeight() != height) &&
+        !mVolumeCloudsComposite.allocate(width, height, GL_RGBA16F)) return false;
+    if (!mVolumeCloudNoise)
+    {
+        // Independent of the viewer's random stream; 256 KiB, generated once.
+        std::vector<U8> noise(64*64*64);
+        U32 state = 0x729a4b31;
+        for (auto& value : noise)
+        {
+            state ^= state << 13;
+            state ^= state >> 17;
+            state ^= state << 5;
+            value = U8(state >> 24);
+        }
+        LLImageGL::generateTextures(1, &mVolumeCloudNoise);
+        auto* unit = gGL.getTexUnit(0);
+        unit->bindManual(LLTexUnit::TT_TEXTURE_3D, mVolumeCloudNoise);
+        glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, 64, 64, 64, 0, GL_RED, GL_UNSIGNED_BYTE, noise.data());
+        unit->setTextureFilteringOption(LLTexUnit::TFO_BILINEAR);
+        unit->setTextureAddressMode(LLTexUnit::TAM_WRAP);
+        GLint allocated = 0;
+        glGetTexLevelParameteriv(GL_TEXTURE_3D, 0, GL_TEXTURE_WIDTH, &allocated);
+        unit->unbind(LLTexUnit::TT_TEXTURE_3D);
+        if (allocated != 64)
+        {
+            LLImageGL::deleteTextures(1, &mVolumeCloudNoise);
+            mVolumeCloudNoise = 0;
+            LL_WARNS_ONCE("VolumeClouds") << "Cloud noise unavailable; retaining classic clouds." << LL_ENDL;
+            return false;
+        }
+    }
+    mVolumeCloudsActive = true;
+    return true;
+}
+
+void LLPipeline::renderVolumeClouds()
+{
+    if (!mVolumeCloudsActive || gCubeSnapshot || sImpostorRender || sRenderingHUDs || mRT != &mMainRT) return;
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
+    LL_PROFILE_GPU_ZONE("volumetric clouds");
+    auto& environment = LLEnvironment::instance();
+    const auto sky = environment.getCurrentSky();
+    LLViewerTexture* texture = gSky.mVOSkyp->getCloudNoiseTex();
+    LLViewerTexture* next = gSky.mVOSkyp->getCloudNoiseTexNext();
+    if (!next) next = texture;
+    const F32 scale = llclamp(sky->getCloudScale(), 0.001f, 3.f)*6000.f;
+    const F32 thickness = llclamp(gSavedSettings.getF32("RenderVolumeCloudThickness"), 10.f, 2000.f);
+    const F32 altitude = llclamp(gSavedSettings.getF32("RenderVolumeCloudAltitude"), 0.f, 10000.f);
+    const LLVector3d camera = gAgent.getPosGlobalFromAgent(LLViewerCamera::instance().getOrigin());
+    const glm::mat4 inverse_projection = glm::inverse(get_current_projection());
+    // Aligned GLM mat3 columns contain padding; upload a mat4 to preserve rotation.
+    const glm::mat4 view_to_world = glm::inverse(get_current_modelview());
+
+    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+    LLGLDisable blend(GL_BLEND);
+    LLGLDisable cull(GL_CULL_FACE);
+    gGL.setColorMask(true, true);
+    mRT->screen.flush();
+    // Color-only targets avoid reading a depth attachment while drawing to it.
+    mVolumeClouds.bindTarget();
+    auto& shader = gVolumeCloudProgram;
+    shader.bind();
+    shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
+    shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP, texture);
+    shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP_NEXT, next);
+    const S32 noise_unit = shader.enableTexture(LLShaderMgr::DIFFUSE_MAP, LLTexUnit::TT_TEXTURE_3D);
+    gGL.getTexUnit(noise_unit)->bindManual(LLTexUnit::TT_TEXTURE_3D, mVolumeCloudNoise);
+    shader.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
+    shader.uniformMatrix4fv(LLStaticHashedString("vc_view_to_world"), 1, false, glm::value_ptr(view_to_world));
+    shader.uniform2f(LLStaticHashedString("vc_target_size"), F32(mVolumeClouds.getWidth()), F32(mVolumeClouds.getHeight()));
+    // EEP variance repeats over sixteen weather banks (each eight shape scales).
+    // Wrap in double precision so region crossings cannot shift either field.
+    shader.uniform3f(LLStaticHashedString("vc_camera"), F32(fmod(camera.mdV[0], F64(scale)*128.0)),
+        F32(fmod(camera.mdV[1], F64(scale)*128.0)), F32(camera.mdV[2]-altitude));
+    shader.uniform1f(LLStaticHashedString("vc_scale"), scale);
+    shader.uniform1f(LLStaticHashedString("vc_thickness"), thickness);
+    shader.uniform3fv(LLStaticHashedString("vc_density"), 1, sky->getCloudPosDensity1().mV);
+    shader.uniform3fv(LLStaticHashedString("vc_detail"), 1, sky->getCloudPosDensity2().mV);
+    const auto scroll = environment.getCloudScrollDelta();
+    shader.uniform2f(LLStaticHashedString("vc_scroll"), -fmod(scroll.mV[0], 8.f), fmod(scroll.mV[1], 8.f));
+    shader.uniform1f(LLStaticHashedString("vc_coverage"), sky->getCloudShadow());
+    shader.uniform1f(LLStaticHashedString("vc_amount"), llclamp(gSavedSettings.getF32("RenderVolumeCloudDensity"), 0.f, 2.f));
+    shader.uniform1f(LLStaticHashedString("vc_variance"), sky->getCloudVariance());
+    shader.uniform1f(LLStaticHashedString("vc_blend"), texture == next || sky->getCloudScrollRate().isExactlyZero() ? 0.f : F32(sky->getBlendFactor()));
+    const S32 samples[] = {32, 64, 96};
+    shader.uniform1i(LLStaticHashedString("vc_steps"), samples[llclamp(gSavedSettings.getS32("RenderVolumeCloudQuality"), 0, 2)]);
+    const bool directional = environment.getIsSunUp() || environment.getIsMoonUp();
+    const LLVector3 direction = environment.getIsSunUp() ? environment.getSunDirection() : environment.getMoonDirection();
+    shader.uniform3fv(LLStaticHashedString("vc_sun_direction"), 1, direction.mV);
+    auto linear = [](F32 c) { c = llmax(c, 0.f); return c <= 0.04045f ? c/12.92f : powf((c+0.055f)/1.055f, 2.4f); };
+    LLColor3 light = directional ? sky->getLightDiffuse() : LLColor3::black;
+    if (environment.getIsSunUp())
+    {
+        // Match cloudsF.glsl: clouds receive sunlight above the ground-level
+        // transmittance used by getLightDiffuse(), with a shorter air column.
+        light = sky->getSunlightColor();
+        const LLColor3 attenuation = sky->getLightAttenuation(sky->getMaxY());
+        const F32 path = 1.f / llmax(1e-6f, direction.mV[2]*2.f);
+        for (S32 i = 0; i < 3; ++i) light.mV[i] *= expf(-attenuation.mV[i]*path);
+    }
+    // Scale direct and scattered sunlight together before exposure metering.
+    const F32 sunlight_scale = environment.getIsSunUp() ? llclamp(gSavedSettings.getF32("RenderVolumeCloudSunlight"), 0.f, 2.f) : 1.f;
+    const F32 strength = gSavedSettings.getF32(gSavedSettings.getBOOL("RenderHDREnabled") ? "RenderHDRSkySunlightScale" : "RenderSkySunlightScale") * sunlight_scale;
+    shader.uniform3f(LLStaticHashedString("vc_sun_color"), linear(light.mV[0])*strength,
+        linear(light.mV[1])*strength, linear(light.mV[2])*strength);
+    const LLColor4 ambient = sky->getTotalAmbient();
+    shader.uniform3f(LLStaticHashedString("vc_ambient"), linear(ambient.mV[0]), linear(ambient.mV[1]), linear(ambient.mV[2]));
+    const LLColor3 tint = sky->getCloudColor();
+    // EEP cloud tint uses the legacy shader's factor of two.
+    shader.uniform3f(LLStaticHashedString("vc_tint"), tint.mV[0]*2.f, tint.mV[1]*2.f, tint.mV[2]*2.f);
+    mScreenTriangleVB->setBuffer();
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    shader.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
+    shader.unbindTexture(LLShaderMgr::CLOUD_NOISE_MAP);
+    shader.unbindTexture(LLShaderMgr::CLOUD_NOISE_MAP_NEXT);
+    shader.disableTexture(LLShaderMgr::DIFFUSE_MAP, LLTexUnit::TT_TEXTURE_3D);
+    shader.unbind();
+    mVolumeClouds.flush();
+
+    // ponytail: composite before blended surfaces; depth-aware scattering on
+    // glass, particles and water inside the layer needs alpha-shader integration.
+    mVolumeCloudsComposite.bindTarget();
+    auto& composite = gVolumeFogCompositeProgram;
+    composite.bind();
+    composite.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, &mRT->screen, false, LLTexUnit::TFO_POINT);
+    composite.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
+    composite.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mVolumeClouds, false, LLTexUnit::TFO_POINT);
+    composite.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
+    mScreenTriangleVB->setBuffer();
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    composite.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
+    composite.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
+    composite.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+    composite.unbind();
+    mVolumeCloudsComposite.flush();
+    mRT->screen.bindTarget();
+    gCopyProgram.bind();
+    gCopyProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mVolumeCloudsComposite, false, LLTexUnit::TFO_POINT);
+    mScreenTriangleVB->setBuffer();
+    mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    gCopyProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+    gCopyProgram.unbind();
+    gGL.setColorMask(true, false);
 }
 
 void LLPipeline::renderVolumeFog()

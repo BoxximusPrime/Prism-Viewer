@@ -511,7 +511,8 @@ void LLPanelMainInventory::newFolderWindow(LLUUID folder_id, LLUUID item_to_sele
                 if (main_inventory && main_inventory->isSingleFolderMode()
                     && (main_inventory->getCurrentSFVRoot() == folder_id))
                 {
-                    main_inventory->setFocus(true);
+                    // Alt+click may reuse an existing folder window; keep hover keys ready.
+                    gFocusMgr.setKeyboardFocus(main_inventory);
                     if(item_to_select.notNull())
                     {
                         main_inventory->setGallerySelection(item_to_select);

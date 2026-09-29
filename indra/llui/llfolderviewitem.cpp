@@ -40,6 +40,7 @@
 #include "llpanel.h"
 #include "lltrans.h"
 #include "llwindow.h"
+#include "llloadingindicator.h"
 
 ///----------------------------------------------------------------------------
 /// Class LLFolderViewItem
@@ -979,7 +980,7 @@ void LLFolderViewItem::drawHighlight(bool showContent, bool hasKeyboardFocus,
             focus_top,
             getRect().getWidth() - 2,
             focus_bottom,
-            mouseOverColor, false);
+            mouseOverColor, true);
     }
 
     //--------------------------------------------------------------------------------//
@@ -1050,6 +1051,14 @@ void LLFolderViewItem::draw()
     if (mIconOverlay && getRoot()->showItemLinkOverlays())
     {
         mIconOverlay->draw(icon_x, rect_height - mIcon->getHeight() - sTopPad + 1);
+    }
+
+    if (mIcon && mViewModelItem->isAttachmentPending())
+    {
+        LLRect icon_rect;
+        icon_rect.setLeftTopAndSize(icon_x, rect_height - sTopPad + 1,
+            mIcon->getWidth(), mIcon->getHeight());
+        LLLoadingIndicator::drawSmall(icon_rect, getDrawContext().mAlpha * (isFadeItem() ? 0.5f : 1.f));
     }
 
     //--------------------------------------------------------------------------------//

@@ -76,6 +76,9 @@ public:
     // llview overrides
     virtual void draw();
 
+    // Compact, texture-free spinner for 16-20 pixel item icons.
+    static void drawSmall(const LLRect& rect, F32 alpha = 1.f);
+
     /**
      * Stop spinning.
      */

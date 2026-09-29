@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<floater name="quick_preferences" title="QUICK PREFERENCES" width="360" height="330"
+<floater name="quick_preferences" title="QUICK PREFERENCES" width="360" height="362"
  layout="topleft" can_resize="false" can_minimize="true" single_instance="true" save_rect="true">
  <string name="custom">Custom</string>
  <string name="shared_label">Shared Environment</string>
@@ -12,26 +12,31 @@
  </combo_box>
  <slider name="draw_distance" control_name="RenderFarClip" label="Draw distance:" label_width="112"
  left="12" top="65" width="336" height="20" min_val="32" max_val="1024" increment="8" decimal_digits="0" can_edit_text="true" />
- <check_box name="name_tags" label="Name tags" left="12" top="98" width="145" height="20" />
- <check_box name="look_targets" control_name="ShowLookAtTargets" label="Show look targets" left="170" top="98" width="178" height="20" />
- <slider name="hover" label="Hover height:" label_width="112" left="12" top="132" width="336" height="20"
+ <slider name="camera_smoothing" control_name="BoxxyCameraSmoothing" label="Camera smooth:" label_width="112"
+ left="12" top="98" width="306" height="20" min_val="0" max_val="1" increment="0.01" decimal_digits="2" can_edit_text="true"
+ tool_tip="Smooth camera movement, rotation and zoom. Time in seconds to halve the remaining motion; higher is smoother. 0 disables added smoothing." />
+ <button name="camera_smoothing_default" label="d" left="322" top="96" width="26" height="23"
+ tool_tip="Restore default camera smoothing (0.05 seconds)" />
+ <check_box name="name_tags" label="Name tags" left="12" top="130" width="145" height="20" />
+ <check_box name="look_targets" control_name="ShowLookAtTargets" label="Show look targets" left="170" top="130" width="178" height="20" />
+ <slider name="hover" label="Hover height:" label_width="112" left="12" top="164" width="336" height="20"
  min_val="-2" max_val="2" increment="0.001" decimal_digits="3" can_edit_text="true" />
- <text name="stand_cycle_label" left="12" top="174" width="112" height="20">Stand cycle:</text>
- <button name="stand_prev" label="&#x2039;" left="124" top="170" width="26" height="23" enabled="false"
+ <text name="stand_cycle_label" left="12" top="206" width="112" height="20">Stand cycle:</text>
+ <button name="stand_prev" label="&#x2039;" left="124" top="202" width="26" height="23" enabled="false"
  tool_tip="Previous AO stand. Requires the built-in AO to be playing a standing pose with multiple stands available. Follows the AO's randomize setting." />
- <button name="stand_next" label="&#x203a;" left="154" top="170" width="26" height="23" enabled="false"
+ <button name="stand_next" label="&#x203a;" left="154" top="202" width="26" height="23" enabled="false"
  tool_tip="Next AO stand. Requires the built-in AO to be playing a standing pose with multiple stands available. Follows the AO's randomize setting." />
- <text name="sky_label" left="12" top="204" width="70" height="20">Sky:</text>
- <combo_box name="sky" left="84" top="200" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
- <button name="sky_prev" label="&#x2039;" left="292" top="200" width="26" height="23" tool_tip="Previous sky preset" />
- <button name="sky_next" label="&#x203a;" left="322" top="200" width="26" height="23" tool_tip="Next sky preset" />
- <text name="water_label" left="12" top="234" width="70" height="20">Water:</text>
- <combo_box name="water" left="84" top="230" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
- <button name="water_prev" label="&#x2039;" left="292" top="230" width="26" height="23" tool_tip="Previous water preset" />
- <button name="water_next" label="&#x203a;" left="322" top="230" width="26" height="23" tool_tip="Next water preset" />
- <text name="day_label" left="12" top="264" width="70" height="20">Day cycle:</text>
- <combo_box name="day" left="84" top="260" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
- <button name="day_prev" label="&#x2039;" left="292" top="260" width="26" height="23" tool_tip="Previous day cycle preset" />
- <button name="day_next" label="&#x203a;" left="322" top="260" width="26" height="23" tool_tip="Next day cycle preset" />
- <button name="shared" label="Use Shared Environment" left="84" top="295" width="264" height="23" tool_tip="Clear local sky, water and day cycle overrides and use the parcel or region environment." />
+ <text name="sky_label" left="12" top="236" width="70" height="20">Sky:</text>
+ <combo_box name="sky" left="84" top="232" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
+ <button name="sky_prev" label="&#x2039;" left="292" top="232" width="26" height="23" tool_tip="Previous sky preset" />
+ <button name="sky_next" label="&#x203a;" left="322" top="232" width="26" height="23" tool_tip="Next sky preset" />
+ <text name="water_label" left="12" top="266" width="70" height="20">Water:</text>
+ <combo_box name="water" left="84" top="262" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
+ <button name="water_prev" label="&#x2039;" left="292" top="262" width="26" height="23" tool_tip="Previous water preset" />
+ <button name="water_next" label="&#x203a;" left="322" top="262" width="26" height="23" tool_tip="Next water preset" />
+ <text name="day_label" left="12" top="296" width="70" height="20">Day cycle:</text>
+ <combo_box name="day" left="84" top="292" width="204" height="23" tool_tip="Apply an environment preset locally from your inventory or Library." />
+ <button name="day_prev" label="&#x2039;" left="292" top="292" width="26" height="23" tool_tip="Previous day cycle preset" />
+ <button name="day_next" label="&#x203a;" left="322" top="292" width="26" height="23" tool_tip="Next day cycle preset" />
+ <button name="shared" label="Use Shared Environment" left="84" top="327" width="264" height="23" tool_tip="Clear local sky, water and day cycle overrides and use the parcel or region environment." />
 </floater>

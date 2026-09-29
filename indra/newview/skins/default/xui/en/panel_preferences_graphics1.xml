@@ -1434,6 +1434,58 @@ Combined: transmitted light from all lights, including blur.</text>
     </panel>
     </scroll_container>
   </panel>
+  <panel name="graphics_clouds_panel" label="Clouds" follows="all"
+    layout="topleft" left="0" top="0" width="517" height="410">
+    <text name="CloudDescription" follows="left|top|right" layout="topleft"
+      left="30" top="12" width="355" height="40" word_wrap="true">
+      Give your environment's clouds depth. Color, coverage and motion follow the current sky.
+    </text>
+    <button name="CloudDefaults" label="Default" follows="right|top"
+      layout="topleft" left="400" top="8" width="80" height="23"
+      tool_tip="Restore this page's settings to their defaults.">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_clouds_panel" />
+    </button>
+    <check_box name="RenderVolumeClouds" control_name="RenderVolumeClouds"
+      label="Use volumetric clouds (experimental)" follows="left|top" layout="topleft"
+      left="30" top="70" width="450" height="20"
+      tool_tip="Switch immediately between volumetric and original clouds. These controls only affect your viewer.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <slider name="RenderVolumeCloudAltitude" control_name="RenderVolumeCloudAltitude"
+      label="Base altitude (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="110" width="450" height="20" min_val="0" max_val="10000"
+      increment="10" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="Height of the cloud layer's bottom in world metres. You can fly or build inside it." />
+    <slider name="RenderVolumeCloudThickness" control_name="RenderVolumeCloudThickness"
+      label="Thickness (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="142" width="450" height="20" min_val="10" max_val="2000"
+      increment="10" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="Vertical extent above the base altitude. Thicker clouds absorb more light." />
+    <slider name="RenderVolumeCloudDensity" control_name="RenderVolumeCloudDensity"
+      label="Density:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="174" width="450" height="20" min_val="0" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Lower values open more gaps. Zero clears the clouds; 1.00 follows the environment's coverage; higher values fill more of the sky." />
+    <slider name="RenderVolumeCloudSunlight" control_name="RenderVolumeCloudSunlight"
+      label="Sunlight strength:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="206" width="450" height="20" min_val="0" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Lower this if bright clouds cause eye adaptation to darken the scene. 1.00 is normal; 0.00 leaves ambient lighting. Coverage and moonlight are unchanged." />
+    <text name="CloudQualityLabel" follows="left|top" layout="topleft"
+      left="30" top="241" width="185" height="20">Quality:</text>
+    <combo_box name="RenderVolumeCloudQuality" control_name="RenderVolumeCloudQuality"
+      follows="left|top" layout="topleft" left="220" top="238" width="260" height="23">
+      <combo_box.item label="Performance" value="0" />
+      <combo_box.item label="Balanced" value="1" />
+      <combo_box.item label="High" value="2" />
+    </combo_box>
+    <text name="CloudStatus" follows="left|top|right" layout="topleft"
+      left="30" top="278" width="450" height="42" word_wrap="true" />
+    <text name="CloudHelp" follows="left|top|right" layout="topleft"
+      left="30" top="332" width="450" height="68" word_wrap="true">
+      These controls affect only your view. Reflections use the original clouds. Water and transparent surfaces inside clouds may appear too clear. Cloud shadows on the ground are not included in this first pass.
+    </text>
+  </panel>
   <panel name="graphics_volume_fog_panel" label="Volumetric Fog" follows="all"
     layout="topleft" left="0" top="0" width="517" height="410">
     <text name="VolumeFogDescription" follows="left|top|right" layout="topleft"

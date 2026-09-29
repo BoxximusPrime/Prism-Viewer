@@ -45,6 +45,10 @@ LLFloaterQuickPrefs::~LLFloaterQuickPrefs()
 
 bool LLFloaterQuickPrefs::postBuild()
 {
+    getChild<LLUICtrl>("camera_smoothing_default")->setCommitCallback([](LLUICtrl*, const LLSD&)
+    {
+        gSavedSettings.getControl("BoxxyCameraSmoothing")->resetToDefault(true);
+    });
     getChild<LLComboBox>("graphics")->setCommitCallback([this](LLUICtrl*, const LLSD&)
     {
         const bool ultra = getChild<LLComboBox>("graphics")->getValue().asString() == "ultra";

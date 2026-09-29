@@ -88,6 +88,7 @@ public:
     void clearPendingAttachmentLink(const LLUUID& idItem);
     bool getPendingAttachments(std::set<LLUUID>& ids) const;
     bool isAttachmentStateComplete() const;
+    bool isAttachmentPending(const LLUUID& item_id) const;
 
 protected:
     void onRegisterAttachmentComplete(const LLUUID& id_item_link);
