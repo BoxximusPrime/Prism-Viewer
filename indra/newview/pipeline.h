@@ -360,6 +360,8 @@ public:
 
     void renderDeferredLighting();
     void renderVolumeFog();
+    bool prepareVolumeClouds();
+    void renderVolumeClouds();
     void bindVolumeFogLighting(LLGLSLShader& shader, const std::vector<LLVolumeFog::Volume>& volumes);
 
     // apply atmospheric haze based on contents of color and depth buffer
@@ -795,6 +797,10 @@ public:
     LLRenderTarget          mSceneMap;
     LLRenderTarget          mVolumeFog;
     LLRenderTarget          mVolumeFogComposite;
+    LLRenderTarget          mVolumeClouds;
+    LLRenderTarget          mVolumeCloudsComposite;
+    U32                     mVolumeCloudNoise = 0;
+    bool                    mVolumeCloudsActive = false;
     LLRenderTarget          mGTAO[2]; // visibility + geometry mask; spatial ping-pong
     bool                    mGTAOReady = false;
     LLRenderTarget          mSSGISource; // opaque direct diffuse and emission, before bounce

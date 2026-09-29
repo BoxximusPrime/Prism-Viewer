@@ -319,6 +319,7 @@ extern LLGLSLShader         gSSSOverlayCompositeProgram;
 extern LLGLSLShader         gVolumeFogProgram;
 extern LLGLSLShader         gVolumeFogLitProgram;
 extern LLGLSLShader         gVolumeFogCompositeProgram;
+extern LLGLSLShader         gVolumeCloudProgram;
 extern LLGLSLShader         gSSSMaskProgram;
 
 // Deferred materials shaders

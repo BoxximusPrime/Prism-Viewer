@@ -364,6 +364,17 @@
    top_pad="8"
    width="390" />
   <check_box
+   control_name="BoxxyRightClickTransparentObjects"
+   follows="left|top"
+   height="20"
+   label="Allow right-click on transparent objects"
+   layout="topleft"
+   left="30"
+   name="right_click_transparent_objects"
+   tool_tip="Open context menus on fully transparent objects, including invisible vendor and payment prims"
+   top_pad="8"
+   width="450" />
+  <check_box
    control_name="BoxxyMuteOwnAvatarCollisionSounds"
    follows="left|top"
    height="20"

@@ -653,6 +653,9 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
     // See: C++: addDeferredAttachment(), shader: frag_data[2]
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_SKIP_ATMOS   0.0 \n"); // atmo kill
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_ATMOS    0.34\n"); // bit 0
+    // Impostors retain ordinary legacy lighting, but have no reliable GI geometry.
+    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_IMPOSTOR     0.30\n");
+    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_IMPOSTOR_FLAG(data) (abs((data)-GBUFFER_FLAG_IMPOSTOR)<0.01)\n");
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_PBR      0.67\n"); // bit 1
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_HDRI      1.0\n");  // bit 2
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_AVATAR_FLAG(data) ((abs((data)-0.38)<0.015 || abs((data)-0.50)<0.015 || abs((data)-0.71)<0.015 || abs((data)-0.83)<0.015) ? 1.0 : 0.0)\n");

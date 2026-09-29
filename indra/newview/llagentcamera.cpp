@@ -2516,7 +2516,9 @@ void LLAgentCamera::setAnimationDuration(F32 duration)
 //-----------------------------------------------------------------------------
 void LLAgentCamera::startCameraAnimation()
 {
-    mAnimationCameraStartGlobal = getCameraPositionGlobal();
+    // Preserve motion still being resolved by the final camera smoothing pass
+    // when a new focus point or camera transition interrupts the current one.
+    mAnimationCameraStartGlobal = LLViewerCamera::getInstance()->getTargetPositionGlobal();
     mAnimationFocusStartGlobal = mFocusGlobal;
     setAnimationDuration(gSavedSettings.getF32("ZoomTime"));
     mAnimationTimer.reset();
@@ -2588,7 +2590,7 @@ void LLAgentCamera::setFocusGlobal(const LLVector3d& focus, const LLUUID &object
             {
                 mFocusTargetGlobal = gAgent.getPositionGlobal();
             }
-            mCameraFocusOffsetTarget = getCameraPositionGlobal() - mFocusTargetGlobal;
+            mCameraFocusOffsetTarget = LLViewerCamera::getInstance()->getTargetPositionGlobal() - mFocusTargetGlobal;
             mCameraFocusOffset = mCameraFocusOffsetTarget;
             setLookAt(LOOKAT_TARGET_CLEAR);
         }
@@ -2634,7 +2636,7 @@ void LLAgentCamera::setFocusGlobal(const LLVector3d& focus, const LLUUID &object
                 mFocusTargetGlobal = gAgent.getPositionGlobal();
             }
         }
-        mCameraFocusOffsetTarget = (getCameraPositionGlobal() - mFocusTargetGlobal) / (1.f + mCameraFOVZoomFactor);;
+        mCameraFocusOffsetTarget = (LLViewerCamera::getInstance()->getTargetPositionGlobal() - mFocusTargetGlobal) / (1.f + mCameraFOVZoomFactor);
         mCameraFocusOffset = mCameraFocusOffsetTarget;
     }
 

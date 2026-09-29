@@ -127,6 +127,7 @@
 #include "llkeyboard.h"
 #include "llfolderview.h"
 #include "llinventorypanel.h"
+#include "llinventoryfunctions.h"
 #include "llpanelmaininventory.h"
 #include "lllineeditor.h"
 #include "llmenugl.h"
@@ -1658,8 +1659,8 @@ void LLViewerWindow::handleFocus(LLWindow *window)
 // The top-level window has lost focus (e.g. via ALT-TAB)
 void LLViewerWindow::handleFocusLost(LLWindow *window)
 {
-    mInventoryFolderKeyHandled = false;
-    mInventoryFolderCharHandled = false;
+    for (bool& handled : mInventoryShortcutKeyHandled) handled = false;
+    for (bool& handled : mInventoryShortcutCharHandled) handled = false;
     gFocusMgr.setAppHasFocus(false);
     //LLModalDialog::onAppFocusLost();
     LLToolMgr::getInstance()->onAppFocusLost();
@@ -2987,9 +2988,9 @@ void LLViewerWindow::draw()
 // Takes a single keyup event, usually when UI is visible
 bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
 {
-    if (key == 'E' && mInventoryFolderKeyHandled)
+    if ((key == 'E' || key == 'T') && mInventoryShortcutKeyHandled[key == 'T'])
     {
-        mInventoryFolderKeyHandled = false;
+        mInventoryShortcutKeyHandled[key == 'T'] = false;
         return true;
     }
     if (LLSetKeyBindDialog::recordKey(key, mask, false))
@@ -3045,9 +3046,9 @@ bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
         || (gMenuBarView && gMenuBarView->getHighlightedItem() && gMenuBarView->getHighlightedItem()->isActive());
 }
 
-bool LLViewerWindow::handleInventoryFolderKey(MASK mask)
+bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
 {
-    if ((mask != MASK_NONE && mask != (MASK_CONTROL | MASK_SHIFT))
+    if ((mask != MASK_NONE && !(key == 'E' && mask == (MASK_CONTROL | MASK_SHIFT)))
         || !mMouseInWindow || gAgentCamera.cameraMouselook()
         || !gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI)
         || gFocusMgr.focusLocked() || gFocusMgr.getMouseCapture() || gFocusMgr.getTopCtrl()
@@ -3101,22 +3102,35 @@ bool LLViewerWindow::handleInventoryFolderKey(MASK mask)
     }
 
     LLFolderView* root = panel->getRootFolder();
-    if (root && !gKeyboard->getKeyRepeated('E'))
+    if (root && !gKeyboard->getKeyRepeated(key))
     {
         if (mask == (MASK_CONTROL | MASK_SHIFT))
         {
             root->closeAllFolders();
         }
-        else if (auto folder = dynamic_cast<LLFolderViewFolder*>(root->getHoveredItem()))
+        else if (LLFolderViewItem* hovered = root->getHoveredItem())
         {
-            LLRect title = folder->calcScreenRect();
-            title.mBottom = title.mTop - folder->getItemHeight();
-            if (folder != root && folder->isInVisibleChain()
+            LLRect title = hovered->calcScreenRect();
+            title.mBottom = title.mTop - hovered->getItemHeight();
+            if (hovered != root && hovered->isInVisibleChain()
                 && title.pointInRect(mCurrentMousePoint.mX, mCurrentMousePoint.mY))
             {
-                // Opening reveals this folder; closing also resets its children.
-                folder->setOpenArrangeRecursively(!folder->isOpen(),
-                    folder->isOpen() ? LLFolderViewFolder::RECURSE_DOWN : LLFolderViewFolder::RECURSE_NO);
+                if (key == 'T')
+                {
+                    auto item = dynamic_cast<LLFolderViewModelItemInventory*>(hovered->getViewModelItem());
+                    if (item && (item->getInventoryType() == LLInventoryType::IT_OBJECT
+                        || item->getInventoryType() == LLInventoryType::IT_WEARABLE))
+                    {
+                        // Use Add explicitly, regardless of the double-click Wear preference.
+                        item->performAction(panel->getModel(), get_is_item_worn(item->getUUID()) ? "detach" : "wear_add");
+                    }
+                }
+                else if (auto folder = dynamic_cast<LLFolderViewFolder*>(hovered))
+                {
+                    // Opening reveals this folder; closing also resets its children.
+                    folder->setOpenArrangeRecursively(!folder->isOpen(),
+                        folder->isOpen() ? LLFolderViewFolder::RECURSE_DOWN : LLFolderViewFolder::RECURSE_NO);
+                }
             }
         }
     }
@@ -3141,13 +3155,14 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
     if (LLToolPoseIK::getInstance()->handleKey(key, mask)) return true;
     if (LLFloaterSnapshot::photoKey(key, mask)) return true;
 
-    if (key == 'E')
+    if (key == 'E' || key == 'T')
     {
-        mInventoryFolderKeyHandled = mInventoryFolderKeyHandled || handleInventoryFolderKey(mask);
+        const S32 shortcut = key == 'T';
+        mInventoryShortcutKeyHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut] || handleInventoryHoverKey(key, mask);
         // Character messages can arrive after key-up, so retain their routing
-        // separately until the next E press, including any queued repeats.
-        mInventoryFolderCharHandled = mInventoryFolderKeyHandled;
-        if (mInventoryFolderKeyHandled) return true;
+        // separately until the next press of that key, including queued repeats.
+        mInventoryShortcutCharHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut];
+        if (mInventoryShortcutKeyHandled[shortcut]) return true;
     }
 
     LLFocusableElement* keyboard_focus = gFocusMgr.getKeyboardFocus();
@@ -3426,7 +3441,8 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
 
 bool LLViewerWindow::handleUnicodeChar(llwchar uni_char, MASK mask)
 {
-    if (mInventoryFolderCharHandled && (uni_char == 'e' || uni_char == 'E' || uni_char == 5))
+    if ((mInventoryShortcutCharHandled[0] && (uni_char == 'e' || uni_char == 'E' || uni_char == 5))
+        || (mInventoryShortcutCharHandled[1] && (uni_char == 't' || uni_char == 'T' || uni_char == 20)))
     {
         return true;
     }

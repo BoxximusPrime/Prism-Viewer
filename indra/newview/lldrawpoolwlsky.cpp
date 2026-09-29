@@ -296,6 +296,10 @@ void LLDrawPoolWLSky::renderSkyCloudsDeferred(const LLVector3& camPosLocal, F32 
 
     if (gPipeline.canUseWindLightShaders() && gPipeline.hasRenderType(LLPipeline::RENDER_TYPE_CLOUDS) && gSky.mVOSkyp && gSky.mVOSkyp->getCloudNoiseTex())
     {
+        // Reserve the volume pass only after its resources are ready. All other
+        // views (including reflection probes) keep the original cloud renderer.
+        if (gPipeline.prepareVolumeClouds()) return;
+
         LLSettingsSky::ptr_t psky = LLEnvironment::instance().getCurrentSky();
 
         LLGLSPipelineBlendSkyBox pipeline(true, true);

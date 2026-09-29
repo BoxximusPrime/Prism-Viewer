@@ -9,6 +9,7 @@
 
 #include "lljoint.h"
 #include "lljointsolverrp3.h"
+#include "llsd.h"
 #include "llviewerobjectlist.h"
 #include "llvoavatar.h"
 
@@ -282,6 +283,78 @@ void LLPoseStudio::resetPose()
     }
 }
 
+LLSD LLPoseStudio::serializePose() const
+{
+    LLVOAvatar* avatar = resolveAvatar();
+    if (!avatar || !matchesSkeleton(*avatar)) return LLSD();
+    LLSD data;
+    data["format"] = "PrismPose";
+    data["version"] = 1;
+    for (const JointPose& pose : mJoints)
+    {
+        LLSD& joint = data["joints"][pose.name];
+        const LLVector3 position = pose.captured.position + pose.position_offset;
+        for (S32 i = 0; i < 3; ++i) joint["position"].append(position.mV[i]);
+        for (S32 i = 0; i < 4; ++i) joint["rotation"].append(pose.rotation.mQ[i]);
+    }
+    return data;
+}
+
+bool LLPoseStudio::loadPose(const LLSD& data)
+{
+    LLVOAvatar* avatar = resolveAvatar();
+    if (!avatar || !matchesSkeleton(*avatar) || !data.isMap()
+        || !data["format"].isString() || data["format"].asString() != "PrismPose"
+        || !data["version"].isInteger() || data["version"].asInteger() != 1
+        || !data["joints"].isMap() || data["joints"].size() != mJoints.size()) return false;
+
+    // Validate the entire file before touching the pose or the live skeleton.
+    // Store local transforms, not session-relative offsets, for later sessions.
+    auto loaded = mJoints;
+    for (JointPose& pose : loaded)
+    {
+        const LLSD& joint = data["joints"][pose.name];
+        const auto read_array = [](const LLSD& values, F32* result, S32 count) {
+            if (!values.isArray() || values.size() != count) return false;
+            for (S32 i = 0; i < count; ++i)
+            {
+                if (!values[i].isReal() && !values[i].isInteger()) return false;
+                const F64 value = values[i].asReal();
+                if (!llfinite(value) || fabs(value) > F32_MAX) return false;
+                result[i] = static_cast<F32>(value);
+            }
+            return true;
+        };
+        LLVector3 position;
+        if (!joint.isMap() || !read_array(joint["position"], position.mV, 3)
+            || !read_array(joint["rotation"], pose.rotation.mQ, 4)) return false;
+        F32 norm_squared = 0.f;
+        for (F32 value : pose.rotation.mQ) norm_squared += value * value;
+        if (!llfinite(norm_squared) || norm_squared < 0.000001f) return false;
+        pose.rotation.normalize();
+        const LLQuaternion offset = pose.rotation * ~pose.captured.rotation;
+        offset.getEulerAngles(&pose.degrees.mV[VX], &pose.degrees.mV[VY], &pose.degrees.mV[VZ]);
+        pose.degrees *= RAD_TO_DEG;
+        pose.position_offset = position - pose.captured.position;
+        if (!pose.degrees.isFinite() || !pose.position_offset.isFinite()) return false;
+    }
+    mJoints.swap(loaded);
+    // Preserve the underlying animation cache and the original reset pose.
+    if (mApplied)
+    {
+        for (const JointPose& pose : mJoints)
+        {
+            pose.joint->setPosition(pose.captured.position + pose.position_offset);
+            pose.joint->setRotation(pose.rotation);
+        }
+        avatar->getRootJoint()->updateWorldMatrixChildren();
+        avatar->dirtyMesh();
+        avatar->mNeedsImpostorUpdate = true;
+    }
+    ++mSession; // Invalidate any drag or reset confirmation opened before loading.
+    return true;
+}
+
 const char* LLPoseStudio::getIKJointName(S32 limb)
 {
     return limb >= 0 && limb < 4 ? IK_JOINTS[limb][2] : "";
@@ -306,14 +379,28 @@ bool LLPoseStudio::getIKPose(S32 limb, IKPose& pose)
     direction.normalize();
     LLVector3 bend = pose.positions[1] - pose.positions[0];
     bend -= direction * (bend * direction);
-    // Keep the existing elbow/knee bend. A straight limb needs a preferred
-    // direction: elbows back, knees forward, in the avatar's frame.
-    if (bend.lengthSquared() < 0.000001f)
-        bend = LLVector3(limb < 2 ? -1.f : 1.f, 0.f, 0.f) * avatar->getRootJoint()->getWorldRotation();
+    // Ignore tiny, noisy bends near extension. Use the upper bone's frame so
+    // the preferred elbow/knee direction follows a raised or rotated limb.
+    const F32 bend_threshold = (pose.positions[1] - pose.positions[0]).length() * 0.01f;
+    if (bend.lengthSquared() < bend_threshold * bend_threshold)
+        bend = LLVector3(limb < 2 ? -1.f : 1.f, 0.f, 0.f) * pose.rotations[0];
     pose.pole = perpendicular(bend, direction);
     pose.session = mSession;
     pose.limb = limb;
     return true;
+}
+
+bool LLPoseStudio::IKPose::getReachLimits(F32& minimum, F32& maximum) const
+{
+    const F32 upper = (positions[1] - positions[0]).length();
+    const F32 lower = (positions[2] - positions[1]).length();
+    if (!llfinite(upper) || !llfinite(lower) || upper < 0.001f || lower < 0.001f) return false;
+    // Keep a small bend at extension and prevent elbows/knees folding through
+    // themselves. Direct bone rotation remains available for unusual rigs.
+    const F32 max_bend = (limb < 2 ? 150.f : 160.f) * DEG_TO_RAD;
+    minimum = sqrtf(upper * upper + lower * lower + 2.f * upper * lower * cosf(max_bend));
+    maximum = sqrtf(upper * upper + lower * lower + 2.f * upper * lower * cosf(5.f * DEG_TO_RAD));
+    return llfinite(minimum) && llfinite(maximum);
 }
 
 bool LLPoseStudio::IKPose::solve(const LLVector3& target, std::array<LLQuaternion, 3>& result) const
@@ -321,9 +408,8 @@ bool LLPoseStudio::IKPose::solve(const LLVector3& target, std::array<LLQuaternio
     if (!target.isFinite() || !pole.isFinite()) return false;
     for (S32 i = 0; i < 3; ++i)
         if (!positions[i].isFinite() || !rotations[i].isFinite()) return false;
-    const F32 upper_length = (positions[1] - positions[0]).length();
-    const F32 lower_length = (positions[2] - positions[1]).length();
-    if (upper_length < 0.001f || lower_length < 0.001f) return false;
+    F32 minimum, maximum;
+    if (!getReachLimits(minimum, maximum)) return false;
 
     LLVector3 direction = target - positions[0];
     const F32 distance = direction.normalize();
@@ -336,10 +422,19 @@ bool LLPoseStudio::IKPose::solve(const LLVector3& target, std::array<LLQuaternio
             direction.normalize();
         }
     }
-    // Avoid both singular ends of the reachable interval; never stretch bones.
-    const F32 margin = llmin(upper_length, lower_length) * 0.001f;
-    const F32 reach = llclamp(distance, fabsf(upper_length - lower_length) + margin,
-                             upper_length + lower_length - margin);
+    const F32 reach = llclamp(distance, minimum, maximum);
+    LLVector3 previous_direction = positions[2] - positions[0];
+    if (previous_direction.normalize() < 0.0001f)
+    {
+        previous_direction = positions[1] - positions[0];
+        previous_direction.normalize();
+    }
+    const LLVector3 previous_pole = perpendicular(pole, previous_direction);
+    LLQuaternion aim;
+    if (previous_direction * direction < -0.9999f)
+        aim.setQuat(F_PI, previous_pole);
+    else
+        aim.shortestArc(previous_direction, direction);
     LLJoint upper("pose_ik_upper"), lower("pose_ik_lower", &upper), end("pose_ik_end", &lower), goal("pose_ik_goal");
     upper.setPosition(positions[0]);
     upper.setRotation(rotations[0]);
@@ -349,7 +444,9 @@ bool LLPoseStudio::IKPose::solve(const LLVector3& target, std::array<LLQuaternio
     goal.setPosition(positions[0] + direction * reach);
     LLJointSolverRP3 solver;
     solver.setupJoints(&upper, &lower, &end, &goal);
-    solver.setPoleVector(perpendicular(pole, direction));
+    // Carry the bend plane with the limb. Projecting a fixed pole onto the new
+    // direction flips the elbow/knee when the target crosses that pole.
+    solver.setPoleVector(perpendicular(previous_pole * aim, direction));
     solver.solve();
     result = {upper.getWorldRotation(), lower.getWorldRotation(), rotations[2]};
     return result[0].isFinite() && result[1].isFinite();
@@ -360,7 +457,8 @@ bool LLPoseStudio::setIKTarget(const IKPose& pose, const LLVector3& target)
     IKPose current;
     if (pose.session != mSession || !getIKPose(pose.limb, current)) return false;
     std::array<LLQuaternion, 3> world_rotations;
-    if (!pose.solve(target, world_rotations)) return false;
+    if (!current.solve(target, world_rotations)) return false;
+    world_rotations[2] = pose.rotations[2]; // Preserve orientation from drag start.
     std::array<LLQuaternion, 3> local_rotations;
     std::array<LLVector3, 3> degrees;
     std::array<JointPose*, 3> joints;

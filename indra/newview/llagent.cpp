@@ -4635,6 +4635,7 @@ void LLAgent::setTeleportState(ETeleportState state)
                           << teleportStateName(mTeleportState) << "(" << mTeleportState << ")"
                           << LL_ENDL;
     mTeleportState = state;
+    LLViewerCamera::getInstance()->resetCameraSmoothing();
     if (state != TELEPORT_NONE && LLBoxxySwim::isSwimming())
     {
         LLBoxxySwim::update();

@@ -5,6 +5,7 @@ uniform sampler2D depthMap;
 uniform vec2 screen_res;
 vec4 getPositionWithDepth(vec2 tc, float depth);
 vec4 getNorm(vec2 tc);
+vec4 getNormRaw(vec2 tc);
 vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
 
 vec3 ssgiSurfaceNormal(vec2 tc, vec3 center)
@@ -27,8 +28,10 @@ void main()
 {
     vec2 tc = gl_FragCoord.xy / screen_res;
     float depth = texture(depthMap, tc).r;
-    frag_color = vec2(0.5);
-    if (depth <= 0.0 || depth >= 1.0) return;
+    // Negative encoding marks geometry that SSGI rays must ignore, using the
+    // existing normal buffer rather than another mask texture/read per step.
+    frag_color = vec2(-1.0);
+    if (depth <= 0.0 || depth >= 1.0 || GBUFFER_IMPOSTOR_FLAG(getNormRaw(tc).w)) return;
     vec3 center = getPositionWithDepth(tc, depth).xyz;
     frag_color = encodeNormal(ssgiSurfaceNormal(tc, center), 0.0, 0.0).xy;
 }

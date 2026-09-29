@@ -18,6 +18,7 @@
 
 class LLJoint;
 class LLVOAvatar;
+class LLSD;
 
 class LLPoseStudio final : public LLSingleton<LLPoseStudio>
 {
@@ -44,6 +45,8 @@ public:
     LLVector3 getPositionOffset(const std::string& name) const;
     void resetJoint(const std::string& name);
     void resetPose();
+    LLSD serializePose() const;
+    bool loadPose(const LLSD& data);
 
     struct BonePose
     {
@@ -65,6 +68,7 @@ public:
         LLVector3 pole;
         U32 session = 0;
         S32 limb = -1; // left/right hand, left/right foot
+        bool getReachLimits(F32& minimum, F32& maximum) const;
         bool solve(const LLVector3& target, std::array<LLQuaternion, 3>& result) const;
     };
     bool getIKPose(S32 limb, IKPose& pose);

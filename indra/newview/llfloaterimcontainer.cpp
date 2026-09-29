@@ -1834,6 +1834,15 @@ bool LLFloaterIMContainer::selectConversationPair(const LLUUID& session_id, bool
             }
         }
 
+        // A focused selection should reopen detached conversations, including
+        // minimized ones. Background selection updates must leave them alone.
+        if (focus_floater && session_floater->isTornOff())
+        {
+            session_floater->restoreFloater();
+            session_floater->setMinimized(false);
+            session_floater->setVisibleAndFrontmost(true);
+        }
+
         // Set the focus on the selected floater
         if (!session_floater->hasFocus() && !session_floater->isMinimized())
         {

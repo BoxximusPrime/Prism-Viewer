@@ -29,7 +29,7 @@ void main()
     vec3 position = getPositionWithDepth(tc, depth).xyz;
     vec3 normal = normalize(getNorm(tc).xyz);
     float flags = getNormRaw(tc).w;
-    if (GET_GBUFFER_FLAG(flags, GBUFFER_FLAG_HAS_HDRI) ||
+    if (GBUFFER_IMPOSTOR_FLAG(flags) || GET_GBUFFER_FLAG(flags, GBUFFER_FLAG_HAS_HDRI) ||
         GET_GBUFFER_FLAG(flags, GBUFFER_FLAG_SKIP_ATMOS)) return;
 
     vec3 gathered = texelFetch(ssgiIndirect, ivec2(gl_FragCoord.xy), 0).rgb;

@@ -131,11 +131,11 @@ LLVector3 axisTarget(const LLPoseStudio::IKPose& pose, const LLVector3& axis, F3
     const LLVector3 offset = pose.positions[2] - pose.positions[0];
     const F32 along = offset * axis;
     const F32 perpendicular_sq = llmax(0.f, offset.lengthSquared() - along * along);
-    const F32 upper = (pose.positions[1] - pose.positions[0]).length();
-    const F32 lower = (pose.positions[2] - pose.positions[1]).length();
-    const F32 outer = sqrtf(llmax(0.f, (upper + lower) * (upper + lower) - perpendicular_sq));
+    F32 minimum, maximum;
+    if (!pose.getReachLimits(minimum, maximum)) return pose.positions[2];
+    const F32 outer = sqrtf(llmax(0.f, maximum * maximum - perpendicular_sq));
     distance = llclamp(distance, -along - outer, -along + outer);
-    const F32 inner_sq = (upper - lower) * (upper - lower) - perpendicular_sq;
+    const F32 inner_sq = minimum * minimum - perpendicular_sq;
     if (inner_sq > 0.f)
     {
         const F32 inner = sqrtf(inner_sq);

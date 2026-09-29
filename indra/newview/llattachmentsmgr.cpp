@@ -87,6 +87,14 @@ void LLAttachmentsMgr::addAttachmentRequest(const LLUUID& item_id,
     mAttachmentRequests.addTime(item_id);
 }
 
+bool LLAttachmentsMgr::isAttachmentPending(const LLUUID& item_id) const
+{
+    // Inventory and outfit links must show the same state as their target.
+    const auto request = mAttachmentRequests.find(gInventory.getLinkedItemID(item_id));
+    return request != mAttachmentRequests.end()
+        && request->second.getElapsedTimeF32() <= MAX_ATTACHMENT_REQUEST_LIFETIME;
+}
+
 void LLAttachmentsMgr::onAttachmentRequested(const LLUUID& item_id)
 {
     if (item_id.isNull())

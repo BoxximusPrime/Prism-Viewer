@@ -24,7 +24,9 @@ void main()
     float depth = texelFetch(depthMap, pixel, 0).r;
     frag_color = vec4(0.0);
     frag_guide = vec4(0.0);
-    if (depth <= 0.0 || depth >= 1.0) return;
+    // Write an invalid guide as well as zero light, so a returning full avatar
+    // cannot inherit billboard history after an impostor update.
+    if (depth <= 0.0 || depth >= 1.0 || GBUFFER_IMPOSTOR_FLAG(getNormRaw(tc).w)) return;
     vec3 position = getPositionWithDepth(tc, depth).xyz;
     vec3 normal = normalize(getNorm(tc).xyz);
     vec3 surfaceNormal = normalize(decodeNormal(texelFetch(ssgiGeometry, pixel, 0)).xyz);
@@ -42,6 +44,7 @@ void main()
         float d = texelFetch(depthMap, q, 0).r;
         if (d <= 0.0 || d >= 1.0) continue;
         vec2 uv = (vec2(q) + 0.5) / screen_res;
+        if (GBUFFER_IMPOSTOR_FLAG(getNormRaw(uv).w)) continue;
         vec3 n = normalize(getNorm(uv).xyz);
         vec3 delta = getPositionWithDepth(uv, d).xyz - position;
         float plane = max(abs(dot(delta, normal)), abs(dot(delta, n)));

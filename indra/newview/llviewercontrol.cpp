@@ -845,7 +845,8 @@ void settings_setup_listeners()
     for (const char* setting : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
         "RenderTAATransparency", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderGTAORadius", "RenderGTAOStrength", "RenderGTAOQuality",
         "RenderSSGIRadius", "RenderSSGIStrength", "RenderSSGIQuality", "RenderSSGIDenoise", "RenderSSGIDebug",
-        "RenderGTAOFalloff", "RenderGTAOThinOccluder", "RenderGTAODenoise" })
+        "RenderGTAOFalloff", "RenderGTAOThinOccluder", "RenderGTAODenoise",
+        "RenderVolumeClouds", "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight", "RenderVolumeCloudQuality" })
         setting_setup_signal_listener(gSavedSettings, setting, handleTAAHistoryChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderHighPrecisionPostProcess", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "BoxxySSSEnabled", handleReleaseGLBufferChanged);

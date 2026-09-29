@@ -33,6 +33,8 @@ private:
     void onJointSelection();
     void onStart();
     void onResetPose();
+    void onSavePose();
+    void onLoadPose();
     void onRotation();
     void onPosition();
 

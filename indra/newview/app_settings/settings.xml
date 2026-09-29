@@ -18,6 +18,48 @@
     <key>Type</key><string>LLSD</string>
     <key>Value</key><map />
   </map>
+  <key>RenderVolumeClouds</key>
+  <map>
+    <key>Comment</key><string>Experimental EEP-driven volumetric cloud layer. Off uses the original cloud renderer. Reflection probes retain classic clouds.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>RenderVolumeCloudAltitude</key>
+  <map>
+    <key>Comment</key><string>Local volumetric cloud base altitude in world metres (0-10000). Does not change EEP assets.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1000.0</real>
+  </map>
+  <key>RenderVolumeCloudThickness</key>
+  <map>
+    <key>Comment</key><string>Local volumetric cloud layer thickness in metres (10-2000).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>250.0</real>
+  </map>
+  <key>RenderVolumeCloudDensity</key>
+  <map>
+    <key>Comment</key><string>Local volumetric cloud coverage multiplier (0-2). Zero clears the sky; one preserves EEP coverage. Lower values create more gaps. Does not modify environment assets.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.8</real>
+  </map>
+  <key>RenderVolumeCloudSunlight</key>
+  <map>
+    <key>Comment</key><string>Local sunlight strength on volumetric clouds (0-2). One is normal; lower values reduce bright clouds' influence on eye adaptation. Zero leaves ambient lighting. Does not change cloud coverage or moonlight.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>RenderVolumeCloudQuality</key>
+  <map>
+    <key>Comment</key><string>Volumetric cloud quality: 0 Performance (half width/height, 32 samples), 1 Balanced (half width/height, 64), 2 High (full resolution, 96). Changes apply immediately.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>1</integer>
+  </map>
   <key>RenderVolumeFogIntensity</key>
   <map>
     <key>Comment</key><string>Global multiplier for density in all tagged fog boxes (0-2). One uses authored density; zero skips rendering. Does not edit prim descriptions.</string>
@@ -2026,6 +2068,17 @@
       <string>Boolean</string>
       <key>Value</key>
 			<integer>0</integer>
+    </map>
+    <key>BoxxyCameraSmoothing</key>
+    <map>
+      <key>Comment</key>
+      <string>Final camera position, rotation and field-of-view smoothing half-life in seconds (0 disables, maximum 1)</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.05</real>
     </map>
     <key>CameraPositionSmoothing</key>
     <map>
@@ -13977,6 +14030,17 @@
       <key>Value</key>
       <string>Sharp,_and_clear_int_#1-1789256679703.wav</string>
     </map>
+    <key>UISndNewIncomingDMName</key>
+    <map>
+      <key>Comment</key>
+      <string>Display name of the selected new DM UI sound</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>Sharp,_and_clear_int_#2-1789256661936.wav</string>
+    </map>
     <key>UISndClick</key>
     <map>
       <key>Comment</key>
@@ -14090,13 +14154,24 @@
     <key>UISndNewIncomingIMSession</key>
     <map>
       <key>Comment</key>
-      <string>Sound file for new instant message session(uuid for sound asset)</string>
+      <string>Sound file for incoming instant message replies and chat notifications (uuid for sound asset)</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
       <string>c4db972c-3828-4f3d-98ea-26bd5f989e9d</string>
+    </map>
+    <key>UISndNewIncomingDM</key>
+    <map>
+      <key>Comment</key>
+      <string>Sound file for the first message of a new incoming DM conversation (uuid for sound asset)</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>56dad84d-f292-4dae-bea5-5295cfea3546</string>
     </map>
     <key>UISndObjectCreate</key>
     <map>
@@ -17606,6 +17681,17 @@
     <key>Value</key>
     <integer>0</integer>
   </map>
+  <key>BoxxyRightClickTransparentObjects</key>
+  <map>
+    <key>Comment</key>
+    <string>Allow right-click context menus on fully transparent objects</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
   <key>BoxxyMuteOwnAvatarCollisionSounds</key>
   <map>
     <key>Comment</key>
@@ -17813,7 +17899,7 @@
     <key>Type</key>
     <string>String</string>
     <key>Value</key>
-    <string></string>
+    <string>demo</string>
   </map>
   <key>InventoryShowRecentTab</key>
   <map>

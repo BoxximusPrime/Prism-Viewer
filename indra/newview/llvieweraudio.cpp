@@ -402,6 +402,7 @@ void init_audio()
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndCheckbox")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndWindowFocus")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndNewIncomingIMSession")));
+        gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndNewIncomingDM")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndHealthReductionF")));
         gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndHealthReductionM")));
         //gAudiop->preloadSound(LLUUID(gSavedSettings.getString("UISndIncomingChat")));

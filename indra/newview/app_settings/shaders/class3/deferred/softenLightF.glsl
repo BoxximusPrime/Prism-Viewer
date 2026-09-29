@@ -479,7 +479,7 @@ void main()
 
     frag_color.rgb = clampHDRRange(color.rgb * final_scale); //output linear since local lights will be added to this shader's results
     frag_color.a = 0.0;
-    ssgi_donor = vec4(max(ssgiSource * final_scale, vec3(0.0)), 0.0);
+    ssgi_donor = vec4(GBUFFER_IMPOSTOR_FLAG(gb.gbufferFlag) ? vec3(0.0) : max(ssgiSource * final_scale, vec3(0.0)), 0.0);
     sss_diffuse = vec4(0.0);
     sss_transmitted = vec4(0.0);
     sss_grazing = vec4(0.0);

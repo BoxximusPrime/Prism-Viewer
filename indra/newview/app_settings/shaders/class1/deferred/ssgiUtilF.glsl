@@ -11,6 +11,7 @@ uniform float ssgi_radius;
 uniform int ssgi_quality;
 vec4 getPositionWithDepth(vec2 tc, float depth);
 vec4 getNorm(vec2 tc);
+vec4 getNormRaw(vec2 tc);
 
 bool projectSSGI(vec3 position, out vec2 tc)
 {
@@ -27,7 +28,8 @@ vec2 ssgiFullPixel(vec2 tc)
 
 vec3 ssgiSurfaceNormal(vec2 tc)
 {
-    return normalize(decodeNormal(texture(ssgiGeometry, tc)).xyz);
+    vec4 encoded = texture(ssgiGeometry, tc);
+    return encoded.x < 0.0 ? vec3(0.0) : normalize(decodeNormal(encoded).xyz);
 }
 
 vec3 traceSSGIRay(vec3 origin, vec3 direction, float bias, int steps)
@@ -70,7 +72,7 @@ vec3 traceSSGIRay(vec3 origin, vec3 direction, float bias, int steps)
                         float thickness = clamp(length(adjacent - actual) * 2.0, 0.01, 0.1);
                         vec3 separation = actual - hit;
                         float planeError = max(abs(dot(separation, normal)), abs(dot(separation, hitNormal)));
-                        if (hitDepth > 0.0 && hitDepth < 1.0 &&
+                        if (hitDepth > 0.0 && hitDepth < 1.0 && dot(hitNormal, hitNormal) > 0.5 &&
                             planeError <= thickness)
                         {
                             // Opaque backfaces block the ray but do not emit
@@ -93,6 +95,8 @@ vec3 traceSSGIRay(vec3 origin, vec3 direction, float bias, int steps)
 
 vec4 traceSSGI(vec2 tc)
 {
+    // Cached avatar billboards cannot donate, receive or block traced bounce.
+    if (GBUFFER_IMPOSTOR_FLAG(getNormRaw(tc).w)) return vec4(0.0);
     float depth = texture(depthMap, tc).r;
     vec3 normal = getNorm(tc).xyz;
     if (depth <= 0.0 || depth >= 1.0 || length(normal) < 0.5)

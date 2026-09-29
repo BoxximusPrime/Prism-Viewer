@@ -17,9 +17,18 @@ def main():
     saved = {nodes[i].text: nodes[i + 1] for i in range(0, len(nodes), 2)}
     colors = ET.parse(VIEWER / "skins/default/colors.xml").getroot()
     color_names = {color.get("name") for color in colors}
+    for name, expected in (("InventoryPriorityColor", "8596F1"), ("InventoryFolderKeywordColor", "643D31")):
+        rgba = colors.find(f"color[@name='{name}']").get("value").split()
+        assert ''.join(f'{round(float(value) * 255):02X}' for value in rgba[:3]) == expected
     ui = ET.parse(VIEWER / "skins/default/xui/en/floater_inventory_settings.xml").getroot()
     scroll = ui.find("scroll_container")
     panel = scroll.find("panel")
+    assert panel.find("text[@name='priority_helper_label']").text.strip() == "Keyword Priority Sorter (50 items max)"
+    folder_defaults = list(saved["InventoryFolderHighlightKeywords"])
+    assert {folder_defaults[i].text: folder_defaults[i + 1].text
+            for i in range(0, len(folder_defaults), 2)}["Value"] == "demo"
+    menu = ET.parse(VIEWER / "skins/default/xui/en/menu_inventory_gear_default.xml").getroot()
+    assert menu.find("menu_item_call[@name='inventory_cleanup']") is None
     assert int(scroll.get("top")) + int(scroll.get("height")) <= int(ui.get("height"))
     assert int(panel.get("height")) > int(scroll.get("height"))
 

@@ -34,6 +34,30 @@
 // Project includes
 #include "lluictrlfactory.h"
 #include "lluiimage.h"
+#include "llrender2dutils.h"
+
+void LLLoadingIndicator::drawSmall(const LLRect& rect, F32 alpha)
+{
+    const F32 size = static_cast<F32>(llmin(rect.getWidth(), rect.getHeight()));
+    if (size <= 0.f) return;
+    const F32 x = 0.5f * static_cast<F32>(rect.mLeft + rect.mRight);
+    const F32 y = 0.5f * static_cast<F32>(rect.mBottom + rect.mTop);
+    const F64 seconds = LLFrameTimer::getElapsedSeconds();
+    const S32 step = static_cast<S32>(fmod(seconds, 0.8) * 10.0);
+
+    // The backing keeps the moving white head readable over every icon color.
+    gGL.color4f(0.025f, 0.03f, 0.04f, 0.92f * alpha);
+    gl_circle_2d(x, y, size * 0.48f, 24, true);
+    for (S32 dot = 0; dot < 8; ++dot)
+    {
+        const S32 age = (step - dot + 8) % 8;
+        const F32 brightness = 1.f - static_cast<F32>(age) * 0.1f;
+        const F32 angle = F_PI_BY_TWO - static_cast<F32>(dot) * F_TWO_PI / 8.f;
+        gGL.color4f(brightness, brightness, brightness, alpha);
+        gl_circle_2d(x + cosf(angle) * size * 0.32f,
+                    y + sinf(angle) * size * 0.32f, size * 0.08f, 12, true);
+    }
+}
 
 // registered in llui.cpp to avoid being left out by MS linker
 //static LLDefaultChildRegistry::Register<LLLoadingIndicator> r("loading_indicator");

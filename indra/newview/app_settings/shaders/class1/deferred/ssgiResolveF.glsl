@@ -8,6 +8,7 @@ uniform vec2 ssgi_half_res;
 uniform float ssgi_radius;
 vec4 getPositionWithDepth(vec2 tc, float depth);
 vec4 getNorm(vec2 tc);
+vec4 getNormRaw(vec2 tc);
 vec4 traceSSGI(vec2 tc);
 vec2 fullPixel(vec2 tc) { return (floor(clamp(tc, vec2(0.0), vec2(0.999999)) * screen_res) + 0.5) / screen_res; }
 void main()
@@ -15,7 +16,7 @@ void main()
     vec2 tc = fullPixel(vary_fragcoord);
     float depth = texture(depthMap, tc).r;
     frag_color = vec4(0.0);
-    if (depth <= 0.0 || depth >= 1.0) return;
+    if (depth <= 0.0 || depth >= 1.0 || GBUFFER_IMPOSTOR_FLAG(getNormRaw(tc).w)) return;
     vec3 position = getPositionWithDepth(tc, depth).xyz;
     vec3 normal = normalize(getNorm(tc).xyz);
     vec3 gathered = vec3(0.0);
