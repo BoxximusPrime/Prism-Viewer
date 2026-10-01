@@ -28,6 +28,7 @@
 #define LL_LLAGENTCAMERA_H
 
 #include "llfollowcam.h"            // Ventrella
+#include "llcoordframe.h"
 #include "llhudeffectlookat.h"      // EPointAtType
 #include "llhudeffectpointat.h"     // ELookAtType
 
@@ -124,6 +125,7 @@ public:
     bool isJoystickCameraUsed();
     void setInitSitRot(LLQuaternion sit_rot) { mInitSitRot = sit_rot; };
     void rotateToInitSitRot();
+    const LLCoordFrame& getThirdPersonFrame() const;
 
 private:
     /** Determines maximum camera distance from target for mouselook, opposite to LAND_MIN_ZOOM */
@@ -225,8 +227,11 @@ public:
     const LLVector3d &getFocusTargetGlobal() const  { return mFocusTargetGlobal; }
 private:
     LLVector3d      mCameraFocusOffset;             // Offset from focus point in build mode
+    mutable LLCoordFrame mThirdPersonFrame;
+    mutable bool   mCameraRelativeActive = false;
     LLVector3d      mCameraFocusOffsetTarget;       // Target towards which we are lerping the camera's focus offset
     bool            mFocusOnAvatar;
+    bool            mReturningToAvatarBeforeMovement = false;
     bool            mAllowChangeToFollow;
     LLVector3d      mFocusGlobal;
     LLVector3d      mFocusTargetGlobal;
@@ -297,6 +302,7 @@ public:
 public:
     // Called whenever the agent moves.  Puts camera back in default position, deselects items, etc.
     void            resetView(bool reset_camera = true, bool change_camera = false);
+    bool            returnToAvatarBeforeMovement();
     // Called on camera movement.  Unlocks camera from the default position behind the avatar.
     void            unlockView();
 public:

@@ -31,6 +31,11 @@ float cloudNoise(vec3 p)
     return textureLod(diffuseMap, (floor(p) + f*f*(3.0-2.0*f) + 0.5) / 64.0, 0.0).r;
 }
 
+float cloudPhase(float mu, float g)
+{
+    return (1.0-g*g)/pow(max(1.0+g*g-2.0*g*mu, 0.05), 1.5);
+}
+
 float cloudWeather(sampler2D weather_map, vec2 uv, float frequency)
 {
     // EEP supplies broad coverage. Extruding its finest texels through the
@@ -84,19 +89,45 @@ float cloudDensity(vec3 p, bool detail)
     vec2 uv = vec2(-p.x, p.y) / (vc_scale*8.0);
     float coverage = cloudCoverage(uv);
     if (coverage <= 0.0) return 0.0;
-    vec3 q = vec3((uv+vc_scroll+vc_density.xy)*64.0, h*2.0);
-    float shape = 0.65*cloudNoise(q) + 0.35*cloudNoise(q*2.0 + 19.0);
-    float profile = smoothstep(0.0, 0.16, h)*(1.0-smoothstep(0.55, 1.0, h));
+    // Use the same metre scale on all axes. Thickness bounds the layer without
+    // stretching its billows and erosion into tall columns or horizontal sheets.
+    vec3 q = vec3((uv+vc_scroll+vc_density.xy)*64.0, p.z*8.0/vc_scale);
+    float body = cloudNoise(q);
+    vec3 offset = vec3(vc_detail.xy*16.0, vc_variance*5.0);
+    // Smaller curls belong to the shared shape, so they cast shadows too.
+    // Keep the large lobes while breaking their smooth, rubbery outlines.
+    float curl = cloudNoise(q*4.0 + offset);
+    float shape = 0.55*body + 0.3*cloudNoise(q*2.0 + 19.0) + 0.15*curl;
+    // Cloud groups sit at different heights within the volume. Low-frequency
+    // horizontal fields travel with the weather but do not repeat with height.
+    // Blend thin patches into tall billows instead of filling one shared slab.
+    float altitude = cloudNoise(vec3(q.xy*0.125 + 31.0, 43.0));
+    float type = smoothstep(0.2, 0.8, cloudNoise(vec3(q.xy*0.25, 7.0)));
+    float base = (1.0-altitude)*0.35;
+    float height = min(mix(0.25, 1.0, type), 1.0-base);
+    float bottom = base + (1.0-body)*0.15;
+    float top = base + height*(0.72+0.28*body);
+    float edge = mix(0.08, 0.16, type);
+    float profile = smoothstep(bottom, bottom+edge, h)*
+        (1.0-smoothstep(base+height*0.55, top, h));
+    // Some thin-cloud regions carry detached, faint patches higher up. Vary
+    // their height as well, so the second population has no shared flat ceiling.
+    float upper = 0.75+0.15*altitude;
+    float upper_profile = smoothstep(upper-0.09, upper-0.03, h)*
+        (1.0-smoothstep(upper+0.03, upper+0.09, h));
+    profile = max(profile, upper_profile*(1.0-type)*smoothstep(0.5,0.8,altitude));
     // Grow rounded 3D bodies inside the weather mask. Taper their boundary
     // with height as well as fading density, so tops do not form a flat sheet.
     shape = pow(shape, 0.7) - (1.0-profile)*0.25;
-    // Reach a dense core instead of leaving a broad, translucent fringe.
-    float density = smoothstep(0.0, 0.25, shape - (1.0-coverage))*profile;
+    // Keep 3D hollows even in fully covered weather banks, with solid cores
+    // around them. Otherwise the weather mask extrudes one uniform slab.
+    float density = smoothstep(0.0, 0.25, shape - max(1.0-coverage, mix(0.6,0.48,type)))*profile;
     if (detail && density > 0.0)
     {
-        vec3 offset = vec3(vc_detail.xy*16.0, vc_variance*5.0);
-        float erosion = 0.75*cloudNoise(q*4.0 + offset) + 0.25*cloudNoise(q*8.0 + offset);
-        density = max(0.0, density - erosion*(0.18*vc_detail.z + 0.2*vc_variance));
+        float erosion = 0.75*curl + 0.25*cloudNoise(q*8.0 + offset);
+        // Preserve the solid body while carving softer, broken edges.
+        float edge = 1.0-density;
+        density = max(0.0, density - erosion*(0.18*vc_detail.z + 0.2*vc_variance)*mix(0.25,1.0,edge*edge));
     }
     return density * vc_density.z * 0.025;
 }
@@ -133,15 +164,24 @@ void main()
     }
     float entry, leave;
     if (!cloudInterval(ray, limit, entry, leave)) return;
-    int steps = clamp(vc_steps, 16, 128);
+    int base_steps = clamp(vc_steps, 16, 128);
+    // Layers thicker than a billow need finer integration along long paths.
+    // ponytail: cap extra work at twice the chosen quality's sample count;
+    // temporal reconstruction would be needed for still longer, sparse paths.
+    int steps = vc_thickness <= vc_scale/8.0 ? base_steps :
+        clamp(int(ceil(2.0*(leave-entry)/max(vc_scale/64.0, 1.0))), base_steps, base_steps*2);
     // ponytail: fixed jitter without cloud history; add temporal reconstruction
     // if low-sample noise is distracting during movement.
     float jitter = fract(52.9829189*fract(dot(vec2(pixel), vec2(0.06711056,0.00583715))));
     float mu = dot(ray, vc_sun_direction);
-    float phase = 0.45 + 0.55*(1.0-0.36)/pow(max(1.36-1.2*mu, 0.05), 1.5);
+    // Broader forward scattering distributes light through the body instead
+    // of concentrating it into a bright, continuous outline around dark cores.
+    // The weights still sum to one; keep the small sun-facing backward lobe.
+    float phase = 0.45 + 0.35*cloudPhase(mu, 0.45) + 0.2*cloudPhase(mu, -0.2);
+    float scattered_phase = 0.7 + 0.3*cloudPhase(mu, 0.25);
     vec3 scatter = vec3(0.0);
     float transmittance = 1.0;
-    for (int i=0; i<128; ++i)
+    for (int i=0; i<256; ++i)
     {
         if (i >= steps || transmittance < 0.005) break;
         // Spend more samples near the camera/entry, especially when inside a
@@ -161,23 +201,38 @@ void main()
             // layer. A coarse first sample misses the cloud's own lit edge.
             float light_step = min(vc_thickness*0.125, vc_scale/64.0);
             float light_distance = 0.0;
-            for (int j=0; j<4; ++j)
+            for (int j=0; j<8; ++j)
             {
                 shadow += cloudDensity(p + vc_sun_direction*(light_distance+0.5*light_step), false)*light_step;
                 light_distance += light_step;
-                light_step *= 2.0;
+                // Eight closer samples cover the old four-sample distance.
+                light_step *= 1.1741;
             }
         }
         float h = clamp(p.z/vc_thickness, 0.0, 1.0);
-        // ponytail: one overhead probe shades folds and undersides; distant
-        // skylight occlusion would need a lighting volume.
-        float sky_step = min(vc_thickness*0.2, vc_scale/32.0);
-        float sky_shadow = cloudDensity(p + vec3(0.0, 0.0, sky_step), false)*sky_step*2.0;
-        float sky_visibility = 0.35 + 0.65*exp(-sky_shadow);
-        // ponytail: one broad multiple-scattering approximation; higher-order
-        // transport needs a separate lighting cache. Keep the sun/moon's color
-        // and intensity so sunset stays warm and night cannot gain daylight.
-        vec3 bounced_light = vc_sun_color * 0.6 * exp(-shadow*0.1);
+        // Probe the upper hemisphere so a lobe exposed on one side receives
+        // more skylight than a fold surrounded by other billows.
+        // ponytail: local visibility only; distant skylight needs a lighting cache.
+        float sky_step = min(vc_thickness*0.4, vc_scale/8.0);
+        const vec3 sky_directions[5] = vec3[5](vec3(0.0,0.0,1.0),
+            vec3(0.8660254,0.0,0.5), vec3(-0.8660254,0.0,0.5), vec3(0.0,0.8660254,0.5), vec3(0.0,-0.8660254,0.5));
+        float sky_visibility = 0.0;
+        float surrounding_depth = 0.0;
+        for (int j=0; j<5; ++j)
+        {
+            float sky_shadow = cloudDensity(p + sky_directions[j]*sky_step, false)*sky_step*2.0;
+            sky_visibility += exp(-sky_shadow)*0.2;
+            surrounding_depth += sky_shadow*0.2;
+        }
+        sky_visibility = 0.35 + 0.65*sky_visibility;
+        // ponytail: two approximate scattering orders reuse the sun shadow;
+        // full transport needs a lighting cache. Successive bounces lose their
+        // direction and soften shadows while retaining the sun/moon's color.
+        // Nearby enclosing density attenuates the bounce, keeping exposed
+        // shoulders brighter than deep creases without changing cloud opacity.
+        float bounce_visibility = 0.5 + 0.5*exp(-surrounding_depth*0.35);
+        vec3 bounced_light = vc_sun_color * bounce_visibility *
+            (0.4*scattered_phase*exp(-shadow*0.25) + 0.25*exp(-shadow*0.05));
         vec3 light = vc_ambient*mix(0.55,1.0,h)*sky_visibility + vc_sun_color*phase*exp(-shadow) + bounced_light;
         // Approximate atmospheric loss over the cloud's own distance.
         light = mix(light, vc_ambient, 1.0-exp(-distance/18000.0));

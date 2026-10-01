@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def native_fixture(directory, sdl):
     source = (ROOT / 'indra/llrender/llrender.cpp').read_text(encoding='utf-8')
+    cloud_source = (ROOT / 'indra/newview/pipeline.cpp').read_text(encoding='utf-8').split('void LLPipeline::renderVolumeClouds()')[1]
+    cloud_bindings = cloud_source[cloud_source.index('    const S32 weather_unit'):cloud_source.index('    const S32 noise_unit')]
     signatures = ['void LLTexUnit::activate(', 'void LLTexUnit::enable(',
                   'void LLTexUnit::disable(', 'bool LLTexUnit::bindManual(',
                   'void LLTexUnit::unbind(', 'void LLTexUnit::setTextureFilteringOption(',
@@ -43,10 +45,12 @@ void (__stdcall *glTexParameteri)(U32,U32,S32);
 void (__stdcall *glTexParameterf)(U32,U32,F32);
 void stop_glerror() {}
 F32 llclamp(F32 x,F32 a,F32 b) {return x<a?a:x>b?b:x;}
+struct LLTexUnit;
 struct LLRender {
     U32 mCurrTextureUnitIndex; bool mDirty;
     static F32 sAnisotropicFilteringLevel;
     void flush() {} // No queued geometry in this state regression.
+    LLTexUnit* getTexUnit(S32);
 } gGL;
 F32 LLRender::sAnisotropicFilteringLevel=4.f;
 struct {bool mHasAnisotropic; F32 mMaxAnisotropy;} gGLManager;
@@ -64,6 +68,20 @@ struct LLTexUnit {
 };
 U32 LLTexUnit::sWhiteTexture;
 static LLTexUnit units[4];
+LLTexUnit* LLRender::getTexUnit(S32 index) {return &units[index];}
+struct LLTexture {
+    U32 name;
+    LLTexture* getGLTexture() {return this;}
+    LLTexUnit::eTextureFilterOptions getFilteringOption() {return LLTexUnit::TFO_ANISOTROPIC;}
+};
+struct LLShaderMgr {enum {CLOUD_NOISE_MAP, CLOUD_NOISE_MAP_NEXT};};
+struct Shader {
+    S32 bindTexture(S32 sampler, LLTexture* texture) {
+        S32 channel=sampler==LLShaderMgr::CLOUD_NOISE_MAP ? 1 : 2;
+        units[channel].bindManual(LLTexUnit::TT_TEXTURE,texture->name,true);
+        return channel;
+    }
+};
 '''
     exports = r'''
 #define EXPORT extern "C" __declspec(dllexport)
@@ -90,9 +108,22 @@ EXPORT void filter(U32 unit,int option,bool legacy) {
     auto mode=(LLTexUnit::eTextureFilterOptions)option;
     if(legacy) units[unit].legacyFilter(mode); else units[unit].setTextureFilteringOption(mode);
 }
+EXPORT void cloud_weather(U32 current,U32 following) {
+    LLTexture current_texture{current},following_texture{following};
+    auto* texture=&current_texture; auto* next=&following_texture;
+    Shader shader;
+    CLOUD_BINDINGS
+}
+EXPORT void cloud_restore(U32 current,U32 following) {
+    LLTexture current_texture{current},following_texture{following};
+    auto* texture=&current_texture; auto* next=&following_texture;
+    const S32 weather_unit=1, next_weather_unit=2;
+    CLOUD_RESTORE
+}
 '''
     cpp = directory / 'texture_state.cpp'
-    cpp.write_text(scaffold + methods + legacy + exports, encoding='utf-8')
+    cloud_restore = '\n'.join(line for line in cloud_source.splitlines() if 'getFilteringOption()' in line)
+    cpp.write_text(scaffold + methods + legacy + exports.replace('CLOUD_BINDINGS',cloud_bindings).replace('CLOUD_RESTORE',cloud_restore), encoding='utf-8')
     cache = (ROOT / 'build-vc170-64/CMakeCache.txt').read_text(encoding='utf-8')
     vs = Path(re.search(r'^CMAKE_GENERATOR_INSTANCE:[^=]+=(.+)$', cache, re.M)[1].strip())
     compiler = sorted((vs / 'VC/Tools/MSVC').glob('*/bin/Hostx64/x64/cl.exe'))[-1]
@@ -106,7 +137,8 @@ EXPORT void filter(U32 unit,int option,bool legacy) {
     assert result.returncode == 0, result.stdout + result.stderr
     dll = C.CDLL(str(dll_path))
     for name, args in {'setup': [P]*4, 'reset': [U], 'bind': [U,U,C.c_bool],
-                       'unbind': [U], 'filter': [U,I,C.c_bool]}.items():
+                       'unbind': [U], 'filter': [U,I,C.c_bool],
+                       'cloud_weather': [U,U], 'cloud_restore': [U,U]}.items():
         getattr(dll, name).argtypes = args
         getattr(dll, name).restype = None
     dll.setup(*(sdl.SDL_GL_GetProcAddress(name) for name in

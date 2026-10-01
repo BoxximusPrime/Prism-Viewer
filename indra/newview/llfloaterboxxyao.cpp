@@ -53,6 +53,10 @@ bool LLFloaterBoxxyAO::postBuild()
     mOverrideSits->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onOverrideSitsChanged, this));
     mCycle->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onCycleChanged, this));
     mRandomize->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onRandomizeChanged, this));
+    getChild<LLCheckBoxCtrl>("random_on_action")->setCommitCallback([this](LLUICtrl* ctrl, const LLSD&)
+    {
+        if (!mRefreshing) LLBoxxyAO::instance().setRandomizeOnStart(selectedState(), ctrl->getValue().asBoolean());
+    });
     mCycleSeconds->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onCycleSecondsChanged, this));
 
     getChild<LLButton>("activate_set")->setCommitCallback(boost::bind(&LLFloaterBoxxyAO::onActivateSet, this));
@@ -201,6 +205,8 @@ void LLFloaterBoxxyAO::updateControls()
     mCycle->setEnabled(has_state);
     mRandomize->setValue(state ? state->randomize : false);
     mRandomize->setEnabled(has_state && state->cycle);
+    getChild<LLCheckBoxCtrl>("random_on_action")->setValue(state ? state->randomize_on_start : true);
+    getChild<LLCheckBoxCtrl>("random_on_action")->setEnabled(has_state);
     mCycleSeconds->setValue(state ? state->cycle_seconds : 30.f);
     mCycleSeconds->setEnabled(has_state && state->cycle);
 

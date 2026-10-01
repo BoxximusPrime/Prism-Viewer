@@ -2132,6 +2132,24 @@ void LLFloater::draw()
         LLView::draw();
     }
 
+    if (isBackgroundVisible() && hasFocus() && !getIsChrome())
+    {
+        LLUIImage* background = isBackgroundOpaque() ? getBackgroundImage() : getTransparentImage();
+        if (background && (background->getName() == "Window_Foreground"
+            || background->getName() == "Window_Background"
+            || background->getName() == "Window_NoTitle_Foreground"
+            || background->getName() == "Window_NoTitle_Background"))
+        {
+            // Same alpha outline and nine-slice bounds as the window background.
+            static LLUIImagePtr border = LLUI::getUIImage("Window_Focus_Top_Border");
+            static LLUIColor border_color = LLUIColorTable::instance().getColor("FloaterFocusTopBorderColor");
+            if (border)
+            {
+                border->draw(getLocalRect(), border_color.get() % alpha);
+            }
+        }
+    }
+
     // update tearoff button for torn off floaters
     // when last host goes away
     if (mCanTearOff && !getHost())

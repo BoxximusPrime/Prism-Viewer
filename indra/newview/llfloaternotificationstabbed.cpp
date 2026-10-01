@@ -418,16 +418,23 @@ void LLFloaterNotificationsTabbed::onItemClick(LLNotificationListItem* item)
 void LLFloaterNotificationsTabbed::onItemClose(LLNotificationListItem* item)
 {
     LLUUID id = item->getID();
+    const std::string name = item->getNotificationName();
 
     if(mChannel)
     {
-        // removeItemByID() is invoked from killToastByNotificationID() and item will removed;
         mChannel->killToastByNotificationID(id);
     }
-    else
+
+    // A list entry can outlive its toast. Dismiss the remaining notification
+    // without cancelling forms still in use by an IM session.
+    LLNotificationPtr notification = LLNotifications::instance().find(id);
+    if (notification && (!notification->canLogToIM() || !notification->hasFormElements()))
     {
-        // removeItemByID() should be called one time for each item to remove it from notification well
-        removeItemByID(id, item->getNotificationName());
+        LLNotifications::instance().cancel(notification);
+    }
+    if (findItemByID(id, name))
+    {
+        removeItemByID(id, name);
     }
 
 }

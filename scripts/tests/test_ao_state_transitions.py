@@ -27,6 +27,7 @@ harness = r'''
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <list>
 #include <map>
@@ -87,7 +88,14 @@ LLUUID LLBoxxyAO::resolveAnimationAsset(Animation& animation) { return animation
 #define LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR
 #define llmin std::min
 #define llmax std::max
-float ll_frand() { return 0.75f; }
+float random_roll = 0.75f;
+float ll_frand() { return random_roll; }
+std::string llformat(const char* format, float value) {
+    char buffer[64]; std::snprintf(buffer, sizeof(buffer), format, value); return buffer;
+}
+namespace LLStringUtil {
+void convertToF32(const std::string& text, float& value) { value = std::stof(text); }
+}
 enum { ANIM_REQUEST_STOP, ANIM_REQUEST_START };
 struct LLMotion {
     struct Pose { float getWeight() { return 1.f; } } pose;
@@ -209,6 +217,11 @@ for name in ("startMotion", "stopMotionLocally", "stopMotionWithEaseOut", "stopM
     harness += method(name, controller_source, "LLMotionController") + "\n"
 for i, name in enumerate(sorted(set(re.findall(r'\bANIM_AGENT_\w+', source)) | {"ANIM_AGENT_AWAY"}), 1):
     harness += f"const LLUUID {name}({i});\n"
+folder_start = source.index("std::string stateFolderName(")
+harness += source[folder_start:source.index("\n}", folder_start) + 2] + "\n"
+options = method("loadState").split("state->inventory_id = category_id;", 1)[1]
+options = options.split("    LLInventoryModel::cat_array_t*", 1)[0]
+harness += "void loadOptions(LLBoxxyAO::State* state, const std::vector<std::string>& options) {\n" + options + "}\n"
 for name in (
     "initializeStates", "stateForType", "stateForMotion", "getCurrentState", "isActiveOverride",
     "isTransientMotion", "overrideMotion", "stopStockMotionVariants",
@@ -226,6 +239,7 @@ struct Fixture {
         active_ao = &ao;
         avatar = {};
         gAgent.requests.clear();
+        random_roll = 0.75f;
         ao.initializeStates(set);
         ao.mCurrentSet = &set;
         ao.mEnabled = true;
@@ -235,6 +249,7 @@ struct Fixture {
             animation.asset_id = LLUUID(100 + state.type);
             state.animations.push_back(animation);
             state.cycle = true;
+            state.randomize_on_start = false; // Existing handoff cases use a fixed selection.
             animation.asset_id = LLUUID(200 + state.type);
             state.animations.push_back(animation);
         }
@@ -269,6 +284,95 @@ struct Fixture {
     }
 };
 int main() {
+    // Every AO state can randomly choose any listed animation without timed
+    // cycling. Reasserting a continuous action keeps that choice; disabling
+    // random entry resumes the remembered animation on the next action.
+    assert(LLBoxxyAO::State{}.randomize_on_start);
+    {
+        LLBoxxyAO::State state;
+        state.name = "Walking";
+        assert(stateFolderName(state).find(":NRS") == std::string::npos);
+        state.randomize_on_start = false;
+        assert(stateFolderName(state).find(":NRS") != std::string::npos);
+        LLBoxxyAO::State restored;
+        loadOptions(&restored, {"Walking", "NRS", "CY", "RN", "CT15.00"});
+        assert(!restored.randomize_on_start && restored.cycle && restored.randomize);
+        assert(restored.cycle_seconds == 15.f);
+        LLBoxxyAO::State legacy;
+        loadOptions(&legacy, {"Walking", "CT30.00"});
+        assert(legacy.randomize_on_start); // Existing sets get the new default.
+    }
+    for (int type = 0; type < LLBoxxyAO::STATE_COUNT; ++type) {
+        for (float roll : {0.05f, 0.5f, 0.99f}) {
+            Fixture f;
+            f.ao.mBelowWater = type >= LLBoxxyAO::STATE_FLOATING;
+            f.set.override_sits = true;
+            auto& state = f.set.states[type];
+            state.randomize_on_start = true;
+            state.cycle = false;
+            LLBoxxyAO::Animation third;
+            third.asset_id = LLUUID(300 + type);
+            state.animations.push_back(third);
+            random_roll = roll;
+            f.ao.overrideMotion(state.stock_motion, true);
+            const unsigned expected = unsigned(roll * 3);
+            assert(state.current_animation == expected);
+            const LLUUID choice = state.animations[expected].asset_id;
+            assert(state.current_asset == choice);
+            assert(!f.ao.mCycleTimer.getStarted());
+            if (!f.ao.isTransientMotion(state.stock_motion)) {
+                random_roll = 0.f;
+                assert(f.ao.overrideMotion(state.stock_motion, true) == choice);
+                assert(state.current_animation == expected);
+            }
+            avatar.mSignaledAnimations.clear();
+            avatar.mSignaledAnimations[type == LLBoxxyAO::STATE_WALKING
+                ? ANIM_AGENT_STAND : ANIM_AGENT_WALK] = 1;
+            f.ao.overrideMotion(state.stock_motion, false);
+            assert(state.current_asset.isNull());
+            state.randomize_on_start = false;
+            f.ao.overrideMotion(state.stock_motion, true);
+            assert(state.current_animation == expected);
+            assert(state.current_asset == choice);
+        }
+    }
+    // A manually cycled stand survives a walk and subsequent return to standing.
+    {
+        Fixture f;
+        auto& standing = f.state(ANIM_AGENT_STAND);
+        standing.cycle = false;
+        assert(f.event(ANIM_AGENT_STAND, true) == standing.animations.front().asset_id);
+        f.ao.performCycle(1);
+        const LLUUID remembered = standing.current_asset;
+        assert(standing.current_animation == 1);
+        f.event(ANIM_AGENT_WALK, true);
+        assert(standing.current_asset.isNull());
+        f.event(ANIM_AGENT_WALK, false);
+        assert(f.event(ANIM_AGENT_STAND, true) == remembered);
+        assert(standing.current_animation == 1);
+        // If the remembered entry no longer exists, safely use the first.
+        f.event(ANIM_AGENT_WALK, true);
+        standing.animations.resize(1);
+        f.event(ANIM_AGENT_WALK, false);
+        assert(f.event(ANIM_AGENT_STAND, true) == standing.animations.front().asset_id);
+        assert(standing.current_animation == 0);
+    }
+    // Asset fetching retries must not reroll a choice that has not loaded yet.
+    {
+        Fixture f;
+        auto& walk = f.state(ANIM_AGENT_WALK);
+        walk.cycle = false;
+        walk.randomize_on_start = true;
+        walk.animations[1].asset_id.setNull();
+        assert(f.ao.overrideMotion(ANIM_AGENT_WALK, true).isNull());
+        assert(walk.current_animation == 1 && f.ao.mOverrideApplyPending);
+        random_roll = 0.f;
+        assert(f.ao.overrideMotion(ANIM_AGENT_WALK, true).isNull());
+        assert(walk.current_animation == 1);
+        walk.animations[1].asset_id = LLUUID(999);
+        assert(f.ao.overrideMotion(ANIM_AGENT_WALK, true) == LLUUID(999));
+        assert(!f.ao.mOverrideApplyPending);
+    }
     // A state handoff must keep the outgoing pose alive for its authored fade.
     {
         Fixture f;
@@ -568,7 +672,7 @@ int main() {
         assert(std::count(gAgent.requests.begin(), gAgent.requests.end(),
             std::make_pair(swim, int(ANIM_REQUEST_START))) == 1);
     }
-    std::cout << "PASS: stable observer-facing swim starts, real idle transitions, underwater slow-flight AO mapping; all primary AO state handoffs, missing/delayed stock stops, walk variants, stock fallback, "
+    std::cout << "PASS: random action entry and remembered selections across all 25 states, remembered stands after walking, invalid-index fallback, option persistence and stable asset retries; stable observer-facing swim starts, real idle transitions, underwater slow-flight AO mapping; all primary AO state handoffs, missing/delayed stock stops, walk variants, stock fallback, "
                  "pending stand cycles, same-state rotation, layered typing, loop exits, duplicate blend instances "
                  "and delayed custom-asset echoes; authored fades and local starts without echo restarts\n";
 }

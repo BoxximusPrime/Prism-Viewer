@@ -6616,6 +6616,7 @@ void LLSelectMgr::renderSilhouettes(bool for_hud)
         gGL.pushMatrix();
 
         bool is_hud_object = objectp->isHUDAttachment();
+        const bool is_rigged = objectp->mDrawable->isState(LLDrawable::RIGGED);
 
         if (!is_hud_object)
         {
@@ -6623,11 +6624,11 @@ void LLSelectMgr::renderSilhouettes(bool for_hud)
             gGL.multMatrix(gGLModelView);
         }
 
-        if (objectp->mDrawable->isActive())
+        if (!is_rigged && objectp->mDrawable->isActive())
         {
             gGL.multMatrix((F32*)objectp->getRenderMatrix().mMatrix);
         }
-        else if (!is_hud_object)
+        else if (!is_rigged && !is_hud_object)
         {
             LLVector3 trans = objectp->getRegion()->getOriginAgent();
             gGL.translatef(trans.mV[0], trans.mV[1], trans.mV[2]);
@@ -6641,11 +6642,16 @@ void LLSelectMgr::renderSilhouettes(bool for_hud)
         {
             LLVertexBuffer::unbind();
             gGL.pushMatrix();
-            gGL.multMatrix((F32*)vobj->getRelativeXform().mMatrix);
 
-            if (objectp->mDrawable->isState(LLDrawable::RIGGED))
+            if (is_rigged)
             {
+                // Skinned vertices are already in agent space; applying the
+                // attachment transform again offsets them from the avatar.
                 vobj->updateRiggedVolume(true);
+            }
+            else
+            {
+                gGL.multMatrix((F32*)vobj->getRelativeXform().mMatrix);
             }
         }
 

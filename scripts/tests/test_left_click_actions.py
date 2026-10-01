@@ -58,7 +58,7 @@ int main(){
         for(int mask=0;mask<8;++mask){
             const int effective=child?child:(root==CLICK_ACTION_DISABLED?CLICK_ACTION_TOUCH:root);
             const bool actionable=(child&&child!=CLICK_ACTION_DISABLED)||(root&&root!=CLICK_ACTION_DISABLED);
-            const bool expected=enabled&&mask==MASK_NONE&&actionable&&effective!=CLICK_ACTION_PAY&&effective!=CLICK_ACTION_TOUCH&&effective!=CLICK_ACTION_BUY;
+            const bool expected=enabled&&mask==MASK_NONE&&actionable&&effective==CLICK_ACTION_SIT;
             assert(tool.shouldBlockClickAction(mask,&object,&parent)==expected); ++checks;
         }
     }
@@ -71,6 +71,12 @@ int main(){
     parent.action=CLICK_ACTION_TOUCH;assert(!tool.shouldBlockClickAction(0,&object,&parent));
     object.action=CLICK_ACTION_BUY;parent.action=CLICK_ACTION_PAY;
     assert(!tool.shouldBlockClickAction(0,&object,&parent)); // Buy is allowed on child prims
+    object.action=CLICK_ACTION_TOUCH;parent.action=CLICK_ACTION_SIT;
+    assert(tool.shouldBlockClickAction(0,&object,&parent)); // inherited Sit is blocked
+    object.action=CLICK_ACTION_OPEN;
+    assert(!tool.shouldBlockClickAction(0,&object,&parent)); // child Open overrides root Sit
+    object.action=CLICK_ACTION_SIT;parent.action=CLICK_ACTION_OPEN;
+    assert(tool.shouldBlockClickAction(0,&object,&parent)); // child Sit overrides root Open
     object.avatar=true;assert(!tool.shouldBlockClickAction(0,&object,&parent));object.avatar=false;
     object.hud=true;assert(!tool.shouldBlockClickAction(0,&object,&parent));object.hud=false;
     object.attachment=true;assert(!tool.shouldBlockClickAction(0,&object,&parent));object.attachment=false;
@@ -87,4 +93,4 @@ with tempfile.TemporaryDirectory() as directory:
     cpp.write_text(harness)
     subprocess.run(["g++", "-std=c++17", str(cpp), "-o", str(exe)], check=True)
     subprocess.run([str(exe)], check=True)
-print("Left-click blocker: 1,600 action/modifier/settings combinations, inherited Pay/Buy/Touch, child overrides and HUD/avatar/attachment exceptions passed.")
+print("Left-click sitting blocker: 1,600 action/modifier/settings combinations, inherited Sit, child overrides and HUD/avatar/attachment exceptions passed.")

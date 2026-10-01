@@ -262,7 +262,7 @@ bool agent_turn_left(EKeystate s)
 
     if(gAgent.isMovementLocked()) return false;
 
-    if (LLToolCamera::getInstance()->mouseSteerMode())
+    if (gAgent.useCameraRelativeMovement() || LLToolCamera::getInstance()->mouseSteerMode())
     {
         agent_slide_left(s);
     }
@@ -293,7 +293,7 @@ bool agent_turn_right( EKeystate s )
 
     if(gAgent.isMovementLocked()) return false;
 
-    if (LLToolCamera::getInstance()->mouseSteerMode())
+    if (gAgent.useCameraRelativeMovement() || LLToolCamera::getInstance()->mouseSteerMode())
     {
         agent_slide_right(s);
     }

@@ -192,7 +192,7 @@ bool LLToolPie::handleMouseDown(S32 x, S32 y, MASK mask)
     // Let a world-object drag claim the gesture before sending its click.
     static LLCachedControl<bool> drag_world_to_turn(gSavedSettings, "BoxxyDragWorldToTurnAvatar", false);
     LLViewerObject* clicked_object = mPick.getObject();
-    if (drag_world_to_turn && mask == MASK_NONE && gAgentCamera.cameraThirdPerson()
+    if ((drag_world_to_turn || gAgent.useCameraRelativeMovement()) && mask == MASK_NONE && gAgentCamera.cameraThirdPerson()
         && isAgentAvatarValid() && !gSavedSettings.getBOOL("FreezeTime")
         && clicked_object && !clicked_object->isAvatar() && !clicked_object->isAttachment()
         && !mPick.mPickHUD && !mPick.mPickNameTag)
@@ -582,7 +582,7 @@ bool LLToolPie::shouldBlockClickAction(MASK mask, LLViewerObject* object, LLView
 
     // Resolve inherited linkset actions just as the action cursor does.
     const U8 action = final_click_action(object);
-    return action != CLICK_ACTION_PAY && action != CLICK_ACTION_TOUCH && action != CLICK_ACTION_BUY;
+    return action == CLICK_ACTION_SIT;
 }
 
 ECursorType LLToolPie::cursorFromObject(LLViewerObject* object)
@@ -829,7 +829,7 @@ void LLToolPie::selectionPropertiesReceived()
 bool LLToolPie::handleHover(S32 x, S32 y, MASK mask)
 {
     static LLCachedControl<bool> drag_world_to_turn(gSavedSettings, "BoxxyDragWorldToTurnAvatar", false);
-    const bool can_drag_to_turn = mDeferredWorldClick || (drag_world_to_turn && mask == MASK_NONE
+    const bool can_drag_to_turn = mDeferredWorldClick || ((drag_world_to_turn || gAgent.useCameraRelativeMovement()) && mask == MASK_NONE
         && gAgentCamera.cameraThirdPerson() && isAgentAvatarValid()
         && !gSavedSettings.getBOOL("FreezeTime") && !mPick.mPickHUD);
     bool pick_rigged = false; //gSavedSettings.getBOOL("AnimatedObjectsAllowLeftClick");

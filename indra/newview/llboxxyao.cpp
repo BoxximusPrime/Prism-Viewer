@@ -52,6 +52,7 @@ std::string stateFolderName(const LLBoxxyAO::State& state)
     std::string folder_name = state.name;
     if (state.cycle) folder_name += ":CY";
     if (state.randomize) folder_name += ":RN";
+    if (!state.randomize_on_start) folder_name += ":NRS";
     if (state.cycle_seconds > 0.f) folder_name += llformat(":CT%.2f", state.cycle_seconds);
     return folder_name;
 }
@@ -573,6 +574,7 @@ bool LLBoxxyAO::inventoryMatches(
             const State& rhs = loaded->states[i];
             if (lhs.inventory_id != rhs.inventory_id || lhs.cycle != rhs.cycle ||
                 lhs.randomize != rhs.randomize ||
+                lhs.randomize_on_start != rhs.randomize_on_start ||
                 !is_approx_equal(lhs.cycle_seconds, rhs.cycle_seconds) ||
                 lhs.animations.size() != rhs.animations.size())
             {
@@ -685,6 +687,10 @@ bool LLBoxxyAO::loadState(Set& set, const LLUUID& category_id, const std::string
         else if (*it == "RN")
         {
             state->randomize = true;
+        }
+        else if (*it == "NRS")
+        {
+            state->randomize_on_start = false;
         }
         else if (it->size() > 2 && it->substr(0, 2) == "CT")
         {
@@ -1003,9 +1009,9 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
 
     if (start)
     {
-        const bool continuing_same_state = motion != ANIM_AGENT_TYPE &&
-            !isTransientMotion(motion) && state == getCurrentState() &&
-            state->current_asset.notNull();
+        const bool continuing_same_state = !isTransientMotion(motion) &&
+            state->current_asset.notNull() &&
+            (motion == ANIM_AGENT_TYPE || state == getCurrentState());
 
         // Typing is a layered animation, not the avatar's locomotion state.
         // Remembering it as the primary motion interrupts stand timing and
@@ -1042,11 +1048,9 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
 
         if (continuing_same_state)
         {
-            // The simulator periodically replaces one stock stand variant
-            // with another. This is a reassertion of Standing, not a new
-            // state entry: keep the selected override and, crucially, do not
-            // reset its cycle countdown.
-            mLastOverriddenMotion = motion;
+            // Reasserting a continuous action keeps its selected override
+            // and cycle countdown until the action ends.
+            if (motion != ANIM_AGENT_TYPE) mLastOverriddenMotion = motion;
             return state->current_asset;
         }
 
@@ -1054,11 +1058,16 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
         {
             state->current_animation = 0;
         }
-        if (state->cycle && state->randomize && state->animations.size() > 1)
+        // Retries for an unresolved asset keep the choice made on state entry.
+        if (!mOverrideApplyPending || state->type == STATE_TYPING)
         {
-            state->current_animation = static_cast<U32>(ll_frand() * state->animations.size());
-            state->current_animation = llmin<U32>(state->current_animation,
-                                                   static_cast<U32>(state->animations.size() - 1));
+            // With random entry off, resume this state's last selected animation.
+            if (state->randomize_on_start && state->animations.size() > 1)
+            {
+                state->current_animation = static_cast<U32>(ll_frand() * state->animations.size());
+                state->current_animation = llmin<U32>(state->current_animation,
+                                                       static_cast<U32>(state->animations.size() - 1));
+            }
         }
 
         const LLUUID old_asset = state->current_asset;
@@ -1654,6 +1663,14 @@ void LLBoxxyAO::setRandomize(State* state, bool enabled)
 {
     if (!state) return;
     state->randomize = enabled;
+    saveStateOptions(state);
+    mChangedSignal();
+}
+
+void LLBoxxyAO::setRandomizeOnStart(State* state, bool enabled)
+{
+    if (!state) return;
+    state->randomize_on_start = enabled;
     saveStateOptions(state);
     mChangedSignal();
 }

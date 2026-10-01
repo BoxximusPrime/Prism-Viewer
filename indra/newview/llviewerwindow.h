@@ -527,6 +527,7 @@ private:
     bool            mLeftMouseDown;
     bool            mMiddleMouseDown;
     bool            mRightMouseDown;
+    bool            mCameraRelativeRightClick = false;
 
     LLProgressView  *mProgressView;
 
