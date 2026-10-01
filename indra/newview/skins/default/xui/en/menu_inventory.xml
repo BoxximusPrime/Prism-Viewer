@@ -4,6 +4,9 @@
  layout="topleft"
  name="Popup"
  visible="false">
+    <menu_item_call label="Move to Inventory" layout="topleft" name="Move to Inventory">
+        <menu_item_call.on_click function="Inventory.DoToSelected" parameter="move_to_inventory" />
+    </menu_item_call>
 	<menu_item_call
         label="Create listing"
         layout="topleft"

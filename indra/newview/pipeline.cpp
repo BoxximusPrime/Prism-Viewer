@@ -10532,15 +10532,31 @@ bool LLPipeline::prepareVolumeClouds()
         !mVolumeCloudsComposite.allocate(width, height, GL_RGBA16F)) return false;
     if (!mVolumeCloudNoise)
     {
-        // Independent of the viewer's random stream; 256 KiB, generated once.
+        // Bake differently sized, jittered spherical lobes once (256 KiB).
+        // Periodic Worley noise keeps the existing sample count and world wrap.
         std::vector<U8> noise(64*64*64);
-        U32 state = 0x729a4b31;
-        for (auto& value : noise)
+        auto cell_hash = [](S32 x, S32 y, S32 z)
         {
-            state ^= state << 13;
-            state ^= state >> 17;
-            state ^= state << 5;
-            value = U8(state >> 24);
+            U32 state = U32(x & 31)*0x8da6b343u ^ U32(y & 31)*0xd8163841u ^ U32(z & 31)*0xcb1ab31fu ^ 0x729a4b31u;
+            state ^= state >> 16; state *= 0x7feb352du;
+            state ^= state >> 15; state *= 0x846ca68bu;
+            return state ^ (state >> 16);
+        };
+        for (U32 i = 0; i < noise.size(); ++i)
+        {
+            const glm::vec3 p = (glm::vec3(i%64, (i/64)%64, i/4096)+0.5f)*0.5f;
+            const glm::ivec3 cell = glm::floor(p);
+            F32 nearest = 4.f;
+            for (S32 z = -1; z <= 1; ++z) for (S32 y = -1; y <= 1; ++y) for (S32 x = -1; x <= 1; ++x)
+            {
+                const glm::ivec3 neighbor = cell + glm::ivec3(x,y,z);
+                const U32 hash = cell_hash(neighbor.x, neighbor.y, neighbor.z);
+                const glm::vec3 jitter = glm::vec3(hash & 255, (hash >> 8) & 255, (hash >> 16) & 255)/255.f;
+                const glm::vec3 delta = p - (glm::vec3(neighbor)+0.15f+jitter*0.7f);
+                const F32 radius = 0.8f + F32(hash >> 24)*(0.4f/255.f);
+                nearest = llmin(nearest, glm::dot(delta,delta)/(radius*radius));
+            }
+            noise[i] = U8(llclamp(1.f-sqrtf(nearest), 0.f, 1.f)*255.f);
         }
         LLImageGL::generateTextures(1, &mVolumeCloudNoise);
         auto* unit = gGL.getTexUnit(0);
@@ -10591,8 +10607,12 @@ void LLPipeline::renderVolumeClouds()
     auto& shader = gVolumeCloudProgram;
     shader.bind();
     shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
-    shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP, texture);
-    shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP_NEXT, next);
+    // Shared EEP textures can retain filtering from another draw. Explicit LOD
+    // only removes fine weather streaks when mip filtering is enabled.
+    const S32 weather_unit = shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP, texture);
+    gGL.getTexUnit(weather_unit)->setTextureFilteringOption(LLTexUnit::TFO_TRILINEAR);
+    const S32 next_weather_unit = shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP_NEXT, next);
+    gGL.getTexUnit(next_weather_unit)->setTextureFilteringOption(LLTexUnit::TFO_TRILINEAR);
     const S32 noise_unit = shader.enableTexture(LLShaderMgr::DIFFUSE_MAP, LLTexUnit::TT_TEXTURE_3D);
     gGL.getTexUnit(noise_unit)->bindManual(LLTexUnit::TT_TEXTURE_3D, mVolumeCloudNoise);
     shader.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
@@ -10634,12 +10654,18 @@ void LLPipeline::renderVolumeClouds()
     shader.uniform3f(LLStaticHashedString("vc_sun_color"), linear(light.mV[0])*strength,
         linear(light.mV[1])*strength, linear(light.mV[2])*strength);
     const LLColor4 ambient = sky->getTotalAmbient();
-    shader.uniform3f(LLStaticHashedString("vc_ambient"), linear(ambient.mV[0]), linear(ambient.mV[1]), linear(ambient.mV[2]));
+    // Reduce the uniform night fill without dimming directional moonlight.
+    const F32 daylight = llclamp((environment.getSunDirection().mV[2]+0.1f)/0.2f, 0.f, 1.f);
+    const F32 ambient_scale = 0.3f+0.7f*daylight*daylight*(3.f-2.f*daylight);
+    shader.uniform3f(LLStaticHashedString("vc_ambient"), linear(ambient.mV[0])*ambient_scale,
+        linear(ambient.mV[1])*ambient_scale, linear(ambient.mV[2])*ambient_scale);
     const LLColor3 tint = sky->getCloudColor();
     // EEP cloud tint uses the legacy shader's factor of two.
     shader.uniform3f(LLStaticHashedString("vc_tint"), tint.mV[0]*2.f, tint.mV[1]*2.f, tint.mV[2]*2.f);
     mScreenTriangleVB->setBuffer();
     mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    gGL.getTexUnit(weather_unit)->setTextureFilteringOption(texture->getGLTexture()->getFilteringOption());
+    gGL.getTexUnit(next_weather_unit)->setTextureFilteringOption(next->getGLTexture()->getFilteringOption());
     shader.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
     shader.unbindTexture(LLShaderMgr::CLOUD_NOISE_MAP);
     shader.unbindTexture(LLShaderMgr::CLOUD_NOISE_MAP_NEXT);

@@ -85,6 +85,7 @@ public:
         LLUUID current_asset;
         bool cycle = false;
         bool randomize = false;
+        bool randomize_on_start = true;
         F32 cycle_seconds = 30.f;
     };
 
@@ -124,6 +125,7 @@ public:
     bool moveAnimation(State* state, S32 index, S32 direction);
     void setCycle(State* state, bool enabled);
     void setRandomize(State* state, bool enabled);
+    void setRandomizeOnStart(State* state, bool enabled);
     void setCycleSeconds(State* state, F32 seconds);
     void cycle(S32 direction);
     void playAnimation(S32 index);

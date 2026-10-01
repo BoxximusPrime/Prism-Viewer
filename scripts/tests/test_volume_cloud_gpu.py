@@ -2,7 +2,9 @@
 
 Run: .venv/Scripts/python.exe scripts/tests/test_volume_cloud_gpu.py (g++ on PATH).
 No viewer login needed. --preview writes a synthetic sky to tmp/cloud-preview.png;
-add --near to inspect billows and shading from just below a thicker layer.
+add --near to inspect billows and shading from just below a thicker layer,
+or --near --thick for a 1500-metre layer.
+Add --noon or --sunset to inspect those lighting conditions.
 """
 import ctypes as C
 import math
@@ -15,16 +17,23 @@ import sys
 import tempfile
 import zlib
 from test_exact_oit_gpu import context, U, I, F, TEXTURE, FRAMEBUFFER, COLOR_ATTACHMENT, RGBA, FLOAT
+from test_texture_filter_state_gpu import native_fixture
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def camera_uploads():
-    """Exercise production camera uploads and sunlight scaling in native code."""
-    body=(ROOT/'indra/newview/pipeline.cpp').read_text().split('void LLPipeline::renderVolumeClouds()')[1]
+def native_inputs():
+    """Exercise production noise generation, camera uploads and light scaling."""
+    pipeline=(ROOT/'indra/newview/pipeline.cpp').read_text()
+    preparation=pipeline.split('bool LLPipeline::prepareVolumeClouds()')[1]
+    noise_creation=preparation[preparation.index('        std::vector<U8> noise'):preparation.index('        LLImageGL::generateTextures')]
+    body=pipeline.split('void LLPipeline::renderVolumeClouds()')[1]
     calculation=re.search(r'const glm::mat[34] view_to_world = [^;]+;',body)[0]
     upload=next(line for line in body.splitlines() if '"vc_view_to_world"' in line)
     sunlight='\n'.join(re.search(r'const F32 '+name+r' = [^;]+;',body)[0] for name in ('sunlight_scale','strength'))
+    ambient=next(line for line in body.splitlines() if 'auto linear =' in line)
+    ambient+='\n'+'\n'.join(re.search(r'const F32 '+name+r' = [^;]+;',body)[0] for name in ('daylight','ambient_scale'))
+    ambient+='\n'+re.search(r'shader.uniform3f\(LLStaticHashedString\("vc_ambient"\).*?;',body,re.S)[0]
     cases=[]
     for yaw,pitch,roll in ((0,20,0),(90,45,0),(180,70,30),(270,10,90),(37,-40,180)):
         y,p,r=map(math.radians,(yaw,pitch,roll))
@@ -45,11 +54,22 @@ def camera_uploads():
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstdio>
+#include <fcntl.h>
+#include <io.h>
 using F32 = float;
+using U32 = unsigned int;
+using S32 = int;
+using U8 = unsigned char;
 F32 llclamp(F32 x, F32 lo, F32 hi) { return std::clamp(x,lo,hi); }
+F32 llmin(F32 x, F32 y) { return std::min(x,y); }
+F32 llmax(F32 x, F32 y) { return std::max(x,y); }
+struct Color { F32 mV[3]; };
 struct Environment {
     bool sun;
+    F32 elevation;
     bool getIsSunUp() const { return sun; }
+    Color getSunDirection() const { return {0.f,0.f,elevation}; }
 } environment;
 struct Settings {
     bool hdr;
@@ -69,7 +89,12 @@ struct Shader {
     int getUniformLocation(const char*) { return 0; }
     void uniformMatrix4fv(const char*, int, bool, const float* p) { uploaded.assign(p,p+16); }
 } shader;
+struct AmbientShader {
+    Color color;
+    void uniform3f(const char*, F32 r, F32 g, F32 b) { color={r,g,b}; }
+};
 int main() {
+    _setmode(_fileno(stdout),_O_BINARY);
     static_assert(sizeof(glm::mat3)==12*sizeof(float), "Use the viewer's padded GLM ABI");
     const float cases[][16]={CASES};
     std::cout << std::setprecision(9);
@@ -89,8 +114,25 @@ int main() {
             assert(strength==(hdr ? 2.f : .5f)*(sun ? std::clamp(amount,0.f,2.f) : 1.f));
         }
     }
+    for (F32 elevation : {-1.f,-.1f,-.05f,0.f,.05f,.1f,1.f}) {
+        environment.elevation=elevation;
+        AmbientShader shader;
+        const Color ambient={.5f,.7f,1.f};
+        AMBIENT
+        // Uploaded values must preserve EEP color in linear space. The sun,
+        // rather than the active moon direction, drives the twilight fade.
+        const F32 expected = elevation<=-.1f ? .3f : elevation>=.1f ? 1.f :
+            elevation==-.05f ? .409375f : elevation==.05f ? .890625f : .65f;
+        for (int i=0;i<3;++i) {
+            assert(std::abs(shader.color.mV[i]-linear(ambient.mV[i])*expected)<1e-6f);
+            std::cout << shader.color.mV[i] << ' ';
+        }
+        std::cout << '\n';
+    }
+    NOISE_CREATION
+    std::cout.write(reinterpret_cast<const char*>(noise.data()),noise.size());
 }
-'''.replace('CASES',rows).replace('CALCULATION',calculation).replace('UPLOAD',upload).replace('SUNLIGHT',sunlight)
+'''.replace('CASES',rows).replace('CALCULATION',calculation).replace('UPLOAD',upload).replace('SUNLIGHT',sunlight).replace('AMBIENT',ambient).replace('NOISE_CREATION',noise_creation)
     compiler=shutil.which('g++')
     assert compiler,'g++ must be on PATH for the native camera upload regression'
     with tempfile.TemporaryDirectory(prefix='prism-cloud-camera-') as directory:
@@ -99,17 +141,21 @@ int main() {
         subprocess.run([compiler,'-std=c++17','-DGLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1',
                         '-DGLM_FORCE_SSE2=1','-DGLM_ENABLE_EXPERIMENTAL=1',
                         '-I',str(ROOT/'build-vc170-64/packages/include'),str(cpp),'-o',str(exe)],check=True)
-        result=subprocess.run([str(exe)],capture_output=True,text=True,check=True)
-    return [(reference,list(map(float,line.split()))) for reference,line in zip(cases,result.stdout.splitlines(),strict=True)]
+        result=subprocess.run([str(exe)],capture_output=True,check=True)
+    *lines,data=result.stdout.split(b'\n',len(cases)+7)
+    assert len(data)==64**3
+    return ([(reference,list(map(float,line.split()))) for reference,line in zip(cases,lines[:len(cases)],strict=True)],
+            data,[list(map(float,line.split())) for line in lines[len(cases):]])
 
 
-def run(sdl, gl):
+def run(sdl, gl, native):
     for name, args in {
         'ActiveTexture': [U], 'Uniform3f': [I,F,F,F], 'Uniform2f': [I,F,F],
         'UniformMatrix4fv': [I,I,C.c_ubyte,C.c_void_p],
         'Disable': [U],
         'TexImage3D': [U,I,I,I,I,I,I,U,U,C.c_void_p],
         'GenerateMipmap': [U],
+        'GetTexParameterfv': [U,U,C.c_void_p],
     }.items():
         setattr(gl, name, C.WINFUNCTYPE(None,*args)(sdl.SDL_GL_GetProcAddress(('gl'+name).encode())))
 
@@ -119,6 +165,14 @@ def run(sdl, gl):
     program=gl.CreateProgram()
     vertex='void main(){vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(p[gl_VertexID],0,1);}'
     fragment=(ROOT/'indra/newview/app_settings/shaders/class1/deferred/volumeCloudF.glsl').read_text()
+    # Test-only entry to inspect the exact density used by view and light rays.
+    fragment='uniform int test_density_mode;\n'+fragment.replace('void main()\n{', '''void main()
+{
+    if (test_density_mode != 0) {
+        float density = cloudDensity(vc_camera, test_density_mode == 1);
+        frag_color = vec4(density, 0.0, 0.0, 1.0);
+        return;
+    }''')
     for kind,source in ((0x8B31,vertex),(0x8B30,fragment)):
         shader=gl.CreateShader(kind)
         source=C.c_char_p(('#version 330 core\n'+source).encode())
@@ -202,11 +256,14 @@ def run(sdl, gl):
     mat3(horizontal); check('parallel outside',render(),clear)
     vector('vc_camera',0,0,100)
     # Constant noise, fixed height, no direct light: independent Beer-Lambert reference.
+    noise(bytes([255])*(64**3))
     density=.025 # the uniform shape is above the fully dense threshold
     trans=math.exp(-density*100)
-    top_fade=((.6-.55)/.45)**2*(3-2*(.6-.55)/.45)
-    overhead=(1-top_fade)*.025*100
-    source=(.55+.45*.4)*(.35+.65*math.exp(-overhead))
+    top_fade=((.8-.55)/.45)**2*(3-2*(.8-.55)/.45)
+    overhead=(1-top_fade)*.025*200
+    side_fade=((.6-.55)/.45)**2*(3-2*(.6-.55)/.45)
+    side_depth=(1-side_fade)*.025*200
+    source=(.55+.45*.4)*(.35+.65*(math.exp(-overhead)+4*math.exp(-side_depth))/5)
     # Integrate the shader's gradual atmospheric blend as well as extinction.
     rate=density+1/18000
     scattered=1-trans+(source-1)*density/rate*(1-math.exp(-rate*100))
@@ -214,11 +271,12 @@ def run(sdl, gl):
     for samples in (16,32,64,96,128):
         integer('vc_steps',samples)
         check('step independent '+str(samples),render(100),[scattered]*3+[trans],.001)
+    noise(bytes([128])*(64**3)); trans=render(100)[3]
     scalar('vc_coverage',0); check('no coverage',render(),clear); scalar('vc_coverage',.27)
     vector('vc_density',0,0,0); check('no density',render(),clear); vector('vc_density',0,0,1)
     scalar('vc_scale',0); check('no scale',render(),clear); scalar('vc_scale',2500)
     scalar('vc_blend',1); check('texture transition endpoint',render(100),clear)
-    scalar('vc_blend',.37); middle=render(100); assert trans<middle[3]<1, middle
+    scalar('vc_blend',.38); middle=render(100); assert trans<middle[3]<1, middle
     scalar('vc_blend',0)
     vector('vc_tint',0,0,0); black=render(100); check('black tint absorbs',black,[0,0,0,trans],.001)
     vector('vc_tint',1,1,1)
@@ -246,6 +304,58 @@ def run(sdl, gl):
     vector('vc_sun_direction',.9701425,0,.2425356); vector('vc_sun_color',2,.5,.1)
     sunset=render(100)
     check('sunset color preserved',[sunset[0],sunset[0]],[sunset[1]*4,sunset[2]*20])
+    # Both light directions see the same uniform horizontal shadow path. The
+    # backward lobe should give the sun-facing body more light relative to its
+    # bright forward rim, without changing opacity or adding ambient light.
+    noise(bytes([255])*(64**3)); mat3(horizontal)
+    vector('vc_camera',0,0,100); vector('vc_density',0,0,.1)
+    vector('vc_sun_color',1,1,1); vector('vc_sun_direction',0,1,0); rim=render(20)
+    vector('vc_sun_direction',0,-1,0); face=render(20)
+    assert .55<face[0]/rim[0]<.6,('soft rim relative to sun-facing body',face,rim)
+    # Eight closer light probes retain the original 15-step shadow reach.
+    shadow=.0025*(250/8)*15
+    surrounding=.0025*200*((1-top_fade)+4*(1-side_fade))/5
+    def phase(mu,g):
+        return (1-g*g)/max(1+g*g-2*g*mu,.05)**1.5
+    source=.45+.35*phase(-1,.45)+.2*phase(-1,-.2)
+    source=source*math.exp(-shadow)+(.5+.5*math.exp(-surrounding*.35))*(
+        .4*(.7+.3*phase(-1,.25))*math.exp(-shadow*.25)+.25*math.exp(-shadow*.05))
+    rate=.0025+1/18000
+    check('closer light probes retain full shadow reach',[face[0]],
+          [source*.0025/rate*(1-math.exp(-rate*20))],.0001)
+    check('lighting lobes preserve silhouette',[face[3]],[rim[3]])
+    checks+=1; noise(bytes([128])*(64**3))
+    # Fine curls must shape both the visible density and the shadow density,
+    # even when EEP detail strength is zero. Otherwise smooth shadows wrap a
+    # detailed cloud in an unbroken bright shell.
+    noise(bytes(128 if x in (0,19) else 0 if x==48 else 255
+                for z in range(64) for y in range(64) for x in range(64)))
+    vector('vc_camera',0,0,75); vector('vc_density',0,0,1)
+    densities=[]
+    for mode in (1,2):
+        integer('test_density_mode',mode)
+        vector('vc_detail',2.75,0,0); dense=render()[0]
+        vector('vc_detail',3,0,0); curled=render()[0]
+        assert dense>.001 and curled<dense*.7,('shared fine curls',mode,dense,curled)
+        densities.append((dense,curled)); checks+=1
+    check('view and light rays share curls',densities[0],densities[1])
+    integer('test_density_mode',0); vector('vc_detail',0,0,0)
+    vector('vc_camera',0,0,100)
+    # Same view density and vertical light path, but open sides versus enclosing
+    # neighbours. Both skylight and scattered sunlight must reveal those sides.
+    scalar('vc_scale',128); vector('vc_density',0,0,1)
+    vector('vc_sun_direction',0,0,1); vector('vc_sun_color',0,0,0)
+    vector('vc_ambient',1,1,1)
+    noise(bytes([255])*(64**3)); enclosed_sky=render(1)
+    vector('vc_ambient',0,0,0); vector('vc_sun_color',1,1,1); enclosed_bounce=render(1)
+    noise(bytes(255 if x in (0,19,31) else 0 for z in range(64) for y in range(64) for x in range(64)))
+    vector('vc_ambient',1,1,1); vector('vc_sun_color',0,0,0); exposed_sky=render(1)
+    vector('vc_ambient',0,0,0); vector('vc_sun_color',1,1,1); exposed_bounce=render(1)
+    assert exposed_sky[0]>enclosed_sky[0]*1.15,('skylight reveals exposed sides',exposed_sky,enclosed_sky)
+    assert exposed_bounce[0]>enclosed_bounce[0]*1.02,('bounce reveals enclosed folds',exposed_bounce,enclosed_bounce)
+    check('skylight preserves density',[exposed_sky[3]],[enclosed_sky[3]])
+    check('bounce preserves density',[exposed_bounce[3]],[enclosed_bounce[3]])
+    checks+=2; noise(bytes([128])*(64**3)); scalar('vc_scale',2500)
     vector('vc_sun_direction',0,0,1); vector('vc_sun_color',2,1,.5)
     vector('vc_ambient',1,1,1); vector('vc_density',0,0,1); scalar('vc_coverage',.27)
     mat3(up); vector('vc_camera',0,0,-100)
@@ -293,11 +403,25 @@ def run(sdl, gl):
         scalar('vc_blend',0); averaged=render()
         weather_image(1,weather,512,128,[.4 if x%2==0 else .8 for y in range(128) for x in range(512)])
         weather_image(2,next_weather,128,512,[.8 if x%2==0 else .4 for y in range(512) for x in range(128)])
+        # A shared texture may arrive with non-mip filtering. textureLod then
+        # samples its finest stripes despite the requested coarse weather LOD.
+        for unit,tex in ((1,weather),(2,next_weather)):
+            gl.ActiveTexture(0x84C0+unit); gl.BindTexture(TEXTURE,tex)
+            gl.TexParameteri(TEXTURE,0x2801,0x2601)
+        vector('vc_camera',-.5*2500*8/512,0,-100)
+        assert abs(render()[3]-averaged[3])>.01,'fixture must reproduce unfiltered weather columns'
+        native.reset(0); native.cloud_weather(weather,next_weather)
+        check('cloud bind restores mip filtering',render(),averaged,.0005)
         for blend in (0,.5,1):
             scalar('vc_blend',blend)
             for phase in range(8):
                 vector('vc_camera',-(phase+.5)*2500/512,0,-100)
                 check('no extruded weather stripes',render(),averaged,.0005)
+        native.cloud_restore(weather,next_weather)
+        for unit in (1,2):
+            gl.ActiveTexture(0x84C0+unit)
+            anisotropy=F(); gl.GetTexParameterfv(TEXTURE,0x84FE,C.byref(anisotropy))
+            check('restore configured filtering for classic clouds',[anisotropy.value],[4])
     # Large EEP features must still control coverage after filtering.
     scalar('vc_blend',0)
     weather_image(1,weather,512,128,[.4 if x<256 else .8 for y in range(128) for x in range(512)])
@@ -314,21 +438,110 @@ def run(sdl, gl):
 
     # A narrow cloud must shadow its far side. The old first shadow sample
     # jumped past both edges, lighting both sides identically.
-    noise(bytes(255 if x==1 else 0 for z in range(64) for y in range(64) for x in range(64)))
+    noise(bytes(255 if x==1 or z in (7,43) else 0 for z in range(64) for y in range(64) for x in range(64)))
     scalar('vc_scale',128); scalar('vc_coverage',1); mat3(horizontal)
-    vector('vc_camera',-8,0,100); vector('vc_ambient',0,0,0); vector('vc_sun_color',1,1,1)
+    vector('vc_density',0,0,2)
+    vector('vc_camera',-12,0,60); vector('vc_ambient',0,0,0); vector('vc_sun_color',1,1,1)
     vector('vc_sun_direction',1,0,0); near_light=render(5)
     vector('vc_sun_direction',-1,0,0); far_light=render(5)
     assert near_light[0]>far_light[0]*1.1,('nearby billow self-shadow',near_light,far_light)
     check('light direction preserves cloud silhouette',[near_light[3]],[far_light[3]])
     checks+=1
     scalar('vc_scale',2500); scalar('vc_coverage',.27)
+    vector('vc_density',0,0,1)
     vector('vc_ambient',1,1,1); vector('vc_sun_color',2,1,.5); vector('vc_sun_direction',0,0,1)
 
-    data=bytearray(); state=0x729a4b31
-    for _ in range(64**3):
-        state^=(state<<13)&0xffffffff; state^=state>>17; state^=(state<<5)&0xffffffff
-        data.append(state>>24)
+    # At the same physical height, changing the layer's thickness must not
+    # stretch a billow. Both heights are inside the flat part of the envelope.
+    # Keep the horizontal form/altitude slices uniform while isolating a billow.
+    noise(bytes(255 if z in (1,7,43) else 0 for z in range(64) for y in range(64) for x in range(64)))
+    weather_image(1,weather,1,1,[.52]); mat3(horizontal); vector('vc_camera',0,0,300)
+    scalar('vc_thickness',600); fixed_size=render(20)
+    scalar('vc_thickness',1600); thicker=render(20)
+    assert fixed_size[3]<.9,('billow fixture must contain a cloud',fixed_size)
+    check('thickness preserves billow size in metres',[thicker[3]],[fixed_size[3]])
+
+    # Repeated narrow billows expose integration bands over thick paths.
+    # Compare normal quality budgets to a denser GPU reference.
+    noise(bytes(255 if z%2 else 0 for z in range(64) for y in range(64) for x in range(64)))
+    weather_image(1,weather,1,1,[1]); scalar('vc_scale',128); scalar('vc_coverage',1)
+    scalar('vc_amount',.55); vector('vc_density',0,0,.05)
+    mat3(up); vector('vc_camera',0,0,-100); vector('vc_sun_color',0,0,0)
+    for thickness in (800,1500,2000):
+        scalar('vc_thickness',thickness); integer('vc_steps',128); reference=render()[3]
+        for budget in (32,64):
+            integer('vc_steps',budget); actual=render()[3]
+            check('thick path integration '+str((thickness,budget)),[actual],[reference],
+                  .035 if budget==32 else .02) # includes the finer shared curl octave
+    scalar('vc_scale',2500); scalar('vc_thickness',250); scalar('vc_coverage',.27)
+    scalar('vc_amount',1); vector('vc_density',0,0,1); integer('vc_steps',64)
+    vector('vc_sun_color',2,1,.5)
+
+    # The actual baked lobes must have coherent neighbours in every direction,
+    # including the repeating texture boundary, rather than white-noise texels.
+    uploads,data,ambient_uploads=native_inputs()
+    # Use the CPU's actual uploads to verify both local and distant night fill,
+    # while directional moonlight and cloud opacity stay unchanged.
+    noise(bytes([128])*(64**3))
+    for distance in (100,12000):
+        mat3(horizontal); vector('vc_camera',0,0,100)
+        vector('vc_sun_color',0,0,0); vector('vc_ambient',*ambient_uploads[-1])
+        day_fill=render(distance)
+        vector('vc_ambient',*ambient_uploads[0]); night_fill=render(distance)
+        assert day_fill[0]>.001,('ambient fixture must contain clouds',day_fill)
+        check('night ambient reduced to 30 percent',night_fill,[v*.3 for v in day_fill[:3]]+[day_fill[3]])
+        vector('vc_sun_color',.01,.015,.02); night_moon=render(distance)
+        vector('vc_ambient',*ambient_uploads[-1]); day_moon=render(distance)
+        check('ambient adjustment preserves moonlight',
+              [night_moon[i]-night_fill[i] for i in range(3)]+[night_moon[3]],
+              [day_moon[i]-day_fill[i] for i in range(3)]+[day_moon[3]])
+    vector('vc_ambient',1,1,1); vector('vc_sun_color',2,1,.5)
+    for stride in (1,64,4096):
+        for boundary in (False,True):
+            indices=[i for i in range(len(data)) if ((i//stride)%64==63)==boundary]
+            jump=sum(abs(data[i]-data[i+(stride if not boundary else -63*stride)]) for i in indices)/len(indices)
+            assert jump<60,('coherent baked billows',stride,boundary,jump)
+            checks+=1
+    assert max(data)-min(data)>150,'billows need dense peaks and gaps'
+    # Hold the fine 3D bodies constant and vary only the two horizontal fields.
+    # Group altitude must move the base; thin forms have a clear vertical gap
+    # below their detached upper patches, unlike a single stretched slab.
+    scalar('vc_coverage',1); scalar('vc_scale',2500)
+    vector('vc_density',0,0,1); vector('vc_sun_color',0,0,0); mat3(horizontal)
+    def form_noise(altitude,kind):
+        noise(b''.join(bytes([altitude if z==43 else kind if z==7 else 255])*4096 for z in range(64)))
+    vector('vc_camera',0,0,50)
+    form_noise(64,255); check('raised group has a clear lower base',render(20),clear)
+    form_noise(192,255); assert render(20)[3]<.9,'lower group must extend below the raised group'
+    checks+=1
+    form_noise(255,0)
+    for height in (37.5,225):
+        vector('vc_camera',0,0,height)
+        assert render(20)[3]<.9,('thin lower patch and detached upper patch',height)
+        checks+=1
+    vector('vc_camera',0,0,125)
+    check('clear gap between thin cloud populations',render(20),clear)
+    form_noise(255,255); assert render(20)[3]<.8,'tall billow must occupy the thin form gap'
+    checks+=1
+    form_noise(255,0); vector('vc_camera',0,0,225)
+    scalar('vc_coverage',0); check('upper patches respect EEP openings',render(20),clear)
+    scalar('vc_coverage',1); scalar('vc_amount',0); check('upper patches respect density zero',render(20),clear)
+    scalar('vc_amount',1); vector('vc_sun_color',2,1,.5)
+    # Thin pieces end below tall lobes instead of sharing one flat ceiling.
+    scalar('vc_coverage',1); vector('vc_camera',0,0,225); mat3(horizontal)
+    noise(bytes([128])*(64**3)); check('thin piece has a lower top',render(100),clear)
+    noise(bytes([255])*(64**3)); assert render(100)[3]<.8,'dense lobe must rise higher'
+    checks+=1
+    vector('vc_camera',0,0,10)
+    noise(bytes([128])*(64**3)); check('thin piece has a higher base',render(100),clear)
+    noise(bytes([255])*(64**3)); assert render(100)[3]<.8,'dense lobe must extend lower'
+    checks+=1
+    vector('vc_camera',0,0,100)
+    dense_core=render(20)[3]
+    noise(bytes([64])*(64**3)); thin_core=render(20)[3]
+    assert thin_core>dense_core+.1,('3D density variation inside a full weather bank',thin_core,dense_core)
+    checks+=1
+    scalar('vc_coverage',.27)
     noise(data)
     # The new slider must create actual clear gaps across a 3D cloud field.
     weather_image(1,weather,1,1,[.5])
@@ -342,7 +555,7 @@ def run(sdl, gl):
     assert gaps[.8]>gaps[1],gaps
     checks+=1
     scalar('vc_amount',1); weather_image(1,weather,1,1,[.7])
-    for reference,uploaded in camera_uploads():
+    for reference,uploaded in uploads:
         # The raw GL upload must survive GLM's column padding, including turns,
         # pitch, roll and translation. Directions must ignore matrix translation.
         assert len(uploaded)==16,'Cloud camera upload must contain 16 contiguous floats'
@@ -361,8 +574,8 @@ def run(sdl, gl):
     gl.Uniform2f(loc('vc_scroll'),0,.1); scrolled=render(400)
     gl.Uniform2f(loc('vc_scroll'),0,0); vector('vc_camera',200,2400,100)
     check('wind advection matches world displacement',render(400),scrolled,.0002)
-    vector('vc_camera',200,400,100)
-    vector('vc_detail',.3,.6,1); detailed=render(400)
+    vector('vc_camera',200,400,100); original=render(100)
+    vector('vc_detail',.3,.6,1); detailed=render(100)
     assert detailed[3]>=original[3]
     for height in (-1,0,0.01,125,249.99,250,251):
         vector('vc_camera',0,0,height)
@@ -400,6 +613,14 @@ def run(sdl, gl):
         if '--near' in sys.argv:
             vector('vc_camera',0,0,-350); scalar('vc_thickness',540)
             vector('vc_sun_direction',.93,0,.3676); vector('vc_sun_color',1.4,1.1,.9)
+        if '--thick' in sys.argv:
+            scalar('vc_thickness',1500)
+        if '--noon' in sys.argv:
+            vector('vc_sun_direction',0,0,1); vector('vc_sun_color',1.7,1.7,1.7)
+            angle=math.radians(50); c,s=math.cos(angle),math.sin(angle)
+            mat3([1,0,0,0,-s,c,0,-c,-s])
+        if '--sunset' in sys.argv:
+            vector('vc_sun_direction',0,.9701425,.2425356); vector('vc_sun_color',2,.9,.35)
         gl.DrawArrays(4,0,3)
         pixels=(F*(width*height*4))(); gl.ReadPixels(0,0,width,height,RGBA,FLOAT,pixels)
         integer('vc_steps',64)
@@ -408,7 +629,7 @@ def run(sdl, gl):
             gl.BeginQuery(0x88BF,query); gl.DrawArrays(4,0,3); gl.EndQuery(0x88BF)
             elapsed=C.c_uint64(); gl.GetQueryObjectui64v(query,0x8866,C.byref(elapsed))
             timings.append(elapsed.value/1e6)
-        print(f'Synthetic 960x540, 64 samples: {sorted(timings)[2]:.2f} ms GPU (cloud trace only)')
+        print(f'Synthetic 960x540, 64 base samples: {sorted(timings)[2]:.2f} ms GPU (cloud trace only)')
         rows=bytearray()
         for y in reversed(range(height)):
             rows.append(0)
@@ -430,6 +651,12 @@ def run(sdl, gl):
 
 if __name__=='__main__':
     sdl,window,ctx,gl=context()
-    try: run(sdl,gl)
+    try:
+        with tempfile.TemporaryDirectory(prefix='prism-cloud-texture-') as directory:
+            native=native_fixture(Path(directory),sdl)
+            try: run(sdl,gl,native)
+            finally:
+                free=C.WinDLL('kernel32').FreeLibrary
+                free.argtypes=[C.c_void_p]; free(native._handle)
     finally:
         sdl.SDL_GL_DestroyContext(ctx); sdl.SDL_DestroyWindow(window); sdl.SDL_Quit()

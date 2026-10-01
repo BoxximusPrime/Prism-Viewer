@@ -851,6 +851,11 @@ void LLInvFVBridge::getClipboardEntries(bool show_asset_id,
 
     if (obj)
     {
+        if (is_inbox && isAgentInventory() && mUUID != gInventory.findCategoryUUIDForType(LLFolderType::FT_INBOX))
+        {
+            items.push_back("Move to Inventory");
+            if (!isItemMovable()) disabled_items.push_back("Move to Inventory");
+        }
         if (LLFloaterInventoryLLMSort::hasModel())
         {
             items.push_back("LLM Sort");
@@ -1432,6 +1437,27 @@ void LLInvFVBridge::changeCategoryParent(LLInventoryModel* model,
     model->changeCategoryParent(cat, new_parent_id, restamp);
 }
 
+static void move_received_item_to_inventory(LLInventoryModel* model, const LLUUID& id)
+{
+    if (!model) return;
+    const LLUUID inbox = model->findCategoryUUIDForType(LLFolderType::FT_INBOX);
+    const LLUUID destination = model->getRootFolderID();
+    if (inbox.isNull() || destination.isNull() || id == inbox
+        || !model->isObjectDescendentOf(id, inbox)) return;
+
+    if (LLViewerInventoryCategory* category = model->getCategory(id))
+    {
+        if (LLFolderType::lookupIsProtectedType(category->getPreferredType())) return;
+        set_dad_inbox_object(id);
+        model->changeCategoryParent(category, destination, false);
+    }
+    else if (LLViewerInventoryItem* item = model->getItem(id))
+    {
+        set_dad_inbox_object(id);
+        model->changeItemParent(item, destination, false);
+    }
+}
+
 LLInvFVBridge* LLInvFVBridge::createBridge(LLAssetType::EType asset_type,
                                            LLAssetType::EType actual_asset_type,
                                            LLInventoryType::EType inv_type,
@@ -1776,6 +1802,11 @@ LLInvFVBridge* LLInventoryFolderViewModelBuilder::createBridge(LLAssetType::ETyp
 
 void LLItemBridge::performAction(LLInventoryModel* model, std::string action)
 {
+    if (action == "move_to_inventory")
+    {
+        move_received_item_to_inventory(model, mUUID);
+        return;
+    }
     if ("goto" == action)
     {
         gotoItem();
@@ -3535,6 +3566,27 @@ void LLInventoryCopyAndWearObserver::changed(U32 mask)
 
 void LLFolderBridge::performAction(LLInventoryModel* model, std::string action)
 {
+    if (action == "move_to_inventory")
+    {
+        move_received_item_to_inventory(model, mUUID);
+        return;
+    }
+    if (action == "detach_folder")
+    {
+        LLViewerInventoryCategory* category = getCategory();
+        if (!category || !model) return;
+        LLInventoryModel::cat_array_t categories;
+        LLInventoryModel::item_array_t items;
+        LLFindWearablesEx worn(true, false);
+        model->collectDescendentsIf(category->getLinkedUUID(), categories, items, false, worn);
+        uuid_vec_t ids;
+        for (const auto& item : items)
+        {
+            if (item->getType() != LLAssetType::AT_GESTURE) ids.push_back(item->getUUID());
+        }
+        if (!ids.empty()) LLAppearanceMgr::instance().removeItemsFromAvatar(ids);
+        return;
+    }
     if ("open" == action)
     {
         LLFolderViewFolder *f = dynamic_cast<LLFolderViewFolder   *>(mInventoryPanel.get()->getItemByID(mUUID));

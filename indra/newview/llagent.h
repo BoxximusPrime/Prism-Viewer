@@ -542,6 +542,9 @@ public:
     void            moveYaw(F32 mag, bool reset_view = true);
     void            movePitch(F32 mag);
     bool            isFacingBackwardWalk() const { return mFacingBackwardWalk; }
+    bool            useCameraRelativeMovement() const;
+    bool            isCameraRelativeTurning() const { return mCameraRelativeTurning; }
+    void            setCameraRelativeTurning(bool turning) { mCameraRelativeTurning = turning; }
 
     bool            isMovementLocked() const                { return mMovementKeysLocked; }
     void            setMovementLocked(bool set_locked)  { mMovementKeysLocked = set_locked; }
@@ -603,6 +606,7 @@ private:
     LLUUID          mLeaderID;
     bool            mMovementKeysLocked;
     bool            mFacingBackwardWalk;
+    bool            mCameraRelativeTurning = false;
 
 /**                    Movement
  **                                                                            **

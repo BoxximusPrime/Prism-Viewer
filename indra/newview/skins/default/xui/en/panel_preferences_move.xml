@@ -408,6 +408,17 @@
    top_pad="8"
    width="390" />
   <check_box
+   control_name="BoxxyCameraRelativeMovement"
+   follows="left|top"
+   height="20"
+   label="Camera-relative movement and independent orbit"
+   layout="topleft"
+   left="30"
+   name="camera_relative_movement"
+   tool_tip="WASD and arrow keys move relative to the camera. Keep facing that direction when you stop; left-drag orbits without turning your avatar. While holding left-click, right-click to face the camera direction. Overrides backward-facing walking."
+   top_pad="8"
+   width="470" />
+  <check_box
    control_name="BoxxyDynamicShoulderCamera"
    follows="left|top"
    height="20"

@@ -672,13 +672,27 @@ bool LLAgent::shouldFaceBackwardWalk() const
         && isAgentAvatarValid() && !gAgentAvatarp->isSitting() && !getFlying() && !rotateGrabbed();
 }
 
+bool LLAgent::useCameraRelativeMovement() const
+{
+    static LLCachedControl<bool> camera_relative(gSavedSettings, "BoxxyCameraRelativeMovement", false);
+    return camera_relative && gAgentCamera.getCameraMode() == CAMERA_MODE_THIRD_PERSON
+        && isAgentAvatarValid() && !gAgentAvatarp->isSitting() && !getFlying()
+        && !getAutoPilot() && !rotateGrabbed() && !isMovementLocked()
+        && !(LLPoseStudio::instanceExists() && LLPoseStudio::instance().isActive());
+}
+
 void LLAgent::updateBackwardWalk()
 {
+    // Use the same input snapshot as the outgoing packet. Camera keys are
+    // cleared by propagate() and can no longer describe these controls.
+    const bool forward = (mControlFlags & (AGENT_CONTROL_AT_POS | AGENT_CONTROL_NUDGE_AT_POS)) != 0;
+    const bool backward = (mControlFlags & (AGENT_CONTROL_AT_NEG | AGENT_CONTROL_NUDGE_AT_NEG)) != 0;
+    const bool left = (mControlFlags & (AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_POS)) != 0;
+    const bool right = (mControlFlags & (AGENT_CONTROL_LEFT_NEG | AGENT_CONTROL_NUDGE_LEFT_NEG)) != 0;
     // Releasing S during a strafe should only remove backward movement. Keep
     // the current heading and lateral control until the strafe ends or forward movement starts.
-    const bool continuing_strafe = mFacingBackwardWalk && gAgentCamera.getLeftKey() != 0
-        && gAgentCamera.getAtKey() <= 0 && gAgentCamera.getWalkKey() <= 0;
-    const bool face_backward = (gAgentCamera.getAtKey() < 0 || gAgentCamera.getWalkKey() < 0 || continuing_strafe)
+    const bool continuing_strafe = mFacingBackwardWalk && left != right && !forward;
+    const bool face_backward = ((backward && !forward) || continuing_strafe)
         && shouldFaceBackwardWalk();
     if (face_backward != mFacingBackwardWalk)
     {
@@ -692,6 +706,7 @@ void LLAgent::updateBackwardWalk()
 //-----------------------------------------------------------------------------
 void LLAgent::moveAt(S32 direction, bool reset)
 {
+    if (direction && reset && gAgentCamera.returnToAvatarBeforeMovement()) return;
     LLUIUsage::instance().logCommand("Agent.MoveAt");
 
     mMoveTimer.reset();
@@ -722,6 +737,7 @@ void LLAgent::moveAt(S32 direction, bool reset)
 //-----------------------------------------------------------------------------
 void LLAgent::moveAtNudge(S32 direction)
 {
+    if (direction && gAgentCamera.returnToAvatarBeforeMovement()) return;
     mMoveTimer.reset();
     LLFirstUse::notMoving(false);
 
@@ -747,6 +763,7 @@ void LLAgent::moveAtNudge(S32 direction)
 //-----------------------------------------------------------------------------
 void LLAgent::moveLeft(S32 direction)
 {
+    if (direction && gAgentCamera.returnToAvatarBeforeMovement()) return;
     mMoveTimer.reset();
     LLFirstUse::notMoving(false);
 
@@ -772,6 +789,7 @@ void LLAgent::moveLeft(S32 direction)
 //-----------------------------------------------------------------------------
 void LLAgent::moveLeftNudge(S32 direction)
 {
+    if (direction && gAgentCamera.returnToAvatarBeforeMovement()) return;
     mMoveTimer.reset();
     LLFirstUse::notMoving(false);
 
@@ -1541,8 +1559,45 @@ U32 LLAgent::prepareControlFlagsForUpdate()
 {
     // Resolve the turn after collecting input, before serializing body rotation
     // and controls together. Keep the stored flags in the original input frame.
-    updateBackwardWalk();
     U32 flags = mControlFlags;
+    if (useCameraRelativeMovement())
+    {
+        // Capture the camera frame before clearing the old backward-walk offset.
+        const LLCoordFrame& camera_frame = gAgentCamera.getThirdPersonFrame();
+        mFacingBackwardWalk = false;
+        const S32 at = S32((flags & (AGENT_CONTROL_AT_POS | AGENT_CONTROL_NUDGE_AT_POS)) != 0)
+            - S32((flags & (AGENT_CONTROL_AT_NEG | AGENT_CONTROL_NUDGE_AT_NEG)) != 0);
+        const S32 left = S32((flags & (AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_POS)) != 0)
+            - S32((flags & (AGENT_CONTROL_LEFT_NEG | AGENT_CONTROL_NUDGE_LEFT_NEG)) != 0);
+        const bool held = (flags & (AGENT_CONTROL_AT_POS | AGENT_CONTROL_AT_NEG |
+                                   AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG)) != 0;
+        flags &= ~(AGENT_CONTROL_AT_POS | AGENT_CONTROL_AT_NEG | AGENT_CONTROL_FAST_AT |
+                   AGENT_CONTROL_NUDGE_AT_POS | AGENT_CONTROL_NUDGE_AT_NEG |
+                   AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG | AGENT_CONTROL_FAST_LEFT |
+                   AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG);
+        if (at || left)
+        {
+            mCameraRelativeTurning = false;
+            LLVector3 forward = LLViewerCamera::instance().getAtAxis();
+            forward.mV[VZ] = 0.f;
+            if (forward.normalize() < 0.001f)
+            {
+                forward = camera_frame.getAtAxis();
+                forward.mV[VZ] = 0.f;
+                forward.normalize();
+            }
+            LLVector3 direction = forward * F32(at) + (LLVector3::z_axis % forward) * F32(left);
+            direction.normalize();
+            resetAxes(direction);
+            flags |= held ? AGENT_CONTROL_AT_POS | AGENT_CONTROL_FAST_AT : AGENT_CONTROL_NUDGE_AT_POS;
+        }
+        // Pelvis catch-up after walking must not request a standing turn animation.
+        if (!mCameraRelativeTurning)
+            flags &= ~(AGENT_CONTROL_TURN_LEFT | AGENT_CONTROL_TURN_RIGHT);
+        return flags;
+    }
+    mCameraRelativeTurning = false;
+    updateBackwardWalk();
     if (!mFacingBackwardWalk)
     {
         return flags;
@@ -2074,8 +2129,6 @@ void LLAgent::autoPilot(F32 *delta_yaw)
 //-----------------------------------------------------------------------------
 void LLAgent::propagate(const F32 dt)
 {
-    updateBackwardWalk();
-
     // Update UI based on agent motion
     LLFloaterMove *floater_move = LLFloaterReg::findTypedInstance<LLFloaterMove>("moveview");
     if (floater_move)

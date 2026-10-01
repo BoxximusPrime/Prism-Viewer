@@ -1846,7 +1846,16 @@ bool LLTextEditor::handleSpecialKey(const KEY key, const MASK mask)
         else
         if( 0 < mCursorPos )
         {
-            removeCharOrTab();
+            if (mask & MASK_CONTROL)
+            {
+                mSelectionStart = prevWordPos(mCursorPos - 1);
+                mSelectionEnd = mCursorPos;
+                deleteSelection(false);
+            }
+            else
+            {
+                removeCharOrTab();
+            }
         }
         else
         {

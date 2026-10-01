@@ -1443,7 +1443,15 @@ bool LLLineEditor::handleSpecialKey(KEY key, MASK mask)
             else
             if( 0 < getCursor() )
             {
-                removeChar();
+                if (mask & MASK_CONTROL)
+                {
+                    setSelection(prevWordPos(getCursor() - 1), getCursor());
+                    deleteSelection();
+                }
+                else
+                {
+                    removeChar();
+                }
             }
             else
             {

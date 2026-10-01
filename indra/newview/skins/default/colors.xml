@@ -401,6 +401,9 @@
      name="FloaterHoverGradientColor"
      reference="White_05" />
     <color
+     name="FloaterFocusTopBorderColor"
+     reference="AccentColor" />
+    <color
      name="FloaterUnfocusBorderColor"
      reference="Black_50" />
     <color

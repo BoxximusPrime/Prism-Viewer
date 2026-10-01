@@ -128,6 +128,7 @@
 #include "llfolderview.h"
 #include "llinventorypanel.h"
 #include "llinventoryfunctions.h"
+#include "llinventorygallery.h"
 #include "llpanelmaininventory.h"
 #include "lllineeditor.h"
 #include "llmenugl.h"
@@ -1051,6 +1052,33 @@ bool LLViewerWindow::handleAnyMouseClick(LLWindow *window, LLCoordGL pos, MASK m
     x = ll_round((F32)x / mDisplayScale.mV[VX]);
     y = ll_round((F32)y / mDisplayScale.mV[VY]);
 
+    // Consume the entire face-camera gesture before dispatching a context click.
+    if (clicktype == CLICK_RIGHT)
+    {
+        LLMouseHandler* captor = gFocusMgr.getMouseCapture();
+        if (down && mLeftMouseDown && mask == MASK_NONE && gAgent.useCameraRelativeMovement()
+            && (captor == LLToolCamera::getInstance() || captor == LLToolPie::getInstance()
+                || (!captor && LLToolMgr::getInstance()->getCurrentTool() == LLToolPie::getInstance())))
+        {
+            const LLCoordFrame& camera_frame = gAgentCamera.getThirdPersonFrame();
+            LLVector3 forward = LLViewerCamera::instance().getAtAxis();
+            forward.mV[VZ] = 0.f;
+            if (forward.normalize() < 0.001f)
+            {
+                forward = camera_frame.getAtAxis();
+            }
+            gAgentCamera.slamLookAt(forward);
+            gAgent.setCameraRelativeTurning(true);
+            mCameraRelativeRightClick = true;
+        }
+        if (mCameraRelativeRightClick)
+        {
+            mRightMouseDown = down;
+            if (!down) mCameraRelativeRightClick = false;
+            return true;
+        }
+    }
+
     // Handle non-consuming global keybindings, like voice
     gViewerInput.handleGlobalBindsMouse(clicktype, mask, down);
 
@@ -1659,6 +1687,7 @@ void LLViewerWindow::handleFocus(LLWindow *window)
 // The top-level window has lost focus (e.g. via ALT-TAB)
 void LLViewerWindow::handleFocusLost(LLWindow *window)
 {
+    mCameraRelativeRightClick = false;
     for (bool& handled : mInventoryShortcutKeyHandled) handled = false;
     for (bool& handled : mInventoryShortcutCharHandled) handled = false;
     gFocusMgr.setAppHasFocus(false);
@@ -3046,9 +3075,40 @@ bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
         || (gMenuBarView && gMenuBarView->getHighlightedItem() && gMenuBarView->getHighlightedItem()->isActive());
 }
 
+static bool handle_inventory_delete_shortcut(KEY key, MASK mask)
+{
+    LLUICtrl* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
+    if (key != 'D' || mask != MASK_CONTROL || !focus || focus->acceptsTextInput()
+        || gFocusMgr.focusLocked() || gFocusMgr.getKeystrokesOnly()) return false;
+
+    LLView* inventory = nullptr;
+    for (LLView* view = focus; view; view = view->getParent())
+    {
+        if (dynamic_cast<LLInventoryPanel*>(view) || dynamic_cast<LLInventoryGallery*>(view))
+        {
+            inventory = view;
+            break;
+        }
+    }
+    if (!inventory)
+    {
+        LLFloater* floater = gFloaterView->getParentFloater(focus);
+        LLPanelMainInventory* main = floater ? floater->findChild<LLPanelMainInventory>("panel_main_inventory") : nullptr;
+        if (main)
+        {
+            inventory = main->isGalleryViewMode()
+                ? static_cast<LLView*>(main->findChild<LLInventoryGallery>("comb_gallery_view_inv"))
+                : static_cast<LLView*>(main->getActivePanel());
+        }
+    }
+    if (!inventory || !inventory->isInVisibleChain() || !inventory->isInEnabledChain()) return false;
+    if (!gKeyboard->getKeyRepeated(key)) inventory->handleKeyHere(KEY_DELETE, MASK_NONE);
+    return true;
+}
+
 bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
 {
-    if ((mask != MASK_NONE && !(key == 'E' && mask == (MASK_CONTROL | MASK_SHIFT)))
+    if ((mask != MASK_CONTROL && !(key == 'E' && mask == (MASK_CONTROL | MASK_SHIFT)))
         || !mMouseInWindow || gAgentCamera.cameraMouselook()
         || !gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI)
         || gFocusMgr.focusLocked() || gFocusMgr.getMouseCapture() || gFocusMgr.getTopCtrl()
@@ -3118,7 +3178,11 @@ bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
                 if (key == 'T')
                 {
                     auto item = dynamic_cast<LLFolderViewModelItemInventory*>(hovered->getViewModelItem());
-                    if (item && (item->getInventoryType() == LLInventoryType::IT_OBJECT
+                    if (item && item->getInventoryType() == LLInventoryType::IT_CATEGORY)
+                    {
+                        item->performAction(panel->getModel(), "detach_folder");
+                    }
+                    else if (item && (item->getInventoryType() == LLInventoryType::IT_OBJECT
                         || item->getInventoryType() == LLInventoryType::IT_WEARABLE))
                     {
                         // Use Add explicitly, regardless of the double-click Wear preference.
@@ -3154,6 +3218,8 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
 
     if (LLToolPoseIK::getInstance()->handleKey(key, mask)) return true;
     if (LLFloaterSnapshot::photoKey(key, mask)) return true;
+
+    if (handle_inventory_delete_shortcut(key, mask)) return true;
 
     if (key == 'E' || key == 'T')
     {

@@ -4819,6 +4819,10 @@ void LLVOAvatar::updateOrientation(LLAgent& agent, F32 speed, F32 delta_time)
 
             F32 pelvis_rot_threshold = clamp_rescale(speed, 0.1f, 1.0f, s_pelvis_rot_threshold_slow, s_pelvis_rot_threshold_fast);
 
+            // Explicit facing changes must also turn the hips while stationary.
+            if (isSelf() && agent.useCameraRelativeMovement())
+                pelvis_rot_threshold = s_pelvis_rot_threshold_fast;
+
             if (self_in_mouselook)
             {
                 pelvis_rot_threshold *= MOUSELOOK_PELVIS_FOLLOW_FACTOR;
@@ -4873,6 +4877,9 @@ void LLVOAvatar::updateOrientation(LLAgent& agent, F32 speed, F32 delta_time)
             leftDir.normalize();
             fwdDir = leftDir % upDir;
             LLQuaternion wQv( fwdDir, leftDir, upDir );
+
+            if (isSelf() && !mTurning)
+                agent.setCameraRelativeTurning(false);
 
             if (isSelf() && mTurning)
             {

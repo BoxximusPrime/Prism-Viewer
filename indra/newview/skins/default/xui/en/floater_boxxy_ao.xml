@@ -172,9 +172,9 @@
   <panel
    name="cycle_panel"
    left="230"
-   bottom="-146"
+   bottom="-120"
    right="-12"
-   height="36"
+   height="62"
    follows="left|right|bottom"
    background_visible="true"
    bg_alpha_color="DkGray2">
@@ -217,6 +217,15 @@
      top_delta="-2"
      width="110"
      height="20" />
+    <check_box
+     name="random_on_action"
+     label="Random on action"
+     left="10"
+     top="35"
+     width="180"
+     height="20"
+     initial_value="true"
+     tool_tip="Choose a random animation each time this state starts. When off, resume this state's last selected animation. Timed cycling is configured separately." />
   </panel>
 
   <text

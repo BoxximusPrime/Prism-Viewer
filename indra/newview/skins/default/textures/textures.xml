@@ -836,6 +836,8 @@ with the same filename but different name
            scale.left="10" scale.top="26" scale.right="54" scale.bottom="10" />
   <texture name="Window_Foreground" file_name="windows/Window_Foreground.png" preload="true"
            scale.left="10" scale.top="26" scale.right="54" scale.bottom="10" />
+  <texture name="Window_Focus_Top_Border" file_name="windows/Window_Focus_Top_Border.png" preload="true"
+           scale.left="10" scale.top="26" scale.right="54" scale.bottom="10" />
   <texture name="Window_NoTitle_Background" file_name="windows/Window_NoTitle_Background.png" preload="true"
            scale.left="10" scale.top="26" scale.right="54" scale.bottom="10" />
   <texture name="Window_NoTitle_Foreground" file_name="windows/Window_NoTitle_Foreground.png" preload="true"

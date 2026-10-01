@@ -278,6 +278,27 @@ LLAgentCamera::~LLAgentCamera()
 // Change camera back to third person, stop the autopilot,
 // deselect stuff, etc.
 //-----------------------------------------------------------------------------
+// returnToAvatarBeforeMovement()
+//-----------------------------------------------------------------------------
+bool LLAgentCamera::returnToAvatarBeforeMovement()
+{
+    if (!gAgent.useCameraRelativeMovement())
+    {
+        mReturningToAvatarBeforeMovement = false;
+        return false;
+    }
+    if (!mFocusOnAvatar)
+    {
+        resetView();
+        mReturningToAvatarBeforeMovement = mFocusOnAvatar && mCameraAnimating;
+        return true;
+    }
+    if (mReturningToAvatarBeforeMovement)
+        mReturningToAvatarBeforeMovement = mCameraAnimating;
+    return mReturningToAvatarBeforeMovement;
+}
+
+//-----------------------------------------------------------------------------
 // resetView()
 //-----------------------------------------------------------------------------
 void LLAgentCamera::resetView(bool reset_camera, bool change_camera)
@@ -859,7 +880,15 @@ void LLAgentCamera::cameraOrbitAround(const F32 radians)
     }
     else if (mFocusOnAvatar && (mCameraMode == CAMERA_MODE_THIRD_PERSON || mCameraMode == CAMERA_MODE_FOLLOW))
     {
-        gAgent.yaw(radians);
+        if (gAgent.useCameraRelativeMovement())
+        {
+            getThirdPersonFrame();
+            mThirdPersonFrame.rotate(radians, LLVector3::z_axis);
+        }
+        else
+        {
+            gAgent.yaw(radians);
+        }
     }
     else
     {
@@ -883,7 +912,15 @@ void LLAgentCamera::cameraOrbitOver(const F32 angle)
     }
     else if (mFocusOnAvatar && mCameraMode == CAMERA_MODE_THIRD_PERSON)
     {
-        gAgent.pitch(angle);
+        if (gAgent.useCameraRelativeMovement())
+        {
+            const F32 from_up = acosf(llclamp(getThirdPersonFrame().getAtAxis().mV[VZ], -1.f, 1.f));
+            mThirdPersonFrame.pitch(llclamp(from_up + angle, 5.f * DEG_TO_RAD, 175.f * DEG_TO_RAD) - from_up);
+        }
+        else
+        {
+            gAgent.pitch(angle);
+        }
     }
     else
     {
@@ -1212,6 +1249,9 @@ extern bool gCubeSnapshot;
 //-----------------------------------------------------------------------------
 void LLAgentCamera::updateCamera()
 {
+    // Reset the independent frame when leaving this movement mode, including
+    // sitting, flying and Mouselook, even if no third-person offsets are used.
+    getThirdPersonFrame();
     LL_RECORD_BLOCK_TIME(FTM_UPDATE_CAMERA);
     if (gCubeSnapshot)
     {
@@ -1404,6 +1444,7 @@ void LLAgentCamera::updateCamera()
         {
             // ...animation complete
             mCameraAnimating = false;
+            mReturningToAvatarBeforeMovement = false;
 
             camera_pos_global = camera_target_global;
             mFocusGlobal = focus_target_global;
@@ -1683,10 +1724,25 @@ LLVector3d LLAgentCamera::calcFocusPositionTargetGlobal()
     }
 }
 
+const LLCoordFrame& LLAgentCamera::getThirdPersonFrame() const
+{
+    const bool camera_relative = gAgent.useCameraRelativeMovement();
+    if (!camera_relative || !mCameraRelativeActive)
+    {
+        mThirdPersonFrame = gAgent.getFrameAgent();
+        if (gAgent.isFacingBackwardWalk())
+        {
+            mThirdPersonFrame.rotate(F_PI, LLVector3::z_axis);
+        }
+    }
+    mCameraRelativeActive = camera_relative;
+    return mThirdPersonFrame;
+}
+
 LLVector3d LLAgentCamera::calcThirdPersonFocusOffset()
 {
     // ...offset from avatar
-    LLQuaternion agent_rot = gAgent.getFrameAgent().getQuaternion();
+    LLQuaternion agent_rot = getThirdPersonFrame().getQuaternion();
     if (isAgentAvatarValid() && gAgentAvatarp->getParent())
     {
         agent_rot *= ((LLViewerObject*)(gAgentAvatarp->getParent()))->getRenderRotation();
@@ -1694,11 +1750,6 @@ LLVector3d LLAgentCamera::calcThirdPersonFocusOffset()
 
     static LLCachedControl<LLVector3d> focus_offset_initial(gSavedSettings, "FocusOffsetRearView", LLVector3d());
     LLVector3d focus_offset = focus_offset_initial * agent_rot;
-    if (gAgent.isFacingBackwardWalk())
-    {
-        focus_offset.mdV[VX] = -focus_offset.mdV[VX];
-        focus_offset.mdV[VY] = -focus_offset.mdV[VY];
-    }
     return focus_offset + LLVector3d(getDynamicShoulderOffset());
 }
 
@@ -1713,10 +1764,10 @@ LLVector3 LLAgentCamera::getDynamicShoulderOffset() const
 
     F32 blend = llclamp((3.f - mCurrentCameraDistance) / 2.f, 0.f, 1.f);
     blend = blend * blend * (3.f - 2.f * blend);
-    LLVector3 left = gAgent.getLeftAxis();
+    LLVector3 left = getThirdPersonFrame().getLeftAxis();
     left.mV[VZ] = 0.f;
     left.normalize();
-    F32 side = gAgent.isFacingBackwardWalk() ? 0.65f : -0.65f;
+    const F32 side = -0.65f;
     return LLVector3(left.mV[VX] * side * blend, left.mV[VY] * side * blend, -0.33f * blend);
 }
 
@@ -1877,12 +1928,7 @@ LLVector3d LLAgentCamera::calcCameraPositionTargetGlobal(bool *hit_limit)
             }
             else
             {
-                local_camera_offset = gAgent.getFrameAgent().rotateToAbsolute( local_camera_offset );
-                if (gAgent.isFacingBackwardWalk())
-                {
-                    local_camera_offset.mV[VX] = -local_camera_offset.mV[VX];
-                    local_camera_offset.mV[VY] = -local_camera_offset.mV[VY];
-                }
+                local_camera_offset = getThirdPersonFrame().rotateToAbsolute(local_camera_offset);
             }
 
             if (!isDisableCameraConstraints() && !mCameraCollidePlane.isExactlyZero() &&
@@ -2065,7 +2111,7 @@ LLQuaternion LLAgentCamera::getCurrentAvatarRotation()
 {
     LLViewerObject* sit_object = (LLViewerObject*)gAgentAvatarp->getParent();
 
-    LLQuaternion av_rot = gAgent.getFrameAgent().getQuaternion();
+    LLQuaternion av_rot = getThirdPersonFrame().getQuaternion();
     LLQuaternion obj_rot = sit_object ? sit_object->getRenderRotation() : LLQuaternion::DEFAULT;
     return av_rot * obj_rot;
 }
@@ -2516,6 +2562,7 @@ void LLAgentCamera::setAnimationDuration(F32 duration)
 //-----------------------------------------------------------------------------
 void LLAgentCamera::startCameraAnimation()
 {
+    mReturningToAvatarBeforeMovement = false;
     // Preserve motion still being resolved by the final camera smoothing pass
     // when a new focus point or camera transition interrupts the current one.
     mAnimationCameraStartGlobal = LLViewerCamera::getInstance()->getTargetPositionGlobal();
@@ -2531,6 +2578,7 @@ void LLAgentCamera::startCameraAnimation()
 void LLAgentCamera::stopCameraAnimation()
 {
     mCameraAnimating = false;
+    mReturningToAvatarBeforeMovement = false;
 }
 
 void LLAgentCamera::clearFocusObject()
@@ -2773,8 +2821,16 @@ void LLAgentCamera::setFocusOnAvatar(bool focus_on_avatar, bool animate, bool re
                 at_axis = frameCamera.getAtAxis();
                 at_axis.mV[VZ] = 0.f;
                 at_axis.normalize();
-                gAgent.resetAxes(at_axis);
-                gAgent.yaw(0);
+                if (gAgent.useCameraRelativeMovement())
+                {
+                    getThirdPersonFrame();
+                    mThirdPersonFrame.setAxes(frameCamera);
+                }
+                else
+                {
+                    gAgent.resetAxes(at_axis);
+                    gAgent.yaw(0);
+                }
             }
         }
     }

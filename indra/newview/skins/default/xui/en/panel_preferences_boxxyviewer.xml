@@ -57,11 +57,11 @@
    control_name="BoxxyPreventLeftClickActions"
    follows="left|top"
    height="20"
-   label="Prevent left-click actions"
+   label="Prevent left-click sitting"
    layout="topleft"
    left="150"
    name="prevent_left_click_actions"
-   tool_tip="Block special left-click actions such as Sit, Buy, and Open. Pay and Touch remain allowed, HUD attachments remain interactive, and action cursor icons are still shown."
+   tool_tip="Prevent left-click Sit actions on objects. All other actions remain allowed, and action cursor icons are still shown."
    top_delta="0"
    width="330" />
   <view_border

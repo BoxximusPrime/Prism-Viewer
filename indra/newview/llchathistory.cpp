@@ -1336,9 +1336,7 @@ protected:
                 menu->setItemEnabled("Request Teleport", LLAvatarActions::canOfferTeleport(mAvatarID));
                 menu->setItemEnabled("Voice Call", LLAvatarActions::canCall());
 
-                // We should only show 'Zoom in' item in a nearby chat
-                bool should_show_zoom = !LLIMModel::getInstance()->findIMSession(currentSessionID);
-                menu->setItemVisible("Zoom In", should_show_zoom && gObjectList.findObject(mAvatarID));
+                menu->setItemVisible("Zoom In", gObjectList.findObject(mAvatarID) != nullptr);
                 menu->setItemEnabled("Block Unblock", LLAvatarActions::canBlock(mAvatarID));
                 menu->setItemEnabled("Mute Text", LLAvatarActions::canBlock(mAvatarID));
                 menu->setItemEnabled("Chat History", LLLogChat::isTranscriptExist(mAvatarID));

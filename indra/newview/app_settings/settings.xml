@@ -17651,7 +17651,7 @@
   <key>BoxxyPreventLeftClickActions</key>
   <map>
     <key>Comment</key>
-    <string>Block special world-object left-click actions except Pay, Buy, and Touch, while retaining action cursors</string>
+    <string>Prevent sitting on objects by left-clicking, while allowing other object actions and retaining action cursors</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -17707,6 +17707,17 @@
   <map>
     <key>Comment</key>
     <string>Mute collision sounds emitted by other avatars</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>BoxxyCameraRelativeMovement</key>
+  <map>
+    <key>Comment</key>
+    <string>Orbit the camera independently and turn toward camera-relative movement, keeping avatar facing when stopped</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
