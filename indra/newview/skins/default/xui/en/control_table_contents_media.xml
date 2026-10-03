@@ -83,4 +83,12 @@
          name="lst_action"
          value="Interact (Script LMB)" />
     </rows>
+    <rows enabled="false" name="window_actions" value="">
+        <columns column="lst_action" font="SansSerif" halign="left"
+         name="lst_action" value="Window" />
+    </rows>
+    <rows name="toggle_borderless_fullscreen" value="toggle_borderless_fullscreen">
+        <columns column="lst_action" font="SansSerif" halign="left"
+         name="lst_action" value="Toggle Borderless Fullscreen" />
+    </rows>
 </contents>

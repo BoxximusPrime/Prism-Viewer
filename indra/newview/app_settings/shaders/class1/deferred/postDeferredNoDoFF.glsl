@@ -80,6 +80,7 @@ vec3 clampHDRRange(vec3 color);
 uniform int photo_grade_enabled;
 uniform vec4 photo_grade_color; // contrast, saturation, warmth, tint
 uniform vec3 photo_grade_curve; // lift, gamma, gain
+uniform float chromatic_aberration;
 
 vec3 photoGrade(vec3 color)
 {
@@ -102,6 +103,18 @@ vec3 photoGrade(vec3 color)
 void main()
 {
     vec4 diff = texture(diffuseRect, vary_fragcoord.xy);
+    if (chromatic_aberration > 0.0)
+    {
+        vec2 resolution = vec2(textureSize(diffuseRect, 0));
+        vec2 radial = (vary_fragcoord.xy - 0.5) * resolution;
+        float distance_from_center = length(radial);
+        float radius = distance_from_center / max(length(resolution * 0.5), 1.0);
+        vec2 offset = radial / max(distance_from_center, 1.0) *
+            chromatic_aberration * radius * radius / resolution;
+        vec2 border = 0.5 / resolution;
+        diff.r = texture(diffuseRect, clamp(vary_fragcoord.xy + offset, border, 1.0 - border)).r;
+        diff.b = texture(diffuseRect, clamp(vary_fragcoord.xy - offset, border, 1.0 - border)).b;
+    }
     diff.rgb = photoGrade(diff.rgb);
 
 #ifdef HAS_NOISE

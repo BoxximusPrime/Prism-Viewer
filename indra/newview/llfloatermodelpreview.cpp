@@ -65,6 +65,10 @@
 #include "llviewertexteditor.h"
 #include "llviewernetwork.h"
 #include "llmaterialeditor.h"
+#include "lltexturectrl.h"
+#include "llgltfmateriallist.h"
+#include "llinventorymodel.h"
+#include "lldir.h"
 
 
 //static
@@ -201,6 +205,17 @@ bool LLFloaterModelPreview::postBuild()
     getChild<LLCheckBoxCtrl>("show_joint_overrides")->setCommitCallback(boost::bind(&LLFloaterModelPreview::onViewOptionChecked, this, _1));
     getChild<LLCheckBoxCtrl>("show_joint_positions")->setCommitCallback(boost::bind(&LLFloaterModelPreview::onViewOptionChecked, this, _1));
 
+    getChild<LLComboBox>("preview_material_slot")->setCommitCallback(boost::bind(&LLFloaterModelPreview::onPreviewSlotChanged, this));
+    getChild<LLButton>("preview_image")->setCommitCallback(boost::bind(&LLFloaterModelPreview::onPreviewImage, this));
+    getChild<LLButton>("preview_checker")->setCommitCallback(boost::bind(&LLFloaterModelPreview::onPreviewChecker, this));
+    getChild<LLButton>("preview_clear")->setCommitCallback(boost::bind(&LLFloaterModelPreview::clearPreviewAppearance, this, false));
+    auto material = getChild<LLTextureCtrl>("preview_material");
+    material->setInventoryPickType(PICK_MATERIAL);
+    material->setCanApplyImmediately(false);
+    material->setOnSelectCallback(boost::bind(&LLFloaterModelPreview::onPreviewMaterial, this));
+    material->setCommitCallback(boost::bind(&LLFloaterModelPreview::onPreviewMaterial, this));
+    material->setOnCancelCallback(boost::bind(&LLFloaterModelPreview::updatePreviewAppearanceControls, this));
+
     childDisable("upload_skin");
     childDisable("upload_joints");
     childDisable("lock_scale_if_joint_position");
@@ -328,6 +343,9 @@ void LLFloaterModelPreview::initModelPreview()
         delete mModelPreview;
     }
 
+    ++mPreviewAppearanceRequest;
+    getChild<LLTextureCtrl>("preview_material")->closeDependentFloater();
+
     S32 tex_width = 512;
     S32 tex_height = 512;
 
@@ -414,6 +432,166 @@ void LLFloaterModelPreview::onShowSkinWeightChecked(LLUICtrl* ctrl)
         mModelPreview->mCameraOffset.clearVec();
         onViewOptionChecked(ctrl);
     }
+}
+
+namespace
+{
+std::vector<LLModelPreview::PreviewSlot> selected_preview_slots(LLModelPreview* preview, S32 selected)
+{
+    auto slots = preview->getPreviewSlots();
+    if (selected == 0) return slots;
+    if (selected > 0 && size_t(selected) <= slots.size()) return {slots[selected-1]};
+    return {};
+}
+}
+
+void LLFloaterModelPreview::updatePreviewAppearanceControls()
+{
+    auto slots = mModelPreview->getPreviewSlots();
+    auto combo = getChild<LLComboBox>("preview_material_slot");
+    // Slot ordering is stable across LOD changes because it comes from high LOD.
+    if (slots != mPreviewSlots || combo->getItemCount() != S32(slots.size()+1))
+    {
+        ++mPreviewAppearanceRequest;
+        mPreviewSlots = slots;
+        getChild<LLTextureCtrl>("preview_material")->closeDependentFloater();
+        combo->clearRows();
+        combo->add(getString("preview_all_slots"), 0);
+        for (size_t i = 0; i < slots.size(); ++i)
+        {
+            combo->add(slots[i].first->mLabel + " / " + slots[i].second, S32(i+1));
+        }
+        combo->setCurrentByIndex(0);
+    }
+    const bool enabled = !slots.empty() && !mModelPreview->mLoading;
+    for (const auto& name : {"preview_material_slot", "preview_image", "preview_material", "preview_checker", "preview_clear"})
+        childSetEnabled(name, enabled);
+    const bool loading = mModelPreview->updatePreviewAppearance();
+    auto selected = selected_preview_slots(mModelPreview, combo->getValue().asInteger());
+    const LLModelPreview::PreviewAppearance* appearance = nullptr;
+    bool mixed = false;
+    for (const auto& slot : selected)
+    {
+        auto candidate = mModelPreview->getPreviewAppearance(slot);
+        if (candidate)
+        {
+            if (appearance && (candidate->label != appearance->label || candidate->material != appearance->material || candidate->texture != appearance->texture)) mixed = true;
+            appearance = candidate;
+        }
+        else if (selected.size() > 1) mixed = true;
+    }
+    auto material = getChild<LLTextureCtrl>("preview_material");
+    // Picker changes are committed only on OK or drop. Its tentative choices
+    // belong to that picker; update the swatch only when the slot changes.
+    if (!material->isDirty() && !appearance) material->setImageAssetID(LLUUID::null);
+    std::string status = getString("preview_default");
+    if (appearance) status = appearance->label;
+    if (mixed && appearance) status = getString("preview_mixed");
+    if (loading) status += " — " + getString("preview_loading");
+    if (appearance && ((appearance->texture && appearance->texture->isMissingAsset()) ||
+        (appearance->material && !appearance->material->isFetching() && !appearance->material->isLoaded())))
+        status = getString("preview_failed");
+    if (appearance && appearance->material && appearance->material->isLoaded())
+    {
+        const auto& pbr = appearance->material;
+        for (auto* texture : {pbr->mBaseColorTexture.get(), pbr->mNormalTexture.get(),
+            pbr->mMetallicRoughnessTexture.get(), pbr->mEmissiveTexture.get()})
+        {
+            if (texture && texture->isMissingAsset()) { status += "\n" + getString("preview_missing_map"); break; }
+        }
+    }
+    if (mModelPreview->hasPreviewMaterial() && mModelPreview->mViewOption["show_skin_weight"])
+        status += "\n" + getString("preview_rigged_fallback");
+    getChild<LLTextBox>("preview_appearance_status")->setText(status);
+}
+
+void LLFloaterModelPreview::onPreviewSlotChanged()
+{
+    ++mPreviewAppearanceRequest;
+    getChild<LLTextureCtrl>("preview_material")->closeDependentFloater();
+    auto control = getChild<LLTextureCtrl>("preview_material");
+    control->resetDirty();
+    auto slots = selected_preview_slots(mModelPreview, getChild<LLComboBox>("preview_material_slot")->getValue().asInteger());
+    const auto* appearance = slots.size() == 1 ? mModelPreview->getPreviewAppearance(slots.front()) : nullptr;
+    control->setImageAssetID(appearance ? appearance->materialID : LLUUID::null);
+    updatePreviewAppearanceControls();
+}
+
+void LLFloaterModelPreview::onPreviewImage()
+{
+    const U32 request = ++mPreviewAppearanceRequest;
+    const auto handle = mModelPreview->getHandle();
+    auto slots = selected_preview_slots(mModelPreview, getChild<LLComboBox>("preview_material_slot")->getValue().asInteger());
+    LLFilePickerReplyThread::startPicker([handle, request, slots](const std::vector<std::string>& files,
+        LLFilePicker::ELoadFilter, LLFilePicker::ESaveFilter)
+    {
+        auto preview = handle.get();
+        if (!preview || files.empty()) return;
+        auto floater = static_cast<LLFloaterModelPreview*>(preview->mFMP);
+        if (floater->mPreviewAppearanceRequest != request) return;
+        LLModelPreview::PreviewAppearance appearance;
+        appearance.texture = LLViewerTextureManager::getFetchedTextureFromUrl("file://" + files.front(),
+            FTT_LOCAL_FILE, true, LLGLTexture::BOOST_PREVIEW);
+        appearance.label = gDirUtilp->getBaseFileName(files.front());
+        preview->setPreviewAppearance(slots, appearance);
+        floater->updatePreviewAppearanceControls();
+    }, LLFilePicker::FFLOAD_IMAGE, false);
+}
+
+void LLFloaterModelPreview::onPreviewMaterial()
+{
+    ++mPreviewAppearanceRequest;
+    auto control = getChild<LLTextureCtrl>("preview_material");
+    const LLUUID asset = control->getImageAssetID();
+    if (asset.isNull()) { clearPreviewAppearance(false); return; }
+    LLModelPreview::PreviewAppearance appearance;
+    appearance.material = gGLTFMaterialList.getMaterial(asset);
+    appearance.materialID = asset;
+    appearance.label = getString("preview_material_name");
+    if (auto item = gInventory.getItem(control->getImageItemID())) appearance.label = item->getName();
+    mModelPreview->setPreviewAppearance(selected_preview_slots(mModelPreview,
+        getChild<LLComboBox>("preview_material_slot")->getValue().asInteger()), appearance);
+    control->resetDirty();
+    updatePreviewAppearanceControls();
+}
+
+void LLFloaterModelPreview::onPreviewChecker()
+{
+    ++mPreviewAppearanceRequest;
+    constexpr S32 size = 256;
+    LLPointer<LLImageRaw> raw = new LLImageRaw(size, size, 3);
+    U8* pixels = raw->getData();
+    for (S32 y = 0; y < size; ++y)
+    for (S32 x = 0; x < size; ++x)
+    {
+        U8* pixel = pixels + (y*size+x)*3;
+        const bool bright = ((x/32) ^ (y/32)) & 1;
+        // Color gradients distinguish U/V direction and mirrored UV islands.
+        pixel[0] = bright ? U8(128+x/2) : U8(x/4);
+        pixel[1] = bright ? U8(128+y/2) : U8(y/4);
+        pixel[2] = bright ? 220 : 32;
+    }
+    LLModelPreview::PreviewAppearance appearance;
+    appearance.texture = new LLViewerFetchedTexture(raw, FTT_LOCAL_FILE, true);
+    appearance.label = getString("preview_checker_name");
+    mModelPreview->setPreviewAppearance(selected_preview_slots(mModelPreview,
+        getChild<LLComboBox>("preview_material_slot")->getValue().asInteger()), appearance);
+    updatePreviewAppearanceControls();
+}
+
+void LLFloaterModelPreview::clearPreviewAppearance(bool all)
+{
+    ++mPreviewAppearanceRequest;
+    auto control = getChild<LLTextureCtrl>("preview_material");
+    control->closeDependentFloater();
+    control->setImageAssetID(LLUUID::null);
+    control->resetDirty();
+    if (!mModelPreview) return;
+    auto combo = getChild<LLComboBox>("preview_material_slot");
+    auto slots = selected_preview_slots(mModelPreview, combo->getValue().asInteger());
+    if (all) { mModelPreview->clearPreviewAppearance(); combo->clearRows(); }
+    else if (!slots.empty()) mModelPreview->clearPreviewAppearance(slots);
+    updatePreviewAppearanceControls();
 }
 
 void LLFloaterModelPreview::onViewOptionChecked(LLUICtrl* ctrl)
@@ -818,6 +996,7 @@ void LLFloaterModelPreview::draw()
     }
 
     mModelPreview->update();
+    updatePreviewAppearanceControls();
 
     if (!mModelPreview->mLoading)
     {
@@ -965,6 +1144,7 @@ void LLFloaterModelPreview::onOpen(const LLSD& key)
 /*virtual*/
 void LLFloaterModelPreview::onClose(bool app_quitting)
 {
+    clearPreviewAppearance();
     LLModelPreview::sIgnoreLoadedCallback = true;
 }
 

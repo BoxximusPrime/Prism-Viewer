@@ -801,6 +801,15 @@ bool toggle_sit(EKeystate s)
     return true;
 }
 
+bool toggle_borderless_fullscreen(EKeystate s)
+{
+    if (KEYSTATE_DOWN == s)
+    {
+        gSavedSettings.setBOOL("BorderlessFullscreen", !gSavedSettings.getBOOL("BorderlessFullscreen"));
+    }
+    return true;
+}
+
 bool toggle_pause_media(EKeystate s) // analogue of play/pause button in top bar
 {
     if (KEYSTATE_DOWN != s) return true;
@@ -970,6 +979,7 @@ REGISTER_KEYBOARD_ACTION("toggle_pause_media", toggle_pause_media);
 REGISTER_KEYBOARD_ACTION("toggle_enable_media", toggle_enable_media);
 REGISTER_KEYBOARD_ACTION("teleport_to", teleport_to);
 REGISTER_KEYBOARD_ACTION("walk_to", walk_to);
+REGISTER_KEYBOARD_GLOBAL_ACTION("toggle_borderless_fullscreen", toggle_borderless_fullscreen);
 REGISTER_KEYBOARD_GLOBAL_ACTION("toggle_voice", toggle_voice);
 REGISTER_KEYBOARD_GLOBAL_ACTION("voice_follow_key", voice_follow_key);
 REGISTER_KEYBOARD_ACTION(script_mouse_handler_name, script_trigger_lbutton);
@@ -1127,7 +1137,7 @@ bool LLViewerInput::handleGlobalBindsKeyDown(KEY key, MASK mask)
         return false;
     }
     S32 mode = getMode();
-    return scanKey(mGlobalKeyBindings[mode], static_cast<S32>(mGlobalKeyBindings[mode].size()), key, mask, true, false, false, false);
+    return scanKey(mGlobalKeyBindings[mode], static_cast<S32>(mGlobalKeyBindings[mode].size()), key, mask, true, false, false, gKeyboard->getKeyRepeated(key));
 }
 
 bool LLViewerInput::handleGlobalBindsKeyUp(KEY key, MASK mask)

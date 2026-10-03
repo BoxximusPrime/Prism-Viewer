@@ -3349,7 +3349,7 @@ bool LLAppViewer::initWindow()
         // this setting on mac.
         .fullscreen(false)
 #else // LL_DARWIN
-        .fullscreen(gSavedSettings.getBOOL("FullScreen"))
+        .fullscreen(gSavedSettings.getBOOL("FullScreen") && !gSavedSettings.getBOOL("BorderlessFullscreen"))
 #endif
         .ignore_pixel_depth(ignorePixelDepth)
         .first_run(mIsFirstRun);
@@ -3491,6 +3491,12 @@ bool LLAppViewer::initWindow()
 
     // Finish view initialization
     gViewerWindow->initBase();
+
+    if (gSavedSettings.getBOOL("BorderlessFullscreen")
+        && !gViewerWindow->getWindow()->setBorderlessFullscreen(true))
+    {
+        gSavedSettings.setBOOL("BorderlessFullscreen", false);
+    }
 
     // show viewer window
     //gViewerWindow->getWindow()->show();
@@ -3844,7 +3850,7 @@ void LLAppViewer::cleanupSavedSettings()
     if(NULL != gViewerWindow)
     {
         bool maximized = gViewerWindow->getWindow()->getMaximized();
-        if (!maximized)
+        if (!maximized && !gViewerWindow->getWindow()->getBorderlessFullscreen())
         {
             LLCoordScreen window_pos;
 

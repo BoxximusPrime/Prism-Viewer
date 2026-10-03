@@ -373,6 +373,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("chat_voice", "floater_voice_chat_volume.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterChatVoiceVolume>);
     LLFloaterReg::add("change_item_thumbnail", "floater_change_item_thumbnail.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterChangeItemThumbnail>);
     LLFloaterReg::add("nearby_chat", "floater_im_session.xml", (LLFloaterBuildFunc)&LLFloaterIMNearbyChat::buildFloater);
+    LLFloaterReg::add("chat_mention_settings", "floater_chat_mention_settings.xml", &LLFloaterReg::build<LLFloater>);
     LLFloaterReg::add("chat_mention_picker", "floater_chat_mention_picker.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterChatMentionPicker>);
     LLFloaterReg::add("classified", "floater_classified.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterClassified>);
     LLFloaterReg::add("compile_queue", "floater_script_queue.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterCompileQueue>);
@@ -427,6 +428,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("inventory_llm_sort", "floater_inventory_llm_sort.xml", &LLFloaterReg::build<LLFloaterInventoryLLMSort>);
     LLFloaterReg::add("inventory_cleanup_review", "floater_inventory_cleanup_review.xml", &LLFloaterReg::build<LLFloaterInventoryCleanupReview>);
     LLFloaterReg::add("inventory_settings", "floater_inventory_settings.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterInventorySettings>);
+    LLFloaterReg::add("ui_shortcuts", "floater_ui_shortcuts.xml", &LLFloaterReg::build<LLFloater>);
     LLInspectAvatarUtil::registerFloater();
     LLInspectGroupUtil::registerFloater();
     LLInspectObjectUtil::registerFloater();

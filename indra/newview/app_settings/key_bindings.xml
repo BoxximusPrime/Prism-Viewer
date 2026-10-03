@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <keys xml_version="1">
   <first_person>
+    <binding key="F11" mask="NONE" command="toggle_borderless_fullscreen"/>
     <binding key="A" mask="NONE" command="slide_left"/>
     <binding key="D" mask="NONE" command="slide_right"/>
     <binding key="W" mask="NONE" command="push_forward"/>
@@ -26,6 +27,7 @@
     <binding key="" mask="NONE" mouse="LMB" command="script_trigger_lbutton"/>
   </first_person>
   <third_person>
+    <binding key="F11" mask="NONE" command="toggle_borderless_fullscreen"/>
     <binding key="A" mask="NONE" command="turn_left"/>
     <binding key="D" mask="NONE" command="turn_right"/>
     <binding key="A" mask="SHIFT" command="slide_left"/>
@@ -89,6 +91,7 @@
     <binding key="" mask="NONE" mouse="LMB" command="script_trigger_lbutton"/>
   </third_person>
   <sitting>
+    <binding key="F11" mask="NONE" command="toggle_borderless_fullscreen"/>
     <binding key="A" mask="ALT" command="spin_around_cw"/>
     <binding key="D" mask="ALT" command="spin_around_ccw"/>
     <binding key="W" mask="ALT" command="move_forward"/>
@@ -162,6 +165,7 @@
     <binding key="" mask="NONE" mouse="LMB" command="script_trigger_lbutton"/>
   </sitting>
   <edit_avatar>
+    <binding key="F11" mask="NONE" command="toggle_borderless_fullscreen"/>
     <!--Avatar editing camera controls-->
     <binding key="A" mask="NONE" command="edit_avatar_spin_cw"/>
     <binding key="D" mask="NONE" command="edit_avatar_spin_ccw"/>

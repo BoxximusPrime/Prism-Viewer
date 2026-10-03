@@ -1075,10 +1075,22 @@ bool LLFloaterSnapshot::postBuild()
         }
         getChild<LLButton>("photo_grade_reset")->setCommitCallback([this](LLUICtrl*, const LLSD&) {
             for (const char* name : {"PhotoGradeContrast", "PhotoGradeSaturation", "PhotoGradeWarmth",
-                                    "PhotoGradeTint", "PhotoGradeLift", "PhotoGradeGamma", "PhotoGradeGain"})
+                                    "PhotoGradeTint", "PhotoGradeLift", "PhotoGradeGamma", "PhotoGradeGain",
+                                    "RenderChromaticAberrationStrength"})
                 gSavedSettings.getControl(name)->resetToDefault(true);
             if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
         });
+        for (const char* name : {"photo_grade_enabled", "photo_exposure", "photo_grade_contrast",
+                                "photo_grade_saturation", "photo_grade_warmth", "photo_grade_tint",
+                                "photo_grade_lift", "photo_grade_gamma", "photo_grade_gain",
+                                "photo_chromatic_aberration"})
+        {
+            auto* setting = getChild<LLUICtrl>(name)->getControlVariable();
+            getChild<LLButton>(std::string(name) + "_reset")->setCommitCallback([this, setting](LLUICtrl*, const LLSD&) {
+                setting->resetToDefault(true);
+                if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);
+            });
+        }
         getChild<LLSideTrayPanelContainer>("panel_container")->selectTabByName("panel_snapshot_local");
         getChild<LLUICtrl>("photo_show_ui")->setCommitCallback([](LLUICtrl* ctrl, const LLSD&) {
             const bool visible = ctrl->getValue().asBoolean();
@@ -1129,7 +1141,8 @@ bool LLFloaterSnapshot::postBuild()
                                 "photo_shared", "photo_clouds", "photo_freeze_visuals",
                                 "photo_dutch", "photo_yaw", "photo_pitch", "photo_grade_enabled",
                                 "photo_grade_contrast", "photo_grade_saturation", "photo_grade_warmth",
-                                "photo_grade_tint", "photo_grade_lift", "photo_grade_gamma", "photo_grade_gain"})
+                                "photo_grade_tint", "photo_grade_lift", "photo_grade_gamma", "photo_grade_gain",
+                                "photo_chromatic_aberration"})
         {
             getChild<LLUICtrl>(name)->setCommitCallback([this](LLUICtrl*, const LLSD&) {
                 if (auto* preview = getPreviewView()) preview->updateSnapshot(true, true, 0.2f);

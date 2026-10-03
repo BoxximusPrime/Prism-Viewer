@@ -2771,6 +2771,11 @@ static LLPanelInjector<LLPanelPreferencePrivacy> t_pref_privacy("panel_preferenc
 
 bool LLPanelPreferenceGraphics::postBuild()
 {
+#if LL_WINDOWS
+    getChild<LLUICtrl>("BorderlessFullscreen")->setEnabled(!gViewerWindow->getWindow()->getFullscreen());
+#else
+    getChild<LLUICtrl>("BorderlessFullscreen")->setEnabled(false);
+#endif
     // The page binds the complete vector for preset, Default and Cancel handling;
     // its three sliders edit individual components without introducing new settings.
     for (S32 axis = 0; axis < 3; ++axis)
@@ -2985,7 +2990,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
         "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAAFreezeJitter", "RenderTAADebug" })
         gSavedSettings.getControl(control)->resetToDefault(true);
-    for (const char* control : { "RenderPostSharpenEnabled", "RenderPostSharpenStrength" })
+    for (const char* control : { "RenderPostSharpenEnabled", "RenderPostSharpenStrength", "RenderChromaticAberrationStrength" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderGTAOEnabled", "RenderGTAODebug", "RenderGTAORadius",
         "RenderGTAOStrength", "RenderGTAOQuality", "RenderGTAODenoise", "RenderGTAOFalloff", "RenderGTAOThinOccluder" })

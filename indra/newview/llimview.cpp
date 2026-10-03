@@ -73,6 +73,7 @@
 #include "llcorehttputil.h"
 #include "lluiusage.h"
 #include "llurlregistry.h"
+#include "llviewerchat.h"
 
 #include <array>
 
@@ -198,7 +199,7 @@ void notify_of_message(const LLSD& msg, bool is_dnd_msg)
     LLFloaterIMSessionTab* session_floater = LLFloaterIMSessionTab::getConversation(session_id);
     bool store_dnd_message = false; // flag storage of a dnd message
     bool is_session_focused = session_floater->isTornOff() && session_floater->hasFocus();
-    bool contains_mention = LLUrlRegistry::getInstance()->containsAgentMention(msg["message"].asString());
+    bool contains_mention = LLViewerChat::containsMention(msg["message"].asString());
     static LLCachedControl<bool> play_snd_mention_pref(gSavedSettings, "PlaySoundChatMention", false);
     bool play_snd_mention = contains_mention && play_snd_mention_pref && (msg["source_type"].asInteger() != CHAT_SOURCE_OBJECT);
     if (!LLFloater::isVisible(im_box) || im_box->isMinimized())
@@ -3375,7 +3376,7 @@ void LLIMMgr::addMessage(
                 && gSavedSettings.getBOOL("PlaySoundNewConversation"))
             {
                 static LLCachedControl<bool> play_snd_mention_pref(gSavedSettings, "PlaySoundChatMention", false);
-                if (!play_snd_mention_pref || !LLUrlRegistry::getInstance()->containsAgentMention(msg))
+                if (!play_snd_mention_pref || !LLViewerChat::containsMention(msg))
                 {
                     make_ui_sound("UISndNewIncomingIMSession");
                 }
@@ -3409,7 +3410,7 @@ void LLIMMgr::addMessage(
     {
         LLFloaterReg::showInstance("im_container");
         LLFloaterReg::getTypedInstance<LLFloaterIMContainer>("im_container")->
-                flashConversationItemWidget(new_session_id, true, LLUrlRegistry::getInstance()->containsAgentMention(msg));
+                flashConversationItemWidget(new_session_id, true, LLViewerChat::containsMention(msg));
     }
 }
 

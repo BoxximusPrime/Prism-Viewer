@@ -1163,6 +1163,70 @@ bool LLWindowWin32::getFullscreen()
     return mFullscreen;
 }
 
+bool LLWindowWin32::setBorderlessFullscreen(bool enabled)
+{
+    if (enabled == mBorderlessFullscreen) return true;
+    if (!mWindowHandle || mFullscreen) return false;
+
+    // Keep the HWND, device context and GL context; only change the window frame.
+    std::promise<bool> result;
+    auto future = result.get_future();
+    mWindowThread->post([this, enabled, &result]()
+    {
+        WINDOWPLACEMENT previous = {};
+        previous.length = sizeof(previous);
+        MONITORINFO monitor = {};
+        monitor.cbSize = sizeof(monitor);
+        if (!GetWindowPlacement(mWindowHandle, &previous)
+            || !GetMonitorInfo(MonitorFromWindow(mWindowHandle, MONITOR_DEFAULTTONEAREST), &monitor))
+        {
+            result.set_value(false);
+            return;
+        }
+        const LONG_PTR style = GetWindowLongPtr(mWindowHandle, GWL_STYLE);
+        const LONG_PTR ex_style = GetWindowLongPtr(mWindowHandle, GWL_EXSTYLE);
+        if (enabled)
+        {
+            mWindowedPlacement = previous;
+            mWindowedStyle = style;
+            mWindowedExStyle = ex_style;
+        }
+        auto set_style = [this](int index, LONG_PTR value)
+        {
+            SetLastError(ERROR_SUCCESS);
+            return SetWindowLongPtr(mWindowHandle, index, value) != 0 || GetLastError() == ERROR_SUCCESS;
+        };
+        mBorderlessFullscreen = enabled;
+        if (enabled) ShowWindow(mWindowHandle, SW_RESTORE);
+        bool success = set_style(GWL_STYLE, enabled ? (style & ~(WS_OVERLAPPEDWINDOW | WS_MAXIMIZE | WS_MINIMIZE)) | WS_POPUP : mWindowedStyle)
+            && set_style(GWL_EXSTYLE, enabled ? ex_style & ~(WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE) : mWindowedExStyle);
+        if (success && enabled)
+        {
+            const RECT& bounds = monitor.rcMonitor;
+            success = SetWindowPos(mWindowHandle, HWND_TOP, bounds.left, bounds.top,
+                bounds.right - bounds.left, bounds.bottom - bounds.top,
+                SWP_FRAMECHANGED | SWP_NOOWNERZORDER);
+        }
+        else if (success)
+        {
+            success = SetWindowPlacement(mWindowHandle, &mWindowedPlacement)
+                && SetWindowPos(mWindowHandle, nullptr, 0, 0, 0, 0,
+                    SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        if (!success)
+        {
+            mBorderlessFullscreen = !enabled;
+            const bool restored = set_style(GWL_STYLE, style) && set_style(GWL_EXSTYLE, ex_style)
+                && SetWindowPlacement(mWindowHandle, &previous)
+                && SetWindowPos(mWindowHandle, nullptr, 0, 0, 0, 0,
+                    SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+            LL_WARNS("Window") << "Borderless fullscreen change failed; rollback " << restored << LL_ENDL;
+        }
+        result.set_value(success);
+    });
+    return future.get();
+}
+
 bool LLWindowWin32::getPosition(LLCoordScreen *position)
 {
     position->mX = mRect.left;

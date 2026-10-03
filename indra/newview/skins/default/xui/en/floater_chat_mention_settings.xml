@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="chat_mention_settings" title="MENTIONS" width="470" height="410"
+ can_resize="false" can_minimize="false" can_close="true" save_rect="true">
+  <text name="heading" layout="topleft" left="20" top="40" width="430" height="24"
+   font="SansSerifLarge" text_color="AccentColor">Names that get your attention</text>
+  <text name="intro" layout="topleft" left="20" top="72" width="430" height="36"
+   font="SansSerifSmall" word_wrap="true">Treat names or phrases in incoming messages as mentions of you. Changes apply immediately.</text>
+  <check_box name="names_enabled" control_name="ChatMentionNamesEnabled"
+   label="Recognize custom names and phrases" layout="topleft" left="20" top="116" width="430" height="20" />
+  <text name="names_label" layout="topleft" left="20" top="147" width="430" height="16">
+    Names or phrases (separate with commas or new lines):
+  </text>
+  <text_editor name="names" control_name="ChatMentionNames" enabled_control="ChatMentionNamesEnabled"
+   layout="topleft" left="20" top="171" width="430" height="62" max_length="4096"
+   commit_on_focus_lost="true" word_wrap="true" parse_urls="false" font="SansSerif"
+   text_color="TextFgColor" text_readonly_color="TextFgReadOnlyColor" />
+  <check_box name="nearby" control_name="ChatMentionInNearby" enabled_control="ChatMentionNamesEnabled"
+   label="Nearby chat" layout="topleft" left="20" top="248" width="200" height="20" />
+  <check_box name="im" control_name="ChatMentionInIM" enabled_control="ChatMentionNamesEnabled"
+   label="DMs and group chats" layout="topleft" left="235" top="248" width="215" height="20" />
+  <check_box name="whole_words" control_name="ChatMentionWholeWords" enabled_control="ChatMentionNamesEnabled"
+   label="Whole words only" tool_tip="Ann matches @Ann and Ann!, but not announcement."
+   layout="topleft" left="20" top="276" width="200" height="20" />
+  <check_box name="case_sensitive" control_name="ChatMentionCaseSensitive" enabled_control="ChatMentionNamesEnabled"
+   label="Case sensitive" layout="topleft" left="235" top="276" width="215" height="20" />
+  <check_box name="highlight" control_name="ChatMentionHighlightMessages"
+   label="Highlight messages using the Mentions color" layout="topleft" left="20" top="316" width="430" height="20" />
+  <check_box name="sound" control_name="PlaySoundChatMention"
+   label="Play mention sound" layout="topleft" left="20" top="344" width="430" height="20" />
+  <text name="hint" layout="topleft" left="20" top="376" width="430" height="18"
+   font="SansSerifSmall">Linked @mentions work independently of your custom names.</text>
+</floater>

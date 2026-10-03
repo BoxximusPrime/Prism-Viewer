@@ -40,6 +40,7 @@ public:
     static void getChatColor(const LLChat& chat, std::string& r_color_name, F32& r_color_alpha);
     static std::string getSenderLabel(const LLChat& chat);
     static LLColor4 getSenderNameColor(const LLChat& chat);
+    static bool containsMention(const std::string& text, bool nearby_chat = false);
     static LLFontGL* getChatFont();
     static S32 getChatFontSize();
     static void formatChatMsg(const LLChat& chat, std::string& formated_msg);

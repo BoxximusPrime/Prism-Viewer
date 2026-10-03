@@ -37,6 +37,7 @@
 #include "fsexactoit.h"
 // </AS:Chanayane>
 #include "llviewershadermgr.h"
+#include "llgltfmaterialpreviewmgr.h"
 #include "llviewercontrol.h"
 #include "llversioninfo.h"
 
@@ -285,6 +286,7 @@ LLGLSLShader            gDeferredPBROpaqueProgram;
 LLGLSLShader            gDeferredSkinnedPBROpaqueProgram;
 LLGLSLShader            gHUDPBRAlphaProgram;
 LLGLSLShader            gDeferredPBRAlphaProgram;
+LLGLSLShader            gModelPreviewPBRProgram;
 LLGLSLShader            gDeferredSkinnedPBRAlphaProgram;
 LLGLSLShader            gDeferredPBRTerrainProgram[TERRAIN_PAINT_TYPE_COUNT];
 
@@ -498,6 +500,7 @@ void LLViewerShaderMgr::finalizeShaderList()
     mShaderList.push_back(&gDeferredWLMoonProgram);
     mShaderList.push_back(&gDeferredWLSunProgram);
     mShaderList.push_back(&gDeferredPBRAlphaProgram);
+    mShaderList.push_back(&gModelPreviewPBRProgram);
     mShaderList.push_back(&gHUDPBRAlphaProgram);
     mShaderList.push_back(&gDeferredPostTonemapProgram);
     mShaderList.push_back(&gNoPostTonemapProgram);
@@ -632,7 +635,10 @@ static U32 shaderProgramCount()
         + (gSavedSettings.getBOOL("LocalTerrainPaintEnabled") ? 1 : 0)
         + (gGLManager.mHasCubeMapArray ? 3 : 0);
     const bool gltf = gSavedSettings.getBOOL("GLTFEnabled");
-    const U32 deferred_programs = 110 + 2 * LLMaterial::SHADER_COUNT
+    const U32 deferred_programs = 110
+        + 1 // volumetric clouds
+        + 1 // upload model PBR preview
+        + 2 * LLMaterial::SHADER_COUNT
         + TERRAIN_PAINT_TYPE_COUNT + LL_DEFERRED_MULTI_LIGHT_COUNT
         + (gGLManager.mGLVersion > 3.9f ? 4 : 0)   // FXAA qualities
         + (gGLManager.mGLVersion > 3.15f ? 12 : 0) // SMAA: 4 qualities, 3 stages
@@ -1617,6 +1623,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gGLTFPBRMetallicRoughnessProgram.unload();
         gDeferredSkinnedPBROpaqueProgram.unload();
         gDeferredPBRAlphaProgram.unload();
+        gModelPreviewPBRProgram.unload();
         gDeferredSkinnedPBRAlphaProgram.unload();
         for (U32 paint_type = 0; paint_type < TERRAIN_PAINT_TYPE_COUNT; ++paint_type)
         {
@@ -1935,6 +1942,27 @@ bool LLViewerShaderMgr::loadShadersDeferred()
 
         shader->mRiggedVariant->mFeatures.calculatesLighting = true;
         shader->mRiggedVariant->mFeatures.hasLighting = true;
+    }
+
+    if (success)
+    {
+        // Forward PBR preview retains material masks while ignoring world-only
+        // clipping/fog. Keep the normal world and inventory-sphere shaders intact.
+        auto& shader = gModelPreviewPBRProgram;
+        shader.mName = "Upload Model PBR Preview";
+        shader.mFeatures = gDeferredPBRAlphaProgram.mFeatures;
+        shader.mFeatures.calculatesLighting = false;
+        shader.mFeatures.hasLighting = false;
+        shader.mShaderFiles = gDeferredPBRAlphaProgram.mShaderFiles;
+        shader.mShaderLevel = gDeferredPBRAlphaProgram.mShaderLevel;
+        shader.mShaderGroup = gDeferredPBRAlphaProgram.mShaderGroup;
+        shader.mDefines = gDeferredPBRAlphaProgram.mDefines;
+        shader.addPermutation("HAS_ALPHA_MASK", "1");
+        shader.addPermutation("MODEL_PREVIEW", "1");
+        success = shader.createShader();
+        shader.mFeatures.calculatesLighting = true;
+        shader.mFeatures.hasLighting = true;
+        llassert(success);
     }
 
     if (success)

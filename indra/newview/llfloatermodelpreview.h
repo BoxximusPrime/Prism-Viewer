@@ -108,6 +108,15 @@ public:
 
     void            loadHighLodModel();
 
+    void updatePreviewAppearanceControls();
+    void onPreviewSlotChanged();
+    void onPreviewImage();
+    void onPreviewMaterial();
+    void onPreviewChecker();
+    void clearPreviewAppearance(bool all = true);
+    U32 mPreviewAppearanceRequest = 0;
+    std::vector<std::pair<LLModel*, std::string>> mPreviewSlots;
+
     void onViewOptionChecked(LLUICtrl* ctrl);
     void onUploadOptionChecked(LLUICtrl* ctrl);
     bool isViewOptionChecked(const LLSD& userdata);

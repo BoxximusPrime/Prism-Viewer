@@ -26,6 +26,8 @@
 
 #include "llviewerprecompiledheaders.h"
 
+#include "llagent.h"
+#include "llui.h"
 #include "llagentdata.h" // for gAgentID
 #include "llfloaterimnearbychathandler.h"
 
@@ -619,6 +621,12 @@ void LLFloaterIMNearbyChatHandler::processChat(const LLChat& chat_msg,
         && chat_msg.mFromID.notNull()
         && chat_msg.mFromID != gAgentID)
     {
+        if (chat_msg.mChatStyle != CHAT_STYLE_HISTORY && !gAgent.isDoNotDisturb()
+            && gSavedSettings.getBOOL("PlaySoundChatMention")
+            && LLViewerChat::containsMention(chat_msg.mText, true))
+        {
+            make_ui_sound("UISndChatMention");
+        }
         LLFirstUse::otherAvatarChatFirst();
 
         // Add sender to the recent people list.

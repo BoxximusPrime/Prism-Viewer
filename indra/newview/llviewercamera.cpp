@@ -114,7 +114,8 @@ void LLViewerCamera::applyCameraSmoothing()
     if (gCubeSnapshot) return;
 
     static LLCachedControl<F32> smoothing(gSavedSettings, "BoxxyCameraSmoothing");
-    const F32 half_life = llclamp((F32)smoothing, 0.f, 1.f);
+    // Keep the animated eye camera on the skeleton instead of lagging behind it.
+    const F32 half_life = gAgentCamera.useAnimatedMouselook() ? 0.f : llclamp((F32)smoothing, 0.f, 1.f);
     mSmoothingTargetPosition = gAgent.getPosGlobalFromAgent(getOrigin());
     mSmoothingTargetRotation = getQuaternion();
     mSmoothingTargetFOV = getView();
@@ -166,7 +167,7 @@ bool LLViewerCamera::updateCameraLocation(const LLVector3 &center, const LLVecto
     // Move origin[VZ] far enough (up or down) from the water surface
     static const F32 MIN_DIST_TO_WATER = 0.2f;
     F32& zpos = origin.mV[VZ];
-    if (zpos < water_height + MIN_DIST_TO_WATER)
+    if (!gAgentCamera.useAnimatedMouselook() && zpos < water_height + MIN_DIST_TO_WATER)
     {
         if (zpos >= water_height)
         {

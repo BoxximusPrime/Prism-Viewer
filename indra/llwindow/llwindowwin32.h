@@ -61,6 +61,8 @@ public:
     void minimize() override;
     void restore() override;
     bool getFullscreen();
+    bool setBorderlessFullscreen(bool enabled) override;
+    bool getBorderlessFullscreen() const override { return mBorderlessFullscreen; }
     bool getPosition(LLCoordScreen *position) override;
     bool getSize(LLCoordScreen *size) override;
     bool getSize(LLCoordWindow *size) override;
@@ -208,6 +210,10 @@ protected:
     WCHAR       *mWindowClassName;
 
     HWND        mWindowHandle = 0;  // window handle
+    bool        mBorderlessFullscreen = false;
+    LONG_PTR    mWindowedStyle = 0;
+    LONG_PTR    mWindowedExStyle = 0;
+    WINDOWPLACEMENT mWindowedPlacement = {};
     HGLRC       mhRC = 0;           // OpenGL rendering context
     HDC         mhDC = 0;           // Windows Device context handle
     HINSTANCE   mhInstance;     // handle to application instance
