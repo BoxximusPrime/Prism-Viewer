@@ -40,6 +40,7 @@
 #include "llrendertarget.h"
 #include "llreflectionmapmanager.h"
 #include "llheroprobemanager.h"
+#include "llalphalightselection.h"
 
 #include <stack>
 #include <map>
@@ -349,6 +350,10 @@ public:
     void bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_target = nullptr, LLRenderTarget* depth_target = nullptr);
     void setupSpotLight(LLGLSLShader& shader, LLDrawable* drawablep);
     void bindAlphaProjectors(LLGLSLShader& shader, bool update_uniforms);
+    bool beginAlphaLights();
+    void endAlphaLights();
+    void bindAlphaLights(LLGLSLShader& shader, LLDrawInfo& draw, const LLVector4a* fallback_extents);
+    void bindAlphaLights(LLGLSLShader& shader, const LLAlphaLightSelection::Bounds& receiver);
 
     void unbindDeferredShader(LLGLSLShader& shader);
 
@@ -979,6 +984,33 @@ protected:
     LLColor4                        mHWLightColors[8];
     LLPointer<LLDrawable>           mHWLightDrawable[8]; // Same slots as light_position/light_diffuse.
 
+    // Receiver choices never split a draw or change the six GPU local slots.
+    LLAlphaLightSelection::Selector mAlphaLightSelector;
+    std::vector<LLPointer<LLDrawable>> mAlphaLightCandidates;
+    std::map<const LLVOAvatar*, LLAlphaLightSelection::Selection> mAlphaAvatarLights;
+    U32 mAlphaLightFrame = ~0U;
+    U32 mAlphaLightDepth = 0;
+    std::array<LLLightState, 6> mAlphaSavedLights;
+    std::array<LLColor4, 6> mAlphaSavedColors;
+    std::array<LLPointer<LLDrawable>, 6> mAlphaSavedDrawables;
+    U32 mAlphaSavedMovingMask = 0;
+    glm::mat4 mAlphaLightView;
+    LLAlphaLightSelection::Selection mAlphaBoundLights;
+    LLGLSLShader* mAlphaProjectorShader = nullptr;
+    std::vector<LLGLSLShader*> mAlphaLightShaders;
+    struct AlphaProjectorData
+    {
+        glm::mat4 matrix;
+        LLVector3 plane, normal, origin;
+        glm::vec4 params;
+        glm::vec2 shadow;
+    };
+    std::map<LLDrawable*, AlphaProjectorData> mAlphaProjectorCache;
+    bool mAlphaLightsBound = false;
+    void restoreAlphaLightBaseline();
+    void updateAlphaLights();
+    void bindAlphaLightSelection(LLGLSLShader& shader, const LLAlphaLightSelection::Selection& selection);
+
     /////////////////////////////////////////////
     //
     // Different queues of drawables being processed.
@@ -1212,6 +1244,19 @@ void render_bbox(const LLVector3 &min, const LLVector3 &max);
 void render_hud_elements();
 
 extern LLPipeline gPipeline;
+
+// Restore every local light field and identity at pass exit, including early returns.
+class LLAlphaLightScope
+{
+public:
+    explicit LLAlphaLightScope(bool enabled = true) : mActive(enabled && gPipeline.beginAlphaLights()) {}
+    ~LLAlphaLightScope() { if (mActive) gPipeline.endAlphaLights(); }
+    bool active() const { return mActive; }
+    LLAlphaLightScope(const LLAlphaLightScope&) = delete;
+    LLAlphaLightScope& operator=(const LLAlphaLightScope&) = delete;
+private:
+    bool mActive;
+};
 extern bool gDebugPipeline;
 extern const LLMatrix4* gGLLastMatrix;
 

@@ -250,12 +250,14 @@ public:
     void setAmbient(const LLColor4& ambient);
     void setSpecular(const LLColor4& specular);
     void setPosition(const LLVector4& position);
+    void setPosition(const LLVector4& position, const glm::mat4& modelview);
     void setConstantAttenuation(const F32& atten);
     void setLinearAttenuation(const F32& atten);
     void setQuadraticAttenuation(const F32& atten);
     void setSpotExponent(const F32& exponent);
     void setSpotCutoff(const F32& cutoff);
     void setSpotDirection(const LLVector3& direction);
+    void setSpotDirection(const LLVector3& direction, const glm::mat4& modelview);
     void setSunPrimary(bool v);
     void setSize(F32 size);
     void setFalloff(F32 falloff);
@@ -465,6 +467,8 @@ public:
 
     LLLightState* getLight(U32 index);
     void setAmbientLightColor(const LLColor4& color);
+    // Force the next shader to upload light states after an exact snapshot restore.
+    void invalidateLightState() { ++mLightHash; }
 
     void setLineWidth(F32 width);
 

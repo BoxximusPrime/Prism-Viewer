@@ -655,12 +655,17 @@ void LLLightState::setSpecular(const LLColor4& specular)
 
 void LLLightState::setPosition(const LLVector4& position)
 {
+    setPosition(position, gGL.getModelviewMatrix());
+}
+
+void LLLightState::setPosition(const LLVector4& position, const glm::mat4& modelview)
+{
     //always set position because modelview matrix may have changed
     ++gGL.mLightHash;
     mPosition = position;
     //transform position by current modelview matrix
     glm::vec4 pos(position);
-    pos = gGL.getModelviewMatrix() * pos;
+    pos = modelview * pos;
     mPosition.set(glm::value_ptr(pos));
 }
 
@@ -711,12 +716,17 @@ void LLLightState::setSpotCutoff(const F32& cutoff)
 
 void LLLightState::setSpotDirection(const LLVector3& direction)
 {
+    setSpotDirection(direction, gGL.getModelviewMatrix());
+}
+
+void LLLightState::setSpotDirection(const LLVector3& direction, const glm::mat4& modelview)
+{
     //always set direction because modelview matrix may have changed
     ++gGL.mLightHash;
 
     //transform direction by current modelview matrix
     glm::vec3 dir(direction);
-    const glm::mat3 mat(gGL.getModelviewMatrix());
+    const glm::mat3 mat(modelview);
     dir = mat * dir;
 
     mSpotDirection.set(glm::value_ptr(dir));

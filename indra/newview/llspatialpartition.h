@@ -27,6 +27,8 @@
 #ifndef LL_LLSPATIALPARTITION_H
 #define LL_LLSPATIALPARTITION_H
 
+#include "llalphalightselection.h"
+
 #define SG_MIN_DIST_RATIO 0.00001f
 
 #include "lldrawable.h"
@@ -103,6 +105,11 @@ public:
     const LLMatrix4* mNormalMapMatrix = nullptr;
     const LLMatrix4* mTextureMatrix = nullptr;
     const LLMatrix4* mModelMatrix = nullptr;
+    // Union of the existing batch's faces, in the same space as its vertices.
+    // Animated rigged draws use their avatar's live agent-space bounds instead.
+    LLAlphaLightSelection::Bounds mAlphaLightBounds;
+    LLAlphaLightSelection::Selection mAlphaLightSelection;
+    U32 mAlphaLightFrame = ~0U;
     // Only the main TAA motion pass updates this; shadow/probe draws cannot age it.
     LLMatrix4 mTAAModel;
     U32 mTAAFrame = 0;

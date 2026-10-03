@@ -828,6 +828,7 @@ void LLParticlePartition::getGeometry(LLSpatialGroup* group)
         indices_idx += 6;
 
         LLColor4U* start_glow = cur_glow.get();
+        LLVector4a* light_vertices = cur_vert.get();
 
         object->getGeometry(facep->getTEOffset(), cur_vert, cur_norm, cur_tc, cur_col, cur_glow, cur_idx);
 
@@ -897,6 +898,13 @@ void LLParticlePartition::getGeometry(LLSpatialGroup* group)
             draw_vec.push_back(info);
             //for alpha sorting
             facep->setDrawInfo(info);
+        }
+        // Include billboard/ribbon corners, not just the particle's center.
+        // The existing particle batch remains intact, including custom blends.
+        for (U32 corner = 0; corner < 4; ++corner)
+        {
+            const F32* point = light_vertices[corner].getF32ptr();
+            draw_vec.back()->mAlphaLightBounds.include(LLAlphaLightSelection::Vec3{ point[0], point[1], point[2] });
         }
     }
 

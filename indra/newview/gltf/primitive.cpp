@@ -525,6 +525,40 @@ bool Primitive::prep(Asset& asset)
         }
     }
 
+    mAlphaBounds = {};
+    mAlphaJointBounds.clear();
+    mAlphaSkinBoundsValid = !mWeights.empty() && mWeights.size() == mPositions.size() && mJoints.size() == mPositions.size();
+    mAlphaWeightMaxSum = 1.f;
+    mAlphaWeightRoundoff = false;
+    for (size_t vertex = 0; vertex < mPositions.size(); ++vertex)
+    {
+        const F32* position = mPositions[vertex].getF32ptr();
+        const LLAlphaLightSelection::Vec3 point{{position[0], position[1], position[2]}};
+        if (!std::isfinite(position[0]) || !std::isfinite(position[1]) || !std::isfinite(position[2]))
+        {
+            mAlphaBounds = {}; mAlphaSkinBoundsValid = false; break;
+        }
+        mAlphaBounds.include(point);
+        if (!mAlphaSkinBoundsValid) continue;
+        const F32* weights = mWeights[vertex].getF32ptr();
+        double sum = 0.;
+        for (U32 influence = 0; influence < 4; ++influence)
+        {
+            const F32 weight = weights[influence];
+            if (!std::isfinite(weight) || weight < 0.f) { mAlphaSkinBoundsValid = false; break; }
+            sum += weight;
+            if (weight > 0.f)
+            {
+                const U32 joint = U32((mJoints[vertex] >> (influence * 16)) & 0xffffu);
+                if (mAlphaJointBounds.size() <= joint) mAlphaJointBounds.resize(joint + 1);
+                mAlphaJointBounds[joint].include(point);
+            }
+        }
+        if (std::abs(sum - 1.) > .001) mAlphaSkinBoundsValid = false;
+        mAlphaWeightRoundoff |= sum != 1.;
+        if (std::isfinite(sum) && sum > 1.)
+            mAlphaWeightMaxSum = std::max(mAlphaWeightMaxSum, std::nextafter(F32(sum), std::numeric_limits<F32>::infinity()));
+    }
     createOctree();
 
     return true;
@@ -809,4 +843,3 @@ const Primitive& Primitive::operator=(const Value& src)
     }
     return *this;
 }
-

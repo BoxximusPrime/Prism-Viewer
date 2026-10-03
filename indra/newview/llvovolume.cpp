@@ -5944,6 +5944,18 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_info->validate();
     }
 
+    if (type == LLRenderPass::PASS_ALPHA && !rigged)
+    {
+        // genVolumeBBoxes adds the region origin for static faces; the vertex
+        // buffer and mModelMatrix still use region-local coordinates.
+        const LLVector3 offset = drawable->isActive() ? LLVector3::zero : drawable->getRegion()->getOriginAgent();
+        for (U32 edge = 0; edge < 2; ++edge)
+        {
+            const F32* point = facep->mExtents[edge].getF32ptr();
+            info->mAlphaLightBounds.include(LLAlphaLightSelection::Vec3{ point[0] - offset[0], point[1] - offset[1], point[2] - offset[2] });
+        }
+    }
+
     llassert(info->mGLTFMaterial == nullptr || (info->mVertexBuffer->getTypeMask() & LLVertexBuffer::MAP_TANGENT) != 0);
     llassert(type != LLPipeline::RENDER_TYPE_PASS_GLTF_PBR || info->mGLTFMaterial != nullptr);
     llassert(type != LLPipeline::RENDER_TYPE_PASS_GLTF_PBR_RIGGED || info->mGLTFMaterial != nullptr);
