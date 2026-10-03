@@ -55,6 +55,7 @@ struct Settings {
     float getF32(const char*) const { return .4f; } // ZoomTime
 } gSavedSettings;
 bool gCubeSnapshot=false;
+struct { bool animated=false; bool useAnimatedMouselook() const { return animated; } } gAgentCamera;
 template<class T> struct LLCachedControl {
     LLCachedControl(Settings&, const char*) {}
     operator T() const { return gSavedSettings.smoothing; }
@@ -191,6 +192,10 @@ int main() {
     assert(near(c.origin.x,99) && near(c.fov,1.3f)); sameRotation(c.rotation,yaw(30));
     gCubeSnapshot=false; c.prepareCameraSmoothing(); c.applyCameraSmoothing();
     assert(near(c.origin.x,7.5)); // Capture did not alter history.
+    gAgentCamera.animated=true; gSavedSettings=.5f;
+    c={}; c.applyCameraSmoothing(); target(c); c.applyCameraSmoothing();
+    assert(near(c.origin.x,10)); sameRotation(c.rotation,yaw(90));
+    gAgentCamera.animated=false;
     for (float setting : {-1.f,0.f,1.f,5.f}) {
         gSavedSettings=setting; c={}; c.applyCameraSmoothing(); target(c); c.applyCameraSmoothing();
         const float blend=setting<=0 ? 1.f : 1.f-std::pow(2.f,-.1f);

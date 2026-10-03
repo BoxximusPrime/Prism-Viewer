@@ -19,15 +19,17 @@ gl_Position=vec4(p[gl_VertexID],0,1);vary_fragcoord=p[gl_VertexID]*.5+.5;}'''
         assert condition, message
         checks += 1
 
-    def render(rgb, enabled=1, color=(1, 1, 0, 0), curve=(0, 1, 1), program=None):
+    def render(rgb, enabled=1, color=(1, 1, 0, 0), curve=(0, 1, 1), program=None,
+               aberration=0, image=None):
         program = program or programs[0]
-        gpu.upload(texture, (list(rgb)+[.37])*(W*H))
+        gpu.upload(texture, image if image is not None else (list(rgb)+[.37])*(W*H))
         gpu.bind(program, 'diffuseRect', 0, texture)
         gpu.bind(program, 'depthMap', 1, depth)
         gpu.uniform(program, 'screen_res', W, H)
         gpu.uniform(program, 'photo_grade_enabled', enabled, integer=True)
         gpu.uniform(program, 'photo_grade_color', *color)
         gpu.uniform(program, 'photo_grade_curve', *curve)
+        gpu.uniform(program, 'chromatic_aberration', aberration)
         gpu.draw(program, output)
         return gpu.read(output)
 
@@ -55,7 +57,44 @@ gl_Position=vec4(p[gl_VertexID],0,1);vary_fragcoord=p[gl_VertexID]*.5+.5;}'''
         values = [render((v,v,v), curve=curve)[0] for v in (0,.1,.5,.9,1)]
         check(all(math.isfinite(v) and 0<=v<=1 for v in values), 'Nonfinite/out-of-range curve')
         check(values == sorted(values), 'Tonal curve reversed luminance order')
-    print(f'PASS: {checks} final color-grade GPU checks (noise and plain variants)')
+    # A neutral spatial ramp makes each channel's pixel displacement measurable.
+    ramp = [v for y in range(H) for x in range(W)
+            for v in ((x+.5)/W, (y+.5)/H, (x+.5)/W, .37)]
+    for program in programs:
+        off = render(None, enabled=0, image=ramp, program=program)
+        shifted = render(None, enabled=0, image=ramp, aberration=4, program=program)
+        # Presentation noise is color-seeded, so changed red/blue also reseed green noise.
+        tolerance = .004 if program == programs[1] else .001
+        center = ((H//2)*W+W//2)*4
+        edge = ((H//2)*W+W-10)*4
+        check(max(abs(a-b) for a,b in zip(off[1::4],shifted[1::4]))<tolerance,
+              'Chromatic aberration changed green')
+        check(off[3::4] == shifted[3::4], 'Chromatic aberration changed alpha')
+        check(shifted[edge]>off[edge]+.01 and shifted[edge+2]<off[edge+2]-.01,
+              'Chromatic aberration did not separate red/blue with grading disabled')
+        check(abs(shifted[center]-off[center])<tolerance, 'Chromatic aberration moved the center')
+        check(max(abs(a-b) for a,b in zip(off,ramp))<tolerance, 'Zero aberration changed pixels')
+        check(render(None, enabled=0, image=ramp, program=program)==off,
+              'Disabling aberration did not restore original pixels')
+        check(render((.2,.4,.6), aberration=10, program=program)==
+              render((.2,.4,.6), program=program), 'Aberration changed a constant image at borders')
+        maximum = render(None, enabled=0, image=ramp, aberration=20, program=program)
+        check(maximum[edge]-maximum[edge+2]>shifted[edge]-shifted[edge+2]+.02,
+              'Special-effects strength did not extend channel separation')
+        check(all(math.isfinite(v) and 0<=v<=1.004 for v in maximum),
+              'Maximum chromatic aberration produced invalid pixels')
+        check(render((.2,.4,.6), aberration=20, program=program)==
+              render((.2,.4,.6), program=program), 'Maximum aberration broke border clamping')
+        # CPU reference checks resolution-aware falloff, both sides and clamped borders.
+        for x,y in ((0,0),(W-1,H-1),(W-10,H//2),(10,H//2)):
+            dx,dy=x+.5-W/2,y+.5-H/2
+            distance=math.hypot(dx,dy)
+            offset=dx/max(distance,1)*4*(distance/math.hypot(W/2,H/2))**2/W
+            for channel,direction in ((0,1),(2,-1)):
+                expected=min(1-.5/W,max(.5/W,(x+.5)/W+direction*offset))
+                check(abs(shifted[(y*W+x)*4+channel]-expected)<tolerance,
+                      'Incorrect radial chromatic displacement or border clamp')
+    print(f'PASS: {checks} grading/chromatic-aberration GPU checks (noise and plain variants)')
 
 
 if __name__ == '__main__':

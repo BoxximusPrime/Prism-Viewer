@@ -1266,7 +1266,20 @@ void LLAgentCamera::updateCamera()
 
     validateFocusObject();
 
-    if (isAgentAvatarValid() &&
+    if (camera_mode == CAMERA_MODE_MOUSELOOK && useAnimatedMouselook())
+    {
+        const LLQuaternion rotation = getMouselookRotation();
+        mCameraUpVector = LLVector3::z_axis * rotation;
+        static LLCachedControl<bool> level_horizon(gSavedSettings, "BoxxyAnimatedMouselookLevelHorizon");
+        if (level_horizon)
+        {
+            const LLVector3 forward = LLVector3::x_axis * rotation;
+            LLVector3 up = LLVector3::z_axis - forward * forward.mV[VZ];
+            // At the vertical poles there is no horizon; retain a valid head up axis.
+            if (up.normalize() > 0.001f) mCameraUpVector = up;
+        }
+    }
+    else if (isAgentAvatarValid() &&
         gAgentAvatarp->isSitting() &&
         camera_mode == CAMERA_MODE_MOUSELOOK)
     {
@@ -1543,7 +1556,7 @@ void LLAgentCamera::updateCamera()
     }
     gAgent.setLastPositionGlobal(global_pos);
 
-    if (LLVOAvatar::sVisibleInFirstPerson && isAgentAvatarValid() && !gAgentAvatarp->isSitting() && cameraMouselook())
+    if (LLVOAvatar::sVisibleInFirstPerson && isAgentAvatarValid() && !gAgentAvatarp->isSitting() && cameraMouselook() && !useAnimatedMouselook())
     {
         LLVector3 head_pos = gAgentAvatarp->mHeadp->getWorldPosition() +
             LLVector3(0.08f, 0.f, 0.05f) * gAgentAvatarp->mHeadp->getWorldRotation() +
@@ -1627,6 +1640,37 @@ void LLAgentCamera::validateFocusObject()
     }
 }
 
+bool LLAgentCamera::useAnimatedMouselook() const
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "BoxxyAnimatedMouselook");
+    return cameraMouselook() && enabled && !LLViewerJoystick::getInstance()->getOverrideCamera()
+        && isAgentAvatarValid() && gAgentAvatarp->mDrawable.notNull()
+        && gAgentAvatarp->mRoot && gAgentAvatarp->mHeadp
+        && gAgentAvatarp->mEyeLeftp && gAgentAvatarp->mEyeRightp;
+}
+
+LLQuaternion LLAgentCamera::getMouselookRotation() const
+{
+    LLQuaternion rotation = gAgent.getFrameAgent().getQuaternion();
+    if (isAgentAvatarValid() && gAgentAvatarp->getParent())
+    {
+        LLViewerObject* root_object = (LLViewerObject*)gAgentAvatarp->getRoot();
+        if (!root_object->flagCameraDecoupled())
+        {
+            rotation *= ((LLViewerObject*)gAgentAvatarp->getParent())->getRenderRotation();
+        }
+    }
+    static LLCachedControl<bool> extra_stabilization(gSavedSettings, "BoxxyAnimatedMouselookLevelHorizon");
+    if (useAnimatedMouselook() && !extra_stabilization)
+    {
+        // Mouse input relative to the body root, followed by the animated head frame.
+        // Eye rotations deliberately do not contribute to the view direction.
+        rotation = rotation * ~gAgentAvatarp->mRoot->getWorldRotation()
+            * gAgentAvatarp->mHeadp->getWorldRotation();
+    }
+    return rotation;
+}
+
 //-----------------------------------------------------------------------------
 // calcFocusPositionTargetGlobal()
 //-----------------------------------------------------------------------------
@@ -1645,17 +1689,18 @@ LLVector3d LLAgentCamera::calcFocusPositionTargetGlobal()
     else if (mCameraMode == CAMERA_MODE_MOUSELOOK)
     {
         LLVector3d at_axis(1.0, 0.0, 0.0);
-        LLQuaternion agent_rot = gAgent.getFrameAgent().getQuaternion();
-        if (isAgentAvatarValid() && gAgentAvatarp->getParent())
+        at_axis = at_axis * getMouselookRotation();
+        static LLCachedControl<bool> extra_stabilization(gSavedSettings, "BoxxyAnimatedMouselookLevelHorizon");
+        if (useAnimatedMouselook() && extra_stabilization)
         {
-            LLViewerObject* root_object = (LLViewerObject*)gAgentAvatarp->getRoot();
-            if (!root_object->flagCameraDecoupled())
-            {
-                agent_rot *= ((LLViewerObject*)(gAgentAvatarp->getParent()))->getRenderRotation();
-            }
+            // Anchor a distant target to the agent, not the animated eyes/head.
+            // Eye movement then causes only a small change in viewing angle.
+            mFocusTargetGlobal = gAgent.getPositionGlobal() + at_axis * 100.0;
         }
-        at_axis = at_axis * agent_rot;
-        mFocusTargetGlobal = calcCameraPositionTargetGlobal() + at_axis;
+        else
+        {
+            mFocusTargetGlobal = calcCameraPositionTargetGlobal() + at_axis;
+        }
         return mFocusTargetGlobal;
     }
     else if (mCameraMode == CAMERA_MODE_CUSTOMIZE_AVATAR)
@@ -1859,6 +1904,13 @@ LLVector3d LLAgentCamera::calcCameraPositionTargetGlobal(bool *hit_limit)
         {
             LL_WARNS() << "Null avatar drawable!" << LL_ENDL;
             return LLVector3d::zero;
+        }
+
+        if (useAnimatedMouselook())
+        {
+            if (hit_limit) *hit_limit = false;
+            return gAgent.getPosGlobalFromAgent(0.5f * (gAgentAvatarp->mEyeLeftp->getWorldPosition()
+                + gAgentAvatarp->mEyeRightp->getWorldPosition()));
         }
 
         head_offset.clearVec();

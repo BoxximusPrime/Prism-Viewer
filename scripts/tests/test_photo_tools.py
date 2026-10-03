@@ -174,8 +174,32 @@ for tab in ('camera','focus','lighting','adjustments','color'):
             assert abs(get_setting('PhotoGrade'+setting_name)-default)<.001
             assert abs(float(request('LLWindow','getInfo',path=grade+'photo_grade_'+setting_name.lower())['value'])-default)<.001
         assert abs(get_setting('RenderExposure')-1.05)<.001
-        click_path(grade+'photo_grade_enabled/CheckboxCtrl Button')
+        for control, setting_name, value, default in (
+            ('photo_exposure', 'RenderExposure', 1.25, 1),
+            ('photo_grade_contrast', 'PhotoGradeContrast', 1.35, 1),
+            ('photo_grade_saturation', 'PhotoGradeSaturation', .65, 1),
+            ('photo_grade_warmth', 'PhotoGradeWarmth', -.35, 0),
+            ('photo_grade_tint', 'PhotoGradeTint', .35, 0),
+            ('photo_grade_lift', 'PhotoGradeLift', -.12, 0),
+            ('photo_grade_gamma', 'PhotoGradeGamma', 1.25, 1),
+            ('photo_grade_gain', 'PhotoGradeGain', .75, 1),
+            ('photo_chromatic_aberration', 'RenderChromaticAberrationStrength', 20, 4),
+        ):
+            editor = grade+control+'/slider editor'
+            request('LLWindow','keyDown',path=editor,keysym='A',mask=['CTL'])
+            request('LLWindow','keyUp',keysym='A',mask=['CTL'])
+            key(editor, 'BACKSP') # Remove the LEAP-generated literal A after select-all.
+            for char in str(value): key(editor, char)
+            key(editor, 'ENTER')
+            assert abs(get_setting(setting_name)-value)<.001, (control, get_setting(setting_name))
+            click(control+'_reset')
+            assert abs(get_setting(setting_name)-float(default))<.001, setting_name
+        setting('RenderChromaticAberrationStrength', 20.)
+        click('photo_grade_reset')
+        assert get_setting('RenderChromaticAberrationStrength')==4
+        click('photo_grade_enabled_reset')
         assert not get_setting('PhotoGradeEnabled')
+        assert request('LLWindow','getInfo',path=grade+'photo_chromatic_aberration')['enabled']
 
     time.sleep(.5)
     assert request('LLViewerWindow','saveSnapshot',filename=str(ROOT/('tmp/photo-tools-'+tab+'.png')),showui=True,showhud=False)['ok']

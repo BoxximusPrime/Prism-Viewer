@@ -33,6 +33,7 @@
 #include "llmeshrepository.h"
 #include "llmodelloader.h" //NUM_LOD
 #include "llmodel.h"
+#include "llfetchedgltfmaterial.h"
 
 class LLJoint;
 class LLVOAvatar;
@@ -141,6 +142,24 @@ public:
     // should just expose data to floater, not control flaoter like it does
     LLModelPreview(S32 width, S32 height, LLFloater* fmp);
     virtual ~LLModelPreview();
+
+    // Temporary appearance overrides never enter LLImportMaterial or upload data.
+    using PreviewSlot = std::pair<LLModel*, std::string>;
+    struct PreviewAppearance
+    {
+        LLPointer<LLViewerFetchedTexture> texture;
+        LLPointer<LLFetchedGLTFMaterial> material;
+        LLUUID materialID;
+        std::string label;
+    };
+    std::vector<PreviewSlot> getPreviewSlots() const;
+    void setPreviewAppearance(const std::vector<PreviewSlot>& slots, const PreviewAppearance& appearance);
+    void clearPreviewAppearance(const std::vector<PreviewSlot>& slots = {});
+    const PreviewAppearance* getPreviewAppearance(const PreviewSlot& slot) const;
+    bool updatePreviewAppearance();
+    bool hasPreviewMaterial() const;
+    bool bindPreviewAppearance(const LLModelInstance& instance, size_t face);
+    void renderPreviewMaterials();
 
     void resetPreviewTarget();
     void setPreviewTarget(F32 distance);
@@ -268,6 +287,8 @@ protected:
     friend class LLFloaterModelPreview;
     friend class LLFloaterModelPreview::DecompRequest;
     friend class LLPhysicsDecomp;
+
+    std::map<PreviewSlot, PreviewAppearance> mPreviewAppearance;
 
     LLFloater*  mFMP;
 

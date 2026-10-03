@@ -419,32 +419,28 @@ struct SetTemporarily
 
 }; // namespace
 
+bool LLGLTFPreviewTexture::prepareMaterial(LLFetchedGLTFMaterial* material)
+{
+    if (material->isFetching()) return true;
+    if (!material->isLoaded()) return false;
+    get_material_load_levels(*material);
+    bool loading = false;
+    for (auto* texture : {material->mBaseColorTexture.get(), material->mNormalTexture.get(),
+        material->mMetallicRoughnessTexture.get(), material->mEmissiveTexture.get()})
+    {
+        if (texture)
+        {
+            texture->setKnownDrawSize(LLPipeline::MAX_PREVIEW_WIDTH, LLPipeline::MAX_PREVIEW_WIDTH);
+            loading |= !texture->isMissingAsset() && texture->getDiscardLevel() != 0;
+        }
+    }
+    return loading;
+}
+
 bool LLGLTFPreviewTexture::render()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI;
-
-    if (!mShouldRender) { return false; }
-
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    LLGLDepthTest depth(GL_FALSE);
-    LLGLDisable stencil(GL_STENCIL_TEST);
-    LLGLDisable scissor(GL_SCISSOR_TEST);
-    SetTemporarily<bool> no_dof(&LLPipeline::RenderDepthOfField, false);
-    SetTemporarily<bool> no_glow(&LLPipeline::sRenderGlow, false);
-    SetTemporarily<bool> no_ssr(&LLPipeline::RenderScreenSpaceReflections, false);
-    SetTemporarily<U32> no_aa(&LLPipeline::RenderFSAAType, U32(0));
-    SetTemporarily<LLPipeline::RenderTargetPack*> use_auxiliary_render_target(&gPipeline.mRT, &gPipeline.mAuxillaryRT);
-
-    LLVector3 light_dir3(1.0f, 1.0f, 1.0f);
-    light_dir3.normalize();
-    const LLVector4 light_dir = LLVector4(light_dir3, 0);
-    const S32 old_local_light_count = gSavedSettings.get<S32>("RenderLocalLightCount");
-    gSavedSettings.set<S32>("RenderLocalLightCount", 0);
-
-    gPipeline.mReflectionMapManager.forceDefaultProbeAndUpdateUniforms();
-
+    if (!mShouldRender) return false;
     LLViewerCamera camera;
 
     // Calculate the object distance at which the object of a given radius will
@@ -470,6 +466,33 @@ bool LLGLTFPreviewTexture::render()
     // discarded, but the sphere should be cached in LLVolumeMgr.)
     PreviewSphere& preview_sphere = get_preview_sphere(mGLTFMaterial, object_transform);
 
+    return renderGeometry([&preview_sphere]()
+    {
+        for (auto& part : preview_sphere) LLRenderPass::pushGLTFBatch(*part->mDrawInfo);
+    });
+}
+
+bool LLGLTFPreviewTexture::renderGeometry(const std::function<void()>& draw_geometry,
+    const LLColor4& background, bool model_preview)
+{
+    LLGLDepthTest depth(GL_FALSE);
+    LLGLDisable stencil(GL_STENCIL_TEST);
+    LLGLDisable scissor(GL_SCISSOR_TEST);
+    SetTemporarily<bool> no_dof(&LLPipeline::RenderDepthOfField, false);
+    SetTemporarily<bool> no_glow(&LLPipeline::sRenderGlow, false);
+    SetTemporarily<bool> no_ssr(&LLPipeline::RenderScreenSpaceReflections, false);
+    SetTemporarily<U32> no_aa(&LLPipeline::RenderFSAAType, U32(0));
+    SetTemporarily<LLPipeline::RenderTargetPack*> use_auxiliary_render_target(&gPipeline.mRT, &gPipeline.mAuxillaryRT);
+
+    LLVector3 light_dir3(1.0f, 1.0f, 1.0f);
+    light_dir3.normalize();
+    const LLVector4 light_dir = LLVector4(light_dir3, 0);
+    const S32 old_local_light_count = gSavedSettings.get<S32>("RenderLocalLightCount");
+    gSavedSettings.set<S32>("RenderLocalLightCount", 0);
+
+    gPipeline.mReflectionMapManager.forceDefaultProbeAndUpdateUniforms();
+
+
     gPipeline.setupHWLights();
     glm::mat4 mat = get_current_modelview();
     glm::vec4 transformed_light_dir(light_dir);
@@ -489,33 +512,21 @@ bool LLGLTFPreviewTexture::render()
     // *HACK: Force reset of the model matrix
     gGLLastMatrix = nullptr;
 
-#if 0
-    if (mGLTFMaterial->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_OPAQUE || mGLTFMaterial->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_MASK)
+    screen.bindTarget();
+    glClearColor(background.mV[0], background.mV[1], background.mV[2], background.mV[3]);
     {
-        // *TODO: Opaque/alpha mask rendering
-    }
-    else
-#endif
-    {
-        // Alpha blend rendering
-
-        screen.bindTarget();
+        LLGLDepthTest clear_depth(GL_TRUE, GL_TRUE, GL_ALWAYS);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        LLGLSLShader& shader = gDeferredPBRAlphaProgram;
-
-        gPipeline.bindDeferredShader(shader);
-        fixup_shader_constants(shader);
-
-        for (PreviewSpherePart& part : preview_sphere)
-        {
-            LLRenderPass::pushGLTFBatch(*part->mDrawInfo);
-        }
-
-        gPipeline.unbindDeferredShader(shader);
-
-        screen.flush();
     }
+    LLGLSLShader& shader = model_preview ? gModelPreviewPBRProgram : gDeferredPBRAlphaProgram;
+    gPipeline.bindDeferredShader(shader);
+    fixup_shader_constants(shader);
+    gGL.pushMatrix();
+    draw_geometry();
+    gGLLastMatrix = nullptr;
+    gGL.popMatrix();
+    gPipeline.unbindDeferredShader(shader);
+    screen.flush();
 
     // *HACK: Hide mExposureMap from generateExposure
     gPipeline.mExposureMap.swapFBORefs(gPipeline.mLastExposure);
@@ -530,21 +541,17 @@ bool LLGLTFPreviewTexture::render()
     // *HACK: Restore mExposureMap (it will be consumed by generateExposure next frame)
     gPipeline.mExposureMap.swapFBORefs(gPipeline.mLastExposure);
 
-    // Final render
-    gDeferredPostNoDoFProgram.bind();
-
-    // From LLPipeline::renderFinalize: "Whatever is last in the above post processing chain should _always_ be rendered directly here.  If not, expect problems."
-    gDeferredPostNoDoFProgram.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, &screen);
-    gDeferredPostNoDoFProgram.bindTexture(LLShaderMgr::DEFERRED_DEPTH, mBoundTarget, true);
-    gDeferredPostNoDoFProgram.uniform2f(LLStaticHashedString("taa_depth_jitter"), 0.f, 0.f);
-
+    // screen and the preview target share depth. Copy only color: sampling the attached
+    // depth while writing it is framebuffer feedback, and geometry depth is
+    // already available for the uploader's edge/physics overlays.
+    gCopyProgram.bind();
+    gCopyProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &screen);
     {
-        LLGLDepthTest depth_test(GL_TRUE, GL_TRUE, GL_ALWAYS);
+        LLGLDepthTest depth_test(GL_FALSE, GL_FALSE);
         gPipeline.mScreenTriangleVB->setBuffer();
         gPipeline.mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
     }
-
-    gDeferredPostNoDoFProgram.unbind();
+    gCopyProgram.unbind();
 
     // Clean up
     gPipeline.setupHWLights();

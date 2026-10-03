@@ -441,6 +441,29 @@
    top_pad="8"
    width="390" />
   <check_box
+   control_name="BoxxyAnimatedMouselook"
+   follows="left|top"
+   height="20"
+   label="Animated eye camera in Mouselook"
+   layout="topleft"
+   left="30"
+   name="animated_mouselook"
+   tool_tip="Follow the animated eye position, with mouse look relative to the head. Eye rotations do not rotate the camera. Applies when you enter Mouselook."
+   top_pad="8"
+   width="300" />
+  <check_box
+   control_name="BoxxyAnimatedMouselookLevelHorizon"
+   enabled_control="BoxxyAnimatedMouselook"
+   follows="left|top"
+   height="20"
+   label="Extra stabilization"
+   layout="topleft"
+   left="340"
+   name="animated_mouselook_level_horizon"
+   tool_tip="Keep the horizon level and aim at a distant point in your avatar's facing direction. Reduces head animation jitter while the camera follows the animated eyes."
+   top_delta="0"
+   width="160" />
+  <check_box
    control_name="BoxxyExperimentalSwimming"
    follows="left|top"
    height="20"

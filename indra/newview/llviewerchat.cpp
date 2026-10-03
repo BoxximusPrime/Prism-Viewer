@@ -76,6 +76,36 @@ LLColor4 LLViewerChat::getSenderNameColor(const LLChat&)
 }
 
 //static
+bool LLViewerChat::containsMention(const std::string& message, bool nearby_chat)
+{
+    if (LLUrlRegistry::instance().containsAgentMention(message)) return true;
+    if (!gSavedSettings.getBOOL("ChatMentionNamesEnabled")
+        || !gSavedSettings.getBOOL(nearby_chat ? "ChatMentionInNearby" : "ChatMentionInIM")) return false;
+
+    const std::string names = gSavedSettings.getString("ChatMentionNames");
+    if (names.empty()) return false;
+    LLWString text = utf8str_to_wstring(message);
+    const bool case_sensitive = gSavedSettings.getBOOL("ChatMentionCaseSensitive");
+    const bool whole_words = gSavedSettings.getBOOL("ChatMentionWholeWords");
+    if (!case_sensitive) LLWStringUtil::toLower(text);
+    for (const auto& entry : LLStringUtil::getTokens(names, ",\n"))
+    {
+        LLWString name = utf8str_to_wstring(entry);
+        LLWStringUtil::trim(name);
+        if (name.empty()) continue;
+        if (!case_sensitive) LLWStringUtil::toLower(name);
+        for (auto pos = text.find(name); pos != LLWString::npos; pos = text.find(name, pos + 1))
+        {
+            const auto end = pos + name.size();
+            if (!whole_words
+                || ((pos == 0 || !LLWStringUtil::isPartOfWord(text[pos - 1]))
+                    && (end == text.size() || !LLWStringUtil::isPartOfWord(text[end])))) return true;
+        }
+    }
+    return false;
+}
+
+//static
 void LLViewerChat::getChatColor(const LLChat& chat, LLUIColor& r_color, F32& r_color_alpha)
 {
     if(chat.mMuted)
@@ -126,6 +156,14 @@ void LLViewerChat::getChatColor(const LLChat& chat, LLUIColor& r_color, F32& r_c
                 break;
             default:
                 r_color = LLUIColorTable::instance().getColor("White");
+        }
+
+        if (chat.mSourceType == CHAT_SOURCE_AGENT && chat.mFromID.notNull()
+            && chat.mFromID != gAgentID && chat.mFromName != SYSTEM_FROM
+            && gSavedSettings.getBOOL("ChatMentionHighlightMessages")
+            && containsMention(chat.mText, chat.mSessionID.isNull()))
+        {
+            r_color = LLUIColorTable::instance().getColor("ChatMentionFont");
         }
 
         if (!chat.mPosAgent.isExactlyZero())
@@ -200,6 +238,14 @@ void LLViewerChat::getChatColor(const LLChat& chat, std::string& r_color_name, F
                 break;
             default:
                 r_color_name = "White";
+        }
+
+        if (chat.mSourceType == CHAT_SOURCE_AGENT && chat.mFromID.notNull()
+            && chat.mFromID != gAgentID && chat.mFromName != SYSTEM_FROM
+            && gSavedSettings.getBOOL("ChatMentionHighlightMessages")
+            && containsMention(chat.mText, chat.mSessionID.isNull()))
+        {
+            r_color_name = "ChatMentionFont";
         }
 
         if (!chat.mPosAgent.isExactlyZero())

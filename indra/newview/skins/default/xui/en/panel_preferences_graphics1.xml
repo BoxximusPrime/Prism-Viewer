@@ -329,6 +329,11 @@
     Turn off to use legacy rendering in scenes with heavy transparency.
   </text>
 
+  <check_box control_name="BorderlessFullscreen" name="BorderlessFullscreen"
+    label="Borderless fullscreen" layout="topleft" left="30" top="288"
+    width="440" height="20" follows="left|top"
+    tool_tip="Fill the current monitor without a window frame. Applies immediately; turning it off restores your previous window. Windows only." />
+
   <button
     follows="top|left"
     height="23"
@@ -1165,6 +1170,15 @@ Combined: transmitted light from all lights, including blur.</text>
     <text name="PostHelp" follows="left|top|right" layout="topleft"
       left="30" top="145" width="450" height="64" word_wrap="true" text_color="LtGray_50">
       Uses the sharpening filter from TAA with any antialiasing mode. When enabled, this replaces TAA's sharpening setting. Existing Contrast Adaptive Sharpening still applies.
+    </text>
+    <slider name="RenderChromaticAberrationStrength" control_name="RenderChromaticAberrationStrength"
+      label="Chromatic aberration:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="230" width="450" height="22" min_val="0" max_val="20"
+      increment="0.1" decimal_digits="2" show_text="true" can_edit_text="true" text_width="55"
+      tool_tip="Red/blue separation in pixels at the image corners. Zero disables chromatic aberration. Also applies to photos." />
+    <text name="ChromaticAberrationHelp" follows="left|top|right" layout="topleft"
+      left="30" top="266" width="450" height="64" word_wrap="true" text_color="LtGray_50">
+      Adds color fringes toward the edges of the finished scene. Zero turns it off. Shared with Photo Tools > Color, independent of its finishing-grade checkbox.
     </text>
   </panel>
   <panel name="graphics_bloom_panel" label="Bloom" follows="all"

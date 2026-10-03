@@ -635,7 +635,8 @@ void LLHUDEffectLookAt::update()
         {
             static LLCachedControl<bool> disable_look_at(gSavedSettings, "DisableLookAtAnimation", true);
             LLMotion* head_motion = ((LLVOAvatar*)(LLViewerObject*)mSourceObject)->findMotion(ANIM_AGENT_HEAD_ROT);
-            if (disable_look_at())
+            // An animated head drives this camera; procedural tracking would feed it back.
+            if (disable_look_at() || (source_avatar->isSelf() && gAgentCamera.useAnimatedMouselook()))
             {
                 if (head_motion)
                 {

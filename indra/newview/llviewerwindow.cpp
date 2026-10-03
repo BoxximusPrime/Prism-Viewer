@@ -1052,6 +1052,36 @@ bool LLViewerWindow::handleAnyMouseClick(LLWindow *window, LLCoordGL pos, MASK m
     x = ll_round((F32)x / mDisplayScale.mV[VX]);
     y = ll_round((F32)y / mDisplayScale.mV[VY]);
 
+    // Track mouse buttons even when the UI is hidden.
+    buttonstatestr = down ? "down" : "up";
+    switch (clicktype)
+    {
+    case CLICK_LEFT:
+        mLeftMouseDown = down;
+        buttonname = "Left";
+        break;
+    case CLICK_RIGHT:
+        mRightMouseDown = down;
+        buttonname = "Right";
+        break;
+    case CLICK_MIDDLE:
+        mMiddleMouseDown = down;
+        buttonname = "Middle";
+        break;
+    case CLICK_DOUBLELEFT:
+        mLeftMouseDown = down;
+        buttonname = "Left Double Click";
+        break;
+    case CLICK_BUTTON4:
+        buttonname = "Button 4";
+        break;
+    case CLICK_BUTTON5:
+        buttonname = "Button 5";
+        break;
+    default:
+        break; // COUNT and NONE
+    }
+
     // Consume the entire face-camera gesture before dispatching a context click.
     if (clicktype == CLICK_RIGHT)
     {
@@ -1073,7 +1103,6 @@ bool LLViewerWindow::handleAnyMouseClick(LLWindow *window, LLCoordGL pos, MASK m
         }
         if (mCameraRelativeRightClick)
         {
-            mRightMouseDown = down;
             if (!down) mCameraRelativeRightClick = false;
             return true;
         }
@@ -1085,43 +1114,6 @@ bool LLViewerWindow::handleAnyMouseClick(LLWindow *window, LLCoordGL pos, MASK m
     // only send mouse clicks to UI if UI is visible
     if(gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI))
     {
-
-        if (down)
-        {
-            buttonstatestr = "down" ;
-        }
-        else
-        {
-            buttonstatestr = "up" ;
-        }
-
-        switch (clicktype)
-        {
-        case CLICK_LEFT:
-            mLeftMouseDown = down;
-            buttonname = "Left";
-            break;
-        case CLICK_RIGHT:
-            mRightMouseDown = down;
-            buttonname = "Right";
-            break;
-        case CLICK_MIDDLE:
-            mMiddleMouseDown = down;
-            buttonname = "Middle";
-            break;
-        case CLICK_DOUBLELEFT:
-            mLeftMouseDown = down;
-            buttonname = "Left Double Click";
-            break;
-        case CLICK_BUTTON4:
-            buttonname = "Button 4";
-            break;
-        case CLICK_BUTTON5:
-            buttonname = "Button 5";
-            break;
-        default:
-            break; // COUNT and NONE
-        }
 
         LLView::sMouseHandlerMessage.clear();
 
@@ -2755,9 +2747,9 @@ void LLViewerWindow::reshape(S32 width, S32 height)
 
         // store new settings for the mode we are in, regardless
         bool maximized = mWindow->getMaximized();
-        gSavedSettings.setBOOL("WindowMaximized", maximized);
+        if (!mWindow->getBorderlessFullscreen()) gSavedSettings.setBOOL("WindowMaximized", maximized);
 
-        if (!maximized)
+        if (!maximized && !mWindow->getBorderlessFullscreen())
         {
             U32 min_window_width=gSavedSettings.getU32("MinWindowWidth");
             U32 min_window_height=gSavedSettings.getU32("MinWindowHeight");

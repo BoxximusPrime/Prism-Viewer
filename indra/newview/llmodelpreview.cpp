@@ -27,6 +27,8 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llmodelpreview.h"
+#include "llgltfmaterialpreviewmgr.h"
+#include "llspatialpartition.h"
 
 #include "llmodelloader.h"
 #include "lldaeloader.h"
@@ -742,6 +744,10 @@ void LLModelPreview::getJointAliases(JointMap& joint_map)
 
 void LLModelPreview::loadModel(std::string filename, S32 lod, bool force_disable_slm)
 {
+    if (lod == LLModel::LOD_HIGH && !filename.empty())
+    {
+        static_cast<LLFloaterModelPreview*>(mFMP)->clearPreviewAppearance();
+    }
     assert_main_thread();
 
     LLMutexLock lock(this);
@@ -2852,6 +2858,167 @@ void LLModelPreview::clearBuffers()
     }
 }
 
+std::vector<LLModelPreview::PreviewSlot> LLModelPreview::getPreviewSlots() const
+{
+    std::vector<PreviewSlot> slots;
+    for (const auto& instance : mUploadData)
+    {
+        if (!instance.mModel) continue;
+        for (const auto& binding : instance.mModel->mMaterialList)
+        {
+            PreviewSlot slot(instance.mModel.get(), binding);
+            if (std::find(slots.begin(), slots.end(), slot) == slots.end()) slots.push_back(slot);
+        }
+    }
+    return slots;
+}
+
+void LLModelPreview::setPreviewAppearance(const std::vector<PreviewSlot>& slots, const PreviewAppearance& appearance)
+{
+    for (const auto& slot : slots) mPreviewAppearance[slot] = appearance;
+    mViewOption["show_textures"] = true;
+    mFMP->childSetValue("show_textures", true);
+    refresh();
+}
+
+void LLModelPreview::clearPreviewAppearance(const std::vector<PreviewSlot>& slots)
+{
+    if (slots.empty()) mPreviewAppearance.clear();
+    else for (const auto& slot : slots) mPreviewAppearance.erase(slot);
+    refresh();
+}
+
+const LLModelPreview::PreviewAppearance* LLModelPreview::getPreviewAppearance(const PreviewSlot& slot) const
+{
+    auto it = mPreviewAppearance.find(slot);
+    return it == mPreviewAppearance.end() ? nullptr : &it->second;
+}
+
+bool LLModelPreview::hasPreviewMaterial() const
+{
+    for (const auto& entry : mPreviewAppearance)
+    {
+        if (entry.second.material && entry.second.material->isLoaded()) return true;
+    }
+    return false;
+}
+
+bool LLModelPreview::updatePreviewAppearance()
+{
+    bool loading = false;
+    for (auto& entry : mPreviewAppearance)
+    {
+        auto& appearance = entry.second;
+        if (appearance.texture)
+        {
+            appearance.texture->setKnownDrawSize(getWidth(), getHeight());
+            loading |= !appearance.texture->isMissingAsset() && appearance.texture->getDiscardLevel() != 0;
+        }
+        if (appearance.material)
+        {
+            loading |= LLGLTFPreviewTexture::prepareMaterial(appearance.material);
+        }
+    }
+    if (loading) refresh();
+    return loading;
+}
+
+bool LLModelPreview::bindPreviewAppearance(const LLModelInstance& instance, size_t face)
+{
+    if (face >= instance.mModel->mMaterialList.size()) return false;
+    auto appearance = getPreviewAppearance({instance.mModel.get(), instance.mModel->mMaterialList[face]});
+    if (!appearance) return false;
+    LLViewerFetchedTexture* texture = appearance->texture;
+    LLColor4 color = LLColor4::white;
+    if (appearance->material && appearance->material->isLoaded())
+    {
+        texture = appearance->material->mBaseColorTexture;
+        color = appearance->material->mBaseColor;
+    }
+    gGL.diffuseColor4fv(color.mV);
+    gGL.getTexUnit(0)->bind(texture && !texture->isMissingAsset() ? texture : LLViewerFetchedTexture::sWhiteImagep.get());
+    return true;
+}
+
+void LLModelPreview::renderPreviewMaterials()
+{
+    std::vector<std::pair<LLPointer<LLDrawInfo>, F32>> batches;
+    for (auto& instance : mUploadData)
+    {
+        LLModel* model = instance.mLOD[mPreviewLOD];
+        if (!model) continue;
+        auto& buffers = mVertexBuffer[mPreviewLOD][model];
+        for (size_t face = 0; face < buffers.size(); ++face)
+        {
+            if (face >= instance.mModel->mMaterialList.size()) continue;
+            const std::string& binding = instance.mModel->mMaterialList[face];
+            const auto* appearance = getPreviewAppearance({instance.mModel.get(), binding});
+            LLPointer<LLFetchedGLTFMaterial> material;
+            if (appearance && appearance->material && appearance->material->isLoaded())
+            {
+                material = appearance->material;
+            }
+            else
+            {
+                material = new LLFetchedGLTFMaterial();
+                material->mMetallicFactor = 0.f;
+                if (appearance && appearance->texture)
+                {
+                    material->mBaseColorTexture = appearance->texture;
+                }
+                else
+                {
+                    auto imported = instance.mMaterial.find(binding);
+                    if (imported != instance.mMaterial.end())
+                    {
+                        material->mBaseColor = imported->second.mDiffuseColor;
+                        if (imported->second.getDiffuseMap().notNull())
+                        {
+                            material->mBaseColorTexture = LLViewerTextureManager::getFetchedTexture(imported->second.getDiffuseMap());
+                        }
+                    }
+                }
+            }
+            LLVertexBuffer* buffer = buffers[face];
+            LLStrider<LLColor4U> colors;
+            buffer->getColorStrider(colors);
+            const LLColor4U color(material->mBaseColor);
+            for (U32 v = 0; v < buffer->getNumVerts(); ++v) colors[v] = color;
+            buffer->unmapBuffer();
+            LLPointer<LLDrawInfo> info = new LLDrawInfo(0, U16(buffer->getNumVerts()-1), buffer->getNumIndices(), 0, nullptr, buffer);
+            info->mGLTFMaterial = material;
+            info->mModelMatrix = &instance.mTransform;
+            const LLVolumeFace& volume_face = model->getVolumeFace(S32(face));
+            LLVector3 center = LLVector3(volume_face.mCenter->getF32ptr()) * instance.mTransform;
+            batches.emplace_back(info, (center - LLViewerCamera::getInstance()->getOrigin()).lengthSquared());
+        }
+    }
+    // Opaque/masked surfaces first, then blended slots back-to-front. Triangle
+    // sorting inside an intersecting blended slot remains the usual approximation.
+    std::stable_sort(batches.begin(), batches.end(), [](const auto& a, const auto& b)
+    {
+        bool alpha_a = a.first->mGLTFMaterial->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_BLEND;
+        bool alpha_b = b.first->mGLTFMaterial->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_BLEND;
+        if (alpha_a != alpha_b) return !alpha_a;
+        return alpha_a && a.second > b.second;
+    });
+    gObjectPreviewProgram.unbind();
+    LLGLTFPreviewTexture::renderGeometry([&batches]()
+    {
+        for (auto& batch : batches)
+        {
+            auto& info = batch.first;
+            const bool alpha = info->mGLTFMaterial->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_BLEND;
+            LLGLDepthTest depth(GL_TRUE, !alpha, GL_LEQUAL);
+            LLGLState blend(GL_BLEND, alpha);
+            gGL.blendFunc(LLRender::BF_SOURCE_ALPHA, LLRender::BF_ONE_MINUS_SOURCE_ALPHA);
+            gModelPreviewPBRProgram.uniform1i(LLStaticHashedString("preview_alpha_mode"), info->mGLTFMaterial->mAlphaMode);
+            LLRenderPass::pushGLTFBatch(*info);
+        }
+    }, PREVIEW_CANVAS_COL, true);
+    gObjectPreviewProgram.bind();
+}
+
 void LLModelPreview::genBuffers(S32 lod, bool include_skin_weights)
 {
     LLModelLoader::model_list* model = NULL;
@@ -2898,7 +3065,9 @@ void LLModelPreview::genBuffers(S32 lod, bool include_skin_weights)
         S32 num_faces = mdl->getNumVolumeFaces();
         for (S32 i = 0; i < num_faces; ++i)
         {
-            const LLVolumeFace &vf = mdl->getVolumeFace(i);
+            // Generate preview-only tangents without altering imported geometry.
+            LLVolumeFace vf(mdl->getVolumeFace(i));
+            if (vf.mNormals && vf.mTexCoords) vf.createTangents();
             U32 num_vertices = vf.mNumVertices;
             U32 num_indices = vf.mNumIndices;
 
@@ -2911,7 +3080,8 @@ void LLModelPreview::genBuffers(S32 lod, bool include_skin_weights)
 
 
 
-            U32 mask = LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_NORMAL | LLVertexBuffer::MAP_TEXCOORD0;
+            U32 mask = LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_NORMAL | LLVertexBuffer::MAP_TEXCOORD0 |
+                LLVertexBuffer::MAP_COLOR | LLVertexBuffer::MAP_TANGENT;
 
             if (skinned)
             {
@@ -3018,6 +3188,27 @@ void LLModelPreview::genBuffers(S32 lod, bool include_skin_weights)
                 *(index_strider++) = vf.mIndices[i];
             }
 
+            LLStrider<LLColor4U> colors;
+            LLStrider<LLVector4a> tangents;
+            vb->getColorStrider(colors);
+            vb->getTangentStrider(tangents);
+            for (U32 v = 0; v < num_vertices; ++v)
+            {
+                colors[v] = LLColor4U::white;
+                if (vf.mTangents) tangents[v] = vf.mTangents[v];
+                else tangents[v].set(1.f, 0.f, 0.f, 1.f);
+            }
+            // Missing UVs/normals must not leave an uninitialized preview stream.
+            if (!vf.mTexCoords)
+            {
+                vb->getTexCoord0Strider(tc_strider);
+                for (U32 v = 0; v < num_vertices; ++v) tc_strider[v].set(0.f, 0.f);
+            }
+            if (!vf.mNormals)
+            {
+                vb->getNormalStrider(normal_strider);
+                for (U32 v = 0; v < num_vertices; ++v) normal_strider[v].set(0.f, 0.f, 1.f);
+            }
             vb->unmapBuffer();
 
             mVertexBuffer[lod][mdl].push_back(vb);
@@ -3540,6 +3731,9 @@ bool LLModelPreview::render()
             genBuffers(LLModel::LOD_PHYSICS, false);
         }
 
+        const bool preview_pbr = show_textures && !show_skin_weight && hasPreviewMaterial();
+        if (preview_pbr) renderPreviewMaterials();
+
         if (!show_skin_weight)
         {
             for (LLMeshUploadThread::instance_list_t::iterator iter = mUploadData.begin(); iter != mUploadData.end(); ++iter)
@@ -3562,7 +3756,7 @@ bool LLModelPreview::render()
                 auto num_models = mVertexBuffer[mPreviewLOD][model].size();
                 for (size_t i = 0; i < num_models; ++i)
                 {
-                    if (show_textures)
+                    if (show_textures && !bindPreviewAppearance(instance, i))
                     {
                         auto materialCnt = instance.mModel->mMaterialList.size();
                         if (i < materialCnt)
@@ -3581,7 +3775,7 @@ bool LLModelPreview::render()
                             }
                         }
                     }
-                    else
+                    else if (!show_textures)
                     {
                         gGL.diffuseColor4fv(PREVIEW_BASE_COL.mV);
                     }
@@ -3591,7 +3785,7 @@ bool LLModelPreview::render()
                     LLVertexBuffer::sGLRenderBuffer = 0;
                     LLVertexBuffer* buffer = mVertexBuffer[mPreviewLOD][model][i];
                     buffer->setBuffer();
-                    buffer->drawRange(LLRender::TRIANGLES, 0, buffer->getNumVerts() - 1, buffer->getNumIndices(), 0);
+                    if (!preview_pbr) buffer->drawRange(LLRender::TRIANGLES, 0, buffer->getNumVerts() - 1, buffer->getNumIndices(), 0);
 
                     gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
                     gGL.diffuseColor4fv(PREVIEW_EDGE_COL.mV);
@@ -3898,7 +4092,7 @@ bool LLModelPreview::render()
 
                             gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
 
-                            if (show_textures)
+                            if (show_textures && !bindPreviewAppearance(instance, i))
                             {
                                 auto materialCnt = instance.mModel->mMaterialList.size();
                                 if (i < materialCnt)
@@ -3917,7 +4111,7 @@ bool LLModelPreview::render()
                                     }
                                 }
                             }
-                            else
+                            else if (!show_textures)
                             {
                                 gGL.diffuseColor4fv(PREVIEW_BASE_COL.mV);
                             }
@@ -4168,4 +4362,3 @@ void LLModelPreview::onLODMeshOptimizerParamCommit(S32 requested_lod, bool enfor
         mDirty = true;
     }
 }
-

@@ -242,6 +242,8 @@
   <map><key>Comment</key><string>Apply sharpening after antialiasing with any AA mode. Replaces TAA presentation sharpening while enabled.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderPostSharpenStrength</key>
   <map><key>Comment</key><string>Post-processing sharpening strength (0 to 2), using the bounded TAA presentation filter.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
+  <key>RenderChromaticAberrationStrength</key>
+  <map><key>Comment</key><string>Final-scene radial red/blue separation in pixels at the image corners (0 to 20). Zero disables chromatic aberration. Shared by Photo Tools and Graphics Post.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>4.0</real></map>
   <key>RenderTAADebug</key>
   <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion/reactive, 2 history weight (red low, green high), 3 clipping (white high), 4 detail protection (green high), 5 rejection reason (gray reset, blue offscreen, red depth, yellow partial depth, magenta reactive, green valid), 6 repeated flicker protection (green high). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
   <key>RenderTAAFlickerDetection</key>
@@ -7253,6 +7255,55 @@
       <string>Boolean</string>
       <key>Value</key>
       <integer>0</integer>
+    </map>
+    <key>ChatMentionNamesEnabled</key>
+    <map>
+      <key>Comment</key><string>Recognize configured names and phrases as chat mentions.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>ChatMentionInNearby</key>
+    <map>
+      <key>Comment</key><string>Recognize configured mention names in nearby chat.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>ChatMentionInIM</key>
+    <map>
+      <key>Comment</key><string>Recognize configured mention names in IMs and group chats.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>ChatMentionCaseSensitive</key>
+    <map>
+      <key>Comment</key><string>Require matching capitalization for configured mention names.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>0</integer>
+    </map>
+    <key>ChatMentionWholeWords</key>
+    <map>
+      <key>Comment</key><string>Match configured mention names only at word boundaries.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>ChatMentionHighlightMessages</key>
+    <map>
+      <key>Comment</key><string>Use the Mentions color for messages mentioning you.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>1</integer>
+    </map>
+    <key>ChatMentionNames</key>
+    <map>
+      <key>Comment</key><string>Comma or newline separated mention names and phrases.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>String</string>
+      <key>Value</key><string></string>
     </map>
     <key>PlaySoundChatMention</key>
     <map>
@@ -15208,6 +15259,14 @@
       <key>Value</key>
       <integer>1</integer>
     </map>
+    <key>BorderlessFullscreen</key>
+    <map>
+      <key>Comment</key>
+      <string>Fill the current monitor without a window frame. Applies immediately on Windows.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>0</integer>
+    </map>
     <key>FullScreen</key>
     <map>
       <key>Comment</key>
@@ -17714,6 +17773,17 @@
     <key>Value</key>
     <integer>0</integer>
   </map>
+  <key>BoxxyMoveLock</key>
+  <map>
+    <key>Comment</key>
+    <string>Hold the Stop control while idle; release during intentional movement</string>
+    <key>Persist</key>
+    <integer>0</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
   <key>BoxxyCameraRelativeMovement</key>
   <map>
     <key>Comment</key>
@@ -17757,6 +17827,20 @@
     <string>Boolean</string>
     <key>Value</key>
     <integer>0</integer>
+  </map>
+  <key>BoxxyAnimatedMouselookLevelHorizon</key>
+  <map>
+    <key>Comment</key><string>Stabilize animated Mouselook with a level horizon and a distant focus target following the agent's facing direction.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>BoxxyAnimatedMouselook</key>
+  <map>
+    <key>Comment</key><string>Position Mouselook at the animated eye midpoint and apply mouse look relative to the animated head.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
   </map>
   <key>BoxxyKeepThirdPersonOnZoom</key>
   <map>

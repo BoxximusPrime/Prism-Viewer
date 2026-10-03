@@ -284,4 +284,7 @@
      function="Floater.Toggle"
      parameter="inventory_settings" />
   </menu_item_check>
+  <menu_item_call label="Prism Inventory Binds" name="ui_shortcuts">
+    <menu_item_call.on_click function="Floater.Show" parameter="ui_shortcuts" />
+  </menu_item_call>
 </toggleable_menu>

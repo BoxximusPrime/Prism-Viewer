@@ -8177,6 +8177,8 @@ void LLPipeline::copyRenderTarget(LLRenderTarget* src, LLRenderTarget* dst)
     gDeferredPostNoDoFProgram.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true);
     // This utility also runs before TAA and must not inherit final presentation's offset.
     gDeferredPostNoDoFProgram.uniform2f(LLStaticHashedString("taa_depth_jitter"), 0.f, 0.f);
+    gDeferredPostNoDoFProgram.uniform1i(LLStaticHashedString("photo_grade_enabled"), 0);
+    gDeferredPostNoDoFProgram.uniform1f(LLStaticHashedString("chromatic_aberration"), 0.f);
 
     {
         mScreenTriangleVB->setBuffer();
@@ -8995,12 +8997,17 @@ void LLPipeline::renderFinalize()
     static LLCachedControl<F32> photo_lift(gSavedSettings, "PhotoGradeLift", 0.f);
     static LLCachedControl<F32> photo_gamma(gSavedSettings, "PhotoGradeGamma", 1.f);
     static LLCachedControl<F32> photo_gain(gSavedSettings, "PhotoGradeGain", 1.f);
+    static LLCachedControl<F32> chromatic_aberration(gSavedSettings, "RenderChromaticAberrationStrength", 4.f);
     // Leave diagnostic views ungraded. This stage is downstream of exposure and
     // temporal history, and runs for both the live scene and snapshot renders.
-    const bool grade = photo_grade && RenderBufferVisualization < 0 &&
+    const bool finishing = RenderBufferVisualization < 0 &&
         !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !ssgi_debug &&
-        gSavedSettings.getS32("RenderTAADebug") == 0;
-    final_shader.uniform1i(LLStaticHashedString("photo_grade_enabled"), grade ? 1 : 0);
+        gSavedSettings.getS32("RenderTAADebug") == 0 && mRT == &mMainRT &&
+        !gCubeSnapshot && !sImpostorRender && !sRenderingHUDs &&
+        !gSavedSettings.getBOOL("BoxxySSSShowDepth") && !gSavedSettings.getBOOL("BoxxySSSShowMask");
+    final_shader.uniform1i(LLStaticHashedString("photo_grade_enabled"), photo_grade && finishing ? 1 : 0);
+    final_shader.uniform1f(LLStaticHashedString("chromatic_aberration"),
+        finishing ? llclamp(F32(chromatic_aberration), 0.f, 20.f) : 0.f);
     final_shader.uniform4f(LLStaticHashedString("photo_grade_color"),
         llclamp(F32(photo_contrast), 0.f, 2.f), llclamp(F32(photo_saturation), 0.f, 2.f),
         llclamp(F32(photo_warmth), -1.f, 1.f), llclamp(F32(photo_tint), -1.f, 1.f));

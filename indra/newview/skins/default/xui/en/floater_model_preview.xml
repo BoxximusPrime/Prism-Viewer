@@ -4,8 +4,8 @@
  can_drag_on_left="false"
  can_minimize="true"
  can_resize="true"
- height="625"
- min_height="625"
+ height="715"
+ min_height="715"
  width="980"
  min_width="980"
  name="Model Preview"
@@ -13,6 +13,15 @@
  help_topic="upload_model"
  legacy_header_height="25">
 
+  <string name="preview_all_slots">All material slots</string>
+  <string name="preview_default">Imported appearance (preview only)</string>
+  <string name="preview_mixed">Multiple preview appearances</string>
+  <string name="preview_loading">Loading...</string>
+  <string name="preview_failed">Unable to load preview asset. Clear or choose another.</string>
+  <string name="preview_rigged_fallback">Rigged pose: base color only; full PBR in unposed view.</string>
+  <string name="preview_missing_map">One or more material textures are unavailable.</string>
+  <string name="preview_material_name">Inventory PBR material</string>
+  <string name="preview_checker_name">UV checker (U red, V green)</string>
   <string name="status_idle"></string>
   <string name="status_parse_error">Error: Model parsing issue - see log for details.</string>
   <string name="status_bind_shape_orientation">Warning: bind shape matrix is not in standard X-forward orientation.</string>
@@ -1855,7 +1864,7 @@ Analysed:
    height="408"/>
   <panel
     follows="right|bottom"
-    height="140"
+    height="230"
     layout="topleft"
     name="right_panel"
     top_pad="5"
@@ -1939,18 +1948,36 @@ Analysed:
       layout="topleft"
       left="2"
       name="physics_explode_label"
-      top="85"
+      top="134"
       width="150">
       Preview Spread:
     </text>
     <slider
       name="physics_explode"
       follows="top|left"
-      top="100"
+      top="150"
       left="0"
       min_val="0.0"
       max_val="3.0"
       height="20"
       width="150"/>
+    <combo_box follows="left|top" layout="topleft" left="0" top="27"
+      width="150" height="20" name="preview_material_slot"
+      tool_tip="Preview an appearance on all slots or on one imported model/material binding. All instances of that model share the preview."/>
+    <button follows="left|top" layout="topleft" left="0" top="51"
+      width="150" height="22" name="preview_image" label="Local image..."
+      tool_tip="Preview a local flat texture. No upload or payment."/>
+    <texture_picker follows="left|top" layout="topleft" left="0" top="78"
+      width="68" height="50" name="preview_material" label="Material..."
+      no_commit_on_selection="true" allow_no_texture="true"
+      tool_tip="Choose a PBR material from inventory for this imported mesh. Preview only."/>
+    <button follows="left|top" layout="topleft" left="74" top="78"
+      width="76" height="22" name="preview_checker" label="UV checker"/>
+    <button follows="left|top" layout="topleft" left="74" top="106"
+      width="76" height="22" name="preview_clear" label="Clear"
+      tool_tip="Restore imported appearance on the selected slots without resetting the camera."/>
+    <text follows="left|top" layout="topleft" left="0" top="175"
+      width="328" height="48" name="preview_appearance_status" word_wrap="true"
+      tool_tip="Temporary appearance choices do not change uploaded textures, materials or mesh fees."/>
   </panel>
 </floater>

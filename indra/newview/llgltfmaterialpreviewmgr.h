@@ -30,6 +30,7 @@
 #include "llfetchedgltfmaterial.h"
 #include "llsingleton.h"
 #include "lltexture.h"
+#include <functional>
 
 class LLGLTFPreviewTexture : public LLViewerDynamicTexture
 {
@@ -39,6 +40,10 @@ protected:
 public:
     // Width scales with size of material's textures
     static LLPointer<LLGLTFPreviewTexture> create(LLPointer<LLFetchedGLTFMaterial> material);
+
+    static bool prepareMaterial(LLFetchedGLTFMaterial* material);
+    static bool renderGeometry(const std::function<void()>& draw_geometry,
+        const LLColor4& background = LLColor4(0.f, 0.f, 0.f, 0.f), bool model_preview = false);
 
     bool needsRender() override;
     void preRender(bool clear_depth = true) override;
@@ -76,3 +81,5 @@ class LLGLTFMaterialPreviewMgr
 };
 
 extern LLGLTFMaterialPreviewMgr gGLTFMaterialPreviewMgr;
+
+extern LLGLSLShader gModelPreviewPBRProgram;

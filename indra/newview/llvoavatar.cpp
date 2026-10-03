@@ -4782,14 +4782,16 @@ void LLVOAvatar::updateOrientation(LLAgent& agent, F32 speed, F32 delta_time)
             LLVector3 fwdDir = lerp(primDir, velDir, clamp_rescale(speed, 0.5f, 2.0f, 0.0f, 1.0f));
             if (isSelf() && gAgentCamera.cameraMouselook())
             {
+                const LLVector3 view_axis = gAgentCamera.useAnimatedMouselook()
+                    ? agent.getAtAxis() : LLViewerCamera::getInstance()->getAtAxis();
                 // make sure fwdDir stays in same general direction as primdir
                 if (gAgent.getFlying())
                 {
-                    fwdDir = LLViewerCamera::getInstance()->getAtAxis();
+                    fwdDir = view_axis;
                 }
                 else
                 {
-                    LLVector3 at_axis = LLViewerCamera::getInstance()->getAtAxis();
+                    LLVector3 at_axis = view_axis;
                     LLVector3 up_vector = gAgent.getReferenceUpVector();
                     at_axis -= up_vector * (at_axis * up_vector);
                     at_axis.normalize();

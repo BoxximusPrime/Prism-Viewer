@@ -261,6 +261,27 @@ static bool handleTAAHistoryChanged(const LLSD&)
     return true;
 }
 
+static bool handleBorderlessFullscreen(const LLSD& value)
+{
+    if (!gViewerWindow) return true;
+    LLWindow* window = gViewerWindow->getWindow();
+    if (!window) return true;
+    if (value.asBoolean() && !window->getBorderlessFullscreen() && !window->getMaximized())
+    {
+        LLCoordScreen position;
+        if (window->getPosition(&position))
+        {
+            gSavedSettings.setS32("WindowX", position.mX);
+            gSavedSettings.setS32("WindowY", position.mY);
+        }
+    }
+    if (!window->setBorderlessFullscreen(value.asBoolean()))
+    {
+        gSavedSettings.setBOOL("BorderlessFullscreen", window->getBorderlessFullscreen());
+    }
+    return true;
+}
+
 static bool handleReleaseGLBufferChanged(const LLSD& newvalue)
 {
     if (gPipeline.isInit())
@@ -840,6 +861,7 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "OctreeAttachmentSizeFactor", handleRepartition);
     setting_setup_signal_listener(gSavedSettings, "RenderMaxTextureIndex", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderUIBuffer", handleWindowResized);
+    setting_setup_signal_listener(gSavedSettings, "BorderlessFullscreen", handleBorderlessFullscreen);
     setting_setup_signal_listener(gSavedSettings, "RenderDepthOfField", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderFSAAType", handleReleaseGLBufferChanged);
     for (const char* setting : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",

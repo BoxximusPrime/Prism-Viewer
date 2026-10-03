@@ -312,9 +312,11 @@ public:
     // Mouselook
     //--------------------------------------------------------------------
 public:
+    bool            useAnimatedMouselook() const;
     bool            getForceMouselook() const           { return mForceMouselook; }
     void            setForceMouselook(bool mouselook)   { mForceMouselook = mouselook; }
 private:
+    LLQuaternion    getMouselookRotation() const;
     bool            mForceMouselook;
 
     //--------------------------------------------------------------------

@@ -1504,7 +1504,8 @@ void LLAgent::pitch(F32 angle)
         const F32 look_up_limit = 5.f * DEG_TO_RAD;
         const LLVector3& viewer_camera_pos = LLViewerCamera::getInstance()->getOrigin();
         LLVector3 agent_focus_pos = getPosAgentFromGlobal(gAgentCamera.calcFocusPositionTargetGlobal());
-        LLVector3 look_dir = agent_focus_pos - viewer_camera_pos;
+        LLVector3 look_dir = gAgentCamera.useAnimatedMouselook()
+            ? mFrameAgent.getAtAxis() : agent_focus_pos - viewer_camera_pos;
         F32 angle_from_skyward = angle_between(look_dir, skyward);
         if (angle_from_skyward + angle < look_up_limit)
         {
@@ -1560,6 +1561,16 @@ U32 LLAgent::prepareControlFlagsForUpdate()
     // Resolve the turn after collecting input, before serializing body rotation
     // and controls together. Keep the stored flags in the original input frame.
     U32 flags = mControlFlags;
+    static LLCachedControl<bool> move_lock(gSavedSettings, "BoxxyMoveLock", false);
+    const U32 movement = AGENT_CONTROL_AT_POS | AGENT_CONTROL_AT_NEG |
+        AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG | AGENT_CONTROL_UP_POS | AGENT_CONTROL_UP_NEG |
+        AGENT_CONTROL_NUDGE_AT_POS | AGENT_CONTROL_NUDGE_AT_NEG |
+        AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG |
+        AGENT_CONTROL_NUDGE_UP_POS | AGENT_CONTROL_NUDGE_UP_NEG |
+        AGENT_CONTROL_STAND_UP | AGENT_CONTROL_SIT_ON_GROUND;
+    // Hold Stop while idle; leave intentional movement and sitting alone.
+    if (move_lock && isAgentAvatarValid() && !gAgentAvatarp->isSitting() && !(flags & movement))
+        flags |= AGENT_CONTROL_STOP;
     if (useCameraRelativeMovement())
     {
         // Capture the camera frame before clearing the old backward-walk offset.
@@ -3412,7 +3423,9 @@ LLQuaternion LLAgent::getHeadRotation()
     LLVector3 up = look_dir % mFrameAgent.getLeftAxis();
     LLVector3 left = up % look_dir;
 
-    LLQuaternion rot(look_dir, left, up);
+    // Animated head motion can turn the view parallel to the agent's left axis.
+    LLQuaternion rot = gAgentCamera.useAnimatedMouselook()
+        ? LLViewerCamera::getInstance()->getQuaternion() : LLQuaternion(look_dir, left, up);
     if (gAgentAvatarp->getParent())
     {
         rot = rot * ~gAgentAvatarp->getParent()->getRotation();

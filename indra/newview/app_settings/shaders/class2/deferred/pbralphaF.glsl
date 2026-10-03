@@ -27,6 +27,10 @@
 
 #ifndef IS_HUD
 
+#ifdef MODEL_PREVIEW
+uniform int preview_alpha_mode;
+#endif
+
 uniform sampler2D diffuseMap;  //always in sRGB space
 uniform sampler2D bumpMap;
 uniform sampler2D emissiveMap;
@@ -161,13 +165,19 @@ void main()
     float ao = orm.r;
 
     // Derivatives must precede alpha/overlay/water/mirror discards.
+#ifndef MODEL_PREVIEW
     mirrorClip(vary_position);
 #if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
     if (isSSSOverlay(vary_position)) discard;
 #endif
     waterClip(pos);
+#endif
 #ifdef HAS_ALPHA_MASK
+#ifdef MODEL_PREVIEW
+    if (basecolor.a * vertex_color.a < minimum_alpha) discard;
+#else
     if (basecolor.a < minimum_alpha) discard;
+#endif
 #endif
 
     norm *= gl_FrontFacing ? 1.0 : -1.0;
@@ -180,7 +190,9 @@ void main()
     calcAtmosphericVarsLinear(pos.xyz, norm, light_dir, sunlit, amblit, additive, atten);
     if (classic_mode > 0)
         sunlit *= 1.35;
+#ifndef MODEL_PREVIEW
     sunlit = waterLitSun(pos.xyz, light_dir, sunlit, classic_mode);
+#endif
     vec3 sunlit_linear = sunlit;
 
     vec2 frag = vary_fragcoord.xy/vary_fragcoord.z*0.5+0.5;
@@ -199,7 +211,9 @@ void main()
     vec3  irradiance = amblit;
     vec3  radiance  = vec3(0);
     sampleReflectionProbes(irradiance, radiance, vary_position.xy*0.5+0.5, pos.xyz, norm.xyz, gloss, true, amblit);
+#ifndef MODEL_PREVIEW
         irradiance = waterLitAmbient(pos.xyz, irradiance, 0);
+#endif
 
     vec3 diffuseColor = vec3(0.0);
     vec3 specularColor = vec3(0.0);
@@ -228,9 +242,14 @@ void main()
     // Opaque local lights are added after the Classic environment boost.
     color.rgb += light.rgb / final_scale;
 
+#ifndef MODEL_PREVIEW
     color.rgb = applySkyAndWaterFog(pos.xyz, additive, atten, vec4(color, 1.0)).rgb;
+#endif
 
     float a = basecolor.a*vertex_color.a;
+#ifdef MODEL_PREVIEW
+    if (preview_alpha_mode != 2) a = 1.0; // OPAQUE/MASK have full coverage after cutoff.
+#endif
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color.rgb * final_scale,a), vec4(0));
 #ifdef EXACT_OIT

@@ -27,18 +27,20 @@ harness = r'''
 #include <cmath>
 #include <algorithm>
 #include <type_traits>
+#include <string_view>
 using U32 = uint32_t;
 using S32 = int;
 using F32 = float;
 constexpr float F_PI = 3.14159265f;
 constexpr float DEG_TO_RAD = F_PI / 180;
 constexpr int VZ=2, CAMERA_MODE_THIRD_PERSON=0, CAMERA_MODE_FOLLOW=1, SELECT_TYPE_HUD=1;
-struct Settings {bool relative=false;} gSavedSettings;
+struct Settings {bool relative=false,move_lock=false;} gSavedSettings;
 template<class T> struct LLCachedControl {
     T fallback;
-    LLCachedControl(Settings&,const char*,T value):fallback(value) {}
+    std::string_view name;
+    LLCachedControl(Settings&,const char* key,T value):fallback(value),name(key) {}
     operator T() const {
-        if constexpr(std::is_same_v<T,bool>) return gSavedSettings.relative;
+        if constexpr(std::is_same_v<T,bool>) return name=="BoxxyMoveLock" ? gSavedSettings.move_lock : gSavedSettings.relative;
         else return fallback;
     }
 };
@@ -179,10 +181,11 @@ start = avatar_source.index('            if (isSelf() && !mTurning)')
 end = avatar_source.index('            if (isSelf() && mTurning)', start)
 harness += 'void finishFacing(LLAgent& agent,bool self,bool mTurning) {\n' + avatar_source[start:end].replace('isSelf()', 'self') + '\n}\n'
 window_source = (ROOT / 'indra/newview/llviewerwindow.cpp').read_text()
-start = window_source.index('    // Consume the entire face-camera gesture')
+start = window_source.index('    y = ll_round', window_source.index('bool LLViewerWindow::handleAnyMouseClick('))
+start = window_source.index('\n', start) + 1
 end = window_source.index('    // Handle non-consuming global keybindings', start)
 harness += r'''
-enum EMouseClickType {CLICK_LEFT, CLICK_RIGHT, CLICK_MIDDLE};
+enum EMouseClickType {CLICK_LEFT, CLICK_RIGHT, CLICK_MIDDLE, CLICK_DOUBLELEFT, CLICK_BUTTON4, CLICK_BUTTON5};
 using MASK=int;
 constexpr MASK MASK_NONE=0;
 struct LLMouseHandler {};
@@ -202,9 +205,13 @@ struct FocusMgr {
     LLMouseHandler* getMouseCapture() {return captor;}
 } gFocusMgr;
 struct LLViewerWindow {
-    bool mLeftMouseDown=false,mRightMouseDown=false,mCameraRelativeRightClick=false;
+    bool mLeftMouseDown=false,mRightMouseDown=false,mMiddleMouseDown=false,mCameraRelativeRightClick=false;
+    bool ui_visible=true;
+    int ui_dispatches=0,world_dispatches=0;
     bool click(EMouseClickType clicktype,bool down,MASK mask=MASK_NONE) {
-''' + window_source[start:end] + 'return false;\n}\n};\n'
+        const char* buttonname="";
+        const char* buttonstatestr="";
+''' + window_source[start:end] + 'if(ui_visible) ++ui_dispatches; else ++world_dispatches;\nreturn false;\n}\n};\n'
 harness += r'''
 constexpr U32 lateral = AGENT_CONTROL_LEFT_POS | AGENT_CONTROL_LEFT_NEG |
     AGENT_CONTROL_NUDGE_LEFT_POS | AGENT_CONTROL_NUDGE_LEFT_NEG | AGENT_CONTROL_FAST_LEFT;
@@ -223,6 +230,75 @@ U32 packet(LLAgent& agent) {
     return result;
 }
 int main() {
+    // Real button sequences must work without UI dispatch, including visibility changes.
+    for(bool visible : {false,true}) for(bool left_first : {false,true}) {
+        gAgent={};gAgentCamera={};gSavedSettings.relative=true;
+        gAgentCamera.cameraOrbitAround(F_PI/2);
+        LLViewerCamera::instance().at={0,1,0};
+        gFocusMgr.captor=LLToolCamera::getInstance();
+        LLViewerWindow window;
+        window.ui_visible=visible;
+        assert(!window.click(CLICK_LEFT,true));
+        assert(window.mLeftMouseDown);
+        window.ui_visible=!visible;
+        const int dispatched=window.ui_dispatches+window.world_dispatches;
+        assert(window.click(CLICK_RIGHT,true));
+        assert(gAgent.frame.at.mV[1]>.9999f && gAgent.mControlFlags==0);
+        assert(window.ui_dispatches+window.world_dispatches==dispatched);
+        if(left_first) assert(!window.click(CLICK_LEFT,false));
+        assert(window.click(CLICK_RIGHT,false));
+        if(!left_first) assert(!window.click(CLICK_LEFT,false));
+        assert(!window.mLeftMouseDown && !window.mRightMouseDown);
+        assert(!window.mCameraRelativeRightClick);
+        assert(window.ui_dispatches+window.world_dispatches==dispatched+1);
+        assert(!window.click(CLICK_RIGHT,true)); // Ordinary right-click still dispatches.
+        assert(!window.click(CLICK_RIGHT,false));
+        window.ui_visible=false;
+        assert(!window.click(CLICK_DOUBLELEFT,true));
+        assert(window.mLeftMouseDown);
+        assert(window.click(CLICK_RIGHT,true));
+        assert(window.click(CLICK_RIGHT,false));
+        assert(!window.click(CLICK_LEFT,false));
+        assert(!window.click(CLICK_MIDDLE,true));
+        assert(window.mMiddleMouseDown); // Voice button passes through with UI hidden.
+        assert(!window.click(CLICK_MIDDLE,false));
+        assert(!window.mMiddleMouseDown);
+        gFocusMgr.captor=nullptr;
+    }
+    // Move Lock affects only outgoing controls, survives frame resets, and releases
+    // for every movement strength/axis, sit/stand, invalid avatars and toggle-off.
+    const U32 passive = AGENT_CONTROL_FLY | AGENT_CONTROL_MOUSELOOK | AGENT_CONTROL_LBUTTON_DOWN;
+    for (bool relative : {false,true}) {
+        gSavedSettings.relative=relative;
+        gSavedSettings.move_lock=true;
+        LLAgent agent;
+        agent.enabled=false;
+        for (int frame=0;frame<60;++frame) {
+            agent.mControlFlags=passive;
+            assert(agent.prepareControlFlagsForUpdate()==(passive|AGENT_CONTROL_STOP));
+            assert(agent.mControlFlags==passive); // No Stop bit latched in input state.
+        }
+        for (U32 control : {AGENT_CONTROL_AT_POS,AGENT_CONTROL_AT_NEG,
+             AGENT_CONTROL_LEFT_POS,AGENT_CONTROL_LEFT_NEG,AGENT_CONTROL_UP_POS,AGENT_CONTROL_UP_NEG,
+             AGENT_CONTROL_NUDGE_AT_POS,AGENT_CONTROL_NUDGE_AT_NEG,
+             AGENT_CONTROL_NUDGE_LEFT_POS,AGENT_CONTROL_NUDGE_LEFT_NEG,
+             AGENT_CONTROL_NUDGE_UP_POS,AGENT_CONTROL_NUDGE_UP_NEG,
+             AGENT_CONTROL_STAND_UP,AGENT_CONTROL_SIT_ON_GROUND}) {
+            agent.mControlFlags=control;
+            assert(!(agent.prepareControlFlagsForUpdate()&AGENT_CONTROL_STOP));
+            assert(agent.mControlFlags==control);
+        }
+        agent.mControlFlags=0;
+        assert(agent.prepareControlFlagsForUpdate()&AGENT_CONTROL_STOP); // Relock after release.
+        avatar.sitting=true;
+        assert(agent.prepareControlFlagsForUpdate()==0);
+        avatar.sitting=false;avatar_valid=false;
+        assert(agent.prepareControlFlagsForUpdate()==0);
+        avatar_valid=true;gSavedSettings.move_lock=false;
+        assert(agent.prepareControlFlagsForUpdate()==0);
+        agent.mControlFlags=AGENT_CONTROL_STOP;
+        assert(agent.prepareControlFlagsForUpdate()==AGENT_CONTROL_STOP); // Manual Stop still works.
+    }
     // Detached-camera taps return the camera; only continuing input moves afterward.
     for(int control=0;control<4;++control) for(int direction : {-1,1}) {
         gAgent={};gAgentCamera={};gSavedSettings.relative=true;
@@ -511,4 +587,17 @@ assert entry.find("./integer[last()]").text=='0'
 panel=ET.parse(ROOT/'indra/newview/skins/default/xui/en/panel_preferences_move.xml')
 assert panel.find('.//check_box[@control_name="BoxxyCameraRelativeMovement"]') is not None
 assert 'updateBackwardWalk();' not in function('void LLAgent::propagate(')
-print("PASS: backward-walk input snapshots, immediate camera-relative movement, detached-camera return with tap/hold checks, retained facing, independent orbit/pitch, face-camera mouse chord, gesture-only turn animation, release ordering, UI/modifier guards and voice-button pass-through.")
+entry=entries[next(i for i,e in enumerate(entries) if e.tag=='key' and e.text=='BoxxyMoveLock')+1]
+assert entry.find("./integer[last()]").text=='0' and entry.find('integer').text=='0'
+command=ET.parse(ROOT/'indra/newview/app_settings/commands.xml').find('.//command[@name="move_lock"]')
+assert command.get('available_in_toybox')=='true'
+assert (command.get('execute_function'),command.get('is_running_function'))==('ToggleControl','CheckControl')
+assert command.get('execute_parameters')==command.get('is_running_parameters')=='BoxxyMoveLock'
+strings=ET.parse(ROOT/'indra/newview/skins/default/xui/en/strings.xml')
+for ref in ('label_ref','tooltip_ref'):
+    assert strings.find(f'.//string[@name="{command.get(ref)}"]') is not None
+textures=ET.parse(ROOT/'indra/newview/skins/default/textures/textures.xml')
+icon=textures.find(f'.//texture[@name="{command.get("icon")}"]')
+assert (ROOT/'indra/newview/skins/default/textures'/icon.get('file_name')).is_file()
+print('PASS: Move Lock idle packets, all movement axes/nudges, sit/stand, toggle-off, raw-input isolation, manual Stop, and toolbar wiring.')
+print("PASS: backward-walk input snapshots, immediate camera-relative movement, detached-camera return with tap/hold checks, retained facing, independent orbit/pitch, face-camera mouse chord with hidden UI and visibility changes, gesture-only turn animation, release ordering, UI/modifier guards and voice-button pass-through.")

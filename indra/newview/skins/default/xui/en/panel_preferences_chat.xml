@@ -594,7 +594,7 @@
       left="9"
       name="ok_btn"
       top="-29"
-      width="170">
+      width="128">
     <commit_callback
         function="Pref.TranslationSettings" />
   </button>
@@ -606,7 +606,7 @@
       name="autoreplace_showgui"
       commit_callback.function="Pref.AutoReplace"
       label="Auto-Replace..."
-      width="150">
+      width="128">
   </button>
   <button
       height="23"
@@ -616,7 +616,12 @@
       name="spellcheck_showgui"
       commit_callback.function="Pref.SpellChecker"
       label="Spell Checking..."
-      width="150">
+      width="128">
+  </button>
+
+  <button height="23" layout="topleft" top_pad="-23" left_pad="5"
+      name="mention_settings" label="Mentions..." width="100">
+    <button.commit_callback function="Floater.Show" parameter="chat_mention_settings" />
   </button>
 
 </panel>

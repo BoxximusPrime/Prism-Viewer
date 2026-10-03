@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="ui_shortcuts" title="PRISM INVENTORY BINDS" layout="topleft"
+ width="500" height="590" min_width="500" min_height="360"
+ can_resize="true" can_minimize="true" save_rect="true" single_instance="true">
+ <scroll_container name="binds_scroll" layout="topleft" left="0" top="28"
+  width="500" height="550" follows="all" opaque="false" border_visible="false">
+  <panel name="binds_content" layout="topleft" left="0" top="0"
+   width="484" height="558" follows="left|top" background_visible="false" border="false">
+   <text name="heading" layout="topleft" left="16" top="16" width="452" height="24"
+    font="SansSerifLarge" text_color="LabelTextColor" mouse_opaque="false">Inventory controls</text>
+   <text name="subtitle" layout="topleft" left="16" top="46" width="452" height="18"
+    font="SansSerifSmall" text_color="0.65 0.70 0.70 1" mouse_opaque="false">Quick actions for folders, attachments and selections.</text>
+   <text name="hover_heading" layout="topleft" left="16" top="80" width="452" height="16"
+    font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">POINTER OVER INVENTORY</text>
+   <panel name="toggle_row" layout="topleft" left="16" top="102" width="452" height="62"
+    follows="left|top" border="false" background_visible="true"
+    bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.125 0.135 1">
+    <panel name="toggle_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
+     border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
+     <text name="toggle_key" layout="topleft" left="0" top="6" width="124" height="18"
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Ctrl + E</text>
+    </panel>
+    <text name="toggle_title" layout="topleft" left="148" top="10" width="292" height="18"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Toggle folder</text>
+    <text name="toggle_description" layout="topleft" left="148" top="32" width="292" height="28"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Open the hovered folder. Closing also closes its subfolders.</text>
+   </panel>
+   <panel name="collapse_row" layout="topleft" left="16" top="172" width="452" height="54"
+    follows="left|top" border="false" background_visible="true"
+    bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.125 0.135 1">
+    <panel name="collapse_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
+     border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
+     <text name="collapse_key" layout="topleft" left="0" top="6" width="124" height="18"
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Ctrl + Shift + E</text>
+    </panel>
+    <text name="collapse_title" layout="topleft" left="148" top="10" width="292" height="18"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Collapse all folders</text>
+    <text name="collapse_description" layout="topleft" left="148" top="32" width="292" height="16"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Close every folder in this inventory tree.</text>
+   </panel>
+   <panel name="wear_row" layout="topleft" left="16" top="234" width="452" height="100"
+    follows="left|top" border="false" background_visible="true"
+    bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.125 0.135 1">
+    <panel name="wear_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
+     border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
+     <text name="wear_key" layout="topleft" left="0" top="6" width="124" height="18"
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Ctrl + T</text>
+    </panel>
+    <text name="wear_title" layout="topleft" left="148" top="10" width="292" height="18"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Add or remove worn items</text>
+    <text name="wear_description" layout="topleft" left="148" top="32" width="292" height="62"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Add the hovered attachment or clothing item; remove it if worn. Folders only remove worn contents, including subfolders. Gestures and body parts are kept.</text>
+   </panel>
+   <panel name="delete_row" layout="topleft" left="16" top="408" width="452" height="62"
+    follows="left|top" border="false" background_visible="true"
+    bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.125 0.135 1">
+    <panel name="delete_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
+     border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
+     <text name="delete_key" layout="topleft" left="0" top="6" width="124" height="18"
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Ctrl + D</text>
+    </panel>
+    <text name="delete_title" layout="topleft" left="148" top="10" width="292" height="18"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Delete selection</text>
+    <text name="delete_description" layout="topleft" left="148" top="32" width="292" height="28"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Delete selected items or folders with normal protections. Text fields keep editing.</text>
+   </panel>
+   <panel name="folder_click_row" layout="topleft" left="16" top="478" width="452" height="64"
+    follows="left|top" border="false" background_visible="true"
+    bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.125 0.135 1">
+    <panel name="folder_click_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
+     border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
+     <text name="folder_click_key" layout="topleft" left="0" top="6" width="124" height="18"
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Alt + click</text>
+    </panel>
+    <text name="folder_click_title" layout="topleft" left="148" top="10" width="292" height="18"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Folder click action</text>
+    <text name="folder_click_description" layout="topleft" left="148" top="32" width="292" height="30"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Use your Inventory Settings folder action. The default opens another inventory window.</text>
+   </panel>
+   <text name="hover_note" layout="topleft" left="20" top="344" width="444" height="32"
+    font="SansSerifSmall" word_wrap="true" text_color="0.65 0.70 0.70 1" mouse_opaque="false">Search and rename fields keep normal typing. Hover shortcuts ignore held-key repeats.</text>
+   <text name="focus_heading" layout="topleft" left="16" top="386" width="452" height="16"
+    font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">INVENTORY WINDOW FOCUSED</text>
+  </panel>
+ </scroll_container>
+</floater>
