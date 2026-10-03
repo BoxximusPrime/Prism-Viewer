@@ -29,6 +29,7 @@
 #include "llvertexbuffer.h"
 #include "llvolumeoctree.h"
 #include "boost/json.hpp"
+#include "../llalphalightselection.h"
 
 // LL GLTF Implementation
 namespace LL
@@ -64,6 +65,12 @@ namespace LL
             std::vector<LLVector4a> mWeights;
             std::vector<LLColor4U> mColors;
             std::vector<U32> mIndexArray;
+            // Prepared once; live selection transforms only boxes, never vertices.
+            LLAlphaLightSelection::Bounds mAlphaBounds;
+            std::vector<LLAlphaLightSelection::Bounds> mAlphaJointBounds;
+            bool mAlphaSkinBoundsValid = false;
+            float mAlphaWeightMaxSum = 1.f;
+            bool mAlphaWeightRoundoff = false;
 
             // raycast acceleration structure
             LLPointer<LLVolumeOctree> mOctree;

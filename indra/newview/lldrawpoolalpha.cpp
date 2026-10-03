@@ -685,6 +685,7 @@ void LLDrawPoolAlpha::renderSSSOverlays()
 void LLDrawPoolAlpha::renderAlpha(U32 mask, bool depth_only, bool rigged)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
+    LLAlphaLightScope receiver_lights(!depth_only);
     bool initialized_lighting = false;
     bool light_enabled = true;
 
@@ -907,6 +908,8 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, bool depth_only, bool rigged)
                 }
 
                 bool tex_setup = TexSetup(&params, (mat != nullptr));
+                if (!depth_only && (!params.mFullbright || (gltf_mat && gltf_mat->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_BLEND)))
+                    gPipeline.bindAlphaLights(*current_shader, params, ext);
                 current_shader->uniform1i(LLStaticHashedString("sss_overlay"),
                     gPipeline.mSSSOverlayReady && !depth_only && !gCubeSnapshot &&
                     !LLPipeline::sImpostorRender && !LLPipeline::sRenderingHUDs &&

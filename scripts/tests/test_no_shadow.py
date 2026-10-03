@@ -57,6 +57,8 @@ struct LLViewerObject {
     void setCachedObjectDescription(const std::string&);
     bool hasNoShadowDescriptionTag() const { return mNoShadowDescriptionTag; }
 };
+// Fog description handling is independent of the shadow-tag behavior under test.
+namespace LLVolumeFog { void descriptionChanged(LLViewerObject&, const std::string&) {} }
 struct LLVOVolume : LLViewerObject {
     int id;
     mutable double mNextProjectorDescriptionRequest = 0;

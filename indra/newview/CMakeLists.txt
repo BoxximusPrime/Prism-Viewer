@@ -902,6 +902,7 @@ set(viewer_HEADER_FILES
     llfloaterabout.h
     llfloaterareasearch.h
     llareasearchquery.h
+    llalphalightselection.h
     llfloateravatarwelcomepack.h
     llfloaterbvhpreview.h
     llfloateraddpaymentmethod.h

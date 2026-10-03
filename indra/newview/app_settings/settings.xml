@@ -8162,8 +8162,19 @@
     </map>
     <key>RenderAlphaProjectors</key>
     <map>
+      <key>Comment</key>
+      <string>Render projected light textures on transparent surfaces, with OIT or legacy blending. Disable to compare the simpler legacy spotlight lighting. Reloads shaders when changed.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
+    <key>RenderAlphaReceiverLights</key>
+    <map>
         <key>Comment</key>
-        <string>Render projected light textures on transparent surfaces, with OIT or legacy blending. Disable to compare the simpler legacy spotlight lighting. Reloads shaders when changed.</string>
+        <string>Choose up to six contributing local lights per existing transparent batch using receiver bounds and point/projector coverage. Disable for the camera-selected baseline. Applies live without reloading shaders.</string>
         <key>Persist</key>
         <integer>1</integer>
         <key>Type</key>

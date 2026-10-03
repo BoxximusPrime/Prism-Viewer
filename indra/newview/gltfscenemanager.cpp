@@ -51,6 +51,7 @@
 #include "llfilesystem.h"
 #include "llviewercontrol.h"
 #include "boost/json.hpp"
+#include <optional>
 
 #define GLTF_SIM_SUPPORT 1
 
@@ -642,6 +643,19 @@ void GLTFSceneManager::render(U8 variant)
 void GLTFSceneManager::render(Asset& asset, U8 variant)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_GLTF;
+    const bool receiver_lit = (variant & LLGLSLShader::GLTFVariant::ALPHA_BLEND) &&
+        !(variant & LLGLSLShader::GLTFVariant::UNLIT);
+    std::optional<LLAlphaLightScope> alpha_light_scope;
+    if (receiver_lit) alpha_light_scope.emplace();
+    const bool receiver_active = alpha_light_scope && alpha_light_scope->active();
+    const glm::mat4 asset_to_agent = receiver_active ?
+        glm::inverse(get_current_modelview()) * gGL.getModelviewMatrix() : glm::mat4(1.f);
+    auto matrix_array = [](const glm::mat4& matrix)
+    {
+        std::array<float, 16> values;
+        std::copy_n(glm::value_ptr(matrix), 16, values.begin());
+        return values;
+    };
 
     static LLCachedControl<bool> can_use_shaders(gSavedSettings, "RenderCanUseGLTFPBROpaqueShaders", true);
     if (!can_use_shaders)
@@ -770,6 +784,47 @@ void GLTFSceneManager::render(Asset& asset, U8 variant)
 
                 {
                     LL_PROFILE_ZONE_NAMED_CATEGORY_GLTF("gltfdc - push vb");
+
+                    if (receiver_active)
+                    {
+                        LLAlphaLightSelection::Bounds receiver;
+                        if (!rigged)
+                        {
+                            receiver = LLAlphaLightSelection::transform(primitive.mAlphaBounds,
+                                matrix_array(asset_to_agent * node.mAssetMatrix));
+                        }
+                        else if (primitive.mAlphaSkinBoundsValid && node.mSkin >= 0 && size_t(node.mSkin) < asset.mSkins.size())
+                        {
+                            const Skin& skin = asset.mSkins[node.mSkin];
+                            bool valid = primitive.mAlphaJointBounds.size() <= skin.mJoints.size() &&
+                                primitive.mAlphaJointBounds.size() <= skin.mInverseBindMatricesData.size();
+                            LLAlphaLightSelection::Bounds asset_receiver;
+                            for (size_t joint = 0; valid && joint < primitive.mAlphaJointBounds.size(); ++joint)
+                            {
+                                if (!primitive.mAlphaJointBounds[joint].valid()) continue;
+                                const S32 joint_node = skin.mJoints[joint];
+                                if (joint_node < 0 || size_t(joint_node) >= asset.mNodes.size()) { valid = false; break; }
+                                const auto box = LLAlphaLightSelection::transform(primitive.mAlphaJointBounds[joint],
+                                    matrix_array(asset.mNodes[joint_node].mAssetMatrix * skin.mInverseBindMatricesData[joint]));
+                                if (!box.valid()) { valid = false; break; }
+                                asset_receiver.include(box);
+                            }
+                            if (valid && asset_receiver.valid())
+                            {
+                                // Including the origin and max sum also encloses tiny
+                                // normalization roundoff in the uploaded weights.
+                                if (primitive.mAlphaWeightRoundoff)
+                                    asset_receiver.include(LLAlphaLightSelection::Vec3{{0, 0, 0}});
+                                for (int axis = 0; axis < 3; ++axis)
+                                {
+                                    asset_receiver.min[axis] *= primitive.mAlphaWeightMaxSum;
+                                    asset_receiver.max[axis] *= primitive.mAlphaWeightMaxSum;
+                                }
+                                receiver = LLAlphaLightSelection::transform(asset_receiver, matrix_array(asset_to_agent));
+                            }
+                        }
+                        gPipeline.bindAlphaLights(*LLGLSLShader::sCurBoundShaderPtr, receiver);
+                    }
 
                     primitive.mVertexBuffer->drawRangeFast(primitive.mGLMode, primitive.mVertexOffset, primitive.mVertexOffset + primitive.getVertexCount() - 1, primitive.getIndexCount(), primitive.mIndexOffset);
                 }

@@ -664,6 +664,15 @@ LLPipeline::~LLPipeline()
 
 void LLPipeline::cleanup()
 {
+    mAlphaLightCandidates.clear();
+    mAlphaAvatarLights.clear();
+    mAlphaProjectorCache.clear();
+    mAlphaLightShaders.clear();
+    mAlphaLightSelector.build({});
+    for (auto& light : mAlphaSavedDrawables) light = nullptr;
+    mAlphaLightFrame = ~0U;
+    mAlphaLightDepth = 0;
+    mAlphaProjectorShader = nullptr;
     for (auto& light : mHWLightDrawable)
     {
         light = nullptr;
@@ -11356,6 +11365,251 @@ void LLPipeline::setupSpotLight(LLGLSLShader& shader, LLDrawable* drawablep)
 
 }
 
+void LLPipeline::updateAlphaLights()
+{
+    LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("alpha receiver light snapshot");
+    if (mAlphaLightFrame == gFrameCount) return;
+    mAlphaLightFrame = gFrameCount;
+    mAlphaAvatarLights.clear();
+    mAlphaLightCandidates.clear();
+    static LLCachedControl<S32> local_count(gSavedSettings, "RenderLocalLightCount", 256);
+    static LLCachedControl<bool> projected(gSavedSettings, "RenderAlphaProjectors", true);
+    if (local_count > 0)
+    {
+        for (LLDrawable* drawable : mLights)
+        {
+            if (!drawable || drawable->isDead() || !drawable->isState(LLDrawable::LIGHT)) continue;
+            LLVOVolume* light = drawable->getVOVolume();
+            if (!light || light->isHUDAttachment() || light->getLightIntensity() < .001f ||
+                (!sRenderAttachedLights && light->isAttachment())) continue;
+            LLVOAvatar* avatar = light->getAvatar();
+            if (avatar && (avatar->isTooComplex() || avatar->isInMuteList() || avatar->isTooSlow())) continue;
+            mAlphaLightCandidates.emplace_back(drawable);
+        }
+        // Stable identity ordering makes equal contributions independent of allocation,
+        // camera sorting, moving-light priority and selection in the build tools.
+        std::sort(mAlphaLightCandidates.begin(), mAlphaLightCandidates.end(),
+            [](const auto& a, const auto& b) { return a->getVObj()->getID() < b->getVObj()->getID(); });
+    }
+    std::vector<LLAlphaLightSelection::Candidate> candidates;
+    candidates.reserve(mAlphaLightCandidates.size());
+    for (U32 i = 0; i < mAlphaLightCandidates.size(); ++i)
+    {
+        LLDrawable* drawable = mAlphaLightCandidates[i];
+        LLVOVolume* light = drawable->getVOVolume();
+        const LLVector3 position = light->getRenderPosition();
+        const LLColor4 color = light->getLightLinearColor();
+        LLAlphaLightSelection::Candidate candidate;
+        candidate.id = i;
+        candidate.position = { position[0], position[1], position[2] };
+        candidate.radius = light->getLightRadius() * 1.5f;
+        candidate.falloff = light->getLightFalloff(DEFERRED_LIGHT_FALLOFF);
+        candidate.strength = llmax(color[0], color[1], color[2]);
+        if (light->isLightSpotlight())
+        {
+            candidate.projector = true;
+            if (projected && gGLManager.mNumTextureImageUnits >= 24)
+            {
+                // Match alphaProjectorVars: texture X/Y, positive W and near Z.
+                // Its radial cutoff supplies the far limit; it does not reject Z>W.
+                const glm::mat4 matrix = getProjectorParams(drawable).agentMatrix;
+                const glm::vec4 x(matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]);
+                const glm::vec4 y(matrix[0][1], matrix[1][1], matrix[2][1], matrix[3][1]);
+                const glm::vec4 z(matrix[0][2], matrix[1][2], matrix[2][2], matrix[3][2]);
+                const glm::vec4 w(matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3]);
+                const glm::vec4 planes[] = { x, w-x, y, w-y, z, w };
+                for (U32 p = 0; p < 6; ++p)
+                {
+                    const glm::vec4 plane = planes[p] / glm::length(glm::vec3(planes[p]));
+                    std::copy_n(glm::value_ptr(plane), 4, candidate.planes[p].begin());
+                }
+            }
+            else
+            {
+                // Existing plain-spot fallback lights only the forward hemisphere.
+                const LLVector3 direction = LLVector3(0, 0, -1) * light->getRenderRotation();
+                const std::array<F32, 4> plane = { direction[0], direction[1], direction[2], -(direction * position) };
+                candidate.planes.fill(plane);
+            }
+        }
+        candidates.push_back(candidate);
+    }
+    mAlphaLightSelector.build(std::move(candidates));
+}
+
+bool LLPipeline::beginAlphaLights()
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "RenderAlphaReceiverLights", true);
+    if (!enabled || !sRenderDeferred || sRenderingHUDs || sImpostorRender) return false;
+    if (mAlphaLightDepth++ == 0)
+    {
+        for (U32 i = 0; i < 6; ++i)
+        {
+            mAlphaSavedLights[i] = *gGL.getLight(i + 2);
+            mAlphaSavedColors[i] = mHWLightColors[i + 2];
+            mAlphaSavedDrawables[i] = mHWLightDrawable[i + 2];
+        }
+        mAlphaSavedMovingMask = mLightMovingMask;
+        mAlphaLightView = get_current_modelview();
+        mAlphaLightsBound = false;
+        mAlphaProjectorShader = nullptr;
+        mAlphaLightShaders.clear();
+        mAlphaProjectorCache.clear();
+        updateAlphaLights();
+    }
+    return true;
+}
+
+void LLPipeline::endAlphaLights()
+{
+    if (--mAlphaLightDepth != 0) return;
+    restoreAlphaLightBaseline();
+    for (LLGLSLShader* shader : mAlphaLightShaders) shader->mCanBindFast = false;
+    for (auto& drawable : mAlphaSavedDrawables) drawable = nullptr;
+}
+
+void LLPipeline::restoreAlphaLightBaseline()
+{
+    for (U32 i = 0; i < 6; ++i)
+    {
+        *gGL.getLight(i + 2) = mAlphaSavedLights[i];
+        mHWLightColors[i + 2] = mAlphaSavedColors[i];
+        mHWLightDrawable[i + 2] = mAlphaSavedDrawables[i];
+    }
+    mLightMovingMask = mAlphaSavedMovingMask;
+    // The restored states must be uploaded even when the next draw reuses a shader.
+    gGL.invalidateLightState();
+    mAlphaLightsBound = false;
+    mAlphaProjectorShader = nullptr;
+}
+
+void LLPipeline::bindAlphaLights(LLGLSLShader& shader, LLDrawInfo& draw, const LLVector4a* fallback_extents)
+{
+    if (!mAlphaLightDepth) return;
+    LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("alpha receiver light selection");
+    if (draw.mAlphaLightFrame != mAlphaLightFrame)
+    {
+        LLAlphaLightSelection::Bounds receiver;
+        if (draw.mAvatar)
+        {
+            const LLVector3* extents = draw.mAvatar->getLastAnimExtents();
+            receiver.min = { extents[0][0], extents[0][1], extents[0][2] };
+            receiver.max = { extents[1][0], extents[1][1], extents[1][2] };
+            if (extents[0] == LLVector3::zero && extents[1] == LLVector3::zero) receiver = {};
+        }
+        else
+        {
+            receiver = draw.mAlphaLightBounds;
+            if (draw.mModelMatrix)
+            {
+                std::array<F32, 16> matrix;
+                std::copy_n(&draw.mModelMatrix->mMatrix[0][0], 16, matrix.begin());
+                receiver = LLAlphaLightSelection::transform(receiver, matrix);
+            }
+        }
+        if (!receiver.valid() && fallback_extents)
+        {
+            const F32* min = fallback_extents[0].getF32ptr();
+            const F32* max = fallback_extents[1].getF32ptr();
+            receiver.min = { min[0], min[1], min[2] };
+            receiver.max = { max[0], max[1], max[2] };
+        }
+        static LLCachedControl<S32> local_count(gSavedSettings, "RenderLocalLightCount", 256);
+        const U32 limit = llclamp(S32(local_count), 0, 6);
+        if (!receiver.valid())
+        {
+            bindAlphaLights(shader, receiver);
+            return;
+        }
+        if (draw.mAvatar)
+        {
+            auto entry = mAlphaAvatarLights.find(draw.mAvatar.get());
+            if (entry == mAlphaAvatarLights.end())
+                entry = mAlphaAvatarLights.emplace(draw.mAvatar.get(), mAlphaLightSelector.select(receiver, limit)).first;
+            draw.mAlphaLightSelection = entry->second;
+        }
+        else
+        {
+            draw.mAlphaLightSelection = mAlphaLightSelector.select(receiver, limit);
+        }
+        draw.mAlphaLightFrame = mAlphaLightFrame;
+    }
+    bindAlphaLightSelection(shader, draw.mAlphaLightSelection);
+}
+
+void LLPipeline::bindAlphaLights(LLGLSLShader& shader, const LLAlphaLightSelection::Bounds& receiver)
+{
+    if (!mAlphaLightDepth) return;
+    if (!receiver.valid())
+    {
+        if (std::find(mAlphaLightShaders.begin(), mAlphaLightShaders.end(), &shader) == mAlphaLightShaders.end())
+            mAlphaLightShaders.push_back(&shader);
+        restoreAlphaLightBaseline();
+        bindAlphaProjectors(shader, true);
+        return;
+    }
+    LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("alpha receiver light selection");
+    static LLCachedControl<S32> local_count(gSavedSettings, "RenderLocalLightCount", 256);
+    bindAlphaLightSelection(shader, mAlphaLightSelector.select(receiver, llclamp(S32(local_count), 0, 6)));
+}
+
+void LLPipeline::bindAlphaLightSelection(LLGLSLShader& shader, const LLAlphaLightSelection::Selection& selection)
+{
+    LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("alpha receiver light binding");
+    if (std::find(mAlphaLightShaders.begin(), mAlphaLightShaders.end(), &shader) == mAlphaLightShaders.end())
+        mAlphaLightShaders.push_back(&shader);
+    auto slots = selection;
+    // A change in relative strength within the same set need not reorder uniforms.
+    std::sort(slots.ids.begin(), slots.ids.begin() + slots.count);
+    const bool changed = !mAlphaLightsBound || slots.ids != mAlphaBoundLights.ids;
+    if (changed)
+    {
+        const F32 scale = gCubeSnapshot ? mReflectionMapManager.mLightScale : 1.f;
+        mLightMovingMask = 0;
+        for (U32 i = 0; i < 6; ++i)
+        {
+            LLLightState* state = gGL.getLight(i + 2);
+            LLDrawable* drawable = slots.ids[i] >= 0 ? mAlphaLightCandidates[slots.ids[i]].get() : nullptr;
+            LLVOVolume* light = drawable && !drawable->isDead() ? drawable->getVOVolume() : nullptr;
+            mHWLightDrawable[i + 2] = light ? drawable : nullptr;
+            LLColor4 color = light ? light->getLightLinearColor() * scale : LLColor4::black;
+            color[3] = 0.f;
+            mHWLightColors[i + 2] = color;
+            state->setDiffuse(color);
+            state->setAmbient(LLColor4::black);
+            state->setSpecular(LLColor4(0, 0, 1, 0));
+            state->setSize(0.f);
+            if (!light) continue;
+            const F32 radius = light->getLightRadius() * 1.5f;
+            state->setPosition(LLVector4(light->getRenderPosition(), 1.f), mAlphaLightView);
+            state->setConstantAttenuation(0.f);
+            state->setLinearAttenuation(3.f * (1.f + light->getLightFalloff() * 2.f) / radius);
+            state->setQuadraticAttenuation(light->getLightFalloff(DEFERRED_LIGHT_FALLOFF) + 1.f);
+            state->setSize(radius);
+            state->setFalloff(light->getLightFalloff(DEFERRED_LIGHT_FALLOFF));
+            if (drawable->isState(LLDrawable::ACTIVE)) mLightMovingMask |= 1 << (i + 2);
+            if (light->isLightSpotlight())
+            {
+                state->setSpotDirection(LLVector3(0, 0, -1) * light->getRenderRotation(), mAlphaLightView);
+                state->setSpotCutoff(90.f);
+                state->setSpotExponent(2.f);
+                state->setSpecular(LLColor4(0, 0, 0, light->getSpotLightParams()[2]));
+            }
+            else
+            {
+                state->setSpotCutoff(180.f);
+                state->setSpotExponent(0.f);
+            }
+        }
+        mAlphaBoundLights = slots;
+        mAlphaLightsBound = true;
+    }
+    // Fast shader binds restore textures only. Refresh matrices/masks whenever
+    // either the six identities or the receiving shader changes.
+    bindAlphaProjectors(shader, changed || mAlphaProjectorShader != &shader);
+    mAlphaProjectorShader = &shader;
+}
+
 void LLPipeline::bindAlphaProjectors(LLGLSLShader& shader, bool update_uniforms)
 {
     static const LLStaticHashedString mask_uniform("alpha_projector_mask");
@@ -11396,19 +11650,34 @@ void LLPipeline::bindAlphaProjectors(LLGLSLShader& shader, bool update_uniforms)
         shadows[i] = glm::vec2(-1.f, 1.f);
         if (projector)
         {
-            const ProjectorParams projection = getProjectorParams(drawable);
-            matrices[i] = projection.matrix;
-            planes[i].setVec(glm::value_ptr(projection.plane));
-            normals[i].setVec(glm::value_ptr(projection.normal));
-            origins[i].setVec(glm::value_ptr(projection.origin));
-            params[i] = glm::vec4(projection.focus, log2f(F32(llmax(image->getWidth(), 1))),
-                                  projection.range, projection.ambiance);
-            for (U32 j = 0; j < 2; ++j)
+            auto cached = mAlphaProjectorCache.end();
+            if (mAlphaLightDepth) cached = mAlphaProjectorCache.find(drawable);
+            if (cached != mAlphaProjectorCache.end())
             {
-                if (!gCubeSnapshot && !volume->projectorShadowsDisabled() && mShadowSpotLight[j] == drawable)
+                const auto& data = cached->second;
+                matrices[i] = data.matrix;
+                planes[i] = data.plane;
+                normals[i] = data.normal;
+                origins[i] = data.origin;
+                params[i] = data.params;
+                shadows[i] = data.shadow;
+            }
+            else
+            {
+                const ProjectorParams projection = getProjectorParams(drawable);
+                matrices[i] = projection.matrix;
+                planes[i].setVec(glm::value_ptr(projection.plane));
+                normals[i].setVec(glm::value_ptr(projection.normal));
+                origins[i].setVec(glm::value_ptr(projection.origin));
+                params[i] = glm::vec4(projection.focus, log2f(F32(llmax(image->getWidth(), 1))),
+                                      projection.range, projection.ambiance);
+                for (U32 j = 0; j < 2; ++j)
                 {
-                    shadows[i] = glm::vec2(F32(j), 1.f - mSpotLightFade[j]);
+                    if (!gCubeSnapshot && !volume->projectorShadowsDisabled() && mShadowSpotLight[j] == drawable)
+                        shadows[i] = glm::vec2(F32(j), 1.f - mSpotLightFade[j]);
                 }
+                if (mAlphaLightDepth) mAlphaProjectorCache.emplace(drawable,
+                    AlphaProjectorData{ matrices[i], planes[i], normals[i], origins[i], params[i], shadows[i] });
             }
             mask |= 1 << i;
         }
