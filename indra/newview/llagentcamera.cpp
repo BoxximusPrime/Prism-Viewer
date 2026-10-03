@@ -1813,7 +1813,22 @@ LLVector3 LLAgentCamera::getDynamicShoulderOffset() const
     left.mV[VZ] = 0.f;
     left.normalize();
     const F32 side = -0.65f;
-    return LLVector3(left.mV[VX] * side * blend, left.mV[VY] * side * blend, -0.33f * blend);
+    F32 height = -0.33f;
+    if (gAgentAvatarp->mHeadp && gAgentAvatarp->mSkullp && gAgentAvatarp->mEyeLeftp)
+    {
+        // Body dimensions give the standing eye height without learning an animated pose.
+        const F32 head_scale = gAgentAvatarp->mHeadp->getScale().mV[VZ];
+        const F32 standing_eye_height = gAgentAvatarp->mBodySize.mV[VZ] - gAgentAvatarp->getPelvisToFoot()
+            - F_SQRT2 * gAgentAvatarp->mSkullp->getPosition().mV[VZ] * head_scale
+            + gAgentAvatarp->mEyeLeftp->getPosition().mV[VZ] * head_scale;
+        if (standing_eye_height > 0.f)
+        {
+            // Ignore the first 10 cm of head motion; the existing head offset is smoothed.
+            height += llclamp(gAgentAvatarp->mHeadOffset.mV[VZ] - standing_eye_height + 0.1f,
+                              -standing_eye_height, 0.f);
+        }
+    }
+    return LLVector3(left.mV[VX] * side * blend, left.mV[VY] * side * blend, height * blend);
 }
 
 void LLAgentCamera::setupSitCamera()

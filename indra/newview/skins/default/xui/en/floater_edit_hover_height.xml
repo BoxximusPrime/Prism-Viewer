@@ -5,7 +5,7 @@
  can_minimize="true"
  can_close="true"
  can_resize="false"
- height="84"
+ height="120"
  width="515"
  layout="topleft"
  name="HoverHeight"
@@ -41,4 +41,6 @@
      name="BindCameraCheck"
      top_pad="14"
      width="237"/>
+  <button name="AutoShoeHeight" label="Auto from shoes..." left="10" top="88" width="160" height="23"
+   tool_tip="Choose a worn attachment and align its lowest vertex with the ground using an invisible T-pose sample." />
 </floater>

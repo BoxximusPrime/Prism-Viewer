@@ -20,7 +20,9 @@
  <check_box name="name_tags" label="Name tags" left="12" top="130" width="145" height="20" />
  <check_box name="look_targets" control_name="ShowLookAtTargets" label="Show look targets" left="170" top="130" width="178" height="20" />
  <slider name="hover" label="Hover height:" label_width="112" left="12" top="164" width="336" height="20"
- min_val="-2" max_val="2" increment="0.001" decimal_digits="3" can_edit_text="true" />
+  min_val="-2" max_val="2" increment="0.001" decimal_digits="3" can_edit_text="true" />
+  <button name="auto_shoe_height" label="Auto from shoes..." left="190" top="202" width="158" height="23"
+   tool_tip="Choose a worn attachment and align its lowest vertex with the ground using an invisible T-pose sample." />
  <text name="stand_cycle_label" left="12" top="206" width="112" height="20">Stand cycle:</text>
  <button name="stand_prev" label="&#x2039;" left="124" top="202" width="26" height="23" enabled="false"
  tool_tip="Previous AO stand. Requires the built-in AO to be playing a standing pose with multiple stands available. Follows the AO's randomize setting." />

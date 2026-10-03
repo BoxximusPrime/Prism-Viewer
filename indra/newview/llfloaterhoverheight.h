@@ -28,6 +28,17 @@
 #define LL_LLFLOATERHOVERHEIGHT_H
 
 #include "llfloater.h"
+#include "llmodaldialog.h"
+
+class LLFloaterShoeHeight : public LLModalDialog
+{
+public:
+    LLFloaterShoeHeight(const LLSD& key) : LLModalDialog(key) {}
+    bool postBuild() override;
+    void onOpen(const LLSD& key) override;
+private:
+    void applyHeight();
+};
 
 class LLFloaterHoverHeight: public LLFloater
 {

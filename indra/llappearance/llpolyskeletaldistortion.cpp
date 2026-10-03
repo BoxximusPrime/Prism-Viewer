@@ -184,6 +184,12 @@ bool LLPolySkeletalDistortion::setInfo(LLPolySkeletalDistortionInfo *info)
 //-----------------------------------------------------------------------------
 // apply()
 //-----------------------------------------------------------------------------
+LLVector3 LLPolySkeletalDistortion::getJointPositionOffset(LLJoint* joint) const
+{
+    auto found = mJointOffsets.find(joint);
+    return found == mJointOffsets.end() ? LLVector3::zero : mLastWeight * found->second;
+}
+
 void LLPolySkeletalDistortion::apply( ESex avatar_sex )
 {
     LL_PROFILE_ZONE_SCOPED;

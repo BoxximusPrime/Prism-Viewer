@@ -2,6 +2,7 @@
 #include "llfloaterquickprefs.h"
 
 #include "llagent.h"
+#include "llfloaterreg.h"
 #include "llboxxyao.h"
 #include "llcombobox.h"
 #include "llenvironment.h"
@@ -63,6 +64,10 @@ bool LLFloaterQuickPrefs::postBuild()
         gSavedSettings.setS32("AvatarNameTagMode", ctrl->getValue().asBoolean() ? 1 : 0);
     });
     auto* hover = getChild<LLSliderCtrl>("hover");
+    getChild<LLUICtrl>("auto_shoe_height")->setCommitCallback([](LLUICtrl*, const LLSD&)
+    {
+        LLFloaterReg::showInstance("shoe_height");
+    });
     hover->setMinValue(MIN_HOVER_Z);
     hover->setMaxValue(MAX_HOVER_Z);
     hover->setCommitCallback([](LLUICtrl* ctrl, const LLSD&)
@@ -211,6 +216,7 @@ void LLFloaterQuickPrefs::draw()
     }
     getChild<LLUICtrl>("name_tags")->setValue(gSavedSettings.getS32("AvatarNameTagMode") != 0);
     getChild<LLSliderCtrl>("hover")->setEnabled(isAgentAvatarValid() && gAgent.getRegion() && gAgent.getRegion()->avatarHoverHeightEnabled());
+    getChild<LLUICtrl>("auto_shoe_height")->setEnabled(getChild<LLSliderCtrl>("hover")->getEnabled());
     if (!getChild<LLSliderCtrl>("hover")->hasFocus())
         getChild<LLSliderCtrl>("hover")->setValue(gSavedPerAccountSettings.getF32("AvatarHoverOffsetZ"));
     const bool can_cycle_stand = canCycleStand(LLBoxxyAO::instance());
