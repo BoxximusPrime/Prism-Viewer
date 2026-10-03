@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="shoe_height" title="AUTO HEIGHT FROM SHOES" width="480" height="380"
+ layout="topleft" can_resize="false" can_minimize="false" can_close="false" positioning="centered"
+ single_instance="true" save_rect="false">
+ <string name="instructions">Select your shoes, then click Set height. An invisible T-pose sample keeps animations out of the calculation. Stand on a level surface; loaded mesh detail affects accuracy.</string>
+ <string name="no_attachments">No worn world attachments found. Wear your shoes and reopen this window.</string>
+ <string name="unavailable">Avatar height adjustment is unavailable in this region.</string>
+ <string name="stand_still">Stand still on the ground before setting height. Your standing animation can keep playing.</string>
+ <string name="detached">That attachment is no longer worn. Reopen this window to refresh the list.</string>
+ <string name="not_loaded">The complete attachment geometry is not loaded yet. Wait for your shoes to finish loading and try again.</string>
+ <string name="ground_unavailable">Could not locate a visible floor near the avatar's support surface. Wait for the floor to load or move onto a level surface and try again.</string>
+ <string name="out_of_range">The calculated height is outside the allowed range. Check that you selected the shoes and are standing on a level surface.</string>
+ <text name="status" left="12" top="32" width="456" height="66" wrap="true" />
+ <scroll_list name="attachments" left="12" top="106" width="456" height="222" multi_select="false"
+  draw_heading="true" commit_on_selection_change="true">
+  <column name="name" label="Attachment" width="308" />
+  <column name="point" label="Attached to" width="140" />
+ </scroll_list>
+ <button name="apply" label="Set height" left="248" top="340" width="106" height="24" enabled="false" />
+ <button name="cancel" label="Cancel" left="362" top="340" width="106" height="24" />
+</floater>

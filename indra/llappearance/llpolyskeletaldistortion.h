@@ -99,6 +99,8 @@ public:
     // LLVisualParam Virtual functions
     ///*virtual*/ bool              parseData(LLXmlTreeNode* node);
     /*virtual*/ void                apply( ESex sex );
+    // Applied shape displacement, excluding animation translations.
+    LLVector3 getJointPositionOffset(LLJoint* joint) const;
 
     // LLViewerVisualParam Virtual functions
     /*virtual*/ F32                 getTotalDistortion() { return 0.1f; }
@@ -120,4 +122,3 @@ protected:
 };
 
 #endif // LL_LLPOLYSKELETALDISTORTION_H
-
