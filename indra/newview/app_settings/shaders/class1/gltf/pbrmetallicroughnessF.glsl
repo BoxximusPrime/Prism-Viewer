@@ -93,6 +93,7 @@ in vec2 occlusion_uv;
 // needed by all alpha variants
 // ==================================
 #ifdef ALPHA_BLEND
+vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
 in vec3 vary_fragcoord;
 uniform vec4 clipPlane;
 uniform float clipSign;
@@ -343,18 +344,20 @@ void main()
     color.rgb = applySkyAndWaterFog(pos.xyz, additive, atten, vec4(color, 1.0)).rgb;
 
     float a = basecolor.a*vertex_color.a;
+    vec4 final_color = applyVolumeFogAlpha(pos.xyz, vec4(color.rgb, a));
 
     // <AS:Chanayane> Exact capture replaces only the original alpha framebuffer write.
     // frag_color = max(vec4(color.rgb,a), vec4(0));
     #ifdef EXACT_OIT
-    exact_oit_store(max(vec4(color.rgb,a), vec4(0)));
+    exact_oit_store(max(final_color, vec4(0)));
     #else
-    frag_color = max(vec4(color.rgb,a), vec4(0));
+    frag_color = max(final_color, vec4(0));
     #endif
     // </AS:Chanayane>
 #else // UNLIT
     vec4 color = basecolor;
     color.rgb += emissive.rgb;
+    color = applyVolumeFogAlpha(vary_position, color);
     // <AS:Chanayane> Exact capture replaces only the original unlit alpha framebuffer write.
     // frag_color = color;
     #ifdef EXACT_OIT

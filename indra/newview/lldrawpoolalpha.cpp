@@ -111,6 +111,7 @@ static void prepare_alpha_shader(LLGLSLShader* shader, bool deferredEnvironment,
 
     shader->bind();
     gPipeline.bindSSSOverlay(*shader);
+    gPipeline.bindVolumeFogAlpha(*shader);
     shader->uniform1f(LLShaderMgr::DISPLAY_GAMMA, (gamma > 0.1f) ? 1.0f / gamma : (1.0f / 2.2f));
 
     if (LLPipeline::sRenderingHUDs)
@@ -918,6 +919,10 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, bool depth_only, bool rigged)
 
                 {
 // <AS:Chanayane> Upload original per-draw blend factors into exact OIT nodes.
+                    // Additive effects do not replace background fog; attenuate
+                    // their emission without adding another scattering layer.
+                    current_shader->uniform1i(LLStaticHashedString("vf_alpha_scatter"),
+                        params.mBlendFuncDst == LLRender::BF_ONE_MINUS_SOURCE_ALPHA);
                     // gGL.blendFunc((LLRender::eBlendFactor) params.mBlendFuncSrc, (LLRender::eBlendFactor) params.mBlendFuncDst, mAlphaSFactor, mAlphaDFactor);
                     if (!FSExactOIT::configureCapturedDrawIfActive(current_shader, U32(params.mBlendFuncSrc), U32(params.mBlendFuncDst), U32(mAlphaSFactor), U32(mAlphaDFactor)))
                     {

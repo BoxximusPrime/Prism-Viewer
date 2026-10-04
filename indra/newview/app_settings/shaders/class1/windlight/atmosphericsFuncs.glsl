@@ -48,8 +48,8 @@ float getAmbientClamp() { return 1.0f; }
 vec3 srgb_to_linear(vec3 col);
 
 // return colors in sRGB space
-void calcAtmosphericVars(vec3 inPositionEye, vec3 light_dir, float ambFactor, out vec3 sunlit, out vec3 amblit, out vec3 additive,
-                         out vec3 atten)
+void calcAtmosphericVarsWithAmbient(vec3 inPositionEye, vec3 light_dir, float ambFactor, out vec3 sunlit, out vec3 amblit, out vec3 additive,
+                         out vec3 atten, out vec3 ambient_additive)
 {
     vec3 rel_pos = inPositionEye;
 
@@ -125,9 +125,21 @@ void calcAtmosphericVars(vec3 inPositionEye, vec3 light_dir, float ambFactor, ou
     amblit = pow(tmpAmbient.rgb, vec3(0.9)) * 0.57;
 
     additive *= vec3(1.0 - combined_haze);
+    // Expose the ambient part for volumetric shadows without lighting haze a
+    // second time. Ordinary atmospherics continue using the combined result.
+    ambient_additive = (blue_horizon.rgb * blue_weight.rgb + haze_horizon * haze_weight.rgb) *
+        tmpAmbient.rgb * vec3(1.0 - combined_haze);
+    ambient_additive = min(ambient_additive, vec3(10));
 
     // sanity clamp haze contribution
     additive = min(additive, vec3(10));
+}
+
+void calcAtmosphericVars(vec3 inPositionEye, vec3 light_dir, float ambFactor, out vec3 sunlit, out vec3 amblit, out vec3 additive,
+                         out vec3 atten)
+{
+    vec3 ambient_additive;
+    calcAtmosphericVarsWithAmbient(inPositionEye, light_dir, ambFactor, sunlit, amblit, additive, atten, ambient_additive);
 }
 
 vec3 srgb_to_linear(vec3 col);

@@ -39,6 +39,7 @@ vec3 atmosAffectDirectionalLight(float lightIntensity);
 
 out vec4 vertex_color;
 out vec2 vary_texcoord0;
+out vec3 vary_position;
 
 #ifdef HAS_SKIN
 mat4 getObjectSkinnedTransform();
@@ -64,6 +65,7 @@ void main()
     vary_texcoord0 = (texture_matrix0 * vec4(texcoord0,0,1)).xy;
 
     calcAtmospherics(pos.xyz);
+    vary_position = pos.xyz;
 
     vertex_color = emissive;
 

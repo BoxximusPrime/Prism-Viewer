@@ -315,6 +315,11 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
     // NOTE order of shader object attaching is VERY IMPORTANT!!!
     if (features->hasAtmospherics)
     {
+        if (!shader->attachFragmentObject("deferred/volumeFogMediumF.glsl") ||
+            !shader->attachFragmentObject("deferred/volumeFogAlphaF.glsl"))
+        {
+            return false;
+        }
         if (!shader->attachFragmentObject("environment/waterFogF.glsl"))
         {
             return false;
@@ -1672,6 +1677,7 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("blendTex");
     mReservedUniforms.push_back("sssOverlayGuide");
     mReservedUniforms.push_back("taa_flicker");
+    mReservedUniforms.push_back("volumeFogMap");
 
     llassert(mReservedUniforms.size() == END_RESERVED_UNIFORMS);
 

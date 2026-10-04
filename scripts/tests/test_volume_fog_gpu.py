@@ -29,6 +29,8 @@ def run(sdl, gl, lighting=False):
     vertex='void main(){vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(p[gl_VertexID],0,1);}'
     fragment=(ROOT/'indra/newview/app_settings/shaders/class1/deferred/volumeFogF.glsl').read_text()
     stages=[(0x8B31,vertex),(0x8B30,fragment)]
+    for file in ('windlight/atmosphericsFuncs.glsl', 'environment/srgbF.glsl', 'deferred/volumeFogMediumF.glsl', 'deferred/volumeFogReconstructF.glsl'):
+        stages.append((0x8B30,(ROOT/'indra/newview/app_settings/shaders/class1'/file).read_text()))
     if lighting:
         stages.append((0x8B30,(ROOT/'indra/newview/app_settings/shaders/class1/deferred/volumeFogLightF.glsl').read_text()))
     for kind,source in stages:
@@ -80,6 +82,8 @@ def run(sdl, gl, lighting=False):
     if lighting:
         vector('vf_ambient',1,1,1); vector('vf_sun_color',0,0,0); vector('vf_sun_direction',0,0,-1)
         scalar('vf_light_strength',1); scalar('vf_anisotropy',0); integer('vf_steps',32)
+        scalar('vf_light_cap',0) # baseline regressions exercise the bypass
+        scalar('vf_light_saturation',1) # preserve source color in existing lighting checks
         integer('vf_min_steps',8)
         shadow_textures=[]; projector_textures=[]
         for i in range(6):
@@ -281,6 +285,54 @@ def run(sdl, gl, lighting=False):
         dark=expected(6,color=(0,0,0))
         check('eight light sum',render([white]),[dark[i]+8*(single[i]-dark[i]) for i in range(4)],.0001)
 
+        # Limit each light's actual fog contribution without reducing dim
+        # neighbours, shifting hue, changing density or creating a hard cutoff.
+        scalar('vf_light_strength',.1)
+        previous=0.
+        for intensity in (0,.001,.01,.1,.5,1,2,10,1000,1e6):
+            lights([(0,0,-10,5)],[(intensity,intensity*.25,intensity*.05,0)])
+            scalar('vf_light_cap',0); unlimited=render([white])
+            scalar('vf_light_cap',.25); limited=render([white])
+            emitted=[limited[i]-dark[i] for i in range(3)]
+            assert previous-1e-6 <= emitted[0] <= .25*(1-math.exp(-3))+.00001
+            previous=emitted[0]; checks+=1
+            check('limiter preserves hue and extinction',
+                [emitted[1],emitted[2],limited[3]],
+                [emitted[0]*.25,emitted[0]*.05,dark[3]],.00001)
+            if intensity <= .5:
+                check('dim light unchanged '+str(intensity),limited,unlimited,.00001)
+            if intensity >= 10:
+                assert limited[0] < unlimited[0]*.5; checks+=1
+        scalar('vf_light_cap',0)
+        check('zero cap restores unlimited light',render([white]),unlimited,.0001)
+        scalar('vf_light_cap',.25)
+        bright=(1000,250,50,0); dim=(.05,.04,.03,0)
+        lights([(0,0,-10,5)],[bright]); bright_only=render([white])
+        lights([(0,0,-10,5)],[dim]); dim_only=render([white])
+        lights([(0,0,-10,5)]*2,[bright,dim])
+        check('bright neighbour does not suppress dim glow',render([white]),
+            [bright_only[i]+dim_only[i]-dark[i] for i in range(4)],.0001)
+        lights([(0,0,-10,5)]*8,[bright]*8)
+        eight=render([white])
+        check('eight capped lights still add',eight,
+            [dark[i]+8*(bright_only[i]-dark[i]) for i in range(4)],.0001)
+        lights([(0,0,-10,5)],[dim])
+        scalar('vf_light_strength',.2)
+        check('Light effect still raises dim glow',render([white]),
+            [dark[i]+2*(dim_only[i]-dark[i]) for i in range(4)],.0001)
+        # The ceiling also covers forward-scattering peaks and the full slider.
+        lights([(0,0,-10,5)],[bright]); scalar('vf_anisotropy',.8)
+        for cap in (.01,.25,2.):
+            scalar('vf_light_cap',cap)
+            limited=render([white])
+            assert dark[0] < limited[0] <= dark[0]+cap*(1-math.exp(-3))+.00001
+            checks+=1
+        lights([]); vector('vf_sun_color',1,1,1)
+        scalar('vf_anisotropy',0); scalar('vf_light_strength',1)
+        scalar('vf_light_cap',.01)
+        check('limiter preserves celestial light',render([white]),expected(6,color=(1,1,1)))
+        vector('vf_sun_color',0,0,0); scalar('vf_light_cap',0)
+
         def projector_matrix(origin=(0,0,0),forward=(0,0,-1),fov=math.pi/2,near=.1,far=40):
             up=(0,1,0)
             right=(-forward[2],0,forward[0]); back=tuple(-x for x in forward)
@@ -317,6 +369,18 @@ def run(sdl, gl, lighting=False):
         check('projector shadow fade',render([white]),point_reference(7,13,.5,(0,0,-1),30,(.5,.5,.5)),.002)
         lights([(0,0,-1,30)],metadata=[(0,-1,1,0)])
         check('no-shadow projector',render([white]),point_reference(7,13,.5,(0,0,-1),30),.002)
+        scalar('vf_light_cap',.25); scalar('vf_light_strength',.1)
+        lights([(0,0,-1,30)],[(1000,500,250,0)],[(0,-1,1,0)])
+        capped_projector=render([white])
+        assert dark[0] < capped_projector[0] <= dark[0]+.25*(1-math.exp(-3))+.00001
+        checks+=1
+        lights([(0,0,-1,30)],[(1000,500,250,0)],[(0,0,0,0)])
+        check('capped projector remains blocked',render([white]),dark)
+        lights([(0,0,-1,30)],[(1000,500,250,0)],[(0,0,.5,0)])
+        check('capped projector shadow fade',render([white]),
+            [dark[i]+.5*(capped_projector[i]-dark[i]) for i in range(4)],.0001)
+        scalar('vf_light_cap',0); scalar('vf_light_strength',1)
+        lights([(0,0,-1,30)],metadata=[(0,-1,1,0)])
         integer('vf_shadow_mask',0)
         upload_texture(8,projector_textures[0],(1,1,1,0))
         check('projector texture alpha',render([white]),expected(6,color=(0,0,0)))
@@ -361,12 +425,209 @@ def run(sdl, gl, lighting=False):
             check(quality+' narrow projector',render([large]),fine,.0004)
         integer('vf_steps',32); integer('vf_min_steps',8)
 
+    # Height-fog checks use an independent dense density integral, including
+    # near-horizontal rays, looking into the layer from above and water clipping.
+    if lighting:
+        integer('vf_light_count',0); integer('vf_shadow_mask',0)
+        vector('vf_ambient',1,1,1); vector('vf_sun_color',0,0,0)
+        scalar('vf_light_strength',1); scalar('vf_anisotropy',0)
+    tint=(.6,.7,.8)
+    scalar('vf_ground_density',.025); vector('vf_ground_color',*tint)
+    gl.Uniform2f(loc('vf_ground_noise'),0,40)
+
+    def ground(camera=25,slope=0,height=12,base=25,water=20,distance=60,xy=(0,0)):
+        vector('vf_ground_camera',*xy,camera)
+        array('vf_ground_layer',[(base,height,water,distance)])
+        horizontal=math.sqrt(max(0,1-slope*slope))
+        matrices('vf_ground_inverse_view',[0,0,0,0, 0,1,0,0, -horizontal,0,-slope,0, 0,0,0,1])
+
+    def ground_reference(camera,slope,height,wall=100,base=25,water=20,distance=60):
+        samples=40000; step=min(distance,wall)/samples; optical=0
+        for j in range(samples):
+            z=camera+slope*(j+.5)*step
+            if water <= z < base+6*height:
+                optical += .025*max(0,(math.exp(-max(z-base,0)/height)-math.exp(-6))/(1-math.exp(-6)))*step
+        return expected(optical,1,tint)
+
+    for camera in (0,20,25,26,40,100,13000):
+        for slope in (-1,-.1,0,.00001,.1,1):
+            for height in (1,12,200):
+                ground(camera,slope,height)
+                check(f'ground height integral {camera,slope,height}',render([]),ground_reference(camera,slope,height),.00015)
+    ground()
+    for wall in (.05,1,20,59,80):
+        check('ground depth clipping '+str(wall),render([],wall),ground_reference(25,0,12,wall),.0001)
+    ground(camera=21)
+    scalar('vf_intensity',0)
+    check('ground independent of box intensity',render([box()]),expected(60,.025,tint))
+    scalar('vf_intensity',1)
+    # A whole-path box and ground layer must mix by density, not be composited
+    # twice. Eight boxes fill the event budget along with eight local lights.
+    ground(distance=100)
+    boxes=[box(0,100,.01,(1,0,0)) for _ in range(8)]
+    mixed_color=tuple((.08*(i==0)+.025*tint[i])/.105 for i in range(3))
+    check('ground plus all eight boxes',render(boxes),expected(100,.105,mixed_color),.0001)
+    if lighting:
+        lights([(0,0,-10-j*9,4) for j in range(8)],[(0,0,0,0)]*8)
+        check('full 34-event budget',render(boxes),expected(100,.105,mixed_color),.0001)
+        lights([])
+        vector('vf_ambient',0,0,0); vector('vf_sun_color',1,1,1)
+        ground(distance=60)
+        check('ground directional illumination',render([]),expected(60,.025,tint))
+        matrices('shadow_matrix',shadow_matrix*6)
+        upload_texture(2,shadow_textures[0],(.2,0,0,0)); integer('vf_shadow_mask',1)
+        array('shadow_clip',[(100,200,300,400)])
+        check('ground receives shadow',render([]),expected(60,.025,(0,0,0)))
+        integer('vf_shadow_mask',0); vector('vf_sun_color',0,0,0); vector('vf_ambient',1,1,1)
+    ground()
+    gl.Uniform2f(loc('vf_ground_noise'),1,10)
+    patchy=render([])
+    assert max(abs(a-b) for a,b in zip(patchy,expected(60,.025,tint))) > .002
+    checks+=1
+    ground(xy=(128,0)); check('global noise period',render([]),patchy,.0001)
+    ground(xy=(127.9999,0)); near_seam=render([])
+    ground(xy=(.0001,0)); check('global noise wrap continuity',render([]),near_seam,.0001)
+    ground(xy=(1,0)); shifted=render([])
+    assert max(abs(a-b) for a,b in zip(shifted,patchy)) > .001
+    checks+=1
+    scalar('vf_ground_density',0)
+    check('ground bypass restores box path',render([]),background)
+
+    # Compare environment fog against the actual normal-haze shader, not a
+    # second implementation of its density, horizon glow or color conversion.
+    fog_program=program
+    reference_program=gl.CreateProgram()
+    reference_vertex=vertex.replace('void main()', 'out vec2 vary_fragcoord; void main()').replace(
+        'gl_Position=vec4(p[gl_VertexID],0,1);', 'gl_Position=vec4(p[gl_VertexID],0,1); vary_fragcoord=vec2(.5);')
+    reference_fragment=(ROOT/'indra/newview/app_settings/shaders/class3/deferred/hazeF.glsl').read_text()+'''
+uniform float test_path;
+uniform vec3 test_ray;
+float getDepth(vec2 p) { return 0.5; }
+vec4 getPositionWithDepth(vec2 p, float d) { return vec4(test_ray*test_path, 1.0); }
+vec4 getNorm(vec2 p) { return vec4(0.0,0.0,1.0,0.0); }
+'''
+    reference_stages=[(0x8B31,reference_vertex),(0x8B30,reference_fragment)]
+    for file in ('windlight/atmosphericsFuncs.glsl','environment/srgbF.glsl'):
+        reference_stages.append((0x8B30,(ROOT/'indra/newview/app_settings/shaders/class1'/file).read_text()))
+    for kind,source in reference_stages:
+        shader=gl.CreateShader(kind)
+        source=C.c_char_p(('#version 330 core\n'+source).encode())
+        gl.ShaderSource(shader,1,C.byref(source),None); gl.CompileShader(shader)
+        gl.GetShaderiv(shader,0x8B81,C.byref(ok)); gl.GetShaderInfoLog(shader,len(log),None,log)
+        assert ok.value,log.value.decode()
+        gl.AttachShader(reference_program,shader); gl.DeleteShader(shader)
+    gl.LinkProgram(reference_program)
+    gl.GetProgramiv(reference_program,0x8B82,C.byref(ok)); gl.GetProgramInfoLog(reference_program,len(log),None,log)
+    assert ok.value,log.value.decode()
+    day=dict(blue_density=(.2447,.4487,.7599),blue_horizon=(.4954,.4954,.64),
+        haze_density=.7,haze_horizon=.19,density_multiplier=.0001,distance_multiplier=.8,
+        max_y=1600.,sunlight_color=(1.2,1.1,.9),moonlight_color=(.03,.035,.06),
+        ambient_color=(.2,.23,.3),cloud_shadow=.3,lightnorm=(0,.8,-.6),
+        sun_dir=(0,.8,-.6),moon_dir=(0,.8,.6),glow=(5.,.001,-.5),
+        sun_up_factor=1,sun_moon_glow_factor=1.,sky_hdr_scale=1.,classic_mode=0,
+        sky_sunlight_scale=1.,sky_ambient_scale=1.)
+    presets={
+        'clear':dict(day,density_multiplier=0.),
+        'no distance haze':dict(day,distance_multiplier=0.),
+        'noon':day,
+        'foggy':dict(day,haze_density=4.,haze_horizon=.65,density_multiplier=.00035,distance_multiplier=4.),
+        'sunset':dict(day,sunlight_color=(1.4,.45,.15),ambient_color=(.1,.045,.035),lightnorm=(0,.12,-.99)),
+        'night':dict(day,sun_up_factor=0,ambient_color=(.006,.008,.015),lightnorm=(0,.7,-.7),sky_hdr_scale=2.),
+        'dark':dict(day,sunlight_color=(0,0,0),moonlight_color=(0,0,0),ambient_color=(0,0,0),cloud_shadow=0.),
+        'tinted':dict(day,blue_horizon=(.1,.9,.3),blue_density=(.8,.1,.3),haze_density=.15),
+        'dense HDR':dict(day,haze_density=4.,density_multiplier=.1,distance_multiplier=4.,sky_hdr_scale=5.),
+    }
+    # Exercise the authored haze/color values in the bundled legacy skies too.
+    # Runtime legacy adjustment is covered separately by the HDR/tinted cases.
+    import xml.etree.ElementTree as ET
+    for name in ('Foggy', 'Midday', 'Sunset', 'Night'):
+        entries=list(ET.parse(ROOT/f'indra/newview/app_settings/windlight/skies/{name}.xml').getroot().find('map'))
+        authored={entries[i].text:entries[i+1] for i in range(0,len(entries),2)}
+        values=dict(day)
+        for uniform in ('blue_density','blue_horizon','haze_density','haze_horizon',
+                        'density_multiplier','distance_multiplier','max_y','sunlight_color',
+                        'ambient_color','cloud_shadow','lightnorm','glow'):
+            source=authored['ambient' if uniform=='ambient_color' else uniform]
+            values[uniform]=tuple(float(x.text) for x in list(source)[:3]) if isinstance(day[uniform],tuple) else float(source[0].text)
+        presets['bundled '+name]=values
+
+    def environment(values):
+        for name,value in values.items():
+            if isinstance(value,tuple): vector(name,*value)
+            elif isinstance(value,int): integer(name,value)
+            else: scalar(name,value)
+        vector('vf_environment_light_direction',*values['sun_dir' if values['sun_up_factor'] else 'moon_dir'])
+
+    def original_haze(values,path):
+        nonlocal program
+        program=reference_program; gl.UseProgram(program)
+        environment(values)
+        array('waterPlane',[(0,0,1,1)])
+        scalar('test_path',path); vector('test_ray',0,0,-1)
+        gl.DrawArrays(4,0,3)
+        pixel=(F*4)(); gl.ReadPixels(0,0,1,1,RGBA,FLOAT,pixel)
+        result=[background[i]*pixel[3]+pixel[i] for i in range(3)]+[background[3]*pixel[3]]
+        program=fog_program; gl.UseProgram(program)
+        return result
+
+    if lighting:
+        integer('vf_shadow_mask',0); lights([]); scalar('vf_light_strength',1)
+    ground(camera=21,distance=60)
+    gl.Uniform2f(loc('vf_ground_noise'),0,40)
+    vector('vf_ground_color',1,1,1); integer('vf_ground_environment',1)
+    for name,values in presets.items():
+        for strength in (0.,.25,1.,2.,4.):
+            scalar('vf_ground_density',strength); environment(values)
+            check('environment versus original '+str((name,strength)),render([]),original_haze(values,60*strength),.0001)
+    scalar('vf_ground_density',1)
+    # Smooth changes use the resolved environment each frame. No stale preset
+    # cache or scalar-color averaging at the endpoints is allowed.
+    for i in range(21):
+        alpha=i/20
+        values={}
+        for name,a in day.items():
+            b=presets['foggy'][name]
+            values[name]=tuple(x+(y-x)*alpha for x,y in zip(a,b)) if isinstance(a,tuple) else a if isinstance(a,int) else a+(b-a)*alpha
+        environment(values)
+        check('environment transition '+str(i),render([]),original_haze(values,60),.0001)
+    environment(day)
+    ground(camera=37,distance=60)
+    profile=(math.exp(-1)-math.exp(-6))/(1-math.exp(-6))
+    check('environment height falloff',render([]),original_haze(day,60*profile),.0001)
+    if lighting:
+        ground()
+        environment(day)
+        vector('vf_ambient',10,10,10) # custom lighting must not relight EEP haze
+        check('environment ignores custom ambient floor',render([]),original_haze(day,60),.0001)
+        integer('vf_shadow_mask',1)
+        check('environment shadow preserves ambient',render([]),
+              original_haze(dict(day,sunlight_color=(0,0,0)),60),.0001)
+        integer('vf_shadow_mask',0)
+        scalar('vf_light_strength',0)
+        check('environment zero direct light preserves ambient',render([]),
+              original_haze(dict(day,sunlight_color=(0,0,0)),60),.0001)
+        scalar('vf_light_strength',1)
+        environment(presets['dark'])
+        dark=render([])
+        lights([(0,0,-10,5)])
+        lit_dark=render([])
+        assert lit_dark[0] > dark[0]+.00001; checks+=1
+        lights([])
+    # Custom values and authored boxes are independent of EEP strength/color.
+    integer('vf_ground_environment',0); scalar('vf_ground_density',.025)
+    ground(); vector('vf_ground_color',*tint)
+    if lighting: vector('vf_ambient',1,1,1); vector('vf_sun_color',0,0,0)
+    for values in presets.values():
+        environment(values)
+        check('custom ignores environment haze',render([]),expected(60,.025,tint))
+    scalar('vf_ground_density',0)
     print(f'PASS: {checks} production fog GPU checks (GLSL 330, lighting={lighting}), GPU: {gl.GetString(0x1F01).decode()}')
 
     if '--preview' in sys.argv or '--benchmark' in sys.argv:
         from test_volume_fog_composite_gpu import Composite
         composite=Composite(sdl,gl)
         gl.UseProgram(program); gl.BindFramebuffer(FRAMEBUFFER,framebuffer)
+        if lighting: scalar('vf_light_cap',.25 if '--light-cap' in sys.argv else 0)
         # Synthetic checker wall at 20 m and an opaque foreground panel at 4 m.
         # Rendered by the same production shader; not an in-world screenshot.
         width,height=640,360
@@ -381,6 +642,20 @@ def run(sdl, gl, lighting=False):
             array('vf_projector_normal',[(*direction,0)]*4)
             array('vf_projector_origin',[(3,0,-6,1)]*4)
             lights([(-3,0,-8,4),(3,0,-6,10)],[(2,.12,.015,0),(.1,.6,3,0)],[(-1,-1,1,0),(0,-1,1,0)])
+        if '--ground' in sys.argv:
+            boxes=[]
+            ground(camera=29,height=8,distance=100)
+            matrices('vf_ground_inverse_view',[1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0,0,1])
+            scalar('vf_ground_density',.025); gl.Uniform2f(loc('vf_ground_noise'),.7,12)
+            if lighting:
+                lights([])
+                vector('vf_ambient',.4,.5,.65); vector('vf_sun_color',.8,.65,.45)
+                vector('vf_sun_direction',-.4,.6,-.7)
+            if '--environment' in sys.argv:
+                environment(presets['bundled Foggy'])
+                integer('vf_ground_environment',1)
+                scalar('vf_ground_density',1)
+                vector('vf_ground_color',1,1,1)
         render(boxes)
         inverse[0]=width/height
         gl.UniformMatrix4fv(loc('inv_proj'),1,False,(F*16)(*inverse))
@@ -392,6 +667,19 @@ def run(sdl, gl, lighting=False):
                 colors.extend((value,value,value,0))
                 d=(-A+B/(4 if panel else 20))*.5+.5
                 depths.extend((d,0,0,0))
+                if '--ground' in sys.argv:
+                    vx=((x+.5)/width*2-1)*width/height
+                    vy=(y+.5)/height*2-1
+                    surface=min(100.,-9/vy) if vy < 0 else 100.
+                    column=any(abs(vx-center)<.055 and -.6<vy<.45 for center in (-.9,-.35,.2,.75,1.3))
+                    if column: surface=min(surface,15+(int((vx+1.1)*4)%5)*13)
+                    if column: color=(.15,.12,.08,0)
+                    elif surface<100:
+                        tile=(int(math.floor(vx*surface/5))+int(surface/5))%2
+                        color=(.15+tile*.05,.18+tile*.05,.10+tile*.03,0)
+                    else: color=(.2,.35,.5,0)
+                    colors[-4:]=color
+                    depths[-4:]=(((-A+B/surface)*.5+.5) if surface<100 else 1,0,0,0)
         for unit,tex,data in ((0,scene,colors),(1,depth_tex,depths),(15 if lighting else 2,output,None)):
             gl.ActiveTexture(0x84C0+unit); gl.BindTexture(TEXTURE,tex)
             gl.TexImage2D(TEXTURE,0,0x8814,width,height,0,RGBA,FLOAT,None if data is None else (F*len(data))(*data))
@@ -400,6 +688,8 @@ def run(sdl, gl, lighting=False):
             return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data))
         previews=[]
         for quality,divisor,steps,minimum in (('high',1,32,8),('balanced',2,24,6)):
+            if '--ground' in sys.argv and '--old-resolution' not in sys.argv:
+                divisor *= 2
             fw,fh=(width+divisor-1)//divisor,(height+divisor-1)//divisor
             gl.ActiveTexture(0x84C0+15); gl.BindTexture(TEXTURE,output)
             gl.TexImage2D(TEXTURE,0,0x881A,fw,fh,0,RGBA,FLOAT,None)
@@ -421,7 +711,8 @@ def run(sdl, gl, lighting=False):
                         v=12.92*v if v<=.0031308 else 1.055*v**(1/2.4)-.055
                         raw.append(round(v*255))
             png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',width,height,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b'')
-            destination=ROOT/('tmp/volume-fog-'+quality+'-preview.png')
+            prefix='environment-ground-fog-' if '--environment' in sys.argv else 'ground-fog-' if '--ground' in sys.argv else 'volume-fog-'
+            destination=ROOT/('tmp/'+prefix+quality+'-preview.png')
             destination.parent.mkdir(exist_ok=True)
             destination.write_bytes(png)
             print('Synthetic GPU preview:',destination)
@@ -441,6 +732,7 @@ def run(sdl, gl, lighting=False):
                 data=None if tex==output else (F*(width*height*4))(*(color*(width*height)))
                 gl.TexImage2D(TEXTURE,0,0x8814,width,height,0,RGBA,FLOAT,data)
             integer('vf_count',1)
+            if '--ground' in sys.argv: integer('vf_count',0)
             array('vf_axis_x',[(1,0,0,0)]); array('vf_axis_y',[(0,1,0,0)]); array('vf_axis_z',[(0,0,1,9)])
             array('vf_half_density',[(40,40,6,.1)]); array('vf_color_softness',[(1,1,1,1)])
             query=obj(gl.GenQueries)
@@ -451,6 +743,8 @@ def run(sdl, gl, lighting=False):
                 elif label=='shadowed':
                     integer('vf_shadow_mask',1); vector('vf_sun_color',1,1,1)
                 for quality,divisor,steps,minimum in (('Performance',2,16,4),('Balanced',2,24,6),('High',1,32,8),('Ultra',1,64,8)):
+                    if '--ground' in sys.argv and '--old-resolution' not in sys.argv and quality != 'Ultra':
+                        divisor *= 2
                     fw,fh=(width+divisor-1)//divisor,(height+divisor-1)//divisor
                     gl.ActiveTexture(0x84C0+15); gl.BindTexture(TEXTURE,output)
                     gl.TexImage2D(TEXTURE,0,0x881A,fw,fh,0,RGBA,FLOAT,None)

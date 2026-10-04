@@ -25,7 +25,6 @@
 
 
 #ifdef HAS_SKIN
-uniform mat4 modelview_matrix;
 uniform mat4 projection_matrix;
 mat4 getObjectSkinnedTransform();
 #else
@@ -33,6 +32,7 @@ uniform mat4 modelview_projection_matrix;
 #endif
 
 uniform mat4 texture_matrix0;
+uniform mat4 modelview_matrix;
 
 uniform vec4[2] texture_base_color_transform;
 uniform vec4[2] texture_emissive_transform;
@@ -46,6 +46,7 @@ out vec2 base_color_texcoord;
 out vec2 emissive_texcoord;
 
 out vec4 vertex_emissive;
+out vec3 vary_position;
 
 vec2 texture_transform(vec2 vertex_texcoord, vec4[2] khr_gltf_transform, mat4 sl_animation_transform);
 
@@ -62,11 +63,12 @@ void main()
 #else
     //transform vertex
     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+    vec3 pos = (modelview_matrix * vec4(position.xyz, 1.0)).xyz;
 #endif
+    vary_position = pos;
 
     base_color_texcoord = texture_transform(texcoord0, texture_base_color_transform, texture_matrix0);
     emissive_texcoord = texture_transform(texcoord0, texture_emissive_transform, texture_matrix0);
 
     vertex_emissive = emissive;
 }
-

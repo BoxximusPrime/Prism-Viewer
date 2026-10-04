@@ -1385,16 +1385,30 @@ void LLFloaterPreference::refreshEnabledState()
     getChild<LLTextBox>("WaterStatus")->setValue(!water_enabled ? "Water rendering is disabled in Debug Settings." :
         !evolving_water ? "Using the environment's scrolling wave texture." : "Changes apply immediately.");
     const bool fog_enabled = gSavedSettings.getBOOL("RenderVolumeFog");
+    const bool ground_fog = gSavedSettings.getBOOL("RenderGroundFog");
+    const bool environment_fog = gSavedSettings.getBOOL("RenderGroundFogFollowEnvironment");
+    for (const char* control : { "RenderGroundFogFollowEnvironment", "RenderGroundFogStrength", "RenderGroundFogDensity",
+        "RenderGroundFogAltitude", "RenderGroundFogHeight", "RenderGroundFogDistance",
+        "RenderGroundFogStartDistance", "RenderGroundFogFadeIn",
+        "RenderGroundFogNoise", "RenderGroundFogNoiseScale", "RenderGroundFogSpeed", "RenderGroundFogBrightness" })
+        getChildView(control)->setEnabled(ground_fog);
+    getChildView("RenderGroundFogStrength")->setVisible(environment_fog);
+    getChildView("RenderGroundFogDensity")->setVisible(!environment_fog);
+    getChildView("RenderGroundFogColor")->setEnabled(ground_fog && !environment_fog);
+    getChildView("GroundFogColorLabel")->setEnabled(ground_fog && !environment_fog);
     const bool clouds_enabled = gSavedSettings.getBOOL("RenderVolumeClouds");
-    for (const char* control : { "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight", "RenderVolumeCloudQuality", "CloudQualityLabel" })
+    for (const char* control : { "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight",
+        "RenderVolumeCloudLightPenetration", "RenderVolumeCloudEdgeGlow", "RenderVolumeCloudInternalLight", "RenderVolumeCloudAmbient",
+        "RenderVolumeCloudQuality", "CloudQualityLabel" })
         getChildView(control)->setEnabled(clouds_enabled);
     getChild<LLTextBox>("CloudStatus")->setValue(!clouds_enabled ? "Using the original clouds." :
         "Volumetric clouds are enabled. Changes apply immediately; turn off to restore the original clouds.");
-    for (const char* control : { "RenderVolumeFogIntensity", "RenderVolumeFogLightStrength", "RenderVolumeFogQuality", "VolumeFogQualityLabel",
+    getChildView("RenderVolumeFogIntensity")->setEnabled(fog_enabled);
+    for (const char* control : { "RenderVolumeFogLightStrength", "RenderVolumeFogLightCap", "RenderVolumeFogLightSaturation", "RenderVolumeFogQuality", "VolumeFogQualityLabel",
         "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
-        getChildView(control)->setEnabled(fog_enabled);
-    getChild<LLTextBox>("VolumeFogStatus")->setValue(!fog_enabled ? "Volumetric fog is off." :
-        gSavedSettings.getF32("RenderVolumeFogIntensity") <= 0.f ? "Intensity is zero. Fog rendering is skipped." :
+        getChildView(control)->setEnabled(fog_enabled || ground_fog);
+    getChild<LLTextBox>("VolumeFogStatus")->setValue(!fog_enabled && !ground_fog ? "Box and ground fog are off." :
+        !ground_fog && gSavedSettings.getF32("RenderVolumeFogIntensity") <= 0.f ? "Box intensity is zero. Fog rendering is skipped." :
         !gSavedSettings.getBOOL("RenderVolumeFogLighting") ? "Fog lighting is disabled in Debug Settings. Fog renders with its original unlit appearance." :
         gSavedSettings.getS32("RenderVolumeFogSteps") > 0 ? "A custom sample count is set in Debug Settings (RenderVolumeFogSteps). Set it to 0 to follow the quality preset." :
         "Changes apply immediately. Quality keeps your selected light limit and shadow setting.");
@@ -2971,6 +2985,11 @@ void LLPanelPreferenceGraphics::saveSettings()
 }
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
+    for (const char* control : { "RenderGroundFog", "RenderGroundFogDensity", "RenderGroundFogAltitude", "RenderGroundFogHeight", "RenderGroundFogDistance",
+        "RenderGroundFogStartDistance", "RenderGroundFogFadeIn",
+        "RenderGroundFogFollowEnvironment", "RenderGroundFogStrength", "RenderGroundFogNoise", "RenderGroundFogNoiseScale",
+        "RenderGroundFogSpeed", "RenderGroundFogBrightness", "RenderGroundFogColor" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderWaterProceduralWaves", "RenderWaterWaveStrength", "RenderWaterWaveScale",
         "RenderWaterCrossSwellStrength", "RenderWaterDisplacement", "RenderWaterShallowDamping",
         "RenderWaterDisplacementEnabled", "RenderWaterDisplacementDistance", "RenderWaterWindSpeed", "RenderWaterLocalReflections", "RenderWaterReflectionStrength",
@@ -2982,10 +3001,11 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
         "RenderEyeAdaptationMaxDarken", "RenderEyeAdaptationCompensation", "RenderEyeAdaptationHighlights",
         "RenderEyeAdaptationDarkTime", "RenderEyeAdaptationLightTime" })
         gSavedSettings.getControl(control)->resetToDefault(true);
-    for (const char* control : { "RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogLightStrength", "RenderVolumeFogQuality",
+    for (const char* control : { "RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogLightStrength", "RenderVolumeFogLightCap", "RenderVolumeFogLightSaturation", "RenderVolumeFogQuality",
         "RenderVolumeFogLightCount", "RenderVolumeFogShadows" })
         gSavedSettings.getControl(control)->resetToDefault(true);
-    for (const char* control : { "RenderVolumeClouds", "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight", "RenderVolumeCloudQuality" })
+    for (const char* control : { "RenderVolumeClouds", "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight",
+        "RenderVolumeCloudLightPenetration", "RenderVolumeCloudEdgeGlow", "RenderVolumeCloudInternalLight", "RenderVolumeCloudAmbient", "RenderVolumeCloudQuality" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
         "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAAFreezeJitter", "RenderTAADebug" })

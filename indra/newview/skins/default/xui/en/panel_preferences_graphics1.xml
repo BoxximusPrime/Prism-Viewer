@@ -1450,6 +1450,10 @@ Combined: transmitted light from all lights, including blur.</text>
   </panel>
   <panel name="graphics_clouds_panel" label="Clouds" follows="all"
     layout="topleft" left="0" top="0" width="517" height="410">
+    <scroll_container name="CloudScroll" follows="all" layout="topleft"
+      left="0" top="0" width="517" height="410" reserve_scroll_corner="false">
+    <panel name="CloudContent" follows="left|top" layout="topleft"
+      left="0" top="0" width="495" height="540">
     <text name="CloudDescription" follows="left|top|right" layout="topleft"
       left="30" top="12" width="355" height="40" word_wrap="true">
       Give your environment's clouds depth. Color, coverage and motion follow the current sky.
@@ -1483,28 +1487,140 @@ Combined: transmitted light from all lights, including blur.</text>
     <slider name="RenderVolumeCloudSunlight" control_name="RenderVolumeCloudSunlight"
       label="Sunlight strength:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="206" width="450" height="20" min_val="0" max_val="2"
-      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      increment="0.01" decimal_digits="2" show_text="true" can_edit_text="true"
       tool_tip="Lower this if bright clouds cause eye adaptation to darken the scene. 1.00 is normal; 0.00 leaves ambient lighting. Coverage and moonlight are unchanged." />
+    <slider name="RenderVolumeCloudLightPenetration" control_name="RenderVolumeCloudLightPenetration"
+      label="Light penetration:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="238" width="450" height="20" min_val="0.1" max_val="4"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Higher values let sun and moonlight reach deeper into clouds. Lower values deepen shadows. 1.00 is normal; cloud opacity and coverage are unchanged." />
+    <slider name="RenderVolumeCloudEdgeGlow" control_name="RenderVolumeCloudEdgeGlow"
+      label="Edge glow:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="270" width="450" height="20" min_val="0" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Lower this to soften bright edges when looking toward the sun or moon. Redistributes light across viewing directions; 1.00 is normal." />
+    <slider name="RenderVolumeCloudInternalLight" control_name="RenderVolumeCloudInternalLight"
+      label="Internal light:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="302" width="450" height="20" min_val="0" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Controls sun and moonlight scattered into shaded parts of clouds. Lower this if the whole cloud glows. 1.00 is normal; zero leaves direct and ambient light." />
+    <slider name="RenderVolumeCloudAmbient" control_name="RenderVolumeCloudAmbient"
+      label="Ambient strength:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="334" width="450" height="20" min_val="0" max_val="2"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Controls the environment's ambient fill on clouds. Lower values darken unlit clouds, including at night. 1.00 is normal; zero leaves sun and moonlight." />
     <text name="CloudQualityLabel" follows="left|top" layout="topleft"
-      left="30" top="241" width="185" height="20">Quality:</text>
+      left="30" top="369" width="185" height="20">Quality:</text>
     <combo_box name="RenderVolumeCloudQuality" control_name="RenderVolumeCloudQuality"
-      follows="left|top" layout="topleft" left="220" top="238" width="260" height="23">
+      follows="left|top" layout="topleft" left="220" top="366" width="260" height="23">
       <combo_box.item label="Performance" value="0" />
       <combo_box.item label="Balanced" value="1" />
       <combo_box.item label="High" value="2" />
     </combo_box>
     <text name="CloudStatus" follows="left|top|right" layout="topleft"
-      left="30" top="278" width="450" height="42" word_wrap="true" />
+      left="30" top="406" width="450" height="42" word_wrap="true" />
     <text name="CloudHelp" follows="left|top|right" layout="topleft"
-      left="30" top="332" width="450" height="68" word_wrap="true">
+      left="30" top="460" width="450" height="68" word_wrap="true">
       These controls affect only your view. Reflections use the original clouds. Water and transparent surfaces inside clouds may appear too clear. Cloud shadows on the ground are not included in this first pass.
     </text>
+    </panel>
+    </scroll_container>
+  </panel>
+  <panel name="graphics_ground_fog_panel" label="Ground Fog" follows="all"
+    layout="topleft" left="0" top="0" width="517" height="410">
+    <scroll_container name="GroundFogScroll" follows="all" layout="topleft"
+      left="0" top="0" width="517" height="410" reserve_scroll_corner="false">
+    <panel name="GroundFogContent" follows="left|top" layout="topleft"
+      left="0" top="0" width="495" height="482">
+    <text name="GroundFogDescription" follows="left|top|right" layout="topleft"
+      left="30" top="12" width="355" height="38" word_wrap="true">
+      Environment haze with local height, patches and light beams.
+    </text>
+    <button name="GroundFogDefaults" label="Default" follows="right|top"
+      layout="topleft" left="400" top="8" width="80" height="23">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_ground_fog_panel" />
+    </button>
+    <check_box name="RenderGroundFog" control_name="RenderGroundFog"
+      label="Replace normal haze with volumetric ground fog" follows="left|top"
+      layout="topleft" left="30" top="52" width="450" height="20">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <check_box name="RenderGroundFogFollowEnvironment" control_name="RenderGroundFogFollowEnvironment"
+      label="Follow environment density and color" follows="left|top" layout="topleft"
+      left="30" top="78" width="450" height="20"
+      tool_tip="Use the current personal, parcel or region environment, including day-cycle transitions. Turn off for a fixed custom density and tint.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
+    <slider name="RenderGroundFogStrength" control_name="RenderGroundFogStrength"
+      label="Environment strength:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="106" width="450" height="20" min_val="0" max_val="4"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="1.00 follows the environment's haze along the height-weighted path. Increase for more fog; zero clears it. Clear environments remain clear." />
+    <slider name="RenderGroundFogDensity" control_name="RenderGroundFogDensity"
+      label="Custom density (per m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="106" width="450" height="20" min_val="0" max_val="0.2"
+      increment="0.001" decimal_digits="3" show_text="true" can_edit_text="true"
+      tool_tip="Fog density at and below the base altitude. Zero clears ground fog while keeping normal haze replaced." />
+    <slider name="RenderGroundFogAltitude" control_name="RenderGroundFogAltitude"
+      label="Base altitude (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="134" width="450" height="20" min_val="-500" max_val="10000"
+      increment="1" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="World altitude where fog starts thinning upward. Raise this for elevated terrain or sky platforms." />
+    <slider name="RenderGroundFogHeight" control_name="RenderGroundFogHeight"
+      label="Height falloff (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="162" width="450" height="20" min_val="1" max_val="200"
+      increment="1" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="Height over which density falls to about one third. Lower values keep the fog close to the ground." />
+    <slider name="RenderGroundFogDistance" control_name="RenderGroundFogDistance"
+      label="Maximum range (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="190" width="450" height="20" min_val="16" max_val="1024"
+      increment="8" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="Farthest distance from the camera at which fog is calculated, also limited by draw distance. Increase to extend fog farther into the scene." />
+    <slider name="RenderGroundFogStartDistance" control_name="RenderGroundFogStartDistance"
+      label="Start distance (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="218" width="450" height="20" min_val="0" max_val="1024"
+      increment="1" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="Clear space around the camera before ground fog begins. Increase to push fog farther away. At or beyond Maximum range or draw distance, ground fog disappears." />
+    <slider name="RenderGroundFogFadeIn" control_name="RenderGroundFogFadeIn"
+      label="Fade-in (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="246" width="450" height="20" min_val="0" max_val="1024"
+      increment="1" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="Distance after Start distance over which fog smoothly reaches normal density. Larger values make a gentler transition. Zero starts at normal density; Maximum range still limits the fog." />
+    <slider name="RenderGroundFogNoise" control_name="RenderGroundFogNoise"
+      label="Patchiness:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="274" width="450" height="20" min_val="0" max_val="1"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Zero is smooth fog. Higher values create more clear and dense patches." />
+    <slider name="RenderGroundFogNoiseScale" control_name="RenderGroundFogNoiseScale"
+      label="Patch size (m):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="302" width="450" height="20" min_val="5" max_val="200"
+      increment="1" decimal_digits="0" show_text="true" can_edit_text="true"
+      tool_tip="World size of the fog patches." />
+    <slider name="RenderGroundFogSpeed" control_name="RenderGroundFogSpeed"
+      label="Drift speed (m/s):" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="330" width="450" height="20" min_val="0" max_val="5"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Speed of the fog patches. Zero freezes the pattern." />
+    <slider name="RenderGroundFogBrightness" control_name="RenderGroundFogBrightness"
+      label="Brightness:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="358" width="450" height="20" min_val="0" max_val="3"
+      increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
+      tool_tip="Scattered fog brightness. Lighting still follows the environment and nearby lights." />
+    <text name="GroundFogColorLabel" left="30" top="392" width="180" height="20" layout="topleft">Custom tint:</text>
+    <color_swatch name="RenderGroundFogColor" control_name="RenderGroundFogColor"
+      label="" label_height="0" left="220" top="388" width="64" height="26" layout="topleft" can_apply_immediately="true" />
+    <text name="GroundFogHelp" follows="left|top|right" layout="topleft"
+      left="30" top="424" width="450" height="50" word_wrap="true" text_color="LtGray_50">
+      Start distance clears nearby space; Fade-in softens its edge. Set base altitude to ground level. Quality, lights and shadows are shared with Volumetric Fog.
+    </text>
+    </panel>
+    </scroll_container>
   </panel>
   <panel name="graphics_volume_fog_panel" label="Volumetric Fog" follows="all"
     layout="topleft" left="0" top="0" width="517" height="410">
     <text name="VolumeFogDescription" follows="left|top|right" layout="topleft"
       left="30" top="12" width="355" height="40" word_wrap="true">
-      Adjusts fog from tagged box prims in your viewer without changing the prims.
+      Box fog controls, plus lighting and quality shared with Ground Fog.
     </text>
     <button name="VolumeFogDefaults" label="Default" follows="right|top"
       layout="topleft" left="400" top="8" width="80" height="23"
@@ -1513,7 +1629,7 @@ Combined: transmitted light from all lights, including blur.</text>
         parameter="graphics_volume_fog_panel" />
     </button>
     <check_box name="RenderVolumeFog" control_name="RenderVolumeFog"
-      label="Enable volumetric fog" follows="left|top" layout="topleft"
+      label="Enable tagged box fog" follows="left|top" layout="topleft"
       left="30" top="62" width="450" height="20">
       <check_box.commit_callback function="Pref.RenderOptionUpdate" />
     </check_box>
@@ -1526,14 +1642,24 @@ Combined: transmitted light from all lights, including blur.</text>
     </slider>
     <slider name="RenderVolumeFogLightStrength" control_name="RenderVolumeFogLightStrength"
       label="Light effect:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="128" width="450" height="20" min_val="0" max_val="8"
-      increment="0.25" decimal_digits="2" show_text="true" can_edit_text="true"
-      tool_tip="Boosts light scattering in fog without increasing its density. 1.00 is normal; raise it to make spotlight beams stand out in subtle fog. Affects point lights, projectors and sun/moon. Zero leaves ambient fog. Does not change surface lighting or add rendering samples." />
+      left="30" top="128" width="450" height="20" min_val="0" max_val="0.30"
+      increment="0.001" decimal_digits="3" show_text="true" can_edit_text="true"
+      tool_tip="Controls light scattering in fog from 0.000 to 0.300 in 0.001 steps; default 0.100. Affects point lights, projectors and sun/moon. Zero leaves ambient fog. Does not change surface lighting, fog density or rendering samples." />
+    <slider name="RenderVolumeFogLightCap" control_name="RenderVolumeFogLightCap"
+      label="Bright light cap:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="160" width="450" height="20" min_val="0" max_val="0.100"
+      increment="0.001" decimal_digits="3" show_text="true" can_edit_text="true"
+      tool_tip="Softens intense point lights and projectors while retaining dim glow and light color. Range 0.000 to 0.100 in 0.001 steps; default 0.100. Lower values give stronger protection; 0 disables the cap. Applies after Light effect. Sun/moon and surface lighting are unchanged." />
+    <slider name="RenderVolumeFogLightSaturation" control_name="RenderVolumeFogLightSaturation"
+      label="Light color saturation:" label_width="190" follows="left|top" layout="topleft"
+      left="30" top="192" width="450" height="20" min_val="0" max_val="4"
+      increment="0.1" decimal_digits="1" show_text="true" can_edit_text="true"
+      tool_tip="Color multiplier for point lights and projectors in fog. 1.0 preserves source color, 0 makes it neutral, and higher values boost saturation without raising peak brightness. White lights stay white. Sun/moon, ambient fog and surface lighting are unchanged." />
     <text name="VolumeFogQualityLabel" follows="left|top" layout="topleft"
-      left="30" top="165" width="185" height="20">Quality:</text>
+      left="30" top="229" width="185" height="20">Quality:</text>
     <combo_box name="RenderVolumeFogQuality" control_name="RenderVolumeFogQuality"
-      follows="left|top" layout="topleft" left="220" top="162" width="260" height="23"
-      tool_tip="Performance and Balanced render fog at reduced resolution. High sharpens fine beams and volume edges; Ultra samples light and shadow detail more densely. Higher quality costs more GPU time.">
+      follows="left|top" layout="topleft" left="220" top="226" width="260" height="23"
+      tool_tip="Ground fog alone: Performance/Balanced use quarter width and height, High uses half, Ultra uses full resolution. Tagged boxes retain higher resolution. Higher quality costs more GPU time.">
       <combo_box.item label="Performance" value="0" />
       <combo_box.item label="Balanced (recommended)" value="1" />
       <combo_box.item label="High" value="2" />
@@ -1541,18 +1667,18 @@ Combined: transmitted light from all lights, including blur.</text>
     </combo_box>
     <slider name="RenderVolumeFogLightCount" control_name="RenderVolumeFogLightCount"
       label="Maximum local lights:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="202" width="450" height="20" min_val="0" max_val="8"
+      left="30" top="262" width="450" height="20" min_val="0" max_val="8"
       increment="1" decimal_digits="0" show_text="true"
       tool_tip="Limits point lights and projectors affecting fog. Lower values reduce GPU cost in scenes with many lights. Sun and moon do not use this budget; 0 keeps celestial and ambient lighting." />
     <check_box name="RenderVolumeFogShadows" control_name="RenderVolumeFogShadows"
       label="Receive sun, moon and projector shadows" follows="left|top" layout="topleft"
-      left="30" top="243" width="450" height="20"
+      left="30" top="298" width="450" height="20"
       tool_tip="Uses shadows enabled in Graphics. Disable for faster fog lighting, allowing light through blockers in fog. Does not change surface shadows." />
     <text name="VolumeFogStatus" follows="left|top|right" layout="topleft"
-      left="30" top="278" width="450" height="48" word_wrap="true" />
+      left="30" top="330" width="450" height="36" word_wrap="true" />
     <text name="VolumeFogHelp" follows="left|top|right" layout="topleft"
-      left="30" top="334" width="450" height="66" word_wrap="true" text_color="LtGray_50">
-      Raise Light effect for stronger beams in subtle fog. Start with Balanced quality; reduce local lights or disable fog shadows for more speed. Choose High if fine beams or edges look soft.
+      left="30" top="374" width="450" height="36" word_wrap="true" text_color="LtGray_50">
+      Color saturation boosts existing light colors. For speed, lower Quality/local lights or disable fog shadows.
     </text>
   </panel>
   </tab_container>

@@ -41,6 +41,7 @@
 #include "llreflectionmapmanager.h"
 #include "llheroprobemanager.h"
 #include "llalphalightselection.h"
+#include "llvolumefog.h"
 
 #include <stack>
 #include <map>
@@ -59,7 +60,6 @@ class LLDrawPoolAlpha;
 class FSExactOIT;
 // </AS:Chanayane>
 class LLSettingsSky;
-namespace LLVolumeFog { struct Volume; }
 
 typedef enum e_avatar_skinning_method
 {
@@ -365,6 +365,10 @@ public:
 
     void renderDeferredLighting();
     void renderVolumeFog();
+    void bindVolumeFogAlpha(LLGLSLShader& shader);
+    void bindVolumeFogMedia(LLGLSLShader& shader, const std::vector<LLVolumeFog::Volume>& volumes, bool ground);
+    bool prepareVolumeFog(bool ground_only = false);
+    bool useGroundFog() const;
     bool prepareVolumeClouds();
     void renderVolumeClouds();
     void bindVolumeFogLighting(LLGLSLShader& shader, const std::vector<LLVolumeFog::Volume>& volumes);
@@ -801,7 +805,10 @@ public:
     // for use by SSR
     LLRenderTarget          mSceneMap;
     LLRenderTarget          mVolumeFog;
+    LLRenderTarget          mVolumeFogResolved;
     LLRenderTarget          mVolumeFogComposite;
+    bool                    mVolumeFogAlphaReady = false;
+    std::vector<LLVolumeFog::Volume> mVolumeFogVolumes;
     LLRenderTarget          mVolumeClouds;
     LLRenderTarget          mVolumeCloudsComposite;
     U32                     mVolumeCloudNoise = 0;

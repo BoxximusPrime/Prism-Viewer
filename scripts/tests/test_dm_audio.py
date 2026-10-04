@@ -80,13 +80,14 @@ struct Object {
     bool isAvatar() { return avatar; }
     Object* getRootEdit() { return parent && !parent->isAvatar() ? parent->getRootEdit() : this; }
 };
+constexpr int gAgentID = 9;
 bool gesture(int object_id, int owner_id, Object* sound_object, Object* sound_parent = nullptr) {
 ''' + trigger + r'''
     return is_gesture_sound;
 }
 struct LLAudioEngine { enum { AUDIO_TYPE_SFX, AUDIO_TYPE_GESTURE }; };
 int type; void setType(int t) { type = t; }
-void update(Object* mObjectp) {
+void update(Object* mObjectp, int mOwnerID = 1) {
 ''' + attached + r'''
 }
 int main() {
@@ -122,8 +123,13 @@ int main() {
     assert(gesture(3, 1, nullptr, &attachment)); assert(gesture(2, 1, nullptr, &avatar));
     assert(!gesture(4, 1, &world)); assert(!gesture(5, 1, &world_child));
     assert(!gesture(6, 1, nullptr)); assert(!gesture(6, 1, nullptr, &world));
+    assert(gesture(gAgentID, gAgentID, &avatar));
+    assert(!gesture(2, gAgentID, &attachment)); assert(!gesture(3, gAgentID, &child));
+    assert(!gesture(3, gAgentID, nullptr, &attachment)); assert(!gesture(2, gAgentID, nullptr, &avatar));
     update(&attachment); assert(type == LLAudioEngine::AUDIO_TYPE_GESTURE);
     update(&child); assert(type == LLAudioEngine::AUDIO_TYPE_GESTURE);
+    update(&attachment, gAgentID); assert(type == LLAudioEngine::AUDIO_TYPE_SFX);
+    update(&child, gAgentID); assert(type == LLAudioEngine::AUDIO_TYPE_SFX);
     attachment.attachment = false; attachment.parent = nullptr;
     update(&child); assert(type == LLAudioEngine::AUDIO_TYPE_SFX);
     update(&world); assert(type == LLAudioEngine::AUDIO_TYPE_SFX);

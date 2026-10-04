@@ -492,6 +492,7 @@ void LLViewerShaderMgr::finalizeShaderList()
     mShaderList.push_back(&gDeferredFullbrightShinyProgram);
     mShaderList.push_back(&gHUDFullbrightShinyProgram);
     mShaderList.push_back(&gDeferredEmissiveProgram);
+    mShaderList.push_back(&gPBRGlowProgram);
     mShaderList.push_back(&gDeferredAvatarEyesProgram);
     mShaderList.push_back(&gDeferredAvatarAlphaProgram);
     mShaderList.push_back(&gEnvironmentMapProgram);
@@ -1236,6 +1237,8 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     index_channels.push_back(-1);    shaders.push_back( make_pair( "windlight/atmosphericsFuncs.glsl",       mShaderLevel[SHADER_WINDLIGHT] ) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "windlight/atmosphericsF.glsl",          mShaderLevel[SHADER_WINDLIGHT] ) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "environment/waterFogF.glsl",                mShaderLevel[SHADER_WATER] ) );
+    index_channels.push_back(-1);    shaders.push_back(make_pair("deferred/volumeFogMediumF.glsl", 1));
+    index_channels.push_back(-1);    shaders.push_back(make_pair("deferred/volumeFogAlphaF.glsl", 1));
     index_channels.push_back(-1);    shaders.push_back( make_pair( "environment/srgbF.glsl",                    mShaderLevel[SHADER_ENVIRONMENT] ) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/deferredUtil.glsl",                    1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/projectorUtil.glsl",                   1) );
@@ -1857,6 +1860,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     {
         gPBRGlowProgram.mName = " PBR Glow Shader";
         gPBRGlowProgram.mFeatures.hasSrgb = true;
+        gPBRGlowProgram.mFeatures.hasAtmospherics = true;
         gPBRGlowProgram.mShaderFiles.clear();
         gPBRGlowProgram.mShaderFiles.push_back(make_pair("deferred/pbrglowV.glsl", GL_VERTEX_SHADER));
         gPBRGlowProgram.mShaderFiles.push_back(make_pair("deferred/pbrglowF.glsl", GL_FRAGMENT_SHADER));
@@ -3559,12 +3563,16 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     {
         auto& shader = gVolumeFogProgram;
         shader.mName = "Volume Fog";
+        shader.mFeatures.hasSrgb = true;
         shader.mShaderFiles = {
             make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
-            make_pair("deferred/volumeFogF.glsl", GL_FRAGMENT_SHADER)};
+            make_pair("deferred/volumeFogF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("deferred/volumeFogMediumF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("deferred/volumeFogReconstructF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("windlight/atmosphericsFuncs.glsl", GL_FRAGMENT_SHADER)};
         shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
         shader.clearPermutations();
-        if (!shader.createShader() || shader.getTextureChannel(DEFERRED_DEPTH) < 0)
+        if (!shader.createShader() || shader.getTextureChannel(DEFERRED_DEPTH) < 0 || shader.getTextureChannel(DIFFUSE_MAP) < 0)
         {
             shader.unload();
             LL_WARNS("ShaderLoading") << "Volume fog unavailable; continuing without fog boxes." << LL_ENDL;
@@ -3576,9 +3584,13 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     {
         auto& shader = gVolumeFogLitProgram;
         shader.mName = "Lit Volume Fog";
+        shader.mFeatures.hasSrgb = true;
         shader.mShaderFiles = {
             make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
             make_pair("deferred/volumeFogF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("deferred/volumeFogMediumF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("deferred/volumeFogReconstructF.glsl", GL_FRAGMENT_SHADER),
+            make_pair("windlight/atmosphericsFuncs.glsl", GL_FRAGMENT_SHADER),
             make_pair("deferred/volumeFogLightF.glsl", GL_FRAGMENT_SHADER)};
         shader.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
         shader.clearPermutations();
@@ -3587,7 +3599,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         if (complete)
         {
             std::set<S32> channels;
-            for (S32 sampler : { DEFERRED_DEPTH,
+            for (S32 sampler : { DEFERRED_DEPTH, DIFFUSE_MAP,
                 PCSS_DEPTH0, PCSS_DEPTH1, PCSS_DEPTH2, PCSS_DEPTH3, PCSS_DEPTH4, PCSS_DEPTH5,
                 ALPHA_PROJECTION0, ALPHA_PROJECTION1, ALPHA_PROJECTION2, ALPHA_PROJECTION3 })
             {
@@ -3601,7 +3613,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
             LL_WARNS("VolumeFog") << "Fog lighting unavailable; retaining unlit fog." << LL_ENDL;
         }
         else
-            LL_INFOS("VolumeFog") << "Loaded lit volume fog and validated 11 depth/projector/shadow samplers." << LL_ENDL;
+            LL_INFOS("VolumeFog") << "Loaded lit volume fog and validated 12 fog/depth/projector/shadow samplers." << LL_ENDL;
     }
 
     if (success && gVolumeFogProgram.isComplete())

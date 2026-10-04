@@ -18,8 +18,11 @@ uniform vec3 vf_ambient;
 uniform vec3 vf_sun_color; // active sun OR moon; zero when both are below horizon
 uniform vec3 vf_sun_direction; // sample toward light
 uniform float vf_light_strength;
+uniform float vf_light_cap; // per-local-light ceiling after strength; zero disables
+uniform float vf_light_saturation; // source/projector saturation multiplier; one preserves color
 uniform float vf_anisotropy;
 uniform int vf_shadow_mask;
+uniform int vf_ground_environment;
 uniform mat4 shadow_matrix[6];
 uniform vec4 shadow_clip;
 // Reuse raw-depth units/sampler objects, with four depth comparisons per tap.
@@ -155,12 +158,30 @@ vec3 fogDirectional(vec3 ray)
     return vf_sun_color * fogPhase(dot(vf_sun_direction, ray));
 }
 
-vec3 fogLighting(vec3 position, vec3 ray, int light_mask, vec3 directional)
+vec3 fogLimitLight(vec3 light)
 {
+    float peak = max(light.r, max(light.g, light.b));
+    float knee = vf_light_cap * 0.75;
+    if (vf_light_cap > 0.0 && peak > knee)
+    {
+        // Identity for dim light, then a continuous slope into the ceiling.
+        // Scale RGB together to preserve hue instead of clipping channels.
+        float headroom = vf_light_cap - knee;
+        float limited = vf_light_cap - headroom / (1.0 + (peak-knee) / headroom);
+        light *= limited / peak;
+    }
+    return light;
+}
+
+vec3 fogLighting(vec3 position, vec3 ray, int light_mask, vec3 directional,
+                 out float sun_visibility, out vec3 local_light)
+{
+    sun_visibility = 1.0;
+    local_light = vec3(0.0);
     if (vf_light_strength <= 0.0) return vf_ambient;
     vec3 light = vec3(0.0);
-    if (any(greaterThan(directional, vec3(0.0))))
-        light = directional * fogSunShadow(position);
+    if (vf_ground_environment != 0 || any(greaterThan(directional, vec3(0.0))))
+        sun_visibility = fogSunShadow(position);
     for (int i = 0; i < vf_light_count; ++i)
     {
         if ((light_mask & (1 << i)) == 0) continue;
@@ -199,7 +220,16 @@ vec3 fogLighting(vec3 position, vec3 ray, int light_mask, vec3 directional)
             delta = vf_projector_origin[projector].xyz - position;
         }
         vec3 to_light = delta / max(length(delta), 0.0001);
-        light += vf_light_color[i].rgb * projected_color * attenuation * visibility * fogPhase(dot(to_light, ray));
+        vec3 color = vf_light_color[i].rgb * projected_color;
+        // Scale the distance from neutral at the same peak brightness. White
+        // stays white, and saturation cannot bypass the per-light ceiling.
+        float peak = max(color.r, max(color.g, color.b));
+        color = max(mix(vec3(peak), color, vf_light_saturation), vec3(0.0));
+        vec3 contribution = color * attenuation *
+            fogPhase(dot(to_light, ray)) * vf_light_strength;
+        // Limit before shadow visibility so shadow fades remain proportional.
+        light += fogLimitLight(contribution) * visibility;
     }
-    return vf_ambient + light * vf_light_strength;
+    local_light = light;
+    return vf_ambient + directional * sun_visibility * vf_light_strength + local_light;
 }

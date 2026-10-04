@@ -3832,12 +3832,13 @@ void process_sound_trigger(LLMessageSystem *msg, void **)
         return;
     }
 
-    // Avatar and attachment sounds share the Gestures volume channel.
+    // Avatar sounds and other residents' attachments use Gestures; own attachments use Sounds.
     LLViewerObject* sound_object = gObjectList.findObject(object_id);
     LLViewerObject* sound_parent = gObjectList.findObject(parent_id);
     const bool is_gesture_sound = object_id == owner_id
-        || (sound_object && sound_object->getRootEdit()->isAttachment())
-        || (sound_parent && (sound_parent->isAvatar() || sound_parent->getRootEdit()->isAttachment()));
+        || (owner_id != gAgentID
+            && ((sound_object && sound_object->getRootEdit()->isAttachment())
+                || (sound_parent && (sound_parent->isAvatar() || sound_parent->getRootEdit()->isAttachment()))));
 
     if (LLMaterialTable::basic.isCollisionSound(sound_id))
     {

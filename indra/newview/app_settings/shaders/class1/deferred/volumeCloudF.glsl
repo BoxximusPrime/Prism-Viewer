@@ -21,6 +21,9 @@ uniform float vc_blend;
 uniform int vc_steps;
 uniform vec3 vc_sun_direction;
 uniform vec3 vc_sun_color;
+uniform float vc_light_absorption; // reciprocal of local light penetration
+uniform float vc_edge_glow;
+uniform float vc_internal_light;
 uniform vec3 vc_ambient;
 uniform vec3 vc_tint;
 
@@ -176,9 +179,13 @@ void main()
     float mu = dot(ray, vc_sun_direction);
     // Broader forward scattering distributes light through the body instead
     // of concentrating it into a bright, continuous outline around dark cores.
-    // The weights still sum to one; keep the small sun-facing backward lobe.
-    float phase = 0.45 + 0.35*cloudPhase(mu, 0.45) + 0.2*cloudPhase(mu, -0.2);
-    float scattered_phase = 0.7 + 0.3*cloudPhase(mu, 0.25);
+    // Trade forward scattering for diffuse light as edge glow decreases.
+    // Weights sum to one and stay nonnegative across the control's 0-2 range;
+    // the small sun-facing backward lobe remains independent.
+    float forward_weight = 0.35*vc_edge_glow;
+    float phase = (0.8-forward_weight) + forward_weight*cloudPhase(mu, 0.45) + 0.2*cloudPhase(mu, -0.2);
+    float scattered_weight = 0.3*vc_edge_glow;
+    float scattered_phase = (1.0-scattered_weight) + scattered_weight*cloudPhase(mu, 0.25);
     vec3 scatter = vec3(0.0);
     float transmittance = 1.0;
     for (int i=0; i<256; ++i)
@@ -209,6 +216,7 @@ void main()
                 light_step *= 1.1741;
             }
         }
+        shadow *= vc_light_absorption;
         float h = clamp(p.z/vc_thickness, 0.0, 1.0);
         // Probe the upper hemisphere so a lobe exposed on one side receives
         // more skylight than a fold surrounded by other billows.
@@ -230,8 +238,8 @@ void main()
         // direction and soften shadows while retaining the sun/moon's color.
         // Nearby enclosing density attenuates the bounce, keeping exposed
         // shoulders brighter than deep creases without changing cloud opacity.
-        float bounce_visibility = 0.5 + 0.5*exp(-surrounding_depth*0.35);
-        vec3 bounced_light = vc_sun_color * bounce_visibility *
+        float bounce_visibility = 0.5 + 0.5*exp(-surrounding_depth*0.35*vc_light_absorption);
+        vec3 bounced_light = vc_sun_color * (vc_internal_light*bounce_visibility) *
             (0.4*scattered_phase*exp(-shadow*0.25) + 0.25*exp(-shadow*0.05));
         vec3 light = vc_ambient*mix(0.55,1.0,h)*sky_visibility + vc_sun_color*phase*exp(-shadow) + bounced_light;
         // Approximate atmospheric loss over the cloud's own distance.

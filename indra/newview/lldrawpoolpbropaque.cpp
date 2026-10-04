@@ -84,12 +84,13 @@ void LLDrawPoolGLTFPBR::renderPostDeferred(S32 pass)
     {
         gGL.setColorMask(false, true);
         gPBRGlowProgram.bind();
+        gPipeline.bindVolumeFogAlpha(gPBRGlowProgram);
         pushGLTFBatches(LLRenderPass::PASS_GLTF_GLOW);
 
         gPBRGlowProgram.bind(true);
+        gPipeline.bindVolumeFogAlpha(*gPBRGlowProgram.mRiggedVariant);
         pushRiggedGLTFBatches(LLRenderPass::PASS_GLTF_GLOW_RIGGED);
 
         gGL.setColorMask(true, false);
     }
 }
-

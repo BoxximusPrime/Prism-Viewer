@@ -384,6 +384,7 @@ bool FSExactOIT::loadPBRGlowShaders(S32 shader_level)
 {
     gExactOITPBRGlowProgram.mName = "Exact OIT PBR Glow Shader";
     gExactOITPBRGlowProgram.mFeatures.hasSrgb = true;
+    gExactOITPBRGlowProgram.mFeatures.hasAtmospherics = true;
     gExactOITPBRGlowProgram.mShaderFiles.clear();
     gExactOITPBRGlowProgram.mShaderFiles.emplace_back("deferred/pbrglowV.glsl", GL_VERTEX_SHADER);
     gExactOITPBRGlowProgram.mShaderFiles.emplace_back("deferred/exactOITPbrGlowF.glsl", GL_FRAGMENT_SHADER);

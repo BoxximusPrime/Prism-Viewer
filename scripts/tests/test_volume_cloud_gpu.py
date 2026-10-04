@@ -31,6 +31,8 @@ def native_inputs():
     calculation=re.search(r'const glm::mat[34] view_to_world = [^;]+;',body)[0]
     upload=next(line for line in body.splitlines() if '"vc_view_to_world"' in line)
     sunlight='\n'.join(re.search(r'const F32 '+name+r' = [^;]+;',body)[0] for name in ('sunlight_scale','strength'))
+    lighting='\n'.join(re.search(r'shader.uniform1f\(LLStaticHashedString\("'+name+r'"\).*?;',body,re.S)[0]
+                       for name in ('vc_light_absorption','vc_edge_glow','vc_internal_light'))
     ambient=next(line for line in body.splitlines() if 'auto linear =' in line)
     ambient+='\n'+'\n'.join(re.search(r'const F32 '+name+r' = [^;]+;',body)[0] for name in ('daylight','ambient_scale'))
     ambient+='\n'+re.search(r'shader.uniform3f\(LLStaticHashedString\("vc_ambient"\).*?;',body,re.S)[0]
@@ -54,6 +56,7 @@ def native_inputs():
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include <cstdio>
 #include <fcntl.h>
 #include <io.h>
@@ -74,9 +77,14 @@ struct Environment {
 struct Settings {
     bool hdr;
     F32 amount;
+    F32 penetration=1.f, edge=1.f, internal=1.f, ambient=1.f;
     bool getBOOL(const char*) const { return hdr; }
     F32 getF32(const std::string& key) const {
         if (key=="RenderVolumeCloudSunlight") return amount;
+        if (key=="RenderVolumeCloudLightPenetration") return penetration;
+        if (key=="RenderVolumeCloudEdgeGlow") return edge;
+        if (key=="RenderVolumeCloudInternalLight") return internal;
+        if (key=="RenderVolumeCloudAmbient") return ambient;
         return key=="RenderHDRSkySunlightScale" ? 2.f : .5f;
     }
 } gSavedSettings;
@@ -86,6 +94,8 @@ using LLStaticHashedString = const char*;
 std::vector<float> uploaded;
 void glUniformMatrix3fv(int, int, bool, const float* p) { uploaded.assign(p,p+9); }
 struct Shader {
+    std::map<std::string,F32> values;
+    void uniform1f(const char* name, F32 value) { values[name]=value; }
     int getUniformLocation(const char*) { return 0; }
     void uniformMatrix4fv(const char*, int, bool, const float* p) { uploaded.assign(p,p+16); }
 } shader;
@@ -114,8 +124,17 @@ int main() {
             assert(strength==(hdr ? 2.f : .5f)*(sun ? std::clamp(amount,0.f,2.f) : 1.f));
         }
     }
-    for (F32 elevation : {-1.f,-.1f,-.05f,0.f,.05f,.1f,1.f}) {
+    for (F32 value : {-2.f,0.f,.05f,.1f,.5f,1.f,2.f,4.f,9.f}) {
+        gSavedSettings.penetration=gSavedSettings.edge=gSavedSettings.internal=value;
+        LIGHTING
+        assert(shader.values.at("vc_light_absorption")==1.f/std::clamp(value,.1f,4.f));
+        assert(shader.values.at("vc_edge_glow")==std::clamp(value,0.f,2.f));
+        assert(shader.values.at("vc_internal_light")==std::clamp(value,0.f,2.f));
+    }
+    for (F32 elevation : {-1.f,-.1f,-.05f,0.f,.05f,.1f,1.f})
+    for (F32 gain : {-2.f,0.f,.5f,1.f,2.f,9.f}) {
         environment.elevation=elevation;
+        gSavedSettings.ambient=gain;
         AmbientShader shader;
         const Color ambient={.5f,.7f,1.f};
         AMBIENT
@@ -124,15 +143,15 @@ int main() {
         const F32 expected = elevation<=-.1f ? .3f : elevation>=.1f ? 1.f :
             elevation==-.05f ? .409375f : elevation==.05f ? .890625f : .65f;
         for (int i=0;i<3;++i) {
-            assert(std::abs(shader.color.mV[i]-linear(ambient.mV[i])*expected)<1e-6f);
-            std::cout << shader.color.mV[i] << ' ';
+            assert(std::abs(shader.color.mV[i]-linear(ambient.mV[i])*expected*std::clamp(gain,0.f,2.f))<1e-6f);
+            if (gain==1.f) std::cout << shader.color.mV[i] << ' ';
         }
-        std::cout << '\n';
+        if (gain==1.f) std::cout << '\n';
     }
     NOISE_CREATION
     std::cout.write(reinterpret_cast<const char*>(noise.data()),noise.size());
 }
-'''.replace('CASES',rows).replace('CALCULATION',calculation).replace('UPLOAD',upload).replace('SUNLIGHT',sunlight).replace('AMBIENT',ambient).replace('NOISE_CREATION',noise_creation)
+'''.replace('CASES',rows).replace('CALCULATION',calculation).replace('UPLOAD',upload).replace('SUNLIGHT',sunlight).replace('LIGHTING',lighting).replace('AMBIENT',ambient).replace('NOISE_CREATION',noise_creation)
     compiler=shutil.which('g++')
     assert compiler,'g++ must be on PATH for the native camera upload regression'
     with tempfile.TemporaryDirectory(prefix='prism-cloud-camera-') as directory:
@@ -230,6 +249,7 @@ def run(sdl, gl, native):
     integer('vc_steps',64)
     vector('vc_camera',0,0,-100); vector('vc_sun_direction',0,0,1)
     vector('vc_sun_color',0,0,0); vector('vc_ambient',1,1,1); vector('vc_tint',1,1,1)
+    scalar('vc_light_absorption',1); scalar('vc_edge_glow',1); scalar('vc_internal_light',1)
 
     def render(wall=None):
         d=1 if wall is None else (-a+b/wall)*.5+.5
@@ -289,6 +309,33 @@ def run(sdl, gl, native):
               [unlit[i]+gain*(lit[i]-unlit[i]) for i in range(3)]+[lit[3]])
     vector('vc_sun_color',2,1,.5)
 
+    # Lighting controls never change the view-ray density. Penetration affects
+    # directional attenuation only, while internal light scales only the bounce.
+    previous=0
+    for penetration in (.1,.5,1,2,4):
+        scalar('vc_light_absorption',1/penetration); result=render(100)
+        assert result[0]>previous,('deeper light penetration',penetration,result)
+        check('penetration preserves opacity',[result[3]],[lit[3]])
+        vector('vc_sun_color',0,0,0)
+        check('penetration preserves ambient',render(100),unlit)
+        vector('vc_sun_color',2,1,.5); previous=result[0]
+    scalar('vc_light_absorption',1); scalar('vc_internal_light',0)
+    direct=render(100)
+    assert unlit[0]<direct[0]<lit[0],('independent direct and internal light',unlit,direct,lit)
+    for gain in (0,.5,1,2):
+        scalar('vc_internal_light',gain)
+        check('internal light scales bounce only',render(100),
+              [direct[i]+gain*(lit[i]-direct[i]) for i in range(3)]+[lit[3]])
+        vector('vc_sun_color',0,0,0)
+        check('internal light preserves ambient',render(100),unlit)
+        vector('vc_sun_color',2,1,.5)
+    scalar('vc_internal_light',1)
+    for gain in (0,.5,1,2):
+        vector('vc_ambient',gain,gain,gain)
+        check('ambient gain preserves directional light',render(100),
+              [lit[i]+(gain-1)*unlit[i] for i in range(3)]+[lit[3]])
+    vector('vc_ambient',1,1,1)
+
     # Sunlight scattered inside the cloud must reach its shaded underside.
     # With neutral light/tint it stays neutral; warm sunsets and dim moonlight
     # must retain their authored color and intensity instead of gaining white.
@@ -324,6 +371,18 @@ def run(sdl, gl, native):
     check('closer light probes retain full shadow reach',[face[0]],
           [source*.0025/rate*(1-math.exp(-rate*20))],.0001)
     check('lighting lobes preserve silhouette',[face[3]],[rim[3]])
+    rims=[]; faces=[]
+    for gain in (0,.5,1,2):
+        scalar('vc_edge_glow',gain)
+        vector('vc_sun_direction',0,1,0); rims.append(render(20)[0])
+        vector('vc_sun_direction',0,-1,0); result=render(20); faces.append(result[0])
+        check('edge glow preserves opacity',[result[3]],[face[3]])
+        vector('vc_sun_color',0,0,0)
+        check('edge glow cannot create light',render(20),[0,0,0,face[3]])
+        vector('vc_sun_color',1,1,1)
+    assert all(a<b for a,b in zip(rims,rims[1:])),('forward glow control',rims)
+    assert all(a>b for a,b in zip(faces,faces[1:])),('glow redistributes light toward the rim',faces)
+    scalar('vc_edge_glow',1)
     checks+=1; noise(bytes([128])*(64**3))
     # Fine curls must shape both the visible density and the shadow density,
     # even when EEP detail strength is zero. Otherwise smooth shadows wrap a

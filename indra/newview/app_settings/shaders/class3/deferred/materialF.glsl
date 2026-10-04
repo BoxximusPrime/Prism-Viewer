@@ -314,6 +314,8 @@ float getShadow(vec3 pos, vec3 norm)
 #endif
 }
 
+vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
+
 void main()
 {
     mirrorClip(vary_position);
@@ -453,12 +455,13 @@ void main()
     glare *= 1.0-emissive;
     glare = min(glare, 1.0);
     float al = max(diffcol.a, glare) * vertex_color.a;
+    vec4 final_color = applyVolumeFogAlpha(pos.xyz, vec4(color * final_scale, al));
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color * final_scale, al), vec4(0));
 #ifdef EXACT_OIT
-    exact_oit_store(max(vec4(color * final_scale, al), vec4(0)));
+    exact_oit_store(max(final_color, vec4(0)));
 #else
-    frag_color = max(vec4(color * final_scale, al), vec4(0));
+    frag_color = max(final_color, vec4(0));
 #endif
 // </AS:Chanayane>
 
