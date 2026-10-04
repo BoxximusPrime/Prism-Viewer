@@ -868,7 +868,13 @@ void settings_setup_listeners()
         "RenderTAATransparency", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderGTAORadius", "RenderGTAOStrength", "RenderGTAOQuality",
         "RenderSSGIRadius", "RenderSSGIStrength", "RenderSSGIQuality", "RenderSSGIDenoise", "RenderSSGIDebug",
         "RenderGTAOFalloff", "RenderGTAOThinOccluder", "RenderGTAODenoise",
-        "RenderVolumeClouds", "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight", "RenderVolumeCloudQuality" })
+        "RenderGroundFog", "RenderGroundFogDensity", "RenderGroundFogAltitude", "RenderGroundFogHeight", "RenderGroundFogDistance",
+        "RenderGroundFogStartDistance", "RenderGroundFogFadeIn",
+        "RenderGroundFogFollowEnvironment", "RenderGroundFogStrength",
+        "RenderGroundFogNoise", "RenderGroundFogNoiseScale", "RenderGroundFogSpeed", "RenderGroundFogBrightness", "RenderGroundFogColor",
+        "RenderVolumeFog", "RenderVolumeFogIntensity", "RenderVolumeFogQuality", "RenderVolumeFogLightStrength", "RenderVolumeFogLightCap", "RenderVolumeFogLightSaturation", "RenderVolumeFogLightCount", "RenderVolumeFogShadows",
+        "RenderVolumeClouds", "RenderVolumeCloudAltitude", "RenderVolumeCloudThickness", "RenderVolumeCloudDensity", "RenderVolumeCloudSunlight",
+        "RenderVolumeCloudLightPenetration", "RenderVolumeCloudEdgeGlow", "RenderVolumeCloudInternalLight", "RenderVolumeCloudAmbient", "RenderVolumeCloudQuality" })
         setting_setup_signal_listener(gSavedSettings, setting, handleTAAHistoryChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderHighPrecisionPostProcess", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "BoxxySSSEnabled", handleReleaseGLBufferChanged);

@@ -140,6 +140,8 @@ vec3 pbrCalcPointLightOrSpotLight(int light_index, vec3 diffuseColor, vec3 specu
                     vec3 lightColor,
                     float lightSize, float falloff, float is_pointlight, float ambiance);
 
+vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
+
 void main()
 {
     vec3 color = vec3(0,0,0);
@@ -250,12 +252,16 @@ void main()
 #ifdef MODEL_PREVIEW
     if (preview_alpha_mode != 2) a = 1.0; // OPAQUE/MASK have full coverage after cutoff.
 #endif
+    vec4 final_color = vec4(color.rgb * final_scale, a);
+#ifndef MODEL_PREVIEW
+    final_color = applyVolumeFogAlpha(pos.xyz, final_color);
+#endif
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color.rgb * final_scale,a), vec4(0));
 #ifdef EXACT_OIT
-    exact_oit_store(max(vec4(color.rgb * final_scale, a), vec4(0)));
+    exact_oit_store(max(final_color, vec4(0)));
 #else
-    frag_color = max(vec4(color.rgb * final_scale,a), vec4(0));
+    frag_color = max(final_color, vec4(0));
 #endif
 // </AS:Chanayane>
 }

@@ -29,9 +29,11 @@ void exact_oit_store_glow(float glow)
 
 in vec4 vertex_color;
 in vec2 vary_texcoord0;
+in vec3 vary_position;
+float volumeFogAlphaTransmission(vec3 position);
 
 void main()
 {
-    exact_oit_store_glow(diffuseLookup(vary_texcoord0.xy).a * vertex_color.a);
+    exact_oit_store_glow(diffuseLookup(vary_texcoord0.xy).a * vertex_color.a * volumeFogAlphaTransmission(vary_position));
 }
 // </AS:Chanayane>

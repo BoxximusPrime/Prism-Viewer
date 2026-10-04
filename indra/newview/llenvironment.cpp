@@ -1729,6 +1729,12 @@ void LLEnvironment::updateShaderUniforms(LLGLSLShader* shader)
     auto group = shader->mShaderGroup;
     mSkyUniforms[group].apply(shader);
     mWaterUniforms[group].apply(shader);
+    // Replace only distance haze. Sky appearance and surface illumination keep
+    // their EEP settings; reflection, HUD, impostor and underwater passes keep
+    // normal haze. Readiness includes the fog targets, so allocation failure
+    // also retains normal haze.
+    if (group != LLGLSLShader::SG_SKY && gPipeline.useGroundFog())
+        shader->uniform1f(LLShaderMgr::DISTANCE_MULTIPLIER, 0.f);
 }
 
 void LLEnvironment::updateSettingsUniforms()

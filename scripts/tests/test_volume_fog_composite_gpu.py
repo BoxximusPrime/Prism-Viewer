@@ -112,6 +112,16 @@ def run(sdl, gl):
     depths = (z(2)+z(20)*3)*2
     expected = ((.1,.2,.3,.4)+(.62,.04,.06,.08)*3)*2
     check('thin occluder rejection',render(4,2,2,1,colors,depths,(.6,0,0,.2)*2),expected)
+    # Continuous receding terrain must not lose every other row of fog when
+    # perspective depth changes by more than the fixed 2% rejection threshold.
+    width,height=4,32
+    depths=tuple(v for y in range(height) for _ in range(width) for v in z(90/(1+y*.13)))
+    colors=(.1,.2,.3,.4)*(width*height)
+    actual=render(width,height,2,16,colors,depths,(.6,0,0,.2)*32)
+    # Viewport boundary rows lack two neighbours for the slope estimate.
+    check('receding ground has no clear stripes',actual[width*4:-width*4],(.62,.04,.06,.08)*(width*(height-2)))
+    actual=render(width,height,1,8,colors,depths,(.6,0,0,.2)*8)
+    check('quarter-resolution ground has no clear stripes',actual[width*4:-width*4],(.62,.04,.06,.08)*(width*(height-2)))
     check('HDR finite',render(1,1,1,1,(1000,2000,3000,.5),z(20),(65000,65000,65000,.5)),
           (64992,64992,64992,.25),.1) # 65000 rounded to the RGBA16F output
     print(f'PASS: {checks} production fog composite GPU checks (GLSL 330, RGBA16F)')

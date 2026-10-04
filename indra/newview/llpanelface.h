@@ -36,6 +36,7 @@
 #include "llselectmgr.h"
 
 #include <memory>
+#include <map>
 
 class LLButton;
 class LLCheckBoxCtrl;
@@ -323,6 +324,13 @@ private:
     LLTextBox* mLabelGlow { nullptr };
     LLSpinCtrl* mCtrlGlow { nullptr };
     LLComboBox* mComboMatMedia { nullptr };
+    struct RememberedPBR
+    {
+        LLUUID id;
+        LLPointer<LLGLTFMaterial> overrides;
+    };
+    // Session-only, per object/face; separate from texture-picker cancel snapshots.
+    std::map<std::pair<LLUUID, S32>, RememberedPBR> mRememberedPBR;
     LLMediaCtrl* mTitleMedia { nullptr };
     LLTextBox* mTitleMediaText { nullptr };
 

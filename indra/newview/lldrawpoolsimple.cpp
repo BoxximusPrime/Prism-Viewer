@@ -60,11 +60,13 @@ void LLDrawPoolGlow::renderPostDeferred(S32 pass)
 
     //first pass -- static objects
     shader->bind();
+    gPipeline.bindVolumeFogAlpha(*shader);
     pushBatches(LLRenderPass::PASS_GLOW, true, true);
 
     // second pass -- rigged objects
     shader = shader->mRiggedVariant;
     shader->bind();
+    gPipeline.bindVolumeFogAlpha(*shader);
     pushRiggedBatches(LLRenderPass::PASS_GLOW_RIGGED, true, true);
 
     gGL.setColorMask(true, false);

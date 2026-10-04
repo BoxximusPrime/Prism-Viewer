@@ -1113,7 +1113,7 @@ void LLPanelFace::updateUI(bool force_set_values /*false*/)
         mBtnAlign->setEnabled(editable);
 
         // enable if needed before changing selection
-        mComboMatMedia->setEnabledByValue("Materials", !has_pbr_material);
+        mComboMatMedia->setEnabledByValue("Materials", editable);
 
         if (mComboMatMedia->getCurrentIndex() < MATMEDIA_MATERIAL)
         {
@@ -2996,6 +2996,57 @@ void LLPanelFace::onSelectShinyColor()
 
 void LLPanelFace::onCommitMaterialsMedia()
 {
+    const S32 mode = mComboMatMedia->getCurrentIndex();
+    if (mode == MATMEDIA_MATERIAL || mode == MATMEDIA_PBR)
+    {
+        using SavedMaterials = decltype(mRememberedPBR);
+        struct SwitchMaterial : LLSelectedTEFunctor
+        {
+            SavedMaterials& saved;
+            bool restore;
+            SwitchMaterial(SavedMaterials& materials, bool pbr) : saved(materials), restore(pbr) {}
+            bool apply(LLViewerObject* object, S32 face) override
+            {
+                if (!object || !object->permModify() || object->isPermanentEnforced())
+                {
+                    return false;
+                }
+                LLTextureEntry* entry = object->getTE(face);
+                if (!entry)
+                {
+                    return false;
+                }
+                const auto key = std::make_pair(object->getID(), face);
+                const LLUUID id = object->getRenderMaterialID(face);
+                if (!restore && id.notNull())
+                {
+                    auto& material = saved[key];
+                    material.id = id;
+                    material.overrides = entry->getGLTFMaterialOverride()
+                        ? new LLGLTFMaterial(*entry->getGLTFMaterialOverride()) : nullptr;
+                    object->setRenderMaterialID(face, LLUUID::null);
+                }
+                else if (restore && id.isNull())
+                {
+                    const auto found = saved.find(key);
+                    if (found != saved.end())
+                    {
+                        const auto& material = found->second;
+                        LLPointer<LLGLTFMaterial> overrides = material.overrides
+                            ? new LLGLTFMaterial(*material.overrides) : nullptr;
+                        object->setRenderMaterialID(face, material.id, false, true);
+                        entry->setGLTFMaterialOverride(overrides);
+                        object->initRenderMaterial(face);
+                        LLGLTFMaterialList::queueApply(object, face, material.id, overrides);
+                        saved.erase(found);
+                    }
+                }
+                return true;
+            }
+        } switch_material(mRememberedPBR, mode == MATMEDIA_PBR);
+        LLSelectMgr::getInstance()->getSelection()->applyToTEs(&switch_material);
+    }
+
     // Force to default states to side-step problems with menu contents
     // and generally reflecting old state when switching tabs or objects
     //

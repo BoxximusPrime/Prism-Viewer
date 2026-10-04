@@ -53,12 +53,138 @@
     <key>Type</key><string>F32</string>
     <key>Value</key><real>1.0</real>
   </map>
+  <key>RenderVolumeCloudLightPenetration</key>
+  <map>
+    <key>Comment</key><string>Sun/moon light penetration in volumetric clouds (0.1-4). Higher values let light reach deeper; one is normal. Cloud opacity and coverage are unchanged.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>RenderVolumeCloudEdgeGlow</key>
+  <map>
+    <key>Comment</key><string>Forward scattering in volumetric clouds (0-2). Lower values soften bright edges when looking toward the sun or moon. One is normal.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>RenderVolumeCloudInternalLight</key>
+  <map>
+    <key>Comment</key><string>Sun/moon light scattered inside volumetric clouds (0-2). Lower values reduce the glow in shaded bodies; zero leaves direct and ambient light. One is normal.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>RenderVolumeCloudAmbient</key>
+  <map>
+    <key>Comment</key><string>Environment ambient light on volumetric clouds (0-2). One is normal, including the existing reduction at night; zero leaves sun/moon lighting.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
   <key>RenderVolumeCloudQuality</key>
   <map>
     <key>Comment</key><string>Volumetric cloud quality: 0 Performance (half width/height, 32 samples), 1 Balanced (half width/height, 64), 2 High (full resolution, 96). Changes apply immediately.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>S32</string>
     <key>Value</key><integer>1</integer>
+  </map>
+  <key>RenderGroundFog</key>
+  <map>
+    <key>Comment</key><string>Replace normal distance haze with a local volumetric height-fog layer. Keeps the sky and underwater fog. Off restores normal haze.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>RenderGroundFogFollowEnvironment</key>
+  <map>
+    <key>Comment</key><string>Follow the active environment's haze density and color, including day-cycle and parcel transitions. Off uses custom ground-fog density and tint.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>RenderGroundFogStrength</key>
+  <map>
+    <key>Comment</key><string>Multiplier for the environment's height-weighted fog path (0-4). One follows authored haze; zero clears ground fog. Used only when following the environment.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>RenderGroundFogDensity</key>
+  <map>
+    <key>Comment</key><string>Custom fog density at and below the base altitude (0-0.2 per metre). Used only when Follow environment is off. Zero clears ground fog while keeping normal haze replaced.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.025</real>
+  </map>
+  <key>RenderGroundFogAltitude</key>
+  <map>
+    <key>Comment</key><string>World altitude where fog starts thinning upward. Raise this for elevated terrain or sky platforms. Range -500-10000.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>25</real>
+  </map>
+  <key>RenderGroundFogHeight</key>
+  <map>
+    <key>Comment</key><string>Height over which density falls to about one third. Lower values keep the fog close to the ground. Range 1-200.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>12</real>
+  </map>
+  <key>RenderGroundFogDistance</key>
+  <map>
+    <key>Comment</key><string>Maximum range from the camera at which ground fog is calculated, also limited by draw distance. Range 16-1024 metres.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>256</real>
+  </map>
+  <key>RenderGroundFogStartDistance</key>
+  <map>
+    <key>Comment</key><string>Clear distance from the camera before ground fog begins (0-1024 metres). At or beyond Maximum range, no ground fog is visible. Does not affect tagged fog boxes.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0</real>
+  </map>
+  <key>RenderGroundFogFadeIn</key>
+  <map>
+    <key>Comment</key><string>Distance over which ground fog smoothly reaches normal density after Start distance (0-1024 metres). Zero disables the fade. Does not change Maximum range.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0</real>
+  </map>
+  <key>RenderGroundFogNoise</key>
+  <map>
+    <key>Comment</key><string>Zero is smooth fog. Higher values create more clear and dense patches. Range 0-1.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.5</real>
+  </map>
+  <key>RenderGroundFogNoiseScale</key>
+  <map>
+    <key>Comment</key><string>World size of the fog patches. Range 5-200.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>40</real>
+  </map>
+  <key>RenderGroundFogSpeed</key>
+  <map>
+    <key>Comment</key><string>Speed of the fog patches. Zero freezes the pattern. Range 0-5.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.3</real>
+  </map>
+  <key>RenderGroundFogBrightness</key>
+  <map>
+    <key>Comment</key><string>Scattered fog brightness. Lighting still follows the environment and nearby lights. Range 0-3.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>RenderGroundFogColor</key>
+  <map>
+    <key>Comment</key><string>Local ground-fog scattering tint in sRGB. Does not change the environment asset.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Color4</string>
+    <key>Value</key><array><real>0.8</real><real>0.85</real><real>0.9</real><real>1</real></array>
   </map>
   <key>RenderVolumeFogIntensity</key>
   <map>
@@ -69,7 +195,7 @@
   </map>
   <key>RenderVolumeFogQuality</key>
   <map>
-    <key>Comment</key><string>Fog quality: 0 Performance (half resolution, 16 samples), 1 Balanced (half resolution, 24), 2 High (full resolution, 32), 3 Ultra (full resolution, 64). Local light limit and shadow switch are independent. Changes apply immediately.</string>
+    <key>Comment</key><string>Fog quality: 0 Performance (16 samples), 1 Balanced (24), 2 High (32), 3 Ultra (64). Ground fog alone uses quarter width/height for Performance/Balanced, half for High and full for Ultra; authored boxes retain half/full resolution. Local lights and shadows are independent.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>S32</string>
     <key>Value</key><integer>1</integer>
@@ -111,10 +237,10 @@
   </map>
   <key>RenderVolumeFogLightStrength</key>
   <map>
-    <key>Comment</key><string>Direct light scattering strength in fog (0-8). Does not change surface lighting or fog density.</string>
+    <key>Comment</key><string>Direct light scattering strength in fog (0-0.30, default 0.10). Does not change surface lighting or fog density.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.10</real>
   </map>
   <key>RenderVolumeFogAnisotropy</key>
   <map>
@@ -122,6 +248,20 @@
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
     <key>Value</key><real>0.2</real>
+  </map>
+  <key>RenderVolumeFogLightCap</key>
+  <map>
+    <key>Comment</key><string>Soft ceiling for each point/projector light's fog contribution after Light effect (0-0.100, default 0.100). Dim contributions keep their brightness and color. Zero disables the cap. Does not affect sun/moon, ambient or surface lighting.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.100</real>
+  </map>
+  <key>RenderVolumeFogLightSaturation</key>
+  <map>
+    <key>Comment</key><string>Color saturation multiplier for point/projector lights in fog (0-4, default 1). Zero makes light neutral; one preserves source and projector texture color; higher values boost existing color without raising peak brightness. White lights stay white. Does not affect sun/moon, ambient or surface lighting.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
   </map>
   <key>RenderVolumeFog</key>
   <map>

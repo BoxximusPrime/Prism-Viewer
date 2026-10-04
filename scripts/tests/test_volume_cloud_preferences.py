@@ -59,7 +59,8 @@ def get_setting(key):
     return convert[result['type']](result['value'])
 
 
-base = '/main_view/menu_stack/world_panel/Floater View/Preferences/pref core/display/graphics_tab_container/graphics_clouds_panel/'
+page = '/main_view/menu_stack/world_panel/Floater View/Preferences/pref core/display/graphics_tab_container/graphics_clouds_panel/'
+base = page + 'CloudScroll/CloudContent/'
 
 
 def key(path, keysym):
@@ -85,23 +86,32 @@ try:
     time.sleep(4)
     dismiss_startup_notices()
     setting('RenderVolumeClouds',True)
-    sliders={'RenderVolumeCloudDensity':(.6,.8),'RenderVolumeCloudSunlight':(.7,1)}
-    for name,(initial,default) in sliders.items():
+    # Initial, default, minimum, maximum, keyboard increment.
+    sliders={
+        'RenderVolumeCloudDensity':(.6,.8,0,2,.05),
+        'RenderVolumeCloudSunlight':(.05,1,0,2,.01),
+        'RenderVolumeCloudLightPenetration':(.5,1,.1,4,.05),
+        'RenderVolumeCloudEdgeGlow':(.3,1,0,2,.05),
+        'RenderVolumeCloudInternalLight':(.4,1,0,2,.05),
+        'RenderVolumeCloudAmbient':(.6,1,0,2,.05),
+    }
+    for name,(initial,*_) in sliders.items():
         setting(name,initial)
     send('LLFloaterReg',dict(op='showInstance',name='preferences',focus=True))
     request('LLFloaterReg','clickButton',name='preferences',button='vtab_display')
     request('LLFloaterReg','clickButton',name='preferences',button='htab_graphics_clouds_panel')
-    for name,(initial,default) in sliders.items():
+    key(page+'CloudScroll','HOME')
+    for name,(initial,default,minimum,maximum,step) in sliders.items():
         info=request('LLWindow','getInfo',path=base+name)
         assert info['visible'] and info['enabled'],info
         key(base+name+'/slider_bar','RIGHT')
-        assert abs(get_setting(name)-(initial+.05))<.001
-        setting(name,0)
+        assert abs(get_setting(name)-(initial+step))<.001
+        setting(name,minimum)
         key(base+name+'/slider_bar','LEFT')
-        assert get_setting(name)==0
-        setting(name,2)
+        assert abs(get_setting(name)-minimum)<.001
+        setting(name,maximum)
         key(base+name+'/slider_bar','RIGHT')
-        assert get_setting(name)==2
+        assert abs(get_setting(name)-maximum)<.001
     key(base+'RenderVolumeClouds/CheckboxCtrl Button',' ')
     assert not get_setting('RenderVolumeClouds')
     for name in sliders:
@@ -111,19 +121,22 @@ try:
     for name in sliders:
         assert request('LLWindow','getInfo',path=base+name)['enabled']
     request('LLFloaterReg','clickButton',name='preferences',button='CloudDefaults')
-    for name,(initial,default) in sliders.items():
+    for name,(initial,default,*_) in sliders.items():
         assert abs(get_setting(name)-default)<.001
     request('LLFloaterReg','clickButton',name='preferences',button='Cancel')
-    for name,(initial,default) in sliders.items():
+    for name,(initial,*_) in sliders.items():
         assert abs(get_setting(name)-initial)<.001
     assert get_setting('RenderVolumeClouds')
     send('LLFloaterReg',dict(op='showInstance',name='preferences',focus=True))
     request('LLFloaterReg','clickButton',name='preferences',button='htab_graphics_clouds_panel')
+    key(page+'CloudScroll','HOME')
     time.sleep(.3)
     dismiss_startup_notices()
     assert request('LLViewerWindow','saveSnapshot',filename=str(ROOT/'tmp/cloud-preferences.png'),showui=True,showhud=False)['ok']
+    key(page+'CloudScroll','END')
+    assert request('LLViewerWindow','saveSnapshot',filename=str(ROOT/'tmp/cloud-preferences-footer.png'),showui=True,showhud=False)['ok']
     request('LLFloaterReg','clickButton',name='preferences',button='Cancel')
-    log.write(json.dumps(dict(result='PASS: Density and Sunlight sliders, steps and endpoints, enable dependencies, Default and Cancel'))+'\n')
+    log.write(json.dumps(dict(result='PASS: Density and five lighting sliders, steps and endpoints, enable dependencies, Default and Cancel'))+'\n')
 finally:
     log.close()
     send('LLAppViewer',dict(op='requestQuit'))

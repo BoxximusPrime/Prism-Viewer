@@ -62,6 +62,8 @@ void mirrorClip(vec3 pos);
 bool isSSSOverlay(vec3 positionEye);
 #endif
 
+vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
+
 void main()
 {
     mirrorClip(vary_position);
@@ -109,6 +111,9 @@ void main()
 #endif
 
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
+#if defined(IS_ALPHA) && !defined(IS_HUD)
+    color = applyVolumeFogAlpha(pos, color);
+#endif
 // frag_color = max(color, vec4(0));
 #ifdef EXACT_OIT
     color = max(color, vec4(0));

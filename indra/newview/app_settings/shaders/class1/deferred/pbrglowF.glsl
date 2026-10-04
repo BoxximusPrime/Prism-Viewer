@@ -35,6 +35,7 @@ uniform sampler2D emissiveMap;
 out vec4 frag_color;
 
 in vec3 vary_position;
+float volumeFogAlphaTransmission(vec3 position);
 in vec4 vertex_emissive;
 
 in vec2 base_color_texcoord;
@@ -59,9 +60,9 @@ void main()
 
     float lum = max(max(emissive.r, emissive.g), emissive.b);
     lum *= vertex_emissive.a;
+    lum *= volumeFogAlphaTransmission(vary_position);
 
     // HUDs are rendered after gamma correction, output in sRGB space
     frag_color.rgb = vec3(0);
     frag_color.a = lum;
 }
-

@@ -192,6 +192,8 @@ vec3 calcPointLightOrSpotLight(int light_index, vec3 light_col, vec3 diffuse, ve
     return col;
 }
 
+vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
+
 void main()
 {
     mirrorClip(vary_position);
@@ -347,6 +349,9 @@ void main()
 #endif
 
     color.rgb *= final_scale;
+#if !defined(IS_HUD) && !defined(FOR_IMPOSTOR)
+    color = applyVolumeFogAlpha(pos.xyz, color);
+#endif
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(color, vec4(0));
 #ifdef EXACT_OIT

@@ -30,8 +30,22 @@ void main()
         float weights = 0.0;
         // Reject samples across depth discontinuities. A thin foreground object
         // with no matching low-resolution sample stays clear rather than taking
-        // the much longer fog path behind it. High/Ultra avoid this spatial loss.
+        // the much longer fog path behind it. Full resolution avoids this loss.
         float tolerance = max(0.05, depth * 0.02);
+        // A receding ground plane can change by more than 2% per pixel.
+        // Allow its local slope, or reduced-resolution fog alternates with clear
+        // rows near the horizon. Opposite signs require a monotonic slope;
+        // a thin foreground silhouette has two deeper neighbours and gets no
+        // extra tolerance. The smaller side bounds tolerance at discontinuities.
+        for (int axis = 0; axis < 2; ++axis)
+        {
+            ivec2 offset = axis == 0 ? ivec2(1,0) : ivec2(0,1);
+            float before = viewDepth(texelFetch(depthMap, clamp(pixel-offset, ivec2(0), source_size-1), 0).r)-depth;
+            float after = viewDepth(texelFetch(depthMap, clamp(pixel+offset, ivec2(0), source_size-1), 0).r)-depth;
+            if (before*after < 0.0)
+                tolerance = max(tolerance, (1.0 + max(float(source_size.x)/float(fog_size.x),
+                    float(source_size.y)/float(fog_size.y))) * min(abs(before), abs(after)));
+        }
         for (int y = 0; y < 2; ++y) for (int x = 0; x < 2; ++x)
         {
             ivec2 tap = clamp(base + ivec2(x,y), ivec2(0), fog_size - 1);

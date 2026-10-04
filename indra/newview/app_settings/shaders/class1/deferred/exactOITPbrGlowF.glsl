@@ -6,6 +6,8 @@ uniform vec3 emissiveColor;
 uniform sampler2D emissiveMap;
 uniform float minimum_alpha;
 in vec4 vertex_emissive;
+in vec3 vary_position;
+float volumeFogAlphaTransmission(vec3 position);
 in vec2 base_color_texcoord;
 in vec2 emissive_texcoord;
 vec3 srgb_to_linear(vec3 c);
@@ -41,6 +43,6 @@ void main()
     vec4 basecolor = texture(diffuseMap, base_color_texcoord);
     if (basecolor.a < minimum_alpha) discard;
     vec3 emissive = emissiveColor * srgb_to_linear(texture(emissiveMap, emissive_texcoord).rgb);
-    exact_oit_store_glow(max(max(emissive.r, emissive.g), emissive.b) * vertex_emissive.a);
+    exact_oit_store_glow(max(max(emissive.r, emissive.g), emissive.b) * vertex_emissive.a * volumeFogAlphaTransmission(vary_position));
 }
 // </AS:Chanayane>

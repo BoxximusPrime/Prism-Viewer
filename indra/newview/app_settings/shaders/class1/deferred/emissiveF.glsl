@@ -29,11 +29,13 @@ out vec4 frag_color;
 
 in vec4 vertex_color;
 in vec2 vary_texcoord0;
+in vec3 vary_position;
+float volumeFogAlphaTransmission(vec3 position);
 
 void main()
 {
     // NOTE: when this shader is used, only alpha is being written to
     float a = diffuseLookup(vary_texcoord0.xy).a*vertex_color.a;
+    a *= volumeFogAlphaTransmission(vary_position);
     frag_color = max(vec4(0, 0, 0, a), vec4(0));
 }
-

@@ -84,8 +84,10 @@ for notice in request('LLNotifications', 'listChannelNotifications', channel='Al
     if notice.get('name') == 'FoundLegacyNsisInstallation':
         send('LLNotifications', dict(op='cancel', uuid=notice['id']))
 defaults = dict(RenderVolumeFog=True, RenderVolumeFogIntensity=1., RenderVolumeFogQuality=1,
-                RenderVolumeFogLightCount=8, RenderVolumeFogShadows=True, RenderVolumeFogLightStrength=1.)
+                RenderVolumeFogLightCount=8, RenderVolumeFogShadows=True,
+                RenderVolumeFogLightStrength=.1, RenderVolumeFogLightCap=.1, RenderVolumeFogLightSaturation=1.)
 for name, value in defaults.items(): setting(name, value)
+setting('RenderGroundFog',False)
 setting('RenderVolumeFogSteps',0)
 send('LLFloaterReg', dict(op='showInstance', name='preferences', focus=True))
 request('LLFloaterReg', 'clickButton', name='preferences', button='vtab_display')
@@ -116,14 +118,34 @@ for level in range(4):
 key(base+'RenderVolumeFogIntensity/slider_bar', 'RIGHT')
 assert abs(get_setting('RenderVolumeFogIntensity')-1.05) < .001
 key(base+'RenderVolumeFogLightStrength/slider_bar', 'RIGHT')
-assert abs(get_setting('RenderVolumeFogLightStrength')-1.25) < .001
+assert abs(get_setting('RenderVolumeFogLightStrength')-.101) < .0001
+setting('RenderVolumeFogLightStrength',0.)
+key(base+'RenderVolumeFogLightStrength/slider_bar', 'LEFT')
+assert get_setting('RenderVolumeFogLightStrength') == 0.
+key(base+'RenderVolumeFogLightStrength/slider_bar', 'RIGHT')
+assert abs(get_setting('RenderVolumeFogLightStrength')-.001) < .0001
+setting('RenderVolumeFogLightStrength',.3)
+key(base+'RenderVolumeFogLightStrength/slider_bar', 'RIGHT')
+assert abs(get_setting('RenderVolumeFogLightStrength')-.3) < .001
+key(base+'RenderVolumeFogLightCap/slider_bar', 'LEFT')
+assert abs(get_setting('RenderVolumeFogLightCap')-.099) < .0001
+for limit,direction in ((0.,'LEFT'), (.1,'RIGHT')):
+    setting('RenderVolumeFogLightCap',limit)
+    key(base+'RenderVolumeFogLightCap/slider_bar',direction)
+    assert abs(get_setting('RenderVolumeFogLightCap')-limit) < .001
+assert abs(get_setting('RenderVolumeFogLightStrength')-.3) < .001
 assert abs(get_setting('RenderVolumeFogIntensity')-1.05) < .001
 key(base+'RenderVolumeFogLightCount/slider_bar', 'LEFT')
 assert get_setting('RenderVolumeFogLightCount') == 7
 click('RenderVolumeFogShadows')
 assert not get_setting('RenderVolumeFogShadows')
+request('LLFloaterReg', 'clickButton', name='preferences', button='VolumeFogDefaults')
+assert abs(get_setting('RenderVolumeFogLightStrength')-.1) < .001
+assert abs(get_setting('RenderVolumeFogLightCap')-.1) < .0001
+setting('RenderVolumeFogLightStrength',.07)
+setting('RenderVolumeFogLightCap',.012)
 request('LLFloaterReg', 'clickButton', name='preferences', button='Cancel')
-for name, value in defaults.items(): assert get_setting(name) == value, name
-log.write(json.dumps(dict(result='PASS: fog tab, six live controls, four quality levels, independent light effect/density, enable dependencies and Cancel restore'))+'\n')
+for name, value in defaults.items(): assert abs(float(get_setting(name))-float(value)) < .0001, name
+log.write(json.dumps(dict(result='PASS: fog tab, eight live controls, four quality levels, light effect/cap increments and endpoints, independent density, enable dependencies, Default and Cancel restore'))+'\n')
 log.close()
 send('LLAppViewer', dict(op='requestQuit'))

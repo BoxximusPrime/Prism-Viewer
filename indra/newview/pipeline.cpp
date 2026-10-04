@@ -1376,6 +1376,9 @@ void LLPipeline::releaseGLBuffers()
 
     mSceneMap.release();
     mVolumeFog.release();
+    mVolumeFogAlphaReady = false;
+    mVolumeFogVolumes.clear();
+    mVolumeFogResolved.release();
     mVolumeFogComposite.release();
     mVolumeClouds.release();
     mVolumeCloudsComposite.release();
@@ -4233,6 +4236,14 @@ U32 LLPipeline::sCurRenderPoolType = 0 ;
 
 void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
 {
+    if (mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender && !sRenderingHUDs)
+        mVolumeFogAlphaReady = false;
+    // Allocate before any atmospheric uniforms are bound. If allocation fails,
+    // useGroundFog() leaves the normal haze active for this frame.
+    if (gSavedSettings.getBOOL("RenderGroundFog") && !gCubeSnapshot && !sReflectionRender &&
+        !sImpostorRender && !sRenderingHUDs && !sUnderWaterRender && mRT == &mMainRT)
+        prepareVolumeFog(!gSavedSettings.getBOOL("RenderVolumeFog") ||
+            gSavedSettings.getF32("RenderVolumeFogIntensity") <= 0.f || LLVolumeFog::collect().empty());
     mVolumeCloudsActive = false;
     mWaterLightingReady = false;
     if (!gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
@@ -4399,6 +4410,7 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
     bool done_water_haze = done_atmospherics;
     bool done_water_exclusion = mWaterLightingReady;
     bool done_taa_opaque = false;
+    bool done_volume_fog = false;
 
     // do water exclusion just before water pass.
     U32 water_exclusion_pass = LLDrawPool::POOL_WATEREXCLUSION;
@@ -4456,6 +4468,20 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
         { // do water haze against depth buffer before rendering alpha
             doWaterHaze();
             done_water_haze = true;
+        }
+
+        if (cur_type >= LLDrawPool::POOL_ALPHA_POST_WATER && !done_volume_fog)
+        {
+            // Water/refraction and below-water alpha keep their existing order.
+            // Above-water blended surfaces then fog themselves at their own depth.
+            if (useGroundFog())
+            {
+                mRT->screen.flush();
+                renderVolumeFog();
+                mRT->screen.bindTarget();
+                gGL.setColorMask(true, false);
+            }
+            done_volume_fog = true;
         }
 
         if (cur_type >= LLDrawPool::POOL_ALPHA_PRE_WATER && !done_taa_opaque)
@@ -4518,6 +4544,14 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
     {
         renderVolumeClouds();
         captureTAAOpaque();
+    }
+
+    if (!done_volume_fog && useGroundFog())
+    {
+        mRT->screen.flush();
+        renderVolumeFog();
+        mRT->screen.bindTarget();
+        gGL.setColorMask(true, false);
     }
 
     gGLLastMatrix = NULL;
@@ -9176,6 +9210,7 @@ void LLPipeline::bindDeferredShaderFast(LLGLSLShader& shader)
     { // was previously fully bound, use fast path
         shader.bind();
         bindWaterLighting(shader);
+        bindVolumeFogAlpha(shader);
         bindSSSOverlay(shader);
         bindLightFunc(shader);
         bindShadowMaps(shader);
@@ -9199,6 +9234,7 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     shader.bind();
     bindSSSOverlay(shader);
     bindWaterLighting(shader);
+    bindVolumeFogAlpha(shader);
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<S32> sss_mode(gSavedSettings, "BoxxySSSMode", 2);
     static LLCachedControl<F32> sss_strength(gSavedSettings, "BoxxySSSStrength", 1.0f);
@@ -10669,10 +10705,14 @@ void LLPipeline::renderVolumeClouds()
     const F32 strength = gSavedSettings.getF32(gSavedSettings.getBOOL("RenderHDREnabled") ? "RenderHDRSkySunlightScale" : "RenderSkySunlightScale") * sunlight_scale;
     shader.uniform3f(LLStaticHashedString("vc_sun_color"), linear(light.mV[0])*strength,
         linear(light.mV[1])*strength, linear(light.mV[2])*strength);
+    // Adjust lighting optical depth independently from view-ray extinction.
+    shader.uniform1f(LLStaticHashedString("vc_light_absorption"), 1.f/llclamp(gSavedSettings.getF32("RenderVolumeCloudLightPenetration"), 0.1f, 4.f));
+    shader.uniform1f(LLStaticHashedString("vc_edge_glow"), llclamp(gSavedSettings.getF32("RenderVolumeCloudEdgeGlow"), 0.f, 2.f));
+    shader.uniform1f(LLStaticHashedString("vc_internal_light"), llclamp(gSavedSettings.getF32("RenderVolumeCloudInternalLight"), 0.f, 2.f));
     const LLColor4 ambient = sky->getTotalAmbient();
     // Reduce the uniform night fill without dimming directional moonlight.
     const F32 daylight = llclamp((environment.getSunDirection().mV[2]+0.1f)/0.2f, 0.f, 1.f);
-    const F32 ambient_scale = 0.3f+0.7f*daylight*daylight*(3.f-2.f*daylight);
+    const F32 ambient_scale = (0.3f+0.7f*daylight*daylight*(3.f-2.f*daylight))*llclamp(gSavedSettings.getF32("RenderVolumeCloudAmbient"), 0.f, 2.f);
     shader.uniform3f(LLStaticHashedString("vc_ambient"), linear(ambient.mV[0])*ambient_scale,
         linear(ambient.mV[1])*ambient_scale, linear(ambient.mV[2])*ambient_scale);
     const LLColor3 tint = sky->getCloudColor();
@@ -10715,50 +10755,88 @@ void LLPipeline::renderVolumeClouds()
     gGL.setColorMask(true, false);
 }
 
-void LLPipeline::renderVolumeFog()
+bool LLPipeline::useGroundFog() const
 {
-    static LLCachedControl<bool> enabled(gSavedSettings, "RenderVolumeFog", true);
-    static LLCachedControl<F32> intensity(gSavedSettings, "RenderVolumeFogIntensity", 1.f);
-    static LLCachedControl<S32> quality(gSavedSettings, "RenderVolumeFogQuality", 1);
-    if (gCubeSnapshot || sImpostorRender || sRenderingHUDs || mRT != &mMainRT) return;
-    if (!enabled || intensity <= 0.f || !gVolumeFogProgram.isComplete() || !gVolumeFogCompositeProgram.isComplete())
-    {
-        mVolumeFog.release();
-        mVolumeFogComposite.release();
-        return;
-    }
-    const auto volumes = LLVolumeFog::collect();
-    if (volumes.empty())
-    {
-        mVolumeFog.release();
-        mVolumeFogComposite.release();
-        return;
-    }
-    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
-    LL_PROFILE_GPU_ZONE("volume fog");
+    return gSavedSettings.getBOOL("RenderGroundFog") && !gCubeSnapshot && !sReflectionRender &&
+        !sImpostorRender && !sRenderingHUDs && !sUnderWaterRender && mRT == &mMainRT &&
+        gVolumeFogProgram.isComplete() && gVolumeFogCompositeProgram.isComplete() &&
+        mVolumeFog.isComplete() && mVolumeFogComposite.isComplete() &&
+        mVolumeFogComposite.getWidth() == mRT->screen.getWidth() &&
+        mVolumeFogComposite.getHeight() == mRT->screen.getHeight() &&
+        ((mVolumeFog.getWidth() == mRT->screen.getWidth() && mVolumeFog.getHeight() == mRT->screen.getHeight()) ||
+         (mVolumeFogResolved.isComplete() && mVolumeFogResolved.getWidth() == mRT->screen.getWidth() &&
+          mVolumeFogResolved.getHeight() == mRT->screen.getHeight()));
+}
+
+bool LLPipeline::prepareVolumeFog(bool ground_only)
+{
+    if (!gVolumeFogProgram.isComplete() || !gVolumeFogCompositeProgram.isComplete()) return false;
     const U32 width = mRT->screen.getWidth(), height = mRT->screen.getHeight();
-    const U32 divisor = quality < 2 ? 2 : 1;
+    if (!width || !height) return false;
+    const S32 quality = gSavedSettings.getS32("RenderVolumeFogQuality");
+    // Broad ground fog needs fewer pixels than small authored boxes and beams.
+    // Preserve the original resolution whenever boxes are present.
+    const U32 divisor = ground_only ? (quality < 2 ? 4 : quality == 2 ? 2 : 1) : (quality < 2 ? 2 : 1);
     const U32 fog_width = (width + divisor - 1) / divisor, fog_height = (height + divisor - 1) / divisor;
     if (!mVolumeFog.isComplete() || mVolumeFog.getWidth() != fog_width || mVolumeFog.getHeight() != fog_height)
     {
         if (!mVolumeFog.allocate(fog_width, fog_height, GL_RGBA16F))
         {
             LL_WARNS_ONCE("VolumeFog") << "Unable to allocate volume fog target." << LL_ENDL;
-            return;
+            return false;
         }
     }
+    if (fog_width != width || fog_height != height)
+    {
+        if (!mVolumeFogResolved.isComplete() || mVolumeFogResolved.getWidth() != width || mVolumeFogResolved.getHeight() != height)
+        {
+            if (!mVolumeFogResolved.allocate(width, height, GL_RGBA16F))
+            {
+                LL_WARNS_ONCE("VolumeFog") << "Unable to allocate volume fog resolve target." << LL_ENDL;
+                return false;
+            }
+        }
+    }
+    else mVolumeFogResolved.release();
     if (!mVolumeFogComposite.isComplete() || mVolumeFogComposite.getWidth() != width || mVolumeFogComposite.getHeight() != height)
     {
         if (!mVolumeFogComposite.allocate(width, height, GL_RGBA16F))
         {
             LL_WARNS_ONCE("VolumeFog") << "Unable to allocate volume fog composite target." << LL_ENDL;
-            return;
+            return false;
         }
     }
 
+    return true;
+}
+
+void LLPipeline::bindVolumeFogAlpha(LLGLSLShader& shader)
+{
+    static const LLStaticHashedString enabled("vf_alpha_enabled");
+    if (shader.getUniformLocation(enabled) < 0) return;
+    const bool active = mVolumeFogAlphaReady && useGroundFog();
+    shader.uniform1i(enabled, active);
+    shader.uniform1i(LLStaticHashedString("vf_alpha_scatter"), 1);
+    const S32 channel = shader.enableTexture(LLShaderMgr::VOLUME_FOG_MAP);
+    if (channel >= 0)
+    {
+        LLRenderTarget* fog = mVolumeFogResolved.isComplete() ? &mVolumeFogResolved : &mVolumeFog;
+        if (active) shader.bindTexture(LLShaderMgr::VOLUME_FOG_MAP, fog, false, LLTexUnit::TFO_POINT);
+        else gGL.getTexUnit(channel)->bind(LLViewerFetchedTexture::sWhiteImagep);
+    }
+    if (active) bindVolumeFogMedia(shader, mVolumeFogVolumes, true);
+}
+
+void LLPipeline::bindVolumeFogMedia(LLGLSLShader& shader, const std::vector<LLVolumeFog::Volume>& volumes, bool ground)
+{
+    const bool follow_environment = ground && gSavedSettings.getBOOL("RenderGroundFogFollowEnvironment");
+    const F32 intensity = gSavedSettings.getF32("RenderVolumeFogIntensity");
+    shader.uniform1i(LLStaticHashedString("vf_ground_environment"), follow_environment);
+    shader.uniform1f(LLStaticHashedString("vf_environment_distance_multiplier"),
+        follow_environment ? LLEnvironment::instance().getCurrentSky()->getDistanceMultiplier() : 0.f);
     glm::vec4 axes_x[LLVolumeFog::MAX_VOLUMES], axes_y[LLVolumeFog::MAX_VOLUMES], axes_z[LLVolumeFog::MAX_VOLUMES];
     glm::vec4 half_density[LLVolumeFog::MAX_VOLUMES], color_softness[LLVolumeFog::MAX_VOLUMES];
-    const glm::mat4 view = get_current_modelview();
+    const glm::mat4 view = glm::make_mat4(gGLModelView);
     for (S32 i = 0; i < S32(volumes.size()); ++i)
     {
         const auto& volume = volumes[i];
@@ -10783,34 +10861,135 @@ void LLPipeline::renderVolumeFog()
         color_softness[i] = glm::vec4(linear(color[0]), linear(color[1]), linear(color[2]), softness);
     }
 
+    shader.uniform1f(LLStaticHashedString("vf_intensity"), llclamp(F32(intensity), 0.f, 2.f));
+    const S32 count = S32(volumes.size());
+    shader.uniform1i(LLStaticHashedString("vf_count"), count);
+    shader.uniform1f(LLStaticHashedString("vf_far"), LLViewerCamera::instance().getFar());
+    shader.uniform1f(LLStaticHashedString("vf_ground_density"), ground ?
+        (follow_environment ? llclamp(gSavedSettings.getF32("RenderGroundFogStrength"), 0.f, 4.f) :
+        llclamp(gSavedSettings.getF32("RenderGroundFogDensity"), 0.f, 0.2f)) : 0.f);
+    if (ground)
+    {
+        const glm::mat4 inverse_view = glm::inverse(view);
+        const LLVector3d camera = gAgent.getPosGlobalFromAgent(LLVector3(inverse_view[3].x, inverse_view[3].y, inverse_view[3].z));
+        const F32 scale = llclamp(gSavedSettings.getF32("RenderGroundFogNoiseScale"), 5.f, 200.f);
+        // Periodic noise in global coordinates stays fixed through region rebases.
+        const F64 drift = LLFrameTimer::getElapsedSeconds() * llclamp(gSavedSettings.getF32("RenderGroundFogSpeed"), 0.f, 5.f);
+        shader.uniformMatrix4fv(LLStaticHashedString("vf_ground_inverse_view"), 1, false, glm::value_ptr(inverse_view));
+        shader.uniform3f(LLStaticHashedString("vf_ground_camera"), F32(fmod((camera.mdV[0] - drift) / scale, 128.0)),
+            F32(fmod((camera.mdV[1] - drift * 0.37) / scale, 128.0)), F32(camera.mdV[2]));
+        shader.uniform4f(LLStaticHashedString("vf_ground_layer"),
+            llclamp(gSavedSettings.getF32("RenderGroundFogAltitude"), -500.f, 10000.f),
+            llclamp(gSavedSettings.getF32("RenderGroundFogHeight"), 1.f, 200.f),
+            LLEnvironment::instance().getWaterHeight(),
+            llclamp(gSavedSettings.getF32("RenderGroundFogDistance"), 16.f, 1024.f));
+        shader.uniform2f(LLStaticHashedString("vf_ground_fade"),
+            llclamp(gSavedSettings.getF32("RenderGroundFogStartDistance"), 0.f, 1024.f),
+            llclamp(gSavedSettings.getF32("RenderGroundFogFadeIn"), 0.f, 1024.f));
+        shader.uniform2f(LLStaticHashedString("vf_ground_noise"),
+            llclamp(gSavedSettings.getF32("RenderGroundFogNoise"), 0.f, 1.f), scale);
+        const LLColor4 tint = follow_environment ? LLColor4::white : gSavedSettings.getColor4("RenderGroundFogColor");
+        auto linear = [](F32 c) { c = llclamp(c, 0.f, 1.f); return c <= 0.04045f ? c / 12.92f : powf((c + 0.055f) / 1.055f, 2.4f); };
+        const F32 brightness = llclamp(gSavedSettings.getF32("RenderGroundFogBrightness"), 0.f, 3.f);
+        shader.uniform3f(LLStaticHashedString("vf_ground_color"), linear(tint.mV[0])*brightness,
+            linear(tint.mV[1])*brightness, linear(tint.mV[2])*brightness);
+    }
+    if (count)
+    {
+        shader.uniform4fv(LLStaticHashedString("vf_axis_x"), count, glm::value_ptr(axes_x[0]));
+        shader.uniform4fv(LLStaticHashedString("vf_axis_y"), count, glm::value_ptr(axes_y[0]));
+        shader.uniform4fv(LLStaticHashedString("vf_axis_z"), count, glm::value_ptr(axes_z[0]));
+        shader.uniform4fv(LLStaticHashedString("vf_half_density"), count, glm::value_ptr(half_density[0]));
+        shader.uniform4fv(LLStaticHashedString("vf_color_softness"), count, glm::value_ptr(color_softness[0]));
+    }
+}
+
+void LLPipeline::renderVolumeFog()
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "RenderVolumeFog", true);
+    static LLCachedControl<F32> intensity(gSavedSettings, "RenderVolumeFogIntensity", 1.f);
+    if (gCubeSnapshot || sReflectionRender || sImpostorRender || sRenderingHUDs || mRT != &mMainRT) return;
+    if (mVolumeFogAlphaReady) return; // already composited before blended geometry
+    const bool ground = useGroundFog();
+    const auto volumes = enabled && intensity > 0.f ? LLVolumeFog::collect() : std::vector<LLVolumeFog::Volume>();
+    mVolumeFogVolumes = volumes;
+    if (volumes.empty() && !ground)
+    {
+        mVolumeFog.release();
+        mVolumeFogResolved.release();
+        mVolumeFogComposite.release();
+        return;
+    }
+    if (!prepareVolumeFog(ground && volumes.empty())) return;
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
+    LL_PROFILE_GPU_ZONE("volume fog");
+    // The preceding water/object draw may have left a model transform active.
+    gGLLastMatrix = nullptr;
+    gGL.matrixMode(LLRender::MM_MODELVIEW);
+    gGL.loadMatrix(gGLModelView);
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
     LLGLDisable blend(GL_BLEND);
     LLGLDisable cull(GL_CULL_FACE);
     gGL.setColorMask(true, true);
-    // Integrate only the medium at the requested resolution. Both this target
-    // and the composite are color-only: the scene's shared depth attachment
+    // Integrate only the medium at the requested resolution. All fog targets
+    // are color-only: the scene's shared depth attachment
     // must never be sampled while its framebuffer is bound for drawing.
     mVolumeFog.bindTarget();
     static LLCachedControl<bool> lighting(gSavedSettings, "RenderVolumeFogLighting", true);
     const bool lit = lighting && gVolumeFogLitProgram.isComplete();
     auto& shader = lit ? gVolumeFogLitProgram : gVolumeFogProgram;
     shader.bind();
+    shader.uniform1i(LLStaticHashedString("vf_reconstruct"), 0);
+    // Keep the reconstruction sampler complete during the initial integration.
+    S32 fog_channel = shader.enableTexture(LLShaderMgr::DIFFUSE_MAP);
+    gGL.getTexUnit(fog_channel)->bind(LLViewerFetchedTexture::sWhiteImagep);
+    const bool follow_environment = ground && gSavedSettings.getBOOL("RenderGroundFogFollowEnvironment");
+    shader.uniform1i(LLStaticHashedString("vf_ground_environment"), follow_environment);
+    if (follow_environment)
+    {
+        // Use the resolved, interpolated environment, including personal/parcel
+        // overrides and legacy sky adjustment. This shader supplies the haze,
+        // so restore its distance multiplier after the surface-haze bypass.
+        auto& environment = LLEnvironment::instance();
+        environment.updateShaderUniforms(&shader);
+        shader.uniform1f(LLShaderMgr::DISTANCE_MULTIPLIER, environment.getCurrentSky()->getDistanceMultiplier());
+        // These lighting uniforms normally come from bindDeferredShader(),
+        // which this pass avoids because it manages its own texture bindings.
+        static LLCachedControl<bool> auto_adjust(gSavedSettings, "RenderSkyAutoAdjustLegacy", false);
+        static LLCachedControl<F32> sun_scale(gSavedSettings, "RenderSkyAutoAdjustSunColorScale", 1.f);
+        LLColor3 sun_diffuse(mSunDiffuse.mV);
+        if (auto_adjust && environment.getCurrentSky()->canAutoAdjust()) sun_diffuse *= sun_scale;
+        shader.uniform3fv(LLShaderMgr::SUNLIGHT_COLOR, 1, sun_diffuse.mV);
+        shader.uniform3fv(LLShaderMgr::MOONLIGHT_COLOR, 1, mMoonDiffuse.mV);
+        shader.uniform3fv(LLStaticHashedString("vf_environment_light_direction"), 1,
+            environment.getIsSunUp() ? mTransformedSunDir.mV : mTransformedMoonDir.mV);
+    }
     shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
     const glm::mat4 inverse_projection = glm::inverse(get_current_projection());
     shader.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
-    shader.uniform2f(LLStaticHashedString("vf_target_size"), F32(fog_width), F32(fog_height));
-    shader.uniform1f(LLStaticHashedString("vf_intensity"), llclamp(F32(intensity), 0.f, 2.f));
-    const S32 count = S32(volumes.size());
-    shader.uniform1i(LLStaticHashedString("vf_count"), count);
-    shader.uniform1f(LLStaticHashedString("vf_far"), LLViewerCamera::instance().getFar());
-    shader.uniform4fv(LLStaticHashedString("vf_axis_x"), count, glm::value_ptr(axes_x[0]));
-    shader.uniform4fv(LLStaticHashedString("vf_axis_y"), count, glm::value_ptr(axes_y[0]));
-    shader.uniform4fv(LLStaticHashedString("vf_axis_z"), count, glm::value_ptr(axes_z[0]));
-    shader.uniform4fv(LLStaticHashedString("vf_half_density"), count, glm::value_ptr(half_density[0]));
-    shader.uniform4fv(LLStaticHashedString("vf_color_softness"), count, glm::value_ptr(color_softness[0]));
+    shader.uniform2f(LLStaticHashedString("vf_target_size"), F32(mVolumeFog.getWidth()), F32(mVolumeFog.getHeight()));
+    bindVolumeFogMedia(shader, volumes, ground);
     if (lit) bindVolumeFogLighting(shader, volumes);
     mScreenTriangleVB->setBuffer();
     mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+    mVolumeFog.flush();
+    LLRenderTarget* resolved_fog = &mVolumeFog;
+    if (mVolumeFog.getWidth() != mRT->screen.getWidth() || mVolumeFog.getHeight() != mRT->screen.getHeight())
+    {
+        // Most pixels reuse the low-resolution fog. Depth boundaries without
+        // support (including thin leaves and gaps against the sky) get their
+        // own ray integration, with the same lights and density. Resolve once
+        // so the scene and TAA's opaque comparison receive identical fog.
+        mVolumeFogResolved.bindTarget();
+        shader.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mVolumeFog, false, LLTexUnit::TFO_POINT);
+        shader.uniform1i(LLStaticHashedString("vf_reconstruct"), 1);
+        shader.uniform2f(LLStaticHashedString("vf_target_size"), F32(mVolumeFogResolved.getWidth()), F32(mVolumeFogResolved.getHeight()));
+        mScreenTriangleVB->setBuffer();
+        mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+        mVolumeFogResolved.flush();
+        resolved_fog = &mVolumeFogResolved;
+    }
+    shader.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
     shader.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
     if (lit)
     {
@@ -10818,7 +10997,6 @@ void LLPipeline::renderVolumeFog()
         for (S32 i = 0; i < LLVolumeFog::MAX_PROJECTORS; ++i) shader.unbindTexture(LLShaderMgr::ALPHA_PROJECTION0 + i);
     }
     shader.unbind();
-    mVolumeFog.flush();
 
     auto composite_fog = [&](LLRenderTarget& scene, LLRenderTarget& target)
     {
@@ -10827,7 +11005,7 @@ void LLPipeline::renderVolumeFog()
         composite.bind();
         composite.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, &scene, false, LLTexUnit::TFO_POINT);
         composite.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
-        composite.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mVolumeFog, false, LLTexUnit::TFO_POINT);
+        composite.bindTexture(LLShaderMgr::DIFFUSE_MAP, resolved_fog, false, LLTexUnit::TFO_POINT);
         composite.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
         mScreenTriangleVB->setBuffer();
         mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
@@ -10854,6 +11032,7 @@ void LLPipeline::renderVolumeFog()
     gCopyProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
     gCopyProgram.unbind();
     mRT->screen.flush();
+    mVolumeFogAlphaReady = ground;
 }
 
 void LLPipeline::doAtmospherics()
@@ -11116,7 +11295,9 @@ void LLPipeline::bindVolumeFogLighting(LLGLSLShader& shader, const std::vector<L
     static LLCachedControl<S32> light_count(gSavedSettings, "RenderVolumeFogLightCount", 8);
     static LLCachedControl<S32> local_light_count(gSavedSettings, "RenderLocalLightCount", 256);
     static LLCachedControl<F32> ambient_floor(gSavedSettings, "RenderVolumeFogAmbient", 0.15f);
-    static LLCachedControl<F32> strength(gSavedSettings, "RenderVolumeFogLightStrength", 1.f);
+    static LLCachedControl<F32> strength(gSavedSettings, "RenderVolumeFogLightStrength", 0.1f);
+    static LLCachedControl<F32> light_cap(gSavedSettings, "RenderVolumeFogLightCap", 0.1f);
+    static LLCachedControl<F32> light_saturation(gSavedSettings, "RenderVolumeFogLightSaturation", 1.f);
     static LLCachedControl<F32> anisotropy(gSavedSettings, "RenderVolumeFogAnisotropy", 0.2f);
     const glm::mat4 view = get_current_modelview();
     auto view_position = [&](const LLVector3& p)
@@ -11144,7 +11325,9 @@ void LLPipeline::bindVolumeFogLighting(LLGLSLShader& shader, const std::vector<L
     const F32 base = llclamp(F32(ambient_floor), 0.f, 2.f);
     shader.uniform3f(LLStaticHashedString("vf_ambient"), base + 0.25f * linear(ambient.mV[0]),
         base + 0.25f * linear(ambient.mV[1]), base + 0.25f * linear(ambient.mV[2]));
-    shader.uniform1f(LLStaticHashedString("vf_light_strength"), llclamp(F32(strength), 0.f, 8.f));
+    shader.uniform1f(LLStaticHashedString("vf_light_strength"), llclamp(F32(strength), 0.f, 0.3f));
+    shader.uniform1f(LLStaticHashedString("vf_light_cap"), llclamp(F32(light_cap), 0.f, 0.1f));
+    shader.uniform1f(LLStaticHashedString("vf_light_saturation"), llclamp(F32(light_saturation), 0.f, 4.f));
     shader.uniform1f(LLStaticHashedString("vf_anisotropy"), llclamp(F32(anisotropy), -0.8f, 0.8f));
     const S32 level = llclamp(S32(quality), 0, 3);
     const S32 quality_steps[] = { 16, 24, 32, 64 };
@@ -11197,6 +11380,13 @@ void LLPipeline::bindVolumeFogLighting(LLGLSLShader& shader, const std::vector<L
         const LLVector3 position = drawable->getPositionAgent();
         if (!position.isFinite()) continue;
         F32 distance = F32_MAX;
+        if (useGroundFog() && (gSavedSettings.getBOOL("RenderGroundFogFollowEnvironment") ?
+            gSavedSettings.getF32("RenderGroundFogStrength") : gSavedSettings.getF32("RenderGroundFogDensity")) > 0.f)
+        {
+            const F32 top = llclamp(gSavedSettings.getF32("RenderGroundFogAltitude"), -500.f, 10000.f) +
+                6.f * llclamp(gSavedSettings.getF32("RenderGroundFogHeight"), 1.f, 200.f);
+            distance = llmax(0.f, llmax(LLEnvironment::instance().getWaterHeight() - position.mV[2], position.mV[2] - top));
+        }
         for (const auto& volume : volumes)
         {
             LLVector3 local = (position - volume.center) * ~volume.rotation;
@@ -11708,6 +11898,7 @@ void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
 
     stop_glerror();
     shader.disableTexture(LLShaderMgr::WATER_EXCLUSIONTEX);
+    shader.disableTexture(LLShaderMgr::VOLUME_FOG_MAP);
     shader.disableTexture(LLShaderMgr::WATER_WAVE_SLOPES);
     shader.disableTexture(LLShaderMgr::WATER_WAVE_HEIGHTS);
     shader.disableTexture(LLShaderMgr::WATER_GEOMETRY_DEPTH);
