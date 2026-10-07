@@ -338,5 +338,11 @@
          function="Floater.Toggle"
          parameter="notifications_console" />
       </menu_item_call>
+        <menu_item_separator/>
+        <menu_item_check label="Enable Local MCP" name="Enable Local MCP"
+                         tool_tip="Allow local MCP tools to control the viewer and capture rendering timings. Remembers this choice for future launches.">
+            <menu_item_check.on_check function="CheckControl" parameter="MCPBridgeEnabled" />
+            <menu_item_check.on_click function="ToggleControl" parameter="MCPBridgeEnabled" />
+        </menu_item_check>
     </menu>
 </menu_bar>

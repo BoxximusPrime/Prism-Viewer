@@ -34,6 +34,7 @@
 #include "lldndbutton.h"
 
 #include "llfolderview.h"
+#include "llframetimer.h"
 
 class LLComboBox;
 class LLFolderViewItem;
@@ -109,6 +110,7 @@ public:
     static void newFolderWindow(LLUUID folder_id = LLUUID(), LLUUID item_to_select = LLUUID());
 
     void toggleFindOptions();
+    void toggleQuickBinds();
 
     void resetFilters();
     void resetAllItemsFilters();
@@ -259,6 +261,8 @@ protected:
     void setUploadCostIfNeeded();
     void disableAddIfNeeded();
 private:
+    LLHandle<LLView>            mQuickBindsNotice;
+    LLFrameTimer               mQuickBindsNoticeTimer;
     LLSidepanelInventory*       mParentSidepanel = nullptr;
     LLPanelMarketplaceInbox*    mInboxPanel = nullptr;
 
@@ -280,6 +284,5 @@ private:
 };
 
 #endif // LL_LLPANELMAININVENTORY_H
-
 
 

@@ -537,8 +537,8 @@ private:
     LLRect          mToolTipStickyRect;         // Once a tool tip is shown, it will stay visible until the mouse leaves this rect.
 
     bool            mMouseInWindow;             // True if the mouse is over our window or if we have captured the mouse.
-    bool            mInventoryShortcutKeyHandled[2] = {}; // E, T
-    bool            mInventoryShortcutCharHandled[2] = {};
+    bool            mInventoryShortcutKeyHandled[4] = {}; // E, T, D, B
+    bool            mInventoryShortcutCharHandled[4] = {};
     bool            mFocusCycleMode;
     bool            mAllowMouseDragging;
     LLFrameTimer    mMouseDownTimer;

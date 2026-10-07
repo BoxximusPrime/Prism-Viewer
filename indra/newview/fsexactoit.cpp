@@ -925,7 +925,7 @@ bool FSExactOIT::shadersReady()
             missing = llformat("material alpha %u", i);
         }
     }
-    if (missing.empty() && gSavedSettings.getBOOL("GLTFEnabled"))
+    if (missing.empty() && (gSavedSettings.getBOOL("GLTFEnabled") || gSavedSettings.getBOOL("LocalMeshRendering")))
     {
         if (gExactOITGLTFProgram.mGLTFVariants.empty()) missing = "GLTF variants";
         for (const LLGLSLShader& shader : gExactOITGLTFProgram.mGLTFVariants)

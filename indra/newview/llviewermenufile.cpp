@@ -387,7 +387,7 @@ static std::string XML_EXTENSIONS = "xml";
 static std::string SLOBJECT_EXTENSIONS = "slobject";
 #endif
 static std::string ALL_FILE_EXTENSIONS = "*.*";
-static std::string MODEL_EXTENSIONS = "dae";
+static std::string MODEL_EXTENSIONS = "dae fbx gltf glb";
 static std::string MATERIAL_EXTENSIONS = "gltf glb";
 
 std::string build_extensions_string(LLFilePicker::ELoadFilter filter)

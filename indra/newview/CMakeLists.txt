@@ -250,6 +250,7 @@ set(viewer_SOURCE_FILES
     llfloatergesture.cpp
     llfloatergestureautocompletepicker.cpp
     llfloatergltfasseteditor.cpp
+    llfloaterlocalmesh.cpp
     llfloatergodtools.cpp
     llfloatergotoline.cpp
     llfloatergridstatus.cpp
@@ -737,6 +738,7 @@ set(viewer_SOURCE_FILES
     llviewertexturelist.cpp
     llviewerthrottle.cpp
     llviewerwearable.cpp
+    llviewerautomation.cpp
     llviewerwindow.cpp
     llviewerwindowlistener.cpp
     llvlcomposition.cpp
@@ -959,6 +961,7 @@ set(viewer_HEADER_FILES
     llfloatergesture.h
     llfloatergestureautocompletepicker.h
     llfloatergltfasseteditor.h
+    llfloaterlocalmesh.h
     llfloatergodtools.h
     llfloatergotoline.h
     llfloatergridstatus.h
@@ -1442,6 +1445,8 @@ set(viewer_HEADER_FILES
     llviewertexturelist.h
     llviewerthrottle.h
     llviewerwearable.h
+    llviewerautomation.h
+    llviewerautomation_settings.inc
     llviewerwindow.h
     llviewerwindowlistener.h
     llvlcomposition.h

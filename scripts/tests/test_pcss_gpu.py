@@ -268,6 +268,14 @@ def run(sdl, gl):
     def width(row):
         return sum(.08 < value < .92 for value in row)
 
+    # An almost edge-on receiver made the rasterization slope bias unbounded,
+    # bypassing the wall guard and revealing light through a solid blocker.
+    # Both signs must stay shadowed as the sun crosses the receiver horizon.
+    for slope in (1000, 10000, 100000, -1000, -10000, -100000):
+        row = render(fill="all", slope=slope, caster_slope=0, view_scale=.1/abs(slope),
+                     z=-16, angle=1.45, minimum=.01, gap=1, extent=4)[0]
+        assert max(row) < .001, ("sunset horizon erased blocker", slope, max(row))
+
     # Projectors do not have cascades: the old one-cascade weighting divided
     # by zero at -0.75 * shadow_clip.z. All shared receivers must also clamp
     # their far fade, including forward alpha that skips the light-buffer clamp.

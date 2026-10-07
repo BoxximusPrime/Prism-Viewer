@@ -815,6 +815,8 @@ public:
     bool                    mVolumeCloudsActive = false;
     LLRenderTarget          mGTAO[2]; // visibility + geometry mask; spatial ping-pong
     bool                    mGTAOReady = false;
+    LLRenderTarget          mPCSSDebug; // display-ready visibility, captured before transparent depth changes
+    bool                    mPCSSDebugReady = false;
     LLRenderTarget          mSSGISource; // opaque direct diffuse and emission, before bounce
     LLRenderTarget          mSSGI[2]; // half-resolution primary gather and spatial filter
     LLRenderTarget          mSSGIResolved; // full-resolution incoming light, then optional diagnostic

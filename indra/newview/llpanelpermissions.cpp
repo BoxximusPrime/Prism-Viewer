@@ -333,6 +333,14 @@ void LLPanelPermissions::refresh()
         root_selected = false;
     }
 
+    // Permission messages apply to whole linksets, not individually selected prims.
+    auto selection = LLSelectMgr::getInstance()->getSelection();
+    const bool whole_objects_selected = root_selected && std::all_of(selection->begin(), selection->end(),
+        [](LLSelectNode* node)
+        {
+            return !node->mIndividualSelection;
+        });
+
     //bool attachment_selected = LLSelectMgr::getInstance()->getSelection()->isAttachment();
     //attachment_selected = false;
     LLViewerObject* objectp = NULL;
@@ -535,7 +543,7 @@ void LLPanelPermissions::refresh()
         }
     }
 
-    getChildView("button set group")->setEnabled(root_selected && owners_identical && (mOwnerID == gAgent.getID()) && is_nonpermanent_enforced);
+    getChildView("button set group")->setEnabled(whole_objects_selected && owners_identical && (mOwnerID == gAgent.getID()) && is_nonpermanent_enforced);
 
     getChildView("Name:")->setEnabled(true);
     LLLineEditor* LineEditorObjectName = getChild<LLLineEditor>("Object Name");
@@ -769,22 +777,25 @@ void LLPanelPermissions::refresh()
     bool has_change_perm_ability = false;
     bool has_change_sale_ability = false;
 
-    if (valid_base_perms && is_nonpermanent_enforced &&
+    if (whole_objects_selected && valid_base_perms && is_nonpermanent_enforced &&
         (self_owned || (group_owned && gAgent.hasPowerInGroup(group_id, GP_OBJECT_MANIPULATE))))
     {
         has_change_perm_ability = true;
     }
-    if (valid_base_perms && is_nonpermanent_enforced &&
+    if (whole_objects_selected && valid_base_perms && is_nonpermanent_enforced &&
        (self_owned || (group_owned && gAgent.hasPowerInGroup(group_id, GP_OBJECT_SET_SALE))))
     {
         has_change_sale_ability = true;
     }
 
-    if (!has_change_perm_ability && !has_change_sale_ability && !root_selected)
+    if (!whole_objects_selected)
     {
         // ...must select root to choose permissions
         getChild<LLUICtrl>("perm_modify")->setValue(getString("text modify warning"));
     }
+
+    getChildView("perm_modify")->setToolTip(whole_objects_selected ? std::string()
+        : getString("text modify warning tooltip"));
 
     if (has_change_perm_ability)
     {
@@ -833,7 +844,7 @@ void LLPanelPermissions::refresh()
         {
             getChild<LLUICtrl>("checkbox share with group")->setValue(true);
             getChild<LLUICtrl>("checkbox share with group")->setTentative(  false);
-            getChildView("button deed")->setEnabled(gAgent.hasPowerInGroup(group_id, GP_OBJECT_DEED) && (owner_mask_on & PERM_TRANSFER) && !group_owned && can_transfer);
+            getChildView("button deed")->setEnabled(whole_objects_selected && gAgent.hasPowerInGroup(group_id, GP_OBJECT_DEED) && (owner_mask_on & PERM_TRANSFER) && !group_owned && can_transfer);
         }
         else if ((group_mask_off & PERM_COPY) && (group_mask_off & PERM_MODIFY) && (group_mask_off & PERM_MOVE))
         {
@@ -845,7 +856,7 @@ void LLPanelPermissions::refresh()
         {
             getChild<LLUICtrl>("checkbox share with group")->setValue(true);
             getChild<LLUICtrl>("checkbox share with group")->setTentative(!has_change_perm_ability);
-            getChildView("button deed")->setEnabled(gAgent.hasPowerInGroup(group_id, GP_OBJECT_DEED) && (group_mask_on & PERM_MOVE) && (owner_mask_on & PERM_TRANSFER) && !group_owned && can_transfer);
+            getChildView("button deed")->setEnabled(whole_objects_selected && gAgent.hasPowerInGroup(group_id, GP_OBJECT_DEED) && (group_mask_on & PERM_MOVE) && (owner_mask_on & PERM_TRANSFER) && !group_owned && can_transfer);
         }
     }
 

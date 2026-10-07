@@ -45,6 +45,7 @@ class alignas(16) LLViewerCamera : public LLCamera, public LLSimpleton<LLViewerC
     LL_ALIGN_NEW
 public:
     LLViewerCamera();
+    void updateNearClip();
 
     typedef enum
     {

@@ -366,6 +366,13 @@
     <key>Type</key><string>Boolean</string>
     <key>Value</key><integer>1</integer>
   </map>
+  <key>RenderPCSSDebug</key>
+  <map>
+    <key>Comment</key><string>Show white opaque/alpha-masked geometry with filtered sun/moon and projector shadow visibility only. Overlapping shadows show the darkest visibility. Requires PCSS; session-only diagnostic.</string>
+    <key>Persist</key><integer>0</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
   <key>RenderTAAStaticDetails</key>
   <map><key>Comment</key><string>Stabilize fine static details with stronger history accumulation and bounded retention through jitter; motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderTAAHistoryWeight</key>
@@ -823,7 +830,7 @@
   <key>ImporterModelLimit</key>
   <map>
     <key>Comment</key>
-    <string>Limits amount of importer generated (when over 8 faces) models for dae and gltf files</string>
+    <string>Limits amount of importer generated models for DAE, FBX and glTF files</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -4865,6 +4872,14 @@
         <key>Persist</key><integer>1</integer>
         <key>Type</key><string>F32</string>
         <key>Value</key><real>0.6</real>
+    </map>
+    <key>MCPBridgeEnabled</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable the local MCP bridge for viewer control and rendering captures. Requires scripts/viewer_mcp/setup.ps1 in the developer checkout.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><boolean>false</boolean>
     </map>
     <key>LeapCommand</key>
     <map>
@@ -9710,6 +9725,17 @@
       <string>U32</string>
       <key>Value</key>
       <integer>2</integer>
+    </map>
+    <key>RenderNearClip</key>
+    <map>
+      <key>Comment</key>
+      <string>Camera near clip distance in meters, applied live. Default 0.1; clamped to 0.001–10 and at most half the camera far distance. Smaller values reveal closer surfaces but reduce depth precision.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.1</real>
     </map>
     <key>RenderFarClip</key>
     <map>
@@ -18125,10 +18151,24 @@
     <key>Value</key>
     <integer>0</integer>
   </map>
+  <key>InventoryShowWornFolderCount</key>
+  <map>
+    <key>Comment</key><string>Show equipped-item counts at the right of inventory folder rows, including subfolders and links.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>InventoryQuickBinds</key>
+  <map>
+    <key>Comment</key><string>Enable plain E to expand/collapse hovered inventory folders and plain T to add/remove hovered worn items. Shift+B toggles this while inventory is focused. Search and rename retain normal typing.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
   <key>InventoryDemoHelperKeywords</key>
   <map>
     <key>Comment</key>
-    <string>Comma-separated item name keywords promoted within folders with up to 50 direct items and at least one object attachment</string>
+    <string>Comma-separated item name keywords promoted in inventory folders except the system Objects and Clothing folders; no item-count limit</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -18261,6 +18301,17 @@
   <map>
     <key>Comment</key>
     <string>Enable GLTF support.  Set to true by simulator if the simulator you are connected to supports GLTF Asset upload.  WARNING: Manually setting this to true will enable buttons that can drain your L$ balance by implicitly uploading textures without asking.</string>
+    <key>Persist</key>
+    <integer>0</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>0</integer>
+  </map>
+  <key>LocalMeshRendering</key>
+  <map>
+    <key>Comment</key>
+    <string>Session-only glTF shaders for local mesh previews. Does not enable simulator glTF uploads.</string>
     <key>Persist</key>
     <integer>0</integer>
     <key>Type</key>

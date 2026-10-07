@@ -27,6 +27,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llviewerdisplay.h"
+#include "llviewerautomation.h"
 
 #include "fsyspath.h"
 #include "hexdump.h"
@@ -662,7 +663,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
     if (LLViewerCamera::instanceExists())
     {
         LLViewerCamera::getInstance()->setZoomParameters(zoom_factor, subfield);
-        LLViewerCamera::getInstance()->setNear(MIN_NEAR_PLANE);
+        LLViewerCamera::getInstance()->updateNearClip();
     }
 
     //////////////////////////
@@ -1674,6 +1675,8 @@ void swap()
     LL_PROFILE_GPU_ZONE("swap");
     if (gDisplaySwapBuffers)
     {
+        // Timestamp the submitted view before presentation can wait on VSync.
+        LLViewerAutomation::endFrame();
         gViewerWindow->getWindow()->swapBuffers();
     }
     gDisplaySwapBuffers = true;

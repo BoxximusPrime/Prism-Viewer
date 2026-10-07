@@ -247,6 +247,35 @@ def run(sdl, gl, lighting=False):
         depths=[v for d in (.2,1,1,.2) for v in (d,0,0,0)]
         gl.TexImage2D(TEXTURE,0,0x8814,2,2,0,RGBA,FLOAT,(F*16)(*depths))
         check('shadow compares before filtering',render([white]),expected(6,color=(.5,.5,.5)))
+
+        # Nearby shadow boundaries must survive a kilometre-long fog path.
+        # Integrate an independent depth-plane occluder reference, including
+        # the last cascade's fade, for centred and oblique camera rays.
+        depth_plane=shadow_matrix[:]; depth_plane[10]=-1/64; depth_plane[14]=0
+        matrices('shadow_matrix',depth_plane*6)
+        integer('vf_shadow_mask',15); array('shadow_clip',[(16,32,48,64)])
+        scalar('vf_far',1024)
+        for ray_depth in (1.,.8):
+            oblique=inverse[:]; oblique[12]=math.sqrt(1-ray_depth**2)/ray_depth
+            matrices('inv_proj',oblique)
+            for boundary in (4.,8.,12.):
+                for i in range(4):
+                    upload_texture(2+i,shadow_textures[i],(boundary/64,0,0,0))
+                scatter=0.; dt=.005; density=.04
+                for j in range(int(1024/dt)):
+                    t=(j+.5)*dt; depth=t*ray_depth
+                    fade=min(1.,max(0.,(depth-57.6)/6.4))
+                    visibility=1. if depth<=boundary else fade*fade*(3-2*fade)
+                    scatter+=math.exp(-density*t)*density*dt*visibility
+                trans=math.exp(-density*1024)
+                wanted=[background[i]*trans+scatter for i in range(3)]+[background[3]*trans]
+                for steps in (16,24,32,64):
+                    integer('vf_steps',steps)
+                    check('long fog near shadow '+str((ray_depth,boundary,steps)),
+                          render([box(0,1024,density,(1,1,1),half_x=2048)]),wanted,.035)
+        matrices('inv_proj',inverse); scalar('vf_far',far); integer('vf_steps',32)
+        matrices('shadow_matrix',shadow_matrix*6)
+        for i in range(4): upload_texture(2+i,shadow_textures[i],(1,0,0,0))
         integer('vf_shadow_mask',0); array('shadow_clip',[(40,60,80,100)])
         vector('vf_sun_color',0,0,0)
 

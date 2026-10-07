@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 class LLInventorySearchQuery
 {
@@ -15,7 +16,7 @@ public:
     LLInventorySearchQuery() : LLInventorySearchQuery(std::string()) {}
     explicit LLInventorySearchQuery(const std::string& query);
 
-    bool matches(const std::string& text) const;
+    bool matches(const std::string& text, std::pair<size_t, size_t>* match = nullptr) const;
     bool hasExclusions() const { return !mExcludedTerms.empty(); }
     const std::string& getFirstIncludedTerm() const;
 

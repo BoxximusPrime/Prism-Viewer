@@ -849,7 +849,8 @@ void LLFolderViewItem::drawFavoriteIcon()
         favorite_image = sFavoriteContentImg;
     }
 
-    if (favorite_image)
+    const S32 worn = mViewModelItem->getWornItemCount();
+    if (favorite_image || worn)
     {
         S32 x_offset = 0;
         LLScrollContainer* scroll = mRoot->getScrollContainer();
@@ -863,14 +864,37 @@ void LLFolderViewItem::drawFavoriteIcon()
         {
             x_offset = getRect().getWidth();
         }
-        gl_draw_scaled_image(
+        if (favorite_image) gl_draw_scaled_image(
             x_offset - FAVORITE_IMAGE_SIZE - FAVORITE_IMAGE_PAD,
             getRect().getHeight() - mItemHeight + FAVORITE_IMAGE_PAD,
             FAVORITE_IMAGE_SIZE,
             FAVORITE_IMAGE_SIZE,
             favorite_image->getImage(),
             sFgColor);
+        if (worn)
+        {
+            const S32 right = x_offset - FAVORITE_IMAGE_PAD
+                - (favorite_image ? FAVORITE_IMAGE_SIZE + FAVORITE_IMAGE_PAD : 0);
+            const F32 y = (F32)getRect().getHeight() - (F32)sSuffixFont->getLineHeight() - (F32)mTextPadTop - (F32)sTopPad;
+            sSuffixFont->renderUTF8(std::to_string(worn), 0, (F32)right, y,
+                LLUIColorTable::instance().getColor("AccentColor"), LLFontGL::RIGHT, LLFontGL::BOTTOM,
+                LLFontGL::NORMAL, LLFontGL::NO_SHADOW);
+        }
     }
+}
+
+S32 LLFolderViewItem::getLabelRight() const
+{
+    const S32 worn = mViewModelItem->getWornItemCount();
+    if (!worn) return getRect().getWidth();
+    auto scroll = mRoot->getScrollContainer();
+    S32 right = scroll ? scroll->getVisibleContentRect().getWidth() + scroll->getDocPosHorizontal()
+        : getRect().getWidth();
+    static LLUICachedControl<bool> draw_star("InventoryFavoritesUseStar", true);
+    static LLUICachedControl<bool> draw_hollow_star("InventoryFavoritesUseHollowStar", true);
+    if ((draw_star && mIsFavorite) || (draw_hollow_star && mHasFavorites && !isOpen()))
+        right -= FAVORITE_IMAGE_SIZE + FAVORITE_IMAGE_PAD;
+    return right - sSuffixFont->getWidth(std::to_string(worn)) - 2 * FAVORITE_IMAGE_PAD;
 }
 
 /*virtual*/ bool LLFolderViewItem::isHighlightAllowed()
@@ -917,62 +941,32 @@ void LLFolderViewItem::drawHighlight(bool showContent, bool hasKeyboardFocus,
     {
         gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
 
-        // Highlight for selected but not current items
-        if (!isHighlightActive() && !isFlashing())
+        LLColor4 bg_color = bgColor;
+        if (!isHighlightActive() && !isFlashing() && getRoot() && getRoot()->getShowSingleSelection())
         {
-            LLColor4 bg_color = bgColor;
-            // do time-based fade of extra objects
-            F32 fade_time = getRoot() ? getRoot()->getSelectionFadeElapsedTime() : 0.f;
-            if (getRoot() && getRoot()->getShowSingleSelection())
-            {
-                // fading out
-                bg_color.mV[VALPHA] = clamp_rescale(fade_time, 0.f, 0.4f, bg_color.mV[VALPHA], 0.f);
-            }
-            else
-            {
-                // fading in
-                bg_color.mV[VALPHA] = clamp_rescale(fade_time, 0.f, 0.4f, 0.f, bg_color.mV[VALPHA]);
-            }
-            gl_rect_2d(FOCUS_LEFT,
-                       focus_top,
-                       getRect().getWidth() - 2,
-                       focus_bottom,
-                       bg_color, hasKeyboardFocus);
+            bg_color.mV[VALPHA] = clamp_rescale(getRoot()->getSelectionFadeElapsedTime(),
+                0.f, 0.4f, bg_color.mV[VALPHA], 0.f);
         }
+        // Selection stays filled while a confirmation dialog or another window has focus.
+        gl_rect_2d(FOCUS_LEFT, focus_top, getRect().getWidth() - 2, focus_bottom, bg_color, true);
 
-        // Highlight for currently selected or flashing item
-        if (isHighlightActive())
-        {
-            // Background
-            gl_rect_2d(FOCUS_LEFT,
-                focus_top,
-                getRect().getWidth() - 2,
-                focus_bottom,
-                bgColor, hasKeyboardFocus);
-            // Outline
-            gl_rect_2d(FOCUS_LEFT,
-                focus_top,
-                getRect().getWidth() - 2,
-                focus_bottom,
-                focusOutlineColor, false);
-        }
+        auto previous = getPreviousOpenNode();
+        auto next = getNextOpenNode();
+        const bool joins_previous = previous && previous != this && previous != mRoot
+            && previous->isHighlightAllowed();
+        const bool joins_next = next && next != this && next != mRoot
+            && next->isHighlightAllowed();
+        LLColor4 border_color = focusOutlineColor;
+        border_color.mV[VALPHA] *= bgColor.get().mV[VALPHA] > 0.f
+            ? bg_color.mV[VALPHA] / bgColor.get().mV[VALPHA] : 0.f;
+        // Border only the ends of each consecutive run of selected visible rows.
+        if (!joins_previous)
+            gl_rect_2d(FOCUS_LEFT, focus_top, getRect().getWidth() - 2, focus_top - 1, border_color, true);
+        if (!joins_next)
+            gl_rect_2d(FOCUS_LEFT, focus_bottom + 1, getRect().getWidth() - 2, focus_bottom, border_color, true);
 
-        if (folder_open)
-        {
-            gl_rect_2d(FOCUS_LEFT,
-                focus_bottom + 1, // overlap with bottom edge of above rect
-                getRect().getWidth() - 2,
-                0,
-                focusOutlineColor, false);
-            if (showContent && !isFlashing())
-            {
-                gl_rect_2d(FOCUS_LEFT,
-                    focus_bottom + 1,
-                    getRect().getWidth() - 2,
-                    0,
-                    bgColor, true);
-            }
-        }
+        if (folder_open && showContent && !isFlashing())
+            gl_rect_2d(FOCUS_LEFT, focus_bottom + 1, getRect().getWidth() - 2, 0, bgColor, true);
     }
     else if (mIsMouseOverTitle)
     {
@@ -1013,13 +1007,13 @@ void LLFolderViewItem::drawLabel(const LLFontGL * font, const F32 x, const F32 y
     //
     mLabelFontBuffer.render(font, mLabel, 0, x, y, color,
         LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
-        S32_MAX, getRect().getWidth() - (S32) x - mLabelPaddingRight, &right_x, /*use_ellipses*/true);
+        S32_MAX, getLabelRight() - (S32) x - mLabelPaddingRight, &right_x, /*use_ellipses*/true);
 }
 
 void LLFolderViewItem::draw()
 {
     const bool show_context = (getRoot() ? getRoot()->getShowSelectionContext() : false);
-    const bool filled = show_context || (getRoot() ? getRoot()->getParentPanel()->hasFocus() : false); // If we have keyboard focus, draw selection filled
+    const bool filled = true; // Keep selected text and backgrounds consistent across focus changes.
 
     const LLFontGL* font = getLabelFont();
     S32 line_height = font->getLineHeight();
@@ -1030,7 +1024,6 @@ void LLFolderViewItem::draw()
     {
         drawOpenFolderArrow();
     }
-    drawFavoriteIcon();
 
     drawHighlight(show_context, filled, sHighlightBgColor, sFlashBgColor, sFocusOutlineColor, sMouseOverColor);
 
@@ -1084,7 +1077,7 @@ void LLFolderViewItem::draw()
     if (!keyword_ranges.empty())
     {
         // Match drawLabel's ellipsis padding so tags never paint hidden text.
-        F32 available_width = static_cast<F32>(llmax(0, getRect().getWidth() - (S32)text_left - mLabelPaddingRight));
+        F32 available_width = static_cast<F32>(llmax(0, getLabelRight() - (S32)text_left - mLabelPaddingRight));
         if (font->getWidthF32(mLabel.c_str()) > available_width)
             available_width = llmax(0.f, available_width - font->getWidthF32(LLWString(4, '.').c_str()));
         visible_keyword_chars = font->maxDrawableChars(mLabel.c_str(), available_width);
@@ -1173,7 +1166,7 @@ void LLFolderViewItem::draw()
         const F32 match_left = text_left + font->getWidthF32(mLabel.c_str(), 0, range.first);
         font->render(mLabel, range.first, match_left, y, keyword_color,
             LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
-            length, getRect().getWidth() - (S32)match_left - mLabelPaddingRight);
+            length, getLabelRight() - (S32)match_left - mLabelPaddingRight);
     }
 
     //--------------------------------------------------------------------------------//
@@ -1183,7 +1176,7 @@ void LLFolderViewItem::draw()
     {
         mSuffixFontBuffer.render(sSuffixFont, mLabelSuffix, 0, right_x, y, isFadeItem() ? color : sSuffixColor.get(),
             LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
-            S32_MAX, S32_MAX, &right_x);
+            S32_MAX, llmax(0, getLabelRight() - (S32)right_x - mLabelPaddingRight), &right_x);
     }
 
     //--------------------------------------------------------------------------------//
@@ -1197,7 +1190,7 @@ void LLFolderViewItem::draw()
             F32 yy = (F32)rect_height - line_height - (F32)mTextPadTop - (F32)sTopPad;
             font->render(combined_string, filter_offset, match_string_left, yy,
                 sFilterTextColor, LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
-                filter_string_length, S32_MAX, &right_x);
+                filter_string_length, llmax(0, getLabelRight() - (S32)match_string_left - mLabelPaddingRight), &right_x);
         }
         else
         {
@@ -1208,7 +1201,7 @@ void LLFolderViewItem::draw()
                 F32 yy = (F32)rect_height - line_height - (F32)mTextPadTop - (F32)sTopPad;
                 font->render(mLabel, filter_offset, match_string_left, yy,
                     sFilterTextColor, LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
-                    label_filter_length, S32_MAX, &right_x);
+                    label_filter_length, llmax(0, getLabelRight() - (S32)match_string_left - mLabelPaddingRight), &right_x);
             }
 
             S32 suffix_filter_length = label_filter_length > 0 ? filter_string_length - label_filter_length : filter_string_length;
@@ -1219,11 +1212,13 @@ void LLFolderViewItem::draw()
                 F32 yy = (F32)rect_height - sSuffixFont->getLineHeight() - (F32)mTextPadTop - (F32)sTopPad;
                 sSuffixFont->render(mLabelSuffix, suffix_offset, match_string_left, yy, sFilterTextColor,
                     LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,
-                    suffix_filter_length, S32_MAX, &right_x);
+                    suffix_filter_length, llmax(0, getLabelRight() - (S32)match_string_left - mLabelPaddingRight), &right_x);
             }
         }
 
     }
+
+    drawFavoriteIcon();
 
     //Gilbert Linden 9-20-2012: Although this should be legal, removing it because it causes the mLabelSuffix rendering to
     //be distorted...oddly. I initially added this in but didn't need it after all. So removing to prevent unnecessary bug.

@@ -88,6 +88,7 @@
 #include "llfloatergesture.h"
 #include "llfloatergestureautocompletepicker.h"
 #include "llfloatergltfasseteditor.h"
+#include "llfloaterlocalmesh.h"
 #include "llfloatergodtools.h"
 #include "llfloatergridstatus.h"
 #include "llfloatergroups.h"
@@ -406,6 +407,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("gesture_autocomplete_picker", "floater_gesture_autocomplete_picker.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterGestureAutocompletePicker>);
     LLFloaterReg::add("gestures", "floater_gesture.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterGesture>);
     LLFloaterReg::add("gltf_asset_editor", "floater_gltf_asset_editor.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterGLTFAssetEditor>);
+    LLFloaterReg::add("local_mesh", "floater_local_mesh.xml", &LLFloaterReg::build<LLFloaterLocalMesh>);
     LLFloaterReg::add("god_tools", "floater_god_tools.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterGodTools>);
     LLFloaterReg::add("grid_status", "floater_grid_status.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterGridStatus>);
     LLFloaterReg::add("group_picker", "floater_choose_group.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterGroupPicker>);

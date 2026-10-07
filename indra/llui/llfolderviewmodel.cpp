@@ -65,5 +65,5 @@ std::string::size_type LLFolderViewModelItemCommon::getFilterStringOffset()
 
 std::string::size_type LLFolderViewModelItemCommon::getFilterStringSize()
 {
-    return mRootViewModel.getFilter().getFilterStringSize();
+    return mStringFilterSize;
 }

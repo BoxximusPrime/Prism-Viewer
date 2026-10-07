@@ -297,7 +297,6 @@ bool    LLFloaterTools::postBuild()
     mTextSelectionEmpty = getChild<LLTextBox>("selection_empty");
     mTextSelectionFaces = getChild<LLTextBox>("selection_faces");
 
-    mCostTextBorder = getChild<LLViewBorder>("cost_text_border");
 
     mTab = getChild<LLTabContainer>("Object Info Tabs");
     if(mTab)
@@ -373,7 +372,6 @@ LLFloaterTools::LLFloaterTools(const LLSD& key)
     mPanelFace(NULL),
     mPanelLandInfo(NULL),
 
-    mCostTextBorder(NULL),
     mTabLand(NULL),
 
     mLandImpactsObserver(NULL),
@@ -953,7 +951,6 @@ void LLFloaterTools::updatePopup(LLCoordGL center, MASK mask)
     // Land buttons
     bool land_visible = (tool == LLToolBrushLand::getInstance() || tool == LLToolSelectLand::getInstance() );
 
-    mCostTextBorder->setVisible(!land_visible);
 
     if (mBtnLand)   mBtnLand    ->setToggleState( land_visible );
 
@@ -1013,6 +1010,20 @@ void LLFloaterTools::updatePopup(LLCoordGL center, MASK mask)
     mTextSelectionFaces->setVisible(LLToolFace::getInstance() == LLToolMgr::getInstance()->getCurrentTool()
                                                 && LLSelectMgr::getInstance()->getSelection()->getObjectCount() == 1);
     mTextSelectionEmpty->setVisible(!land_visible && !have_selection);
+
+    // Keep the summary compact unless face or linked-part details need a second row.
+    LLView* summary = getChildView("selection_summary");
+    summary->setVisible(!land_visible);
+    const S32 summary_height = (mTextSelectionFaces->getVisible() || link_text->getVisible()) ? 68 : 42;
+    if (summary->getRect().getHeight() != summary_height)
+    {
+        LLRect summary_rect = summary->getRect();
+        summary_rect.mBottom = summary_rect.mTop - summary_height;
+        summary->setShape(summary_rect);
+        LLRect tabs_rect = mTab->getRect();
+        tabs_rect.mTop = summary_rect.mBottom - 10;
+        mTab->setShape(tabs_rect);
+    }
 
     mTab->setVisible(!land_visible);
     mPanelLandInfo->setVisible(land_visible);

@@ -175,6 +175,38 @@ void preparePCSSDepth(vec3 pos, vec3 normal, vec2 uv)
     vec3 dx = continuous.x && (!continuous.y || error.x < error.y) ? pos - left : right - pos;
     vec3 dy = continuous.z && (!continuous.w || error.z < error.w) ? pos - down : up - pos;
     bool reliable = (continuous.x || continuous.y) && (continuous.z || continuous.w);
+    vec3 localNormal = reliable ? pcssGeometricNormal(dx, dy, normal) : normal;
+    vec3 lightDir = normalize(sun_up_factor == 1 ? sun_dir : moon_dir);
+    if (reliable && abs(dot(localNormal, lightDir)) < 0.25)
+    {
+        // At the emitter horizon a one-pixel D24 slope can move a flat face
+        // from lit to shadowed. Fit a wider plane only where all intervening
+        // samples agree with that plane within camera-depth precision.
+        // Keep each side independent so a window/trim edge cannot tilt the
+        // wall, and retain the local estimate on curved or narrow geometry.
+        const float wide = 64.0;
+        vec2 stepUV = wide / screen_res;
+        vec3 wl = getPosition(uv - vec2(stepUV.x, 0)).xyz;
+        vec3 wr = getPosition(uv + vec2(stepUV.x, 0)).xyz;
+        vec3 wd = getPosition(uv - vec2(0, stepUV.y)).xyz;
+        vec3 wu = getPosition(uv + vec2(0, stepUV.y)).xyz;
+        vec4 midDepth = vec4(getPosition(uv - vec2(stepUV.x * 0.5, 0)).z,
+                             getPosition(uv + vec2(stepUV.x * 0.5, 0)).z,
+                             getPosition(uv - vec2(0, stepUV.y * 0.5)).z,
+                             getPosition(uv + vec2(0, stepUV.y * 0.5)).z);
+        float centerZ = 1.0 / pos.z;
+        vec4 wideZ = 1.0 / vec4(wl.z, wr.z, wd.z, wu.z);
+        vec4 residual = abs(1.0 / vec4(left.z, right.z, down.z, up.z) - mix(vec4(centerZ), wideZ, baseline / wide));
+        residual = max(residual, abs(1.0 / farDepth - mix(vec4(centerZ), wideZ, 2.0 * baseline / wide)));
+        residual = max(residual, abs(1.0 / midDepth - mix(vec4(centerZ), wideZ, 0.5)));
+        bvec4 planar = lessThanEqual(residual, vec4(pcssDepthError / abs(pos.z)));
+        planar.x = planar.x && continuous.x && uv.x - stepUV.x >= edge.x;
+        planar.y = planar.y && continuous.y && uv.x + stepUV.x <= 1.0 - edge.x;
+        planar.z = planar.z && continuous.z && uv.y - stepUV.y >= edge.y;
+        planar.w = planar.w && continuous.w && uv.y + stepUV.y <= 1.0 - edge.y;
+        if (planar.x || planar.y) dx = planar.x && planar.y ? wr - wl : planar.x ? pos - wl : wr - pos;
+        if (planar.z || planar.w) dy = planar.z && planar.w ? wu - wd : planar.z ? pos - wd : wu - pos;
+    }
     // Discontinuous differences cannot supply a slope-uncertainty estimate.
     pcssSurfaceDx = reliable ? dx : vec3(0.0);
     pcssSurfaceDy = reliable ? dy : vec3(0.0);

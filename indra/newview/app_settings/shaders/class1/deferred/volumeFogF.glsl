@@ -25,11 +25,12 @@ void calcAtmosphericVarsWithAmbient(vec3 position, vec3 light_dir, float ambFact
 vec3 srgb_to_linear(vec3 color);
 const int VF_MAX = 8;
 #ifdef VF_LIGHTING
-const int VF_MAX_EVENTS = 34; // two per box/light plus the ground layer
+const int VF_MAX_EVENTS = 35; // box/light/ground boundaries plus sun shadow range
 uniform int vf_light_count;
 uniform int vf_steps;
 uniform int vf_min_steps;
 uniform int vf_shadow_mask;
+uniform vec4 shadow_clip;
 vec2 fogLightInterval(int index, vec3 ray, float limit);
 vec3 fogDirectional(vec3 ray);
 uniform float vf_light_strength;
@@ -152,6 +153,14 @@ void main()
     }
 #ifdef VF_LIGHTING
     vec3 directional = fogDirectional(ray);
+    bool sun_shadows = (vf_shadow_mask & 15) != 0 &&
+        (any(greaterThan(directional, vec3(0.0))) || any(greaterThan(ground_direct, vec3(0.0))));
+    // Cascades end in view depth, whereas fog intervals use ray distance.
+    // A kilometre of haze must not spend almost every shadow sample beyond
+    // the maps and leave nearby occluders represented by one slice.
+    float shadow_end = min(last_fog, shadow_clip.w / max(-ray.z, 0.000001));
+    if (sun_shadows && shadow_end > first_fog && shadow_end < last_fog)
+        events[event_count++] = shadow_end;
     vec2 light_intervals[8];
     // Splitting at light spheres and projector frusta avoids skipping a narrow
     // beam when the enclosing fog box is much larger than the light.
@@ -235,15 +244,15 @@ void main()
         int light_mask = 0;
         for (int i = 0; i < vf_light_count; ++i)
             if (middle > light_intervals[i].x && middle < light_intervals[i].y) light_mask |= 1 << i;
-        bool varying_light = light_mask != 0 ||
-            ((vf_shadow_mask & 15) != 0 && (any(greaterThan(directional, vec3(0.0))) ||
-                (ground && any(greaterThan(ground_direct, vec3(0.0))))));
+        bool sample_sun_shadow = sun_shadows && middle < shadow_end;
+        bool varying_light = light_mask != 0 || sample_sun_shadow;
         vec3 constant_light = vec3(1.0);
         float constant_sun_visibility = 1.0;
         vec3 constant_local = vec3(0.0);
         if (!varying_light) constant_light = fogLighting(ray * middle, ray, 0, directional, constant_sun_visibility, constant_local);
+        float sampled_length = sample_sun_shadow ? min(occupied_length, shadow_end-first_fog) : occupied_length;
         steps = max(soft || light_mask != 0 ? vf_min_steps : 2,
-            int(ceil(float(vf_steps) * (end - start) / max(occupied_length, 0.00001))));
+            int(ceil(float(vf_steps) * (end - start) / max(sampled_length, 0.00001))));
         if (!varying_light && !soft) steps = 1;
 #endif
         // Height extinction is analytic; samples resolve noise and lighting.
@@ -252,16 +261,24 @@ void main()
             if (vf_ground_noise.x > 0.0)
                 steps = max(steps, min(64, max(8, int(ceil((end-start)*2.0/vf_ground_noise.y)))));
         }
-        float step_length = (end - start) / float(steps);
         for (int step = 0; step < steps; ++step)
         {
-            float t = start + (float(step) + 0.5) * step_length;
+            float a = float(step)/float(steps), b = float(step+1)/float(steps);
+#ifdef VF_LIGHTING
+            // Resolve nearby occluders more closely without adding shadow taps.
+            // Local lights and density detail keep their uniform quadrature.
+            if (sample_sun_shadow && light_mask == 0 && !soft &&
+                (!ground || vf_ground_noise.x <= 0.0)) { a *= a; b *= b; }
+#endif
+            float step_start = mix(start, end, a), step_end = mix(start, end, b);
+            float step_length = step_end-step_start;
+            float t = (step_start+step_end)*0.5;
             float extinction = uniform_extinction;
             vec3 emission = uniform_emission;
             float ground_extinction = 0.0;
             if (ground)
             {
-                float density = groundDensity(world_ray, t-step_length*0.5, t+step_length*0.5) * ground_density_scale;
+                float density = groundDensity(world_ray, step_start, step_end) * ground_density_scale;
                 extinction += density;
                 ground_extinction = density;
             }

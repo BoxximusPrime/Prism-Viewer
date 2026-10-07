@@ -931,10 +931,14 @@ Combined: transmitted light from all lights, including blur.</text>
       layout="topleft" left="30" top="304" width="450" height="20"
       tool_tip="Keep the sun/moon shadow sampling pattern aligned to the scene while orbiting. Turn off to compare with the old camera-aligned pattern. Applies immediately; projector sampling is unchanged." />
     <text name="PCSSStatus" follows="left|top|right" layout="topleft"
-      left="30" top="332" width="450" height="36" word_wrap="true" />
+      left="30" top="358" width="450" height="30" word_wrap="true" />
+    <check_box name="RenderPCSSDebug" control_name="RenderPCSSDebug"
+      label="Debug view: white geometry with shadows" follows="left|top"
+      layout="topleft" left="30" top="330" width="450" height="20"
+      tool_tip="Shows filtered sun/moon and projector shadow visibility on white opaque and alpha-masked surfaces. Overlapping shadows show the darkest visibility. Hides textures, lighting, ambient occlusion and transparency; gray marks the background. Resets when the viewer restarts." />
     <text name="PCSSHelp" follows="left|top|right" layout="topleft"
-      left="30" top="370" width="450" height="36" word_wrap="true" text_color="LtGray_50">
-      Cleanup smoothing reduces pixel steps; set to 0 to compare. Use light size and Minimum softness for broader shadows.
+      left="30" top="392" width="450" height="18" word_wrap="true" text_color="LtGray_50">
+      Set Cleanup smoothing to 0 to inspect unfiltered shadows.
     </text>
   </panel>
   <panel name="graphics_gtao_panel" label="GTAO" follows="all"

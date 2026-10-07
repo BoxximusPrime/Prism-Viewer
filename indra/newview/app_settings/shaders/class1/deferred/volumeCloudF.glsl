@@ -21,6 +21,8 @@ uniform float vc_blend;
 uniform int vc_steps;
 uniform vec3 vc_sun_direction;
 uniform vec3 vc_sun_color;
+uniform vec3 vc_light_source; // authored EEP color, before sRGB decoding or gain
+uniform vec3 vc_light_attenuation; // EEP optical depth
 uniform float vc_light_absorption; // reciprocal of local light penetration
 uniform float vc_edge_glow;
 uniform float vc_internal_light;
@@ -37,6 +39,32 @@ float cloudNoise(vec3 p)
 float cloudPhase(float mu, float g)
 {
     return (1.0-g*g)/pow(max(1.0+g*g-2.0*g*mu, 0.05), 1.5);
+}
+
+vec3 cloudSunlight()
+{
+    // A finite spherical atmosphere bounds the slant path at the horizon.
+    // Relative shell thickness sqrt(1.0025)-1 gives about 40 vertical columns
+    // at zero elevation.
+    // Rationalized form avoids cancellation when the light is overhead.
+    float elevation = max(vc_sun_direction.z, 0.0);
+    float path = (sqrt(1.0025)+1.0)/(sqrt(elevation*elevation+0.0025)+elevation);
+    vec3 optical_depth = max(vc_light_attenuation, vec3(0.0));
+    // Moon diffuse is already attenuated. Clear atmospheres need no correction.
+    if (all(equal(optical_depth, vec3(0.0)))) return vc_sun_color;
+
+    // EEP presets author sunset hue by attenuating BEFORE sRGB decoding, as
+    // calcAtmosphericVarsLinear does for water and surfaces. Use that same
+    // full-column color convention; decoding first leaves blue presets violet.
+    vec3 color = max(vc_light_source, vec3(0.0))*exp(-optical_depth*path);
+    color = mix(pow((color+0.055)/1.055, vec3(2.4)), color/12.92,
+                lessThanEqual(color, vec3(0.04045)));
+    // Keep the cloud layer's half-column linear-light brightness response.
+    // Only replace chromaticity, so matching the sunset hue does not bring
+    // back the abrupt loss of cloud illumination near the horizon.
+    const vec3 luminance = vec3(0.2126, 0.7152, 0.0722);
+    float energy = dot(vc_sun_color*exp(-optical_depth*path*0.5), luminance);
+    return color*(energy/max(dot(color, luminance), 1e-20));
 }
 
 float cloudWeather(sampler2D weather_map, vec2 uv, float frequency)
@@ -177,15 +205,21 @@ void main()
     // if low-sample noise is distracting during movement.
     float jitter = fract(52.9829189*fract(dot(vec2(pixel), vec2(0.06711056,0.00583715))));
     float mu = dot(ray, vc_sun_direction);
-    // Broader forward scattering distributes light through the body instead
-    // of concentrating it into a bright, continuous outline around dark cores.
+    vec3 sunlight = cloudSunlight();
+    // Broad forward scattering retains a lit rim without letting the viewing
+    // angle more than double the direct light at the default Edge Glow.
     // Trade forward scattering for diffuse light as edge glow decreases.
     // Weights sum to one and stay nonnegative across the control's 0-2 range;
     // the small sun-facing backward lobe remains independent.
     float forward_weight = 0.35*vc_edge_glow;
-    float phase = (0.8-forward_weight) + forward_weight*cloudPhase(mu, 0.45) + 0.2*cloudPhase(mu, -0.2);
+    float phase = (0.8-forward_weight) + forward_weight*cloudPhase(mu, 0.3) + 0.2*cloudPhase(mu, -0.2);
     float scattered_weight = 0.3*vc_edge_glow;
-    float scattered_phase = (1.0-scattered_weight) + scattered_weight*cloudPhase(mu, 0.25);
+    // A second scattering loses directionality: g^2 rather than another
+    // strong forward lobe, so the shaded body changes less as the camera turns.
+    float scattered_phase = (1.0-scattered_weight) + scattered_weight*cloudPhase(mu, 0.09);
+    // Broad indirect illumination matters most when light enters from above.
+    // Fade it out below ~9 degrees so dusk retains its existing dark interiors.
+    float high_light = smoothstep(0.15, 0.65, vc_sun_direction.z);
     vec3 scatter = vec3(0.0);
     float transmittance = 1.0;
     for (int i=0; i<256; ++i)
@@ -202,7 +236,7 @@ void main()
         // Fade the finite layer into the distant sky, including near-horizontal rays.
         density *= 1.0-smoothstep(16000.0, 24000.0, distance);
         float shadow = 0.0;
-        if (dot(vc_sun_color, vc_sun_color) > 0.0)
+        if (dot(sunlight, sunlight) > 0.0)
         {
             // Resolve nearby billows before taking wider steps through the
             // layer. A coarse first sample misses the cloud's own lit edge.
@@ -233,15 +267,18 @@ void main()
             surrounding_depth += sky_shadow*0.2;
         }
         sky_visibility = 0.35 + 0.65*sky_visibility;
-        // ponytail: two approximate scattering orders reuse the sun shadow;
+        // ponytail: approximate scattering orders reuse the sun shadow;
         // full transport needs a lighting cache. Successive bounces lose their
         // direction and soften shadows while retaining the sun/moon's color.
         // Nearby enclosing density attenuates the bounce, keeping exposed
         // shoulders brighter than deep creases without changing cloud opacity.
+        // A broad higher-order term carries overhead illumination into thick
+        // undersides. It uses the incident radiance, never a constant glow.
         float bounce_visibility = 0.5 + 0.5*exp(-surrounding_depth*0.35*vc_light_absorption);
-        vec3 bounced_light = vc_sun_color * (vc_internal_light*bounce_visibility) *
-            (0.4*scattered_phase*exp(-shadow*0.25) + 0.25*exp(-shadow*0.05));
-        vec3 light = vc_ambient*mix(0.55,1.0,h)*sky_visibility + vc_sun_color*phase*exp(-shadow) + bounced_light;
+        vec3 bounced_light = sunlight * (vc_internal_light*bounce_visibility) *
+            (0.4*scattered_phase*exp(-shadow*0.25) + 0.25*exp(-shadow*0.05) +
+             0.6*high_light*exp(-shadow*0.01));
+        vec3 light = vc_ambient*mix(0.55,1.0,h)*sky_visibility + sunlight*phase*exp(-shadow) + bounced_light;
         // Approximate atmospheric loss over the cloud's own distance.
         light = mix(light, vc_ambient, 1.0-exp(-distance/18000.0));
         float attenuation = exp(-density*step_size);

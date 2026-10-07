@@ -82,6 +82,7 @@
   <string name="TextureFound">Found texture: [TEXTURE_NAME] for material: [MATERIAL_NAME]</string>
   <string name="IgnoredExtension">Model uses unsupported extension: [EXT], related material properties are ignored</string>
   <string name="UnsupportedExtension">Unable to load model, unsupported extension: [EXT]</string>
+  <string name="FBXImportError">Could not import FBX: [REASON]</string>
   <string name="FailedToCreateTempFile">Failed to create temporary file for embedded [TEXTURE_TYPE] texture [TEXTURE_INDEX]: [TEMP_FILE]</string>
   <string name="SkinJointsOverLimit">Skin [SKIN_INDEX] defines [JOINT_COUNT] compatible joints, maximum is: [MAX]. Unused joints will be stripped on per model basis.</string>
   <string name="SkinUsupportedJoints">Skin [SKIN_INDEX] defines [JOINT_COUNT] joints, but only [LEGAL_COUNT] were recognized and are compatible</string>

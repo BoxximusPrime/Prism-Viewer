@@ -37,6 +37,7 @@
 #include "../llskinningutil.h"
 
 #include <future>
+#include <filesystem>
 
 using namespace LL::GLTF;
 using namespace boost::json;
@@ -218,10 +219,17 @@ void Asset::uploadMaterials()
         material.mOcclusionTexture.mTextureTransform.getPacked(&md[i + 8]);
         md[i + 9].g = (F32)material.mOcclusionTexture.getTexCoord();
 
+        // Spare transform components hold the local preview's unbaked tint.
+        const vec4 color = mLocalMeshPreview ? material.mPbrMetallicRoughness.mBaseColorFactor : vec4(1.f);
+        md[i + 1].z = color.r;
+        md[i + 1].w = color.g;
+        md[i + 3].z = color.b;
+        md[i + 3].w = color.a;
+
         // add material properties
         F32 min_alpha = material.mAlphaMode == Material::AlphaMode::MASK ? material.mAlphaCutoff : -1.0f;
-        md[i + 10] = vec4(material.mEmissiveFactor, 1.f);
-        md[i + 11] = vec4(0.f,
+        md[i + 10] = vec4(material.mEmissiveFactor, material.mOcclusionTexture.mStrength);
+        md[i + 11] = vec4(material.mNormalTexture.mScale,
             material.mPbrMetallicRoughness.mRoughnessFactor,
             material.mPbrMetallicRoughness.mMetallicFactor,
             min_alpha);
@@ -491,9 +499,110 @@ void Asset::update()
     }
 }
 
+// The local mesh picker accepts static triangle meshes. Validate references and
+// byte ranges before the development loader dereferences accessor/image data.
+// Incomplete exports must fail without disturbing the currently displayed mesh.
+static bool validLocalMeshInput(const Asset& asset)
+{
+    if (!asset.mSkins.empty() || !asset.mAnimations.empty() || asset.mMeshes.empty()) return false;
+    for (const auto& buffer : asset.mBuffers)
+        if (buffer.mByteLength <= 0) return false;
+    for (const auto& view : asset.mBufferViews)
+    {
+        if (view.mBuffer < 0 || size_t(view.mBuffer) >= asset.mBuffers.size() ||
+            view.mByteOffset < 0 || view.mByteLength <= 0 || view.mByteStride < 0 ||
+            U64(view.mByteOffset) + U64(view.mByteLength) > U64(asset.mBuffers[view.mBuffer].mByteLength)) return false;
+    }
+    for (const auto& accessor : asset.mAccessors)
+    {
+        if (accessor.mBufferView < 0 || size_t(accessor.mBufferView) >= asset.mBufferViews.size() ||
+            accessor.mCount <= 0 || accessor.mByteOffset < 0) return false;
+        U64 component_size;
+        switch (accessor.mComponentType)
+        {
+        case Accessor::ComponentType::BYTE:
+        case Accessor::ComponentType::UNSIGNED_BYTE: component_size = 1; break;
+        case Accessor::ComponentType::SHORT:
+        case Accessor::ComponentType::UNSIGNED_SHORT: component_size = 2; break;
+        case Accessor::ComponentType::UNSIGNED_INT:
+        case Accessor::ComponentType::FLOAT: component_size = 4; break;
+        default: return false;
+        }
+        U64 components;
+        switch (accessor.mType)
+        {
+        case Accessor::Type::SCALAR: components = 1; break;
+        case Accessor::Type::VEC2: components = 2; break;
+        case Accessor::Type::VEC3: components = 3; break;
+        case Accessor::Type::VEC4: components = 4; break;
+        default: return false; // No matrix attributes in a static mesh.
+        }
+        const auto& view = asset.mBufferViews[accessor.mBufferView];
+        const U64 element_size = component_size * components;
+        const U64 stride = view.mByteStride ? view.mByteStride : element_size;
+        if (stride < element_size || stride % component_size || accessor.mByteOffset % component_size ||
+            U64(accessor.mByteOffset) + (U64(accessor.mCount) - 1) * stride + element_size > U64(view.mByteLength)) return false;
+    }
+    for (const auto& node : asset.mNodes)
+        if (node.mSkin != INVALID_INDEX) return false;
+    for (const auto& mesh : asset.mMeshes)
+    {
+        if (!mesh.mWeights.empty()) return false;
+        for (const auto& primitive : mesh.mPrimitives)
+        {
+            auto position = primitive.mAttributes.find("POSITION");
+            if (primitive.mMode != Primitive::Mode::TRIANGLES || position == primitive.mAttributes.end() ||
+                primitive.mMaterial < INVALID_INDEX || (primitive.mMaterial != INVALID_INDEX &&
+                size_t(primitive.mMaterial) >= asset.mMaterials.size())) return false;
+            for (const auto& attribute : primitive.mAttributes)
+                if (attribute.second < 0 || size_t(attribute.second) >= asset.mAccessors.size()) return false;
+            const auto& positions = asset.mAccessors[position->second];
+            if (positions.mType != Accessor::Type::VEC3 || positions.mComponentType != Accessor::ComponentType::FLOAT) return false;
+            for (const auto& attribute : primitive.mAttributes)
+            {
+                const auto& value = asset.mAccessors[attribute.second];
+                if (value.mCount != positions.mCount) return false;
+                if (attribute.first == "JOINTS_0" || attribute.first == "WEIGHTS_0") return false;
+                if ((attribute.first == "NORMAL" && (value.mType != Accessor::Type::VEC3 || value.mComponentType != Accessor::ComponentType::FLOAT)) ||
+                    (attribute.first == "TANGENT" && (value.mType != Accessor::Type::VEC4 || value.mComponentType != Accessor::ComponentType::FLOAT)) ||
+                    ((attribute.first == "TEXCOORD_0" || attribute.first == "TEXCOORD_1") && value.mType != Accessor::Type::VEC2) ||
+                    (attribute.first == "COLOR_0" && value.mType != Accessor::Type::VEC3 && value.mType != Accessor::Type::VEC4)) return false;
+            }
+            S32 count = positions.mCount;
+            if (primitive.mIndices != INVALID_INDEX)
+            {
+                if (primitive.mIndices < 0 || size_t(primitive.mIndices) >= asset.mAccessors.size()) return false;
+                const auto& indices = asset.mAccessors[primitive.mIndices];
+                if (indices.mType != Accessor::Type::SCALAR ||
+                    (indices.mComponentType != Accessor::ComponentType::UNSIGNED_BYTE &&
+                     indices.mComponentType != Accessor::ComponentType::UNSIGNED_SHORT &&
+                     indices.mComponentType != Accessor::ComponentType::UNSIGNED_INT)) return false;
+                count = indices.mCount;
+            }
+            if (count % 3) return false;
+        }
+    }
+    for (const auto& image : asset.mImages)
+        if (image.mBufferView < INVALID_INDEX || (image.mBufferView != INVALID_INDEX &&
+            size_t(image.mBufferView) >= asset.mBufferViews.size())) return false;
+    for (const auto& texture : asset.mTextures)
+        if (texture.mSource < 0 || size_t(texture.mSource) >= asset.mImages.size() ||
+            texture.mSampler < INVALID_INDEX || (texture.mSampler != INVALID_INDEX &&
+            size_t(texture.mSampler) >= asset.mSamplers.size())) return false;
+    for (const auto& material : asset.mMaterials)
+    {
+        for (S32 index : {material.mPbrMetallicRoughness.mBaseColorTexture.mIndex,
+            material.mPbrMetallicRoughness.mMetallicRoughnessTexture.mIndex, material.mNormalTexture.mIndex,
+            material.mOcclusionTexture.mIndex, material.mEmissiveTexture.mIndex})
+            if (index < INVALID_INDEX || (index != INVALID_INDEX && size_t(index) >= asset.mTextures.size())) return false;
+    }
+    return true;
+}
+
 bool Asset::prep()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_GLTF;
+    if (mLocalMeshPreview && !validLocalMeshInput(*this)) return false;
     // check required extensions
     for (auto& extension : mExtensionsRequired)
     {
@@ -522,6 +631,7 @@ bool Asset::prep()
         {
             return false;
         }
+        if (mLocalMeshPreview && buffer.mData.size() < size_t(buffer.mByteLength)) return false;
     }
 
     for (auto& image : mImages)
@@ -974,7 +1084,11 @@ bool Image::prep(Asset& asset, bool loadIntoVRAM)
         return false;
     }
 
-    // Image::prepImpl containes code that must run on the main thread
+    // Local mesh loading runs on the main thread. Posting back to that same
+    // thread and blocking on the future would deadlock textured previews.
+    if (on_main_thread()) return prepImpl(asset, id);
+
+    // Image::prepImpl contains code that must run on the main thread
     std::promise<bool> prep_promise;
     std::future<bool> prep_future = prep_promise.get_future();
 
@@ -1025,12 +1139,18 @@ bool Image::prepImpl(Asset& asset, const LLUUID& id)
     else if (!asset.mFilename.empty() && !mUri.empty())
     { // loaded locally and not embedded, load the texture as a local preview
         std::string dir = gDirUtilp->getDirName(asset.mFilename);
-        std::string img_file = dir + gDirUtilp->getDirDelimiter() + mUri;
+        auto resolve_path = [&dir](const std::string& uri)
+        {
+            const auto path = (std::filesystem::path(std::u8string(dir.begin(), dir.end())) /
+                std::filesystem::path(std::u8string(uri.begin(), uri.end()))).u8string();
+            return std::string(path.begin(), path.end());
+        };
+        std::string img_file = resolve_path(mUri);
 
         if (!gDirUtilp->fileExists(img_file))
         {
             // URI might be escaped, unescape.
-            img_file = dir + gDirUtilp->getDirDelimiter() + LLURI::unescape(mUri);
+            img_file = resolve_path(LLURI::unescape(mUri));
         }
 
         LLUUID tracking_id = LLLocalBitmapMgr::getInstance()->addUnit(img_file);
@@ -1471,5 +1591,3 @@ const Sampler& Sampler::operator=(const Value& src)
 
     return *this;
 }
-
-

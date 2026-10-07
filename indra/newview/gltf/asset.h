@@ -383,6 +383,10 @@ namespace LL
             // local file this asset was loaded from (if any)
             std::string mFilename;
 
+            // Viewer-only local mesh replacement; never serialized or uploaded.
+            bool mLocalMeshPreview = false;
+            mat4 mLocalMeshTransform = glm::identity<mat4>();
+
             // the last time update() was called according to gFrameTimeSeconds
             F32 mLastUpdateTime = gFrameTimeSeconds;
 

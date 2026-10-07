@@ -47,6 +47,7 @@
 #include "llimagej2c.h"
 #include "llfloaterperms.h"
 #include "llfloaterreg.h"
+#include "llfloaterlocalmesh.h"
 #include "llagentbenefits.h"
 #include "llfilesystem.h"
 #include "llviewercontrol.h"
@@ -493,6 +494,7 @@ void GLTFSceneManager::update()
             continue;
         }
 
+        updateLocalMeshPreview(*mObjects[i]);
         mObjects[i]->mGLTFAsset->update();
     }
 
@@ -681,13 +683,8 @@ void GLTFSceneManager::render(Asset& asset, U8 variant)
 
         if (batches.empty())
         {
-// <AS:Chanayane> Continue through the second cull mode during Exact OIT capture.
-            if (FSExactOIT::captureActive())
-            {
-                continue;
-            }
-// </AS:Chanayane>
-            return;
+            // Double-sided materials can be the only populated cull mode.
+            continue;
         }
 
         LLGLDisable cull_face(ds == 1 ? GL_CULL_FACE : 0);
@@ -699,7 +696,7 @@ void GLTFSceneManager::render(Asset& asset, U8 variant)
 
         for (U32 i = 0; i < batches.size(); ++i)
         {
-            if (batches[i].mPrimitives.empty() || batches[i].mVertexBuffer.isNull())
+            if (batches[i].mPrimitives.empty())
             {
                 continue;
             }
@@ -748,7 +745,7 @@ void GLTFSceneManager::render(Asset& asset, U8 variant)
 
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_GLTF("gltfdc - set vb");
-                batches[i].mVertexBuffer->setBuffer();
+                if (batches[i].mVertexBuffer.notNull()) batches[i].mVertexBuffer->setBuffer();
             }
 
             S32 mat_idx = i - 1;
@@ -769,6 +766,8 @@ void GLTFSceneManager::render(Asset& asset, U8 variant)
                 Node& node = asset.mNodes[pdata.mNodeIndex];
                 Mesh& mesh = asset.mMeshes[node.mMesh];
                 Primitive& primitive = mesh.mPrimitives[pdata.mPrimitiveIndex];
+                if (primitive.mVertexBuffer.isNull()) continue;
+                primitive.mVertexBuffer->setBuffer();
 
                 if (rigged)
                 {
@@ -1046,6 +1045,8 @@ LLDrawable* GLTFSceneManager::lineSegmentIntersect(const LLVector4a& start, cons
 
         if (filter && !filter(mObjects[i].get())) continue;
 
+        if (!pick_unselectable && !LLSelectMgr::instance().canSelectObject(mObjects[i], true)) continue;
+
         // temporary debug -- always double check objects that have GLTF scenes hanging off of them even if the ray doesn't intersect the object bounds
         if (lineSegmentIntersect((LLVOVolume*) mObjects[i].get(), mObjects[i]->mGLTFAsset.get(), start, local_end, -1, pick_transparent, pick_rigged, pick_unselectable, node_hit, primitive_hit, &position, tex_coord, normal, tangent))
         {
@@ -1055,6 +1056,12 @@ LLDrawable* GLTFSceneManager::lineSegmentIntersect(const LLVector4a& start, cons
                 *intersection = position;
             }
             drawable = mObjects[i]->mDrawable;
+            if (mObjects[i]->mGLTFAsset->mLocalMeshPreview)
+            {
+                // A local preview is edited through its prim, not glTF nodes.
+                if (node_hit) *node_hit = -1;
+                if (primitive_hit) *primitive_hit = -1;
+            }
         }
     }
 
@@ -1291,4 +1298,3 @@ void GLTFSceneManager::renderDebug()
     gDebugProgram.unbind();
 
 }
-

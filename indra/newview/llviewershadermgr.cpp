@@ -191,6 +191,7 @@ LLGLSLShader            gDeferredBlurLightProgram;
 LLGLSLShader            gGTAOProgram;
 LLGLSLShader            gGTAOBlurProgram;
 LLGLSLShader            gGTAODebugProgram;
+LLGLSLShader            gPCSSDebugProgram;
 LLGLSLShader            gSSGITraceProgram;
 LLGLSLShader            gSSGIGeometryProgram;
 LLGLSLShader            gSSGIFilterProgram;
@@ -516,7 +517,7 @@ void LLViewerShaderMgr::finalizeShaderList()
     mShaderList.push_back(&gDeferredBumpProgram);
     mShaderList.push_back(&gDeferredPBROpaqueProgram);
 
-    if (gSavedSettings.getBOOL("GLTFEnabled"))
+    if ((gSavedSettings.getBOOL("GLTFEnabled") || gSavedSettings.getBOOL("LocalMeshRendering")))
     {
         mShaderList.push_back(&gGLTFPBRMetallicRoughnessProgram);
     }
@@ -635,7 +636,7 @@ static U32 shaderProgramCount()
 #endif
         + (gSavedSettings.getBOOL("LocalTerrainPaintEnabled") ? 1 : 0)
         + (gGLManager.mHasCubeMapArray ? 3 : 0);
-    const bool gltf = gSavedSettings.getBOOL("GLTFEnabled");
+    const bool gltf = (gSavedSettings.getBOOL("GLTFEnabled") || gSavedSettings.getBOOL("LocalMeshRendering"));
     const U32 deferred_programs = 110
         + 1 // volumetric clouds
         + 1 // upload model PBR preview
@@ -832,7 +833,7 @@ void LLViewerShaderMgr::shaderProgramProcessed(const LLGLSLShader* shader, bool 
     }
 }
 
-void LLViewerShaderMgr::setShaders()
+bool LLViewerShaderMgr::setShaders()
 {
     LL_PROFILE_ZONE_SCOPED;
     //setShaders might be called redundantly by gSavedSettings, so return on reentrance
@@ -840,7 +841,7 @@ void LLViewerShaderMgr::setShaders()
 
     if (!gPipeline.mInitialized || !sInitialized || reentrance || sSkipReload)
     {
-        return;
+        return false;
     }
 
     mShaderList.clear();
@@ -849,7 +850,7 @@ void LLViewerShaderMgr::setShaders()
     {
         // Viewer will show 'hardware requirements' warning later
         LL_INFOS("ShaderLoading") << "Not supported hardware/software" << LL_ENDL;
-        return;
+        return false;
     }
 
     {
@@ -974,7 +975,7 @@ void LLViewerShaderMgr::setShaders()
         gGLManager.printGLInfoString();
         LL_ERRS() << "Unable to load basic shader " << shader_name << ", verify graphics driver installed and current." << LL_ENDL;
         reentrance = false; // For hygiene only, re-try probably helps nothing
-        return;
+        return false;
     }
 
     gPipeline.mShadersLoaded = true;
@@ -1070,6 +1071,7 @@ void LLViewerShaderMgr::setShaders()
     displayShaderCompilationMessage();
 
     reentrance = false;
+    return loaded;
 }
 
 void LLViewerShaderMgr::unloadShaders()
@@ -1527,6 +1529,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gGTAOProgram.unload();
         gGTAOBlurProgram.unload();
         gGTAODebugProgram.unload();
+        gPCSSDebugProgram.unload();
         gSSGITraceProgram.unload();
         gSSGIGeometryProgram.unload();
         gSSGIFilterProgram.unload();
@@ -1828,7 +1831,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         llassert(success);
     }
 
-    if (gSavedSettings.getBOOL("GLTFEnabled"))
+    if ((gSavedSettings.getBOOL("GLTFEnabled") || gSavedSettings.getBOOL("LocalMeshRendering")))
     {
         if (success)
         {
@@ -3729,6 +3732,23 @@ bool LLViewerShaderMgr::loadShadersDeferred()
             LL_INFOS() << "Loaded TAA shaders and validated all scene/history/motion/depth sampler channels." << LL_ENDL;
     }
 
+    // The shadow diagnostic is independent of GTAO and ordinary lighting.
+    if (success)
+    {
+        gPCSSDebugProgram.mName = "PCSS White Geometry";
+        gPCSSDebugProgram.mShaderFiles = {
+            make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER),
+            make_pair("deferred/pcssDebugF.glsl", GL_FRAGMENT_SHADER)};
+        gPCSSDebugProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        gPCSSDebugProgram.clearPermutations();
+        add_common_permutations(&gPCSSDebugProgram);
+        if (!gPCSSDebugProgram.createShader())
+        {
+            gPCSSDebugProgram.unload();
+            LL_WARNS("ShaderLoading") << "PCSS white-geometry diagnostic unavailable." << LL_ENDL;
+        }
+    }
+
     // Optional AO shaders have a local failure path; legacy SSAO remains usable.
     if (success && gSavedSettings.getBOOL("RenderGTAOEnabled"))
     {
@@ -3824,7 +3844,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     }
 
     success = FSExactOIT::loadShaders(success, mShaderLevel[SHADER_DEFERRED], use_sun_shadow,
-                                      gSavedSettings.getBOOL("GLTFEnabled"), mShaderList);
+                                      (gSavedSettings.getBOOL("GLTFEnabled") || gSavedSettings.getBOOL("LocalMeshRendering")), mShaderList);
     return success;
 }
 

@@ -132,7 +132,7 @@ void LLPanelInventoryListItemBase::draw()
 
     LLPanel::draw();
     if (mIconCtrl && mIconCtrl->getVisible()
-        && LLAttachmentsMgr::instance().isAttachmentPending(mInventoryItemUUID))
+        && LLAttachmentsMgr::instance().isAttachmentPending(gInventory.getLinkedItemID(mInventoryItemUUID)))
     {
         LLLoadingIndicator::drawSmall(mIconCtrl->getRect(), getDrawContext().mAlpha);
     }

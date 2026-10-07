@@ -79,10 +79,10 @@ float pcssShadow(sampler2D depthMap,
     vec4 receiver = inverseMatrix * vec4(tc, 1.0);
     vec3 pos = receiver.xyz / receiver.w;
 
-    // The visible geometric face, rather than its shading/normal-map normal,
-    // determines which part of the emitter is above the surface horizon.
-    // Grazing exit faces may occupy less than a shadow texel: sampling clear
-    // depth there otherwise invents bright triangles that bias cannot remove.
+    // Geometry determines receiver-plane correction, not light visibility.
+    // Capping visibility at each triangle's geometric horizon stamps hard
+    // black facets over the filtered shadow on uneven, smooth-shaded meshes.
+    // Let the depth map resolve occlusion and the material handle N dot L.
     if (dot(normal, -pos) < 0.0) normal = -normal;
     float nl = dot(normal, lightDir);
     float horizonWidth = pcss_params.x * sqrt(max(1.0 - nl * nl, 0.0));
@@ -94,16 +94,6 @@ float pcssShadow(sampler2D depthMap,
                                   dot(normal, normalize(inverseMatrix[1].xyz)));
         horizonWidth = sourceRadius * length(emitterNormal) / max(distance, 0.001);
     }
-    float visibility = 1.0;
-    if (nl <= -horizonWidth) return 0.0;
-    if (nl < horizonWidth)
-    {
-        // Area of the circular emitter above the receiver plane. This keeps
-        // finite lights soft as they cross the horizon instead of a hard cut.
-        float h = clamp(nl / max(horizonWidth, 1e-7), -1.0, 1.0);
-        visibility = 0.5 + (asin(h) + h * sqrt(max(1.0 - h * h, 0.0))) / 3.14159265;
-    }
-
     // The legacy normalized-depth bias grows with cascade depth range. Use
     // metres here to retain close contacts consistently across cascades.
     vec4 biased = start + lightMatrix * vec4(lightDir * pcss_params.z, 0.0);
@@ -119,6 +109,11 @@ float pcssShadow(sampler2D depthMap,
     bool lightFacing = nl > 0.0;
     vec2 slope = lightFacing && abs(plane.z) > 1e-7 ? -plane.xy / plane.z : vec2(0.0);
     vec2 receiverSlope = slope;
+    // At the emitter horizon this slope tends to infinity and its subpixel
+    // bias can erase even a solid blocker before the wall guard runs. Fade
+    // the comparison correction continuously to the exit-face case. Retain
+    // the actual plane above for identifying texels belonging to the receiver.
+    slope *= smoothstep(0.0, max(horizonWidth, 1e-7), nl);
 
     // A receiver plane is only reliable for self-shadow correction where the
     // map actually contains that receiver. A wall covering the entire center
@@ -241,12 +236,27 @@ float pcssShadow(sampler2D depthMap,
     if (sourceRadius > 0.0)
         radius = blockers > 0.0 ? sourceRadius * max(lightDistance - averageDistance, 0.0) / max(averageDistance, 0.001) : 0.0;
     radius = clamp(radius, pcss_params.w, pcss_params.y);
+    if (nl < 0.25)
+    {
+        // Exit faces cannot use receiver-plane correction. Resolve two shadow
+        // texels so a sub-texel contact kernel cannot expose the entry-depth
+        // raster as stripes. Fade out on grazing entry faces to avoid a radius
+        // jump at the light horizon; front-facing contacts keep their radius.
+        // Homogeneous differences avoid subtracting distant world positions.
+        vec4 texelX = inverseMatrix[0]/float(size.x), texelY = inverseMatrix[1]/float(size.y);
+        vec3 worldX = (texelX.xyz-pos*texelX.w)/(receiver.w+texelX.w);
+        vec3 worldY = (texelY.xyz-pos*texelY.w)/(receiver.w+texelY.w);
+        vec2 emitterX = vec2(dot(worldX,tangent),dot(worldX,bitangent));
+        vec2 emitterY = vec2(dot(worldY,tangent),dot(worldY,bitangent));
+        float rasterRadius = 2.0*max(length(emitterX),length(emitterY)) * (1.0-smoothstep(0.0,0.25,nl));
+        radius = max(radius, min(rasterRadius,pcss_params.y));
+    }
     // Even an empty sparse search needs the contact filter: returning fully
     // lit here popped small blockers and cut off the minimum-softness edge.
     if (radius <= 0.0)
     {
         vec3 contact = pcssCompare(depthMap, tc.xy, tc, slope, bias, slopeError, receiverSlope);
-        return min(visibility, receiverFound + contact.z > 0.0 ? contact.y : contact.x);
+        return receiverFound + contact.z > 0.0 ? contact.y : contact.x;
     }
     vec3 shadow = vec3(0.0, 0.0, receiverFound);
     for (int i = 0; i < filterCount; ++i)
@@ -256,12 +266,10 @@ float pcssShadow(sampler2D depthMap,
         if (offset.z <= -1.0 || any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) shadow.xy += 1.0;
         else shadow += pcssCompare(depthMap, uv, tc, slope, bias, slopeError, receiverSlope);
     }
-    // The map can already include the same horizon occlusion; cap its
-    // visibility rather than multiplying and counting that shadow twice.
     // A grazing tangent can merely cross a wall at one texel. Require a
     // matching 2x2 patch in the search/filter before exempting receiver
     // texels; otherwise retain the wall guard. This also handles mixed
     // caster/floor bilinear taps without adding a dark border to the floor.
-    return min(visibility, (shadow.z > 0.0 ? shadow.y : shadow.x) / float(filterCount));
+    return (shadow.z > 0.0 ? shadow.y : shadow.x) / float(filterCount);
 }
 #endif
