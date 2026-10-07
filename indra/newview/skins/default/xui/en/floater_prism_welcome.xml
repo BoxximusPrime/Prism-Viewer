@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="prism_welcome" title="WELCOME TO PRISM" layout="topleft"
+ width="600" height="572" can_resize="false" can_minimize="false" can_close="false"
+ save_rect="false" single_instance="true">
+ <text name="eyebrow" layout="topleft" left="28" top="40" width="544" height="16"
+  font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">YOUR WORLD. YOUR WAY.</text>
+ <text name="heading" layout="topleft" left="28" top="64" width="544" height="28"
+  font="SansSerifHuge" text_color="LabelTextColor" mouse_opaque="false">Welcome to Prism</text>
+ <text name="intro" layout="topleft" left="28" top="98" width="544" height="18"
+  font="SansSerif" text_color="0.70 0.76 0.76 1" mouse_opaque="false">A few choices to make yourself at home.</text>
+
+ <panel name="graphics_card" layout="topleft" left="24" top="136" width="552" height="144"
+  border="false" background_visible="true" bg_alpha_image="Rounded_Rect"
+  bg_alpha_image_overlay="0.105 0.135 0.14 1">
+  <text name="graphics_heading" layout="topleft" left="20" top="16" width="512" height="18"
+   font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">01  /  GRAPHICS</text>
+  <check_box name="update_graphics" layout="topleft" left="20" top="46" width="512" height="22"
+   label="Use the latest Prism graphics defaults" initial_value="false"
+   tool_tip="Updates SSS, PCSS, GTAO, SSGI, TAA, Post, Bloom, Eye Adaptation, Water, Clouds, Ground Fog and Volumetric Fog, including effect tuning, colours and SSS detection lists." />
+  <text name="graphics_description" layout="topleft" left="20" top="78" width="512" height="54"
+   font="SansSerifSmall" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">Apply Prism's latest lighting, shadows, water, clouds and post-processing defaults. This replaces your effect tuning, colours and SSS detection lists.</text>
+  <text name="graphics_ready" layout="topleft" left="20" top="48" width="512" height="76"
+   font="SansSerif" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">Your graphics are ready.
+
+Your current graphics preferences will be kept. You can adjust effects any time in Preferences &gt; Graphics.</text>
+ </panel>
+
+ <panel name="movement_card" layout="topleft" left="24" top="292" width="552" height="184"
+  border="false" background_visible="true" bg_alpha_image="Rounded_Rect"
+  bg_alpha_image_overlay="0.105 0.135 0.14 1">
+  <text name="movement_heading" layout="topleft" left="20" top="16" width="512" height="18"
+   font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">02  /  CAMERA &amp; MOVEMENT</text>
+  <check_box name="try_movement" layout="topleft" left="20" top="46" width="512" height="22"
+   label="Try the new camera &amp; movement experience" initial_value="false"
+   tool_tip="Enables world-drag turning, backward-facing walking, camera-relative movement with independent orbit, dynamic shoulder camera, and prevention of mouselook when zooming in. Camera-relative movement takes priority over backward-facing walking and drag turning." />
+  <text name="movement_description" layout="topleft" left="20" top="78" width="512" height="58"
+   font="SansSerif" word_wrap="true" text_color="0.80 0.85 0.85 1" mouse_opaque="false">Move in the direction you're looking, orbit freely, and ease into an over-the-shoulder view as you zoom in. Stay in third person even at the closest zoom.</text>
+  <text name="movement_hint" layout="topleft" left="20" top="148" width="512" height="18"
+   font="SansSerifSmall" text_color="0.62 0.71 0.71 1" mouse_opaque="false">Optional. Each part can be adjusted or turned off later.</text>
+ </panel>
+
+ <text name="preferences_hint" layout="topleft" left="28" top="488" width="544" height="30"
+  font="SansSerifSmall" word_wrap="true" text_color="0.65 0.72 0.72 1" mouse_opaque="false">Find these controls in Preferences &gt; Move &amp; View &gt; Prism Options,
+under Camera &amp; Movement Experience.</text>
+ <text name="choice_hint" layout="topleft" left="28" top="536" width="376" height="18"
+  font="SansSerifSmall" text_color="0.65 0.72 0.72 1" mouse_opaque="false">Only checked options are applied.</text>
+ <button name="continue_btn" layout="topleft" left="424" top="530" width="152" height="28"
+  label="Let's go" />
+</floater>

@@ -1336,78 +1336,10 @@ static void show_required_update_prompt()
     LLNotificationsUtil::add("PauseForUpdate", args, LLSD(), on_required_update_response);
 }
 
-void velopack_check_for_updates(const std::string& required_version, const std::string& relnotes_url)
+void velopack_check_for_updates(const std::string&, const std::string&)
 {
-    if (sUpdateUrl.empty())
-    {
-        LL_DEBUGS("Velopack") << "No update URL set, skipping update check" << LL_ENDL;
-        return;
-    }
-
-    // Allow downgrades only for rollbacks: VVM requires a version that's
-    // strictly lower than what we're running (e.g., a retracted build).
-    bool has_required = !required_version.empty();
-    int ver_cmp = has_required ? compare_running_version(required_version) : 0;
-    bool allow_downgrade = ver_cmp > 0; // running > required -> rollback scenario
-    ensure_update_manager(allow_downgrade);
-    if (!sUpdateManager)
-        return;
-
-    // Ask Velopack to check its feed - this is the source of truth
-    vpkc_update_info_t* update_info = nullptr;
-    vpkc_update_check_t result = vpkc_check_for_updates(sUpdateManager, &update_info);
-
-    if (result != UPDATE_AVAILABLE || !update_info)
-    {
-        LL_INFOS("Velopack") << "No update available from feed (result=" << result << ")" << LL_ENDL;
-        return;
-    }
-
-    // Extract the actual target version from Velopack's feed
-    std::string target_version = update_info->TargetFullRelease->Version
-        ? update_info->TargetFullRelease->Version : "";
-    LL_INFOS("Velopack") << "Update available: " << target_version
-                         << " (required_version=" << required_version << ")" << LL_ENDL;
-
-    // Store state for the prompt/download phase
-    sReleaseNotesUrl = relnotes_url;
-    sTargetVersion = target_version;
-    if (sPendingCheckInfo)
-    {
-        vpkc_free_update_info(sPendingCheckInfo);
-    }
-    sPendingCheckInfo = update_info;
-
-    // Determine if this is mandatory: running version is below VVM's required floor
-    bool is_required = ver_cmp < 0; // running < required -> must update
-    sIsRequired = is_required;
-
-    if (is_required)
-    {
-        LL_INFOS("Velopack") << "Required update (running below " << required_version
-                             << "), prompting user for " << target_version << LL_ENDL;
-        show_required_update_prompt();
-        return;
-    }
-
-    // Optional update - check user preference
-    U32 updater_setting = gSavedSettings.getU32("UpdaterServiceSetting");
-
-    if (updater_setting == 3)
-    {
-        // "Install each update automatically" - download silently, apply on quit
-        LL_INFOS("Velopack") << "Optional update to " << target_version
-                             << ", downloading automatically (UpdaterServiceSetting=3)" << LL_ENDL;
-        velopack_download_pending_update();
-        return;
-    }
-
-    // Default / value 1: "Ask me when an optional update is ready to install"
-    LL_INFOS("Velopack") << "Optional update available (" << target_version << "), prompting user" << LL_ENDL;
-    LLSD args;
-    args["VERSION"] = target_version;
-    args["URL"] = relnotes_url;
-    LLNotificationsUtil::add("PromptOptionalUpdate", args, LLSD(), on_optional_update_response);
+    // Prism's own update check provides release information and download links.
+    // Official viewer update feeds, downloads and required updates are disabled.
 }
 
 std::string velopack_get_current_version()

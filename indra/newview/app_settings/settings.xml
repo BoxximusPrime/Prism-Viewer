@@ -2,6 +2,13 @@
 <llsd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="llsd.xsd">
 <map>
+  <key>PrismWelcomeShown</key>
+  <map>
+    <key>Comment</key><string>Whether this settings profile has completed the Prism welcome screen.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
   <key>PrismGraphicsDefaultsVersion</key>
   <map>
     <key>Comment</key><string>Viewer release whose new graphics feature defaults were last reviewed or already matched.</string>
@@ -23,63 +30,63 @@
     <key>Comment</key><string>Experimental EEP-driven volumetric cloud layer. Off uses the original cloud renderer. Reflection probes retain classic clouds.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>0</integer>
+    <key>Value</key><boolean>1</boolean>
   </map>
   <key>RenderVolumeCloudAltitude</key>
   <map>
     <key>Comment</key><string>Local volumetric cloud base altitude in world metres (0-10000). Does not change EEP assets.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1000.0</real>
+    <key>Value</key><real>1180</real>
   </map>
   <key>RenderVolumeCloudThickness</key>
   <map>
     <key>Comment</key><string>Local volumetric cloud layer thickness in metres (10-2000).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>250.0</real>
+    <key>Value</key><real>1290</real>
   </map>
   <key>RenderVolumeCloudDensity</key>
   <map>
     <key>Comment</key><string>Local volumetric cloud coverage multiplier (0-2). Zero clears the sky; one preserves EEP coverage. Lower values create more gaps. Does not modify environment assets.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.8</real>
+    <key>Value</key><real>0.550000011920928955078125</real>
   </map>
   <key>RenderVolumeCloudSunlight</key>
   <map>
     <key>Comment</key><string>Local sunlight strength on volumetric clouds (0-2). One is normal; lower values reduce bright clouds' influence on eye adaptation. Zero leaves ambient lighting. Does not change cloud coverage or moonlight.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.08</real>
   </map>
   <key>RenderVolumeCloudLightPenetration</key>
   <map>
     <key>Comment</key><string>Sun/moon light penetration in volumetric clouds (0.1-4). Higher values let light reach deeper; one is normal. Cloud opacity and coverage are unchanged.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.9500000476837158203125</real>
   </map>
   <key>RenderVolumeCloudEdgeGlow</key>
   <map>
     <key>Comment</key><string>Forward scattering in volumetric clouds (0-2). Lower values soften bright edges when looking toward the sun or moon. One is normal.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0</real>
   </map>
   <key>RenderVolumeCloudInternalLight</key>
   <map>
     <key>Comment</key><string>Sun/moon light scattered inside volumetric clouds (0-2). Lower values reduce the glow in shaded bodies; zero leaves direct and ambient light. One is normal.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.699999988079071044921875</real>
   </map>
   <key>RenderVolumeCloudAmbient</key>
   <map>
     <key>Comment</key><string>Environment ambient light on volumetric clouds (0-2). One is normal, including the existing reduction at night; zero leaves sun/moon lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.60000002384185791015625</real>
   </map>
   <key>RenderVolumeCloudQuality</key>
   <map>
@@ -107,7 +114,7 @@
     <key>Comment</key><string>Multiplier for the environment's height-weighted fog path (0-4). One follows authored haze; zero clears ground fog. Used only when following the environment.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1</real>
+    <key>Value</key><real>2.6000001430511474609375</real>
   </map>
   <key>RenderGroundFogDensity</key>
   <map>
@@ -121,21 +128,21 @@
     <key>Comment</key><string>World altitude where fog starts thinning upward. Raise this for elevated terrain or sky platforms. Range -500-10000.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>25</real>
+    <key>Value</key><real>1534</real>
   </map>
   <key>RenderGroundFogHeight</key>
   <map>
     <key>Comment</key><string>Height over which density falls to about one third. Lower values keep the fog close to the ground. Range 1-200.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>12</real>
+    <key>Value</key><real>200</real>
   </map>
   <key>RenderGroundFogDistance</key>
   <map>
     <key>Comment</key><string>Maximum range from the camera at which ground fog is calculated, also limited by draw distance. Range 16-1024 metres.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>256</real>
+    <key>Value</key><real>1024</real>
   </map>
   <key>RenderGroundFogStartDistance</key>
   <map>
@@ -149,35 +156,35 @@
     <key>Comment</key><string>Distance over which ground fog smoothly reaches normal density after Start distance (0-1024 metres). Zero disables the fade. Does not change Maximum range.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0</real>
+    <key>Value</key><real>25</real>
   </map>
   <key>RenderGroundFogNoise</key>
   <map>
     <key>Comment</key><string>Zero is smooth fog. Higher values create more clear and dense patches. Range 0-1.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.5</real>
+    <key>Value</key><real>0</real>
   </map>
   <key>RenderGroundFogNoiseScale</key>
   <map>
     <key>Comment</key><string>World size of the fog patches. Range 5-200.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>40</real>
+    <key>Value</key><real>5</real>
   </map>
   <key>RenderGroundFogSpeed</key>
   <map>
     <key>Comment</key><string>Speed of the fog patches. Zero freezes the pattern. Range 0-5.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.3</real>
+    <key>Value</key><real>0</real>
   </map>
   <key>RenderGroundFogBrightness</key>
   <map>
     <key>Comment</key><string>Scattered fog brightness. Lighting still follows the environment and nearby lights. Range 0-3.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1</real>
+    <key>Value</key><real>1.25</real>
   </map>
   <key>RenderGroundFogColor</key>
   <map>
@@ -198,7 +205,7 @@
     <key>Comment</key><string>Fog quality: 0 Performance (16 samples), 1 Balanced (24), 2 High (32), 3 Ultra (64). Ground fog alone uses quarter width/height for Performance/Balanced, half for High and full for Ultra; authored boxes retain half/full resolution. Local lights and shadows are independent.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>S32</string>
-    <key>Value</key><integer>1</integer>
+    <key>Value</key><string>0</string>
   </map>
   <key>RenderVolumeFogShadows</key>
   <map>
@@ -240,7 +247,7 @@
     <key>Comment</key><string>Direct light scattering strength in fog (0-0.30, default 0.10). Does not change surface lighting or fog density.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.10</real>
+    <key>Value</key><real>0.2250000089406967163085938</real>
   </map>
   <key>RenderVolumeFogAnisotropy</key>
   <map>
@@ -254,14 +261,14 @@
     <key>Comment</key><string>Soft ceiling for each point/projector light's fog contribution after Light effect (0-0.100, default 0.100). Dim contributions keep their brightness and color. Zero disables the cap. Does not affect sun/moon, ambient or surface lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.100</real>
+    <key>Value</key><real>0.01500000059604644775390625</real>
   </map>
   <key>RenderVolumeFogLightSaturation</key>
   <map>
     <key>Comment</key><string>Color saturation multiplier for point/projector lights in fog (0-4, default 1). Zero makes light neutral; one preserves source and projector texture color; higher values boost existing color without raising peak brightness. White lights stay white. Does not affect sun/moon, ambient or surface lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>4</real>
   </map>
   <key>RenderVolumeFog</key>
   <map>
@@ -374,7 +381,7 @@
     <key>Value</key><integer>0</integer>
   </map>
   <key>RenderTAAStaticDetails</key>
-  <map><key>Comment</key><string>Stabilize fine static details with stronger history accumulation and bounded retention through jitter; motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
+  <map><key>Comment</key><string>Stabilize fine static details with stronger history accumulation and bounded retention through jitter; motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><boolean>0</boolean></map>
   <key>RenderTAAHistoryWeight</key>
   <map><key>Comment</key><string>Base TAA history weight (0.5 to 0.97). Fine static detail stabilization can raise this to 0.97; motion and invalid history lower it.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.97</real></map>
   <key>RenderTAAMotionProtection</key>
@@ -388,7 +395,7 @@
   <key>RenderPostSharpenEnabled</key>
   <map><key>Comment</key><string>Apply sharpening after antialiasing with any AA mode. Replaces TAA presentation sharpening while enabled.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderPostSharpenStrength</key>
-  <map><key>Comment</key><string>Post-processing sharpening strength (0 to 2), using the bounded TAA presentation filter.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real></map>
+  <map><key>Comment</key><string>Post-processing sharpening strength (0 to 2), using the bounded TAA presentation filter.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.05000007152557373046875</real></map>
   <key>RenderChromaticAberrationStrength</key>
   <map><key>Comment</key><string>Final-scene radial red/blue separation in pixels at the image corners (0 to 20). Zero disables chromatic aberration. Shared by Photo Tools and Graphics Post.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>4.0</real></map>
   <key>RenderTAADebug</key>
@@ -410,22 +417,22 @@
   <key>RenderSSGIStrength</key>
   <map>
     <key>Comment</key><string>SSGI indirect diffuse contribution (0 to 30). Zero skips SSGI unless a diagnostic is selected.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>14.90000057220458984375</real>
   </map>
   <key>RenderSSGIAvatarStrength</key>
   <map>
     <key>Comment</key><string>Multiplier for local SSGI received by opaque avatar bodies and attachments. Does not change light donated to surroundings, direct lighting, or reflection probes.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.0</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0.25</real>
   </map>
   <key>RenderSSGIQuality</key>
   <map>
     <key>Comment</key><string>SSGI cosine-weighted trace quality: 0 Performance (4 rays, 16 steps), 1 Balanced (8 rays, 24 steps), 2 High (16 rays, 32 steps).</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><integer>1</integer>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><string>0</string>
   </map>
   <key>RenderSSGIDenoise</key>
   <map>
     <key>Comment</key><string>SSGI edge-aware spatial denoising: 0 Light (original filter), 1 Balanced, 2 Strong. Higher levels smooth a wider area of indirect light.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><integer>1</integer>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>S32</string><key>Value</key><string>2</string>
   </map>
   <key>RenderSSGIDebug</key>
   <map>
@@ -477,28 +484,28 @@
     <key>Comment</key><string>Anchor the sun/moon PCSS sampling pattern to world axes while the camera orbits. Disable to compare the previous camera-aligned pattern. Applies immediately; projector sampling is unaffected.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><boolean>true</boolean>
+    <key>Value</key><boolean>0</boolean>
   </map>
   <key>RenderPCSSLightSize</key>
   <map>
     <key>Comment</key><string>Sun/moon angular diameter in degrees for PCSS (0.1 to 10). Larger values soften distant shadows more.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.45</real>
+    <key>Value</key><real>0.689999997615814208984375</real>
   </map>
   <key>RenderPCSSMaxSoftness</key>
   <map>
     <key>Comment</key><string>Maximum world-space PCSS penumbra radius in metres (0.05 to 3).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.30</real>
+    <key>Value</key><real>0.7000000476837158203125</real>
   </map>
   <key>RenderPCSSMinSoftness</key>
   <map>
     <key>Comment</key><string>Minimum PCSS penumbra radius in metres (0 to 0.5), limited by maximum softness. Zero preserves physically sharp contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.05</real>
+    <key>Value</key><real>0.02999999932944774627685547</real>
   </map>
   <key>RenderPCSSProjectorSize</key>
   <map>
@@ -526,7 +533,7 @@
     <key>Comment</key><string>Surface-aware cleanup amount for opaque PCSS shadows (0 to 3). Each unit supplies a 4 mm surface radius plus a one-pixel minimum; closeup filtering is bounded. Zero disables cleanup; larger values also soften small contacts.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>3</real>
   </map>
   <key>BoxxySSSEnabled</key>
   <map>
@@ -559,7 +566,7 @@
     <key>Type</key>
     <string>String</string>
     <key>Value</key>
-    <string>body, head, hands, feet, ear, ears, perky, Noelle, eye, eyes, squish</string>
+    <string>body, head, hands, feet, ear, ears, perky, Noelle, squish, eye, eyes, pushup, soft thigh</string>
   </map>
   <key>BoxxySSSOverlayNames</key>
   <map>
@@ -614,7 +621,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.45000002</real>
+    <real>1</real>
   </map>
   <key>BoxxySSSDepth</key>
   <map>
@@ -625,7 +632,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.078000009</real>
+    <real>0.05000000074505805969238281</real>
   </map>
   <key>BoxxySSSWarmth</key>
   <map>
@@ -636,7 +643,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.69999999</real>
+    <real>0.650000035762786865234375</real>
   </map>
   <key>BoxxySSSMaxDistance</key>
   <map>
@@ -658,21 +665,21 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.15000001</real>
+    <real>0</real>
   </map>
   <key>BoxxySSSGrazingStrength</key>
   <map>
     <key>Comment</key><string>Additional warm diffuse scattering at light-facing grazing angles in Combined mode. Independent of wrap and transmission; zero preserves existing lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.94999999</real>
+    <key>Value</key><real>0.2000000029802322387695312</real>
   </map>
   <key>BoxxySSSGrazingSmoothing</key>
   <map>
     <key>Comment</key><string>Independent blur radius in millimeters for Combined grazing scatter. Zero keeps grazing in the ordinary skin diffusion; positive values isolate and smooth only grazing light.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>90</real>
+    <key>Value</key><real>0</real>
   </map>
   <key>BoxxySSSTransmission</key>
   <map>
@@ -683,14 +690,14 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>0.60000002</real>
+    <real>0.800000011920928955078125</real>
   </map>
   <key>BoxxySSSMaxTransmission</key>
   <map>
     <key>Comment</key><string>Maximum per-light skin transmission response after brightness and local boost, preserving color. Zero is unlimited. Light color and intensity still apply.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.15</real>
+    <key>Value</key><real>3.150000095367431640625</real>
   </map>
   <key>BoxxySSSPointTransmissionBoost</key>
   <map>
@@ -709,7 +716,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>6.5</real>
+    <real>3</real>
   </map>
   <key>BoxxySSSTransmissionSmoothing</key>
   <map>
@@ -725,7 +732,7 @@
     <string>Maximum measured light path through skin in millimeters. Transmission fades across the full measured distance, independently of brightness and absorption. Requires a verified skin entry/exit pair.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>118</real>
+    <key>Value</key><real>124</real>
   </map>
   <key>BoxxySSSShadowThickness</key>
   <map>
@@ -752,7 +759,7 @@
     <string>Resolution of each focused local-light skin thickness map: 512, 1024, or 2048. Higher values resolve moving fingers more accurately, at greater GPU memory and depth-rendering cost. Sun/moon depth remains 1024.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>S32</string>
-    <key>Value</key><integer>1024</integer>
+    <key>Value</key><string>2048</string>
   </map>
   <key>BoxxyShowNowPlaying</key>
   <map>
@@ -9724,7 +9731,7 @@
       <key>Type</key>
       <string>U32</string>
       <key>Value</key>
-      <integer>2</integer>
+      <string>3</string>
     </map>
     <key>RenderNearClip</key>
     <map>
@@ -10418,7 +10425,7 @@
       <key>Type</key>
       <string>S32</string>
       <key>Value</key>
-      <integer>2</integer>
+      <real>1</real>
     </map>
   <key>RenderReflectionsEnabled</key>
   <map>
@@ -11375,14 +11382,14 @@
       <key>Comment</key><string>Procedural water slope strength (0-3). Does not change wave speeds or fine normal-map detail.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>0.2</real>
+      <key>Value</key><real>0.25</real>
     </map>
   <key>RenderWaterCrossSwellStrength</key>
     <map>
       <key>Comment</key><string>Secondary crossing swell strength (0-3). Zero leaves only the dominant swell and wind chop.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>1.2</real>
+      <key>Value</key><real>0.75</real>
     </map>
   <key>RenderWaterWaveScale</key>
     <map>
@@ -11410,7 +11417,7 @@
       <key>Comment</key><string>Wave animation speed multiplier (0-3). Zero pauses waves and fine ripples; one follows the environment speed. Changing speed preserves wave phase.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>0.95</real>
+      <key>Value</key><real>0.60000002384185791015625</real>
     </map>
     <key>RenderWaterShallowDamping</key>
     <map>
@@ -11445,7 +11452,7 @@
       <key>Comment</key><string>Water absorption/scattering density multiplier (0-4) relative to the environment preset.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>1.2</real>
+      <key>Value</key><real>0.1500000059604644775390625</real>
     </map>
     <key>RenderWaterSunScatteringScale</key>
     <map>
@@ -11459,7 +11466,7 @@
       <key>Comment</key><string>Ambient sky light strength inside the water (0-3).</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>0.95</real>
+      <key>Value</key><real>1</real>
     </map>
     <key>RenderWaterLocalReflections</key>
     <map>
@@ -11484,14 +11491,14 @@
       <key>Comment</key><string>Sun/moon caustic concentration on submerged surfaces (0-3). Driven by the evolving wave slopes; zero disables caustics.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>2.05</real>
+      <key>Value</key><real>0.3499999940395355224609375</real>
     </map>
     <key>RenderWaterClarity</key>
     <map>
       <key>Comment</key><string>Water visibility-distance multiplier (0.25-8). 1 preserves the environment and density settings; 2 allows twice the viewing distance.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>F32</string>
-      <key>Value</key><real>0.45</real>
+      <key>Value</key><real>0.3499999940395355224609375</real>
     </map>
     <key>RenderWaterSubmergedLighting</key>
     <map>
@@ -11607,7 +11614,7 @@
         <key>Type</key>
         <string>Boolean</string>
         <key>Value</key>
-        <integer>0</integer>
+        <boolean>1</boolean>
     </map>
     <key>ReplaySession</key>
     <map>
@@ -13560,7 +13567,7 @@
       <key>Comment</key><string>Reserve a right-side dock for Build/Edit tools.</string>
       <key>Persist</key><integer>1</integer>
       <key>Type</key><string>Boolean</string>
-      <key>Value</key><integer>1</integer>
+      <key>Value</key><integer>0</integer>
     </map>
     <key>BuildEditDockWidth</key>
     <map>
@@ -14212,7 +14219,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-      <string>Sharp,_and_clear_int_#2-1789256717858.wav</string>
+      <string>Sharp,_and_clear_UI__#3-1789256826481.wav</string>
     </map>
     <key>UISndWindowFocusName</key>
     <map>
@@ -14542,7 +14549,7 @@
       <key>Type</key>
       <string>String</string>
       <key>Value</key>
-        <string>d9275940-9674-4081-b1ab-a61fa0043368</string>
+        <string>be704bcf-675c-0ee0-9178-1cd04db347e9</string>
     </map>
     <key>UISpinctrlBtnHeight</key>
     <map>
@@ -14675,39 +14682,6 @@
       <string>S32</string>
       <key>Value</key>
       <integer>15</integer>
-    </map>
-    <key>UpdaterServiceSetting</key>
-    <map>
-      <key>Comment</key>
-      <string>Configure updater service.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <integer>3</integer>
-    </map>
-    <key>UpdaterWillingToTest</key>
-    <map>
-      <key>Comment</key>
-      <string>Whether or not the updater should offer Beta upgrades.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>Boolean</string>
-      <key>Value</key>
-      <string>1</string>
-    </map>
-    <key>UpdaterShowReleaseNotes</key>
-    <map>
-        <key>Comment</key>
-        <string>Enables displaying of the Release notes in a web floater after update. 0 - don't show, 1 - show, 2 - show even for test viewers</string>
-        <key>Persist</key>
-        <integer>1</integer>
-        <key>Type</key>
-        <string>S32</string>
-        <key>Value</key>
-        <integer>1</integer>
     </map>
     <key>UploadBakedTexOld</key>
     <map>
@@ -17976,17 +17950,6 @@
   <map>
     <key>Comment</key>
     <string>Face the camera and use the forward walk animation while moving backward in third person</string>
-    <key>Persist</key>
-    <integer>1</integer>
-    <key>Type</key>
-    <string>Boolean</string>
-    <key>Value</key>
-    <integer>0</integer>
-  </map>
-  <key>BoxxyExperimentalSwimming</key>
-  <map>
-    <key>Comment</key>
-    <string>Experimental swimming in Linden water using permitted flight controls, with a local animation fallback</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>

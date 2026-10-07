@@ -46,7 +46,6 @@
 #include "llviewertexturelist.h"
 #include "llgroupmgr.h"
 #include "llagent.h"
-#include "llboxxyswim.h"
 #include "llagentcamera.h"
 #include "llagentlanguage.h"
 #include "llagentui.h"
@@ -1161,8 +1160,8 @@ bool LLAppViewer::init()
 
     gGLActive = false;
 
-    // Prism has no update service yet; never query the official viewer updater.
-    LL_INFOS("InitInfo") << "Prism automatic updates are not configured." << LL_ENDL;
+    // Prism checks its own release manifest through the login panel.
+    LL_INFOS("InitInfo") << "Linden viewer automatic updates are disabled in Prism." << LL_ENDL;
 
     {
         // Iterate over --leap command-line options. But this is a bit tricky: if
@@ -5306,8 +5305,6 @@ void LLAppViewer::idle()
 
 
     F32 yaw = 0.f;              // radians
-
-    LLBoxxySwim::update();
 
     if (!gDisconnected)
     {

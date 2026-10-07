@@ -27,16 +27,7 @@
 #ifndef LL_LLVVMQUERY_H
 #define LL_LLVVMQUERY_H
 
-/**
- * Initialize the VVM update check.
- *
- * This launches a coroutine that queries the Viewer Version Manager (VVM)
- * to check for available updates. If an update is available, it configures
- * Velopack with the update URL and initiates the update check/download.
- *
- * The release notes URL from the VVM response is posted to the "relnotes"
- * event pump for display.
- */
+// Compatibility entry point; official VVM updates are disabled in Prism.
 void initVVMUpdateCheck();
 
 #endif // LL_LLVVMQUERY_H

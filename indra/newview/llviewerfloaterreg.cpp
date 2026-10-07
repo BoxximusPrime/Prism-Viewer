@@ -140,6 +140,7 @@
 #include "llfloaterregionrestarting.h"
 #include "llfloaterreporter.h"
 #include "llfloatersavecamerapreset.h"
+#include "llfloaterprismwelcome.h"
 #include "llfloatersaveprefpreset.h"
 #include "llfloatersceneloadstats.h"
 #include "llfloaterscripting.h"
@@ -431,6 +432,8 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("inventory_llm_sort", "floater_inventory_llm_sort.xml", &LLFloaterReg::build<LLFloaterInventoryLLMSort>);
     LLFloaterReg::add("inventory_cleanup_review", "floater_inventory_cleanup_review.xml", &LLFloaterReg::build<LLFloaterInventoryCleanupReview>);
     LLFloaterReg::add("inventory_settings", "floater_inventory_settings.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterInventorySettings>);
+    LLFloaterReg::add("prism_welcome", "floater_prism_welcome.xml", &LLFloaterReg::build<LLFloaterPrismWelcome>);
+    LLFloaterReg::add("prism_build_help", "floater_prism_build_help.xml", &LLFloaterReg::build<LLFloater>);
     LLFloaterReg::add("ui_shortcuts", "floater_ui_shortcuts.xml", &LLFloaterReg::build<LLFloater>);
     LLInspectAvatarUtil::registerFloater();
     LLInspectGroupUtil::registerFloater();

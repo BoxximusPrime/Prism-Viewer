@@ -14,6 +14,7 @@
 *.tif binary
 
 # Viewer resources
+*.wav binary
 *.db2 binary
 *.llm binary
 *.nib binary

@@ -28,7 +28,6 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llagent.h"
-#include "llboxxyswim.h"
 #include "llposestudio.h"
 
 #include "pipeline.h"
@@ -958,7 +957,6 @@ void LLAgent::setFlying(bool fly, bool fail_sound)
     }
     else
     {
-        LLBoxxySwim::onFlightDisabled();
         clearControlFlags(AGENT_CONTROL_FLY);
     }
 
@@ -2160,13 +2158,13 @@ void LLAgent::propagate(const F32 dt)
         if (fabs(gAgentCamera.getYawKey()) > 1e-6)
         {
             static const F32 YAW_RATE = 90.f * DEG_TO_RAD;   // radians per second
-            yaw(YAW_RATE * gAgentCamera.getYawKey() * dt * (LLBoxxySwim::isSwimming() ? 0.6f : 1.f));
+            yaw(YAW_RATE * gAgentCamera.getYawKey() * dt);
         }
 
         if (fabs(gAgentCamera.getPitchKey()) > 1e-6)
         {
             static const F32 PITCH_RATE = 90.f * DEG_TO_RAD; // radians per second
-            pitch(PITCH_RATE * gAgentCamera.getPitchKey() * dt * (LLBoxxySwim::isSwimming() ? 0.6f : 1.f));
+            pitch(PITCH_RATE * gAgentCamera.getPitchKey() * dt);
         }
     }
 
@@ -2177,7 +2175,7 @@ void LLAgent::propagate(const F32 dt)
         LLVector3 land_vel = getVelocity();
         land_vel.mV[VZ] = 0.f;
 
-        if (!LLBoxxySwim::isSwimming() && !in_air
+        if (!in_air
             && gAgentCamera.getUpKey() < 0
             && land_vel.magVecSquared() < MAX_VELOCITY_AUTO_LAND_SQUARED
             && gSavedSettings.getBOOL("AutomaticFly"))
@@ -4702,10 +4700,6 @@ void LLAgent::setTeleportState(ETeleportState state)
                           << LL_ENDL;
     mTeleportState = state;
     LLViewerCamera::getInstance()->resetCameraSmoothing();
-    if (state != TELEPORT_NONE && LLBoxxySwim::isSwimming())
-    {
-        LLBoxxySwim::update();
-    }
     if (state != TELEPORT_NONE)
         gSavedSettings.setBOOL("PhotoFreezeVisuals", false);
     if (state != TELEPORT_NONE && LLPoseStudio::instanceExists())

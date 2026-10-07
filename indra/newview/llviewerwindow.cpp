@@ -2193,6 +2193,16 @@ LLViewerWindow::LLViewerWindow(const Params& p)
         gSavedSettings.setBOOL("ProbeHardwareOnStartup", false);
     }
 
+    if (p.first_run)
+    {
+        // Preserve the hardware-selected quality tier while initializing Prism
+        // effects from settings.xml. Renderer initialization loads shaders later.
+        const bool skip_reload = LLViewerShaderMgr::sSkipReload;
+        LLViewerShaderMgr::sSkipReload = true;
+        initialize_prism_graphics_defaults();
+        LLViewerShaderMgr::sSkipReload = skip_reload;
+    }
+
     // If we crashed while initializng GL stuff last time, disable certain features
     if (gSavedSettings.getBOOL("RenderInitError"))
     {
@@ -4529,6 +4539,7 @@ void LLViewerWindow::updateWorldViewRect(bool use_full_window)
             toolbar_rect.translate(-parent.mLeft, -parent.mBottom);
             if (gToolBarView->getRect() != toolbar_rect) gToolBarView->setShape(toolbar_rect);
         }
+        if (gFloaterTools) gFloaterTools->finishEditDockLayout();
         // clamp to at least a 1x1 rect so we don't try to allocate zero width gl buffers
         new_world_rect.mTop = llmax(new_world_rect.mTop, new_world_rect.mBottom + 1);
         new_world_rect.mRight = llmax(new_world_rect.mRight, new_world_rect.mLeft + 1);

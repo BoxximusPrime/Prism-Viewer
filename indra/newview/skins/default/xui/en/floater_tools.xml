@@ -23,6 +23,11 @@
     <floater.string name="edit_dock_hint">Dock Edit on the right and reserve space beside the world and HUDs.</floater.string>
     <floater.string name="edit_undock_hint">Return Edit to its previous floating window position.</floater.string>
     <floater.string name="edit_dock_small_window">The dock will return when the window is larger. Click to keep Edit floating.</floater.string>
+    <button name="prism_build_help" label="?" follows="right|top" layout="topleft"
+        right="-148" top="3" width="24" height="20" font="DejaVu" font.size="LSmall"
+        tool_tip="Prism editing shortcuts and snapping tools">
+        <button.commit_callback function="Floater.Show" parameter="prism_build_help" />
+    </button>
     <button name="edit_dock_toggle" label="Dock" follows="right|top" layout="topleft"
         right="-54" top="3" width="88" height="20" font="DejaVu" font.size="LSmall"
         tool_tip="Dock Edit beside the world and HUDs" />

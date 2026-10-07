@@ -168,65 +168,6 @@
      height="10"
      layout="topleft"
      left="30"
-     name="Software updates:"
-     mouse_opaque="false"
-     top_pad="8"
-     width="300">
-    Software updates:
-  </text>
-  <combo_box
-     control_name="UpdaterServiceSetting"
-     follows="left|top"
-     height="23"
-     layout="topleft"
-     left_delta="50"
-     top_pad="10"
-     name="updater_service_combobox"
-     width="300">
-        <combo_box.item
-         label="Install each update automatically"
-         name="Install_automatically"
-         value="3" />
-        <combo_box.item
-         label="Ask me when an optional update is ready to install"
-         name="Install_ask"
-         value="1" />
-        <combo_box.item
-         label="Install only mandatory updates"
-         name="Install_manual"
-         value="0" />
-  </combo_box>
-  <check_box
-    top_pad="10"
-    enabled="true"
-    follows="left|top"
-    layout="topleft"
-    height="14"
-    control_name="UpdaterWillingToTest"
-    label="Willing to update to Beta"
-    left_delta="0"
-    mouse_opaque="true"
-    name="update_willing_to_test"
-    width="400"/>
-  <check_box
-    top_pad="8"
-    enabled="true"
-    follows="left|top"
-    layout="topleft"
-    height="14"
-    control_name="UpdaterShowReleaseNotes"
-    label="Show Release Notes after update"
-    left_delta="0"
-    mouse_opaque="true"
-    name="update_show_release_notes"
-    width="400"/>
-  <text
-     type="string"
-     length="1"
-     follows="left|top"
-     height="10"
-     layout="topleft"
-     left="30"
      name="Proxy Settings:"
      mouse_opaque="false"
      top_pad="8"
