@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="prism_build_help" title="PRISM BUILD TOOLS" layout="topleft"
+ width="530" height="558" min_width="530" min_height="350"
+ can_resize="true" can_minimize="true" save_rect="true" single_instance="true">
+ <scroll_container name="help_scroll" layout="topleft" left="0" top="28"
+  width="530" height="518" follows="all" opaque="false" border_visible="false">
+  <panel name="help_content" layout="topleft" left="0" top="0" width="514" height="514"
+   follows="left|top" background_visible="false" border="false">
+   <text name="heading" layout="topleft" left="20" top="14" width="474" height="26"
+    font="SansSerifLarge" text_color="LabelTextColor" mouse_opaque="false">A little more precision</text>
+   <text name="intro" layout="topleft" left="20" top="46" width="474" height="18"
+    font="SansSerifSmall" text_color="0.65 0.72 0.72 1" mouse_opaque="false">Quick gestures for moving, scaling and rotating objects.</text>
+
+   <panel name="vertex_card" layout="topleft" left="16" top="80" width="482" height="94"
+    border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.135 0.14 1">
+    <text name="vertex_key" layout="topleft" left="16" top="16" width="94" height="18"
+     font="SansSerif" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Hold V</text>
+    <text name="vertex_title" layout="topleft" left="126" top="14" width="340" height="20"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Vertex snapping</text>
+    <text name="vertex_body" layout="topleft" left="126" top="40" width="340" height="48"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">In Move mode, hold V and point at a vertex on the selection. Drag that point to a vertex on another object to align them.</text>
+   </panel>
+   <panel name="surface_card" layout="topleft" left="16" top="184" width="482" height="94"
+    border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.135 0.14 1">
+    <text name="surface_key" layout="topleft" left="16" top="16" width="94" height="38"
+     font="SansSerif" font.style="BOLD" word_wrap="true" text_color="AccentColor" mouse_opaque="false">Drag center</text>
+    <text name="surface_title" layout="topleft" left="126" top="14" width="340" height="20"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Snap to a surface</text>
+    <text name="surface_body" layout="topleft" left="126" top="40" width="340" height="48"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">Drag the center square of the Move gizmo onto a floor, wall or other visible surface. The selection keeps its rotation.</text>
+   </panel>
+   <panel name="shift_card" layout="topleft" left="16" top="288" width="482" height="94"
+    border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.135 0.14 1">
+    <text name="shift_key" layout="topleft" left="16" top="16" width="94" height="18"
+     font="SansSerif" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Hold Shift</text>
+    <text name="shift_title" layout="topleft" left="126" top="14" width="340" height="20"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Temporary snapping</text>
+    <text name="shift_body" layout="topleft" left="126" top="40" width="340" height="48"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">With Snap to grid off, hold Shift while moving, scaling or rotating to snap. Release to move freely. Ctrl can stay held on rotation rings.</text>
+   </panel>
+   <panel name="aim_card" layout="topleft" left="16" top="392" width="482" height="102"
+    border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.135 0.14 1">
+    <text name="aim_key" layout="topleft" left="16" top="16" width="94" height="40"
+     font="SansSerif" font.style="BOLD" word_wrap="true" text_color="AccentColor" mouse_opaque="false">Ctrl + Shift</text>
+    <text name="aim_title" layout="topleft" left="126" top="14" width="340" height="20"
+     font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Aim at the cursor</text>
+    <text name="aim_body" layout="topleft" left="126" top="40" width="340" height="56"
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">Start dragging the free rotation sphere, then hold Ctrl + Shift. Point the object at the surface under your cursor. Rings keep their snapping gesture.</text>
+   </panel>
+  </panel>
+ </scroll_container>
+</floater>

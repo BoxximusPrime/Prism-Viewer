@@ -117,7 +117,7 @@ namespace
     const UISoundPreference UI_SOUND_PREFERENCES[] =
     {
         { "UISndClick", "UISndClickRelease", "ui_sound_click_name", "UISndClickName", "dae9e30e-8719-4431-bc3c-9cdfcb2bc879", "Sharp_synthesized_UI_#3-1789876593201.wav" },
-        { "UISndWindowOpen", nullptr, "ui_sound_window_open_name", "UISndWindowOpenName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },
+        { "UISndWindowOpen", nullptr, "ui_sound_window_open_name", "UISndWindowOpenName", "be704bcf-675c-0ee0-9178-1cd04db347e9", "Sharp,_and_clear_UI__#3-1789256826481.wav" },
         { "UISndWindowFocus", nullptr, "ui_sound_window_focus_name", "UISndWindowFocusName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },
         { "UISndWindowClose", nullptr, "ui_sound_window_close_name", "UISndWindowCloseName", "9b19d313-5247-4f80-944e-8ce8244eab1b", "Sharp,_and_clear_int_#1-1789256697460.wav" },
         { "UISndCheckbox", nullptr, "ui_sound_checkbox_name", "UISndCheckboxName", "d9275940-9674-4081-b1ab-a61fa0043368", "Sharp,_and_clear_int_#2-1789256717858.wav" },

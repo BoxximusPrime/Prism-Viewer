@@ -1,10 +1,10 @@
 /**
- * @file llvvmquery.h
- * @brief Query the Viewer Version Manager (VVM) for update information
+ * @file llfloaterprismwelcome.h
+ * @brief First-login welcome and optional Prism defaults
  *
- * $LicenseInfo:firstyear=2025&license=viewerlgpl$
+ * $LicenseInfo:firstyear=2020&license=viewerlgpl$
  * Second Life Viewer Source Code
- * Copyright (C) 2025, Linden Research, Inc.
+ * Copyright (C) 2020, Linden Research, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,10 +24,25 @@
  * $/LicenseInfo$
  */
 
-#ifndef LL_LLVVMQUERY_H
-#define LL_LLVVMQUERY_H
+#ifndef LL_LLFLOATERPRISMWELCOME_H
+#define LL_LLFLOATERPRISMWELCOME_H
 
-// Compatibility entry point; official VVM updates are disabled in Prism.
-void initVVMUpdateCheck();
+#include "llmodaldialog.h"
 
-#endif // LL_LLVVMQUERY_H
+class LLFloaterPrismWelcome : public LLModalDialog
+{
+public:
+    explicit LLFloaterPrismWelcome(const LLSD& key);
+    bool postBuild() override;
+    void onOpen(const LLSD& key) override;
+
+    static void showIfRequired();
+    static void initializeGraphicsDefaults();
+
+private:
+    void onContinue();
+    LLSD mDefaults;
+    bool mOfferGraphics = false;
+};
+
+#endif

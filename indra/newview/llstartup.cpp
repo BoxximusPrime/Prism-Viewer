@@ -141,6 +141,7 @@
 #include "llnotificationsutil.h"
 #include "llpersistentnotificationstorage.h"
 #include "llpresetsmanager.h"
+#include "llfloaterprismwelcome.h"
 #include "llteleporthistory.h"
 #include "llregionhandle.h"
 #include "llsd.h"
@@ -338,7 +339,6 @@ std::unique_ptr<LLViewerStats::PhaseMap> LLStartUp::sPhases(new LLViewerStats::P
 void login_show();
 void login_callback(S32 option, void* userdata);
 void uninstall_nsis_if_required();
-void show_release_notes_if_required();
 void show_first_run_dialog();
 bool first_run_dialog_callback(const LLSD& notification, const LLSD& response);
 void set_startup_status(const F32 frac, const std::string& string, const std::string& msg);
@@ -356,84 +356,9 @@ bool process_login_success_response();
 void on_benefits_failed_callback(const LLSD& notification, const LLSD& response);
 void transition_back_to_login_panel(const std::string& emsg);
 
-// These are Prism's added effects. Keep legacy water/graphics controls outside
-// the reset, and ignore session-only diagnostics. New effect controls are
-// picked up automatically; settings.xml remains the source of defaults.
-struct PrismGraphicsDefaults : LLControlGroup::ApplyFunctor
+void initialize_prism_graphics_defaults()
 {
-    LLSD defaults = LLSD::emptyMap();
-    LLSD saved = LLSD::emptyMap();
-
-    static LLSD comparable(LLControlVariable* control, const LLSD& value)
-    {
-        // XML booleans can be integers, and sliders round reals to F32.
-        if (control->isType(TYPE_BOOLEAN)) return LLSD(value.asBoolean());
-        if (control->isType(TYPE_F32)) return LLSD(F64(F32(value.asReal())));
-        if (control->isType(TYPE_COL4)) return LLColor4(value).getValue();
-        return value;
-    }
-
-    void apply(const std::string& name, LLControlVariable* control) override
-    {
-        // Unknown settings survive in old user files, including this removed mode.
-        if (!control->isPersisted() || name == "RenderWater" || name == "RenderWaterMaterials" ||
-            name == "RenderWaterMipNormal" || name == "RenderWaterRefResolution" ||
-            name == "BoxxySSSFullResolution") return;
-
-        bool included = name == "RenderFSAAType" || name == "RenderGlowMinLuminance";
-        for (const std::string prefix : { "BoxxySSS", "RenderGTAO", "RenderPCSS", "RenderTAA",
-            "RenderWater", "RenderVolumeFog", "RenderBloom", "RenderEyeAdaptation" })
-        {
-            included |= name.compare(0, prefix.size(), prefix) == 0;
-        }
-        if (included)
-        {
-            defaults[name] = comparable(control, control->getDefault());
-            saved[name] = comparable(control, control->getSaveValue());
-        }
-    }
-};
-
-static void record_graphics_defaults(const std::string& version, const LLSD& defaults)
-{
-    gSavedSettings.setString("PrismGraphicsDefaultsVersion", version);
-    gSavedSettings.setLLSD("PrismGraphicsDefaultsSnapshot", defaults);
-    gSavedSettings.saveToFile(gSavedSettings.getString("ClientSettingsFile"), true);
-}
-
-static void show_graphics_defaults_if_required()
-{
-    const std::string version = LLVersionInfo::instance().getShortVersion();
-    if (gSavedSettings.getString("PrismGraphicsDefaultsVersion") == version) return;
-
-    PrismGraphicsDefaults graphics;
-    gSavedSettings.applyToAll(&graphics);
-    if (llsd_equals(graphics.defaults, gSavedSettings.getLLSD("PrismGraphicsDefaultsSnapshot")) ||
-        llsd_equals(graphics.defaults, graphics.saved))
-    {
-        // No shipped changes, or the user's settings already match this release.
-        record_graphics_defaults(version, graphics.defaults);
-        return;
-    }
-
-    LLSD args;
-    args["VERSION"] = version;
-    LLNotificationsUtil::add("PrismGraphicsDefaultsUpdate", args, LLSD(),
-        [version, defaults = graphics.defaults](const LLSD& notification, const LLSD& response)
-        {
-            const S32 option = LLNotificationsUtil::getSelectedOption(notification, response);
-            if (option != 0 && option != 1) return; // Unanswered: ask next startup.
-            if (option == 0)
-            {
-                for (const auto& entry : llsd::inMap(defaults))
-                {
-                    gSavedSettings.getControl(entry.first)->resetToDefault(true);
-                }
-                gSavedSettings.setString("PresetGraphicActive", "");
-                LLPresetsManager::getInstance()->triggerChangeSignal();
-            }
-            record_graphics_defaults(version, defaults);
-        });
+    LLFloaterPrismWelcome::initializeGraphicsDefaults();
 }
 
 void callback_cache_name(const LLUUID& id, const std::string& full_name, bool is_group)
@@ -1007,7 +932,6 @@ bool idle_startup()
             initialize_spellcheck_menu();
             init_menus();
         }
-        show_release_notes_if_required();
 
         if (show_connect_box)
         {
@@ -1072,13 +996,6 @@ bool idle_startup()
         }
         LL_DEBUGS("AppInit") << "PeekMessage processed" << LL_ENDL;
 #endif
-        // Login retries return here too; only queue one prompt per process.
-        static bool checked_graphics_defaults = false;
-        if (!checked_graphics_defaults)
-        {
-            checked_graphics_defaults = true;
-            show_graphics_defaults_if_required();
-        }
         do_startup_frame();
         uninstall_nsis_if_required();
         timeout.reset();
@@ -2725,6 +2642,7 @@ bool idle_startup()
         // 2025-06 Moved lower down in the state machine so the Avatar Welcome Pack
         // floater display can be triggered correctly.
         gSavedSettings.setBOOL("FirstLoginThisInstall", false);
+        LLFloaterPrismWelcome::showIfRequired();
 
         return true;
     }
@@ -2782,34 +2700,6 @@ void login_callback(S32 option, void *userdata)
     {
         LL_WARNS("AppInit") << "Unknown login button clicked" << LL_ENDL;
     }
-}
-
-void release_notes_coro(const std::string url)
-{
-    if (url.empty())
-    {
-        return;
-    }
-
-    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
-    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
-        httpAdapter = std::make_shared<LLCoreHttpUtil::HttpCoroutineAdapter>("releaseNotesCoro", httpPolicy);
-    LLCore::HttpRequest::ptr_t httpRequest = std::make_shared<LLCore::HttpRequest>();
-    LLCore::HttpOptions::ptr_t httpOpts = std::make_shared<LLCore::HttpOptions>();
-
-    httpOpts->setHeadersOnly(true); // only making sure it isn't 404 or something like that
-
-    LLSD result = httpAdapter->getAndSuspend(httpRequest, url, httpOpts);
-
-    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
-    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
-
-    if (!status)
-    {
-        return;
-    }
-
-    LLWeb::loadURLInternal(url);
 }
 
 /**
@@ -2872,85 +2762,6 @@ void uninstall_nsis_if_required()
     args["VERSION"] = llformat("%d.%d.%d", found_major, found_minor, found_patch);
     LLNotificationsUtil::add("FoundLegacyNsisInstallation", args);
 #endif
-}
-
-void validate_release_notes_coro(const std::string url)
-{
-    LLVersionInfo& versionInfo(LLVersionInfo::instance());
-    const boost::regex version_regex(R"(\b\d+\.\d+\.\d+\.\d+\b)");
-
-    if (url.find(versionInfo.getVersion()) == std::string::npos // has no our build version
-        && ll_regex_search(url, version_regex)) // has any version
-    {
-        LL_INFOS() << "Received release notes url \"" << url << "\" wwith mismatching build, falling back to locally generated url" << LL_ENDL;
-        // Updater only provides notes for a most recent version, if it is not
-        // the current one, fall back to the hardcoded URL.
-        LLSD info(LLAppViewer::instance()->getViewerInfo());
-        std::string alt_url = info["VIEWER_RELEASE_NOTES_URL"].asString();
-        release_notes_coro(alt_url);
-    }
-    else
-    {
-        release_notes_coro(url);
-    }
-}
-
-/**
-* Check if user is running a new version of the viewer.
-* Display the Release Notes if it's not overriden by the "UpdaterShowReleaseNotes" setting.
-*/
-void show_release_notes_if_required()
-{
-    static bool release_notes_shown = false;
-    // We happen to know that instantiating LLVersionInfo implicitly
-    // instantiates the LLEventMailDrop named "relnotes", which we (might) use
-    // below. If viewer release notes stop working, might be because that
-    // LLEventMailDrop got moved out of LLVersionInfo and hasn't yet been
-    // instantiated.
-    if (release_notes_shown
-        || LLVersionInfo::instance().getChannelAndVersion() == gLastRunVersion
-        || gSavedSettings.getBOOL("FirstLoginThisInstall")) // New users don't need to see release notes
-    {
-        return;
-    }
-    S32 mode = gSavedSettings.getS32("UpdaterShowReleaseNotes");
-    if (mode == 0)
-    {
-        return;
-    }
-    if (mode == 2 // Show even for test builds
-        || LLVersionInfo::instance().getViewerMaturity() != LLVersionInfo::TEST_VIEWER) // don't show Release Notes for the test builds
-
-    {
-
-#if LL_RELEASE_FOR_DOWNLOAD
-        if (!gSavedSettings.getBOOL("CmdLineSkipUpdater"))
-        {
-            // Instantiate a "relnotes" listener which assumes any arriving event
-            // is the release notes URL string. Since "relnotes" is an
-            // LLEventMailDrop, this listener will be invoked whether or not the
-            // URL has already been posted. If so, it will fire immediately;
-            // otherwise it will fire whenever the URL is (later) posted. Either
-            // way, it will display the release notes as soon as the URL becomes
-            // available.
-            LLEventPumps::instance().obtain("relnotes").listen(
-                "showrelnotes",
-                [](const LLSD& url) {
-                    LLCoros::instance().launch("releaseNotesCoro",
-                    boost::bind(&validate_release_notes_coro, url.asString()));
-                return false;
-            });
-        }
-        else
-#endif // LL_RELEASE_FOR_DOWNLOAD
-        {
-            LLSD info(LLAppViewer::instance()->getViewerInfo());
-            std::string url = info["VIEWER_RELEASE_NOTES_URL"].asString();
-            LLCoros::instance().launch("releaseNotesCoro",
-                                       boost::bind(&release_notes_coro, url));
-        }
-        release_notes_shown = true;
-    }
 }
 
 void show_first_run_dialog()

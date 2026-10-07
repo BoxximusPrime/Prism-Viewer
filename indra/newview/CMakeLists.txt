@@ -83,7 +83,6 @@ set(viewer_SOURCE_FILES
     llboxxyao.cpp
     llboxxyaonotecard.cpp
     llboxxyaotransfer.cpp
-    llboxxyswim.cpp
     llboxxyvip.cpp
     gltfscenemanager.cpp
     gltf/asset.cpp
@@ -310,6 +309,7 @@ set(viewer_SOURCE_FILES
     llfloaterreporter.cpp
     llfloaterregionrestarting.cpp
     llfloaterregionrestartschedule.cpp
+    llfloaterprismwelcome.cpp
     llfloatersavecamerapreset.cpp
     llfloatersaveprefpreset.cpp
     llfloatersceneloadstats.cpp
@@ -785,8 +785,6 @@ set(viewer_HEADER_FILES
     llboxxyao.h
     llboxxyaonotecard.h
     llboxxyaotransfer.h
-    llboxxyswim.h
-    llswimpolicy.h
     llboxxyvip.h
     CMakeLists.txt
     ViewerInstall.cmake
@@ -1027,6 +1025,7 @@ set(viewer_HEADER_FILES
     llfloaterreporter.h
     llfloaterregionrestarting.h
     llfloaterregionrestartschedule.h
+    llfloaterprismwelcome.h
     llfloatersavecamerapreset.h
     llfloatersaveprefpreset.h
     llfloatersceneloadstats.h

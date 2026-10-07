@@ -78,6 +78,7 @@ public:
 
     // Returns the space reserved on the right of the world viewport (UI pixels).
     S32 updateEditDock(const LLRect& available);
+    void finishEditDockLayout();
     bool isEditDocked() const { return mEditDocked; }
     void handleReshape(const LLRect& new_rect, bool by_user = false) override;
 
@@ -198,6 +199,7 @@ private:
     bool                    mDirty;
     bool                    mHasSelection;
     bool                    mEditDocked = false;
+    bool                    mPendingUndockPlacement = false;
     bool                    mOfflinePreview = false;
     LLRect                  mFloatingRect;
     LLRect                  mDockAvailableRect;

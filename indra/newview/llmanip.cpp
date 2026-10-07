@@ -259,9 +259,10 @@ void LLManip::updateGridSettings()
 bool LLManip::updateSnapMode(MASK mask)
 {
     const bool previous = mTemporarySnap;
-    // Shift alone temporarily snaps ordinary handles. Vertex and center drags
-    // have their own gestures, and the saved grid checkbox is never changed.
-    mTemporarySnap = hasMouseCapture() && mask == MASK_SHIFT &&
+    // Shift also works while Ctrl/Alt is held to temporarily select another tool.
+    // Reserve Ctrl+Shift on the free rotation sphere for aiming at the cursor.
+    const bool aiming = mManipPart == LL_ROT_GENERAL && (mask & MASK_CONTROL);
+    mTemporarySnap = hasMouseCapture() && (mask & MASK_SHIFT) && !aiming &&
         mManipPart != LL_NO_PART && mManipPart != LL_TRANSLATE_CENTER &&
         !gSavedSettings.getBOOL("SnapEnabled");
     if (mTemporarySnap) updateGridSettings();

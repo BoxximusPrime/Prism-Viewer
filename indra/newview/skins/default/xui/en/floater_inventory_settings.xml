@@ -370,7 +370,7 @@
    name="priority_helper_label"
    text_color="White"
    width="430">
-   Keyword Priority Sorter (50 items max)
+   Keyword Priority Sorter
   </text>
   <text
    type="string"

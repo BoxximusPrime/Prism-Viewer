@@ -41,6 +41,7 @@ bool idle_startup();
 void release_start_screen();
 bool login_alert_done(const LLSD& notification, const LLSD& response);
 void pump_idle_startup_network();
+void initialize_prism_graphics_defaults();
 
 // start location constants
 enum EStartLocation

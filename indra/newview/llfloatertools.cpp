@@ -27,6 +27,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llfloatertools.h"
+#include "lllayoutstack.h"
 
 #include "llfontgl.h"
 #include "llcoord.h"
@@ -612,6 +613,7 @@ void LLFloaterTools::setEditDocked(bool docked)
 
     if (docked)
     {
+        mPendingUndockPlacement = false;
         setMinimized(false);
         storeRectControl();
         mFloatingRect = getRect();
@@ -638,11 +640,24 @@ void LLFloaterTools::setEditDocked(bool docked)
         gFloaterView->addChild(this);
         setResizeLimits(560, 620);
         setShape(mFloatingRect);
-        // The saved floating position may belong to a larger window or monitor.
-        gFloaterView->adjustToFitScreen(this, false);
-        mFloatingRect = getRect();
-        storeRectControl();
+        // Finish placement after the dock's toolbar/snap region has expanded.
+        mPendingUndockPlacement = true;
     }
+}
+
+void LLFloaterTools::finishEditDockLayout()
+{
+    if (!mPendingUndockPlacement || mEditDocked) return;
+    mPendingUndockPlacement = false;
+    // The toolbar has its expanded shape now. Update its nested stacks before
+    // computing the floating anchor against the new snap region.
+    LLLayoutStack::updateClass();
+    setShape(mFloatingRect);
+    gFloaterView->adjustToFitScreen(this, false);
+    // A plain setShape leaves the old relative position cached. Synchronize it
+    // exactly as a completed window drag does, after fitting the full rectangle.
+    LLFloater::handleReshape(getRect(), true);
+    mFloatingRect = getRect();
 }
 
 // Geometry is in scaled UI coordinates; preserve a 320-pixel world beside the dock.
