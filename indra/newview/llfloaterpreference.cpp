@@ -1465,6 +1465,7 @@ void LLFloaterPreference::refreshEnabledState()
     getChildView("RenderPCSSQuality")->setEnabled(pcss_enabled);
     getChildView("RenderPCSSCleanup")->setEnabled(pcss_enabled);
     getChildView("RenderPCSSStablePattern")->setEnabled(pcss_enabled);
+    getChildView("RenderPCSSDebug")->setEnabled(pcss_enabled);
     getChildView("PCSSQualityLabel")->setEnabled(pcss_enabled);
     getChild<LLTextBox>("PCSSStatus")->setValue(!pcss_supported ?
         "PCSS is unavailable on this graphics device (32 texture units required)." :
@@ -3021,6 +3022,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
         "RenderSSGIQuality", "RenderSSGIDenoise", "RenderSSGIDebug" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSEnabled")->resetToDefault(true);
+    gSavedSettings.getControl("RenderPCSSDebug")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSLightSize")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSMaxSoftness")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSMinSoftness")->resetToDefault(true);

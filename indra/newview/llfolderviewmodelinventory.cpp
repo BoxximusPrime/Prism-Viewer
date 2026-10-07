@@ -33,6 +33,8 @@
 #include "llfavoritesbar.h"
 #include "llviewercontrol.h"
 #include "llattachmentsmgr.h"
+#include "llappearancemgr.h"
+#include "llframetimer.h"
 
 //
 // class LLFolderViewModelInventory
@@ -68,25 +70,13 @@ bool priority_match(const LLFolderViewModelItemInventory* item, const std::vecto
     });
 }
 
-bool in_small_attachment_folder(const LLFolderViewModelItemInventory* item)
+bool in_priority_folder(const LLFolderViewModelItemInventory* item)
 {
     if (item->getSortGroup() != SG_ITEM) return false;
     const LLInventoryObject* object = item->getInventoryObject();
-    const LLViewerInventoryCategory* folder = object ? gInventory.getCategory(object->getParentUUID()) : nullptr;
-    if (!folder) return false;
-
-    // A known total of 50 or fewer descendants also bounds the item count while a folder loads.
-    const S32 total = folder->getDescendentCount();
-    if ((total < 0 || total > 50) && !gInventory.isCategoryComplete(folder->getUUID())) return false;
-
-    LLInventoryModel::cat_array_t* folders = nullptr;
-    LLInventoryModel::item_array_t* items = nullptr;
-    gInventory.getDirectDescendentsOf(object->getParentUUID(), folders, items);
-    if (!items || items->size() > 50) return false;
-    return std::any_of(items->begin(), items->end(), [](const LLPointer<LLViewerInventoryItem>& child)
-    {
-        return child && child->getType() == LLAssetType::AT_OBJECT;
-    });
+    const auto folder = object ? gInventory.getCategory(object->getParentUUID()) : nullptr;
+    return folder && folder->getPreferredType() != LLFolderType::FT_OBJECT
+        && folder->getPreferredType() != LLFolderType::FT_CLOTHING;
 }
 }
 
@@ -393,7 +383,8 @@ bool LLFolderViewModelItemInventory::filter(LLFolderViewFilter& filter)
                 view_model = static_cast<LLFolderViewModelItemInventory*>(view_model->mParent);
             }
         }
-        setPassedFilter(passed_filter, filter_generation, filter.getStringMatchOffset(this), filter.getFilterStringSize());
+        const auto match = static_cast<LLInventoryFilter&>(filter).getStringMatchRange(this);
+        setPassedFilter(passed_filter, filter_generation, match.first, match.second);
         continue_filtering = !filter.isTimedOut();
     }
     return continue_filtering;
@@ -417,7 +408,7 @@ bool LLInventorySort::operator()(const LLFolderViewModelItemInventory* const& a,
         const LLInventoryObject* object_a = a->getInventoryObject();
         const LLInventoryObject* object_b = b->getInventoryObject();
         if (object_a && object_b && object_a->getParentUUID() == object_b->getParentUUID()
-            && in_small_attachment_folder(a))
+            && in_priority_folder(a))
         {
             const bool a_matches = priority_match(a, mPriorityKeywords);
             const bool b_matches = priority_match(b, mPriorityKeywords);
@@ -543,7 +534,7 @@ std::vector<std::pair<S32, S32>> LLFolderViewModelItemInventory::getLabelHighlig
     const bool folder = getSortGroup() != SG_ITEM;
     const auto& keywords = folder ? folder_keywords
         : static_cast<const LLFolderViewModelInventory&>(mRootViewModel).getSorter().getPriorityKeywords();
-    if (keywords.empty() || (!folder && !in_small_attachment_folder(this))) return ranges;
+    if (keywords.empty() || (!folder && !in_priority_folder(this))) return ranges;
 
     LLWString name = utf8str_to_wstring(getDisplayName());
     LLWStringUtil::toLower(name);
@@ -573,4 +564,46 @@ LLFolderViewModelItemInventory::LLFolderViewModelItemInventory( class LLFolderVi
     mPrevPassedAllFilters(false),
     mLastAddedChildCreationDate(-1)
 {
+}
+
+// Share equipped-item counts across visible folder rows and inventory windows.
+S32 LLFolderViewModelItemInventory::getWornItemCount() const
+{
+    static LLCachedControl<bool> show_count(gSavedSettings, "InventoryShowWornFolderCount", true);
+    if (!show_count || getInventoryType() != LLInventoryType::IT_CATEGORY || isItemInTrash()) return 0;
+    static LLFrameTimer timer;
+    static std::map<LLUUID, S32> folders;
+    static bool initialized = false;
+    if (!initialized || timer.getElapsedTimeF32() >= 0.5f)
+    {
+        initialized = true;
+        timer.reset();
+        folders.clear();
+        LLInventoryModel::cat_array_t categories;
+        LLInventoryModel::item_array_t items;
+        const auto cof = LLAppearanceMgr::instance().getCOF();
+        if (cof.notNull()) gInventory.collectDescendents(cof, categories, items, false);
+        std::set<LLUUID> equipped;
+        for (const auto& item : items)
+        {
+            const auto id = item->getLinkedUUID();
+            if (!get_is_item_worn(id) || !equipped.insert(id).second) continue;
+            // Count an equipped item once per ancestor, even with multiple links.
+            std::set<LLUUID> parents;
+            auto add_parents = [&parents](const LLInventoryObject* object)
+            {
+                LLUUID parent = object ? object->getParentUUID() : LLUUID::null;
+                while (parent.notNull() && parents.insert(parent).second)
+                {
+                    ++folders[parent];
+                    auto category = gInventory.getCategory(parent);
+                    parent = category ? category->getParentUUID() : LLUUID::null;
+                }
+            };
+            add_parents(gInventory.getItem(id));
+            for (const auto& link : gInventory.collectLinksTo(id)) add_parents(link);
+        }
+    }
+    auto found = folders.find(getUUID());
+    return found != folders.end() ? found->second : 0;
 }

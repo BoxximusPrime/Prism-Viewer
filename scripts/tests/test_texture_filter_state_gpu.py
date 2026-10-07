@@ -38,13 +38,19 @@ const U32 GL_TEXTURE0=0x84C0, GL_TEXTURE_MAG_FILTER=0x2800, GL_TEXTURE_MIN_FILTE
 const U32 GL_NEAREST=0x2600, GL_LINEAR=0x2601, GL_LINEAR_MIPMAP_LINEAR=0x2703;
 const U32 GL_LINEAR_MIPMAP_NEAREST=0x2701, GL_NEAREST_MIPMAP_NEAREST=0x2700;
 const U32 GL_TEXTURE_MAX_ANISOTROPY=0x84FE;
+const U32 GL_TEXTURE_2D=0x0DE1, GL_TEXTURE_BASE_LEVEL=0x813C, GL_TEXTURE_MAX_LEVEL=0x813D;
+using GLint = int;
 static const U32 sGLTextureType[]={0x0DE1,0x84F5,0x8513,0x9009,0x9100,0x806F};
 void (__stdcall *glActiveTexture)(U32);
 void (__stdcall *glBindTexture)(U32,U32);
 void (__stdcall *glTexParameteri)(U32,U32,S32);
 void (__stdcall *glTexParameterf)(U32,U32,F32);
+void (__stdcall *glGetTexParameteriv)(U32,U32,S32*);
+void (__stdcall *glGetTexLevelParameteriv)(U32,S32,U32,S32*);
+void (__stdcall *glGenerateMipmap)(U32);
 void stop_glerror() {}
 F32 llclamp(F32 x,F32 a,F32 b) {return x<a?a:x>b?b:x;}
+S32 llmax(S32 x,S32 y) {return x>y?x:y;}
 struct LLTexUnit;
 struct LLRender {
     U32 mCurrTextureUnitIndex; bool mDirty;
@@ -72,8 +78,13 @@ LLTexUnit* LLRender::getTexUnit(S32 index) {return &units[index];}
 struct LLTexture {
     U32 name;
     LLTexture* getGLTexture() {return this;}
+    U32 getTexName() {return name;}
+    bool getUseMipMaps() {return true;}
+    S32 getWidth() {S32 value; glGetTexLevelParameteriv(GL_TEXTURE_2D,0,0x1000,&value); return value;}
+    S32 getHeight() {S32 value; glGetTexLevelParameteriv(GL_TEXTURE_2D,0,0x1001,&value); return value;}
     LLTexUnit::eTextureFilterOptions getFilteringOption() {return LLTexUnit::TFO_ANISOTROPIC;}
 };
+using LLViewerTexture = LLTexture;
 struct LLShaderMgr {enum {CLOUD_NOISE_MAP, CLOUD_NOISE_MAP_NEXT};};
 struct Shader {
     S32 bindTexture(S32 sampler, LLTexture* texture) {
@@ -91,6 +102,11 @@ EXPORT void setup(void* active,void* bind,void* parami,void* paramf) {
     glTexParameteri=(decltype(glTexParameteri))parami;
     glTexParameterf=(decltype(glTexParameterf))paramf;
     gGLManager.mHasAnisotropic=true; gGLManager.mMaxAnisotropy=4.f;
+}
+EXPORT void setup_mips(void* getparam,void* getlevel,void* generate) {
+    glGetTexParameteriv=(decltype(glGetTexParameteriv))getparam;
+    glGetTexLevelParameteriv=(decltype(glGetTexLevelParameteriv))getlevel;
+    glGenerateMipmap=(decltype(glGenerateMipmap))generate;
 }
 EXPORT void reset(U32 white) {
     gGL.mCurrTextureUnitIndex=999; gGL.mDirty=false;
@@ -136,13 +152,15 @@ EXPORT void cloud_restore(U32 current,U32 following) {
                             capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
     dll = C.CDLL(str(dll_path))
-    for name, args in {'setup': [P]*4, 'reset': [U], 'bind': [U,U,C.c_bool],
+    for name, args in {'setup': [P]*4, 'setup_mips': [P]*3, 'reset': [U], 'bind': [U,U,C.c_bool],
                        'unbind': [U], 'filter': [U,I,C.c_bool],
                        'cloud_weather': [U,U], 'cloud_restore': [U,U]}.items():
         getattr(dll, name).argtypes = args
         getattr(dll, name).restype = None
     dll.setup(*(sdl.SDL_GL_GetProcAddress(name) for name in
                 (b'glActiveTexture', b'glBindTexture', b'glTexParameteri', b'glTexParameterf')))
+    dll.setup_mips(*(sdl.SDL_GL_GetProcAddress(name) for name in
+                     (b'glGetTexParameteriv', b'glGetTexLevelParameteriv', b'glGenerateMipmap')))
     return dll
 
 

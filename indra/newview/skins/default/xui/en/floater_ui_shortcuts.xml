@@ -9,7 +9,7 @@
    <text name="heading" layout="topleft" left="16" top="16" width="452" height="24"
     font="SansSerifLarge" text_color="LabelTextColor" mouse_opaque="false">Inventory controls</text>
    <text name="subtitle" layout="topleft" left="16" top="46" width="452" height="18"
-    font="SansSerifSmall" text_color="0.65 0.70 0.70 1" mouse_opaque="false">Quick actions for folders, attachments and selections.</text>
+    font="SansSerifSmall" text_color="0.65 0.70 0.70 1" mouse_opaque="false">Shift + B toggles Quick Binds in View &amp; Sort Options (default off).</text>
    <text name="hover_heading" layout="topleft" left="16" top="80" width="452" height="16"
     font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">POINTER OVER INVENTORY</text>
    <panel name="toggle_row" layout="topleft" left="16" top="102" width="452" height="62"
@@ -18,7 +18,7 @@
     <panel name="toggle_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
      border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
      <text name="toggle_key" layout="topleft" left="0" top="6" width="124" height="18"
-      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Ctrl + E</text>
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">E</text>
     </panel>
     <text name="toggle_title" layout="topleft" left="148" top="10" width="292" height="18"
      font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Toggle folder</text>
@@ -44,7 +44,7 @@
     <panel name="wear_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
      border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
      <text name="wear_key" layout="topleft" left="0" top="6" width="124" height="18"
-      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Ctrl + T</text>
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">T</text>
     </panel>
     <text name="wear_title" layout="topleft" left="148" top="10" width="292" height="18"
      font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Add or remove worn items</text>
@@ -57,12 +57,12 @@
     <panel name="delete_key_bg" layout="topleft" left="12" top="12" width="124" height="28"
      border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.12 0.23 0.18 1">
      <text name="delete_key" layout="topleft" left="0" top="6" width="124" height="18"
-      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Ctrl + D</text>
+      halign="center" font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">Shift + D</text>
     </panel>
     <text name="delete_title" layout="topleft" left="148" top="10" width="292" height="18"
      font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Delete selection</text>
     <text name="delete_description" layout="topleft" left="148" top="32" width="292" height="28"
-     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Delete selected items or folders with normal protections. Text fields keep editing.</text>
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Delete selected items or folders in the focused inventory window. Text fields keep editing.</text>
    </panel>
    <panel name="folder_click_row" layout="topleft" left="16" top="478" width="452" height="64"
     follows="left|top" border="false" background_visible="true"
@@ -77,10 +77,10 @@
     <text name="folder_click_description" layout="topleft" left="148" top="32" width="292" height="30"
      font="SansSerifSmall" word_wrap="true" text_color="0.73 0.78 0.78 1" mouse_opaque="false">Use your Inventory Settings folder action. The default opens another inventory window.</text>
    </panel>
-   <text name="hover_note" layout="topleft" left="20" top="344" width="444" height="32"
-    font="SansSerifSmall" word_wrap="true" text_color="0.65 0.70 0.70 1" mouse_opaque="false">Search and rename fields keep normal typing. Hover shortcuts ignore held-key repeats.</text>
+   <text name="hover_note" layout="topleft" left="20" top="344" width="444" height="38"
+    font="SansSerifSmall" word_wrap="true" text_color="0.65 0.70 0.70 1" mouse_opaque="false">E/T need Quick Binds and use the inventory under your pointer. Shift + D deletes the focused inventory selection. Ctrl + D duplicates saved items. Text fields keep typing.</text>
    <text name="focus_heading" layout="topleft" left="16" top="386" width="452" height="16"
-    font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">INVENTORY WINDOW FOCUSED</text>
+    font="SansSerifSmall" font.style="BOLD" text_color="AccentColor" mouse_opaque="false">SELECTION AND FOLDER ACTIONS</text>
   </panel>
  </scroll_container>
 </floater>

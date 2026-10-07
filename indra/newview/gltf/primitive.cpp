@@ -426,7 +426,9 @@ bool Primitive::prep(Asset& asset)
     {
         const Material& material = asset.mMaterials[mMaterial];
         LLColor4 baseColor(glm::value_ptr(material.mPbrMetallicRoughness.mBaseColorFactor));
-        for (auto& dst : mColors)
+        // Local previews keep the authored vertex colors so material swaps do
+        // not multiply a new tint by the old material's baked tint.
+        if (!asset.mLocalMeshPreview) for (auto& dst : mColors)
         {
             dst = LLColor4U(baseColor * LLColor4(dst));
         }
@@ -443,7 +445,7 @@ bool Primitive::prep(Asset& asset)
         }
     }
 
-    if (mNormals.empty() && !unlit)
+    if (mNormals.empty() && (!unlit || asset.mLocalMeshPreview))
     {
         mTangents.clear();
 
@@ -468,7 +470,7 @@ bool Primitive::prep(Asset& asset)
         }
     }
 
-    if (mTangents.empty() && !unlit)
+    if (mTangents.empty() && (!unlit || asset.mLocalMeshPreview))
     { // NOTE: must be done last because tangent generation rewrites the other arrays
         // adapted from usage of Mikktspace in llvolume.cpp
         if (mMode == Mode::POINTS || mMode == Mode::LINES || mMode == Mode::LINE_LOOP || mMode == Mode::LINE_STRIP)

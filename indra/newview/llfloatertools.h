@@ -186,7 +186,6 @@ public:
     LLPanelFace             *mPanelFace;
     LLPanelLandInfo         *mPanelLandInfo;
 
-    LLViewBorder*           mCostTextBorder;
 
     LLTabContainer*         mTabLand;
 

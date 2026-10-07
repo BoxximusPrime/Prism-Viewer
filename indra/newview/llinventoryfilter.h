@@ -302,6 +302,7 @@ public:
     bool                showAllResults() const;
 
     std::string::size_type getStringMatchOffset(LLFolderViewModelItem* item) const;
+    std::pair<size_t, size_t> getStringMatchRange(LLFolderViewModelItem* item) const;
     std::string::size_type getFilterStringSize() const;
     // +-------------------------------------------------------------------+
     // + Presentation

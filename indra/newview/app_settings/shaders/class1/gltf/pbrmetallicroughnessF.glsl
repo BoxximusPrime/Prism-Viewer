@@ -34,6 +34,8 @@ vec3 emissiveColor = vec3(0,0,0);
 float metallicFactor = 1.0;
 float roughnessFactor = 1.0;
 float minimum_alpha = -1.0;
+float normalScale = 1.0;
+float occlusionStrength = 1.0;
 
 layout (std140) uniform GLTFMaterials
 {
@@ -47,9 +49,11 @@ void unpackMaterial()
     {
         int idx = gltf_material_id*12;
         emissiveColor = gltf_material_data[idx+10].rgb;
+        occlusionStrength = gltf_material_data[idx+10].a;
+        normalScale = gltf_material_data[idx+11].r;
         roughnessFactor = gltf_material_data[idx+11].g;
         metallicFactor = gltf_material_data[idx+11].b;
-        minimum_alpha -= gltf_material_data[idx+11].a;
+        minimum_alpha = gltf_material_data[idx+11].a;
     }
 }
 
@@ -234,6 +238,7 @@ void main()
 #ifndef UNLIT
     // from mikktspace.com
     vec3 vNt = texture(normalMap, normal_uv.xy).xyz*2.0-1.0;
+    vNt.xy *= normalScale;
     float sign = vary_sign;
     vec3 vN = vary_normal;
     vec3 vT = vary_tangent.xyz;
@@ -248,7 +253,7 @@ void main()
     //   roughness 0.0
     //   metal     0.0
     vec3 orm = texture(metallicRoughnessMap, metallic_roughness_uv.xy).rgb;
-    orm.r = texture(occlusionMap, occlusion_uv.xy).r;
+    orm.r = mix(1.0, texture(occlusionMap, occlusion_uv.xy).r, occlusionStrength);
     orm.g = filterPBRRoughness(orm.g * roughnessFactor, norm);
     orm.b *= metallicFactor;
 #endif
@@ -343,7 +348,7 @@ void main()
 
     color.rgb = applySkyAndWaterFog(pos.xyz, additive, atten, vec4(color, 1.0)).rgb;
 
-    float a = basecolor.a*vertex_color.a;
+    float a = basecolor.a;
     vec4 final_color = applyVolumeFogAlpha(pos.xyz, vec4(color.rgb, a));
 
     // <AS:Chanayane> Exact capture replaces only the original alpha framebuffer write.

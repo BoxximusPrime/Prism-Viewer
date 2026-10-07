@@ -27,6 +27,7 @@
 // A "volume" is a box, cylinder, sphere, or other primitive shape.
 
 #include "llviewerprecompiledheaders.h"
+#include "gltf/asset.h"
 #include "llvolumefog.h"
 
 #include "llvovolume.h"
@@ -5052,6 +5053,10 @@ bool LLVOVolume::lineSegmentIntersect(const LLVector4a& start, const LLVector4a&
                                       LLVector4a* intersection,LLVector2* tex_coord, LLVector4a* normal, LLVector4a* tangent)
 
 {
+    // The glTF scene manager tests the visible replacement, including geometry
+    // outside the prim bounds. Do not let the hidden proxy intercept clicks.
+    if (mGLTFAsset && mGLTFAsset->mLocalMeshPreview) return false;
+
     if (!mbCanSelect
         || mDrawable->isDead()
         || !gPipeline.hasRenderType(mDrawable->getRenderType()))

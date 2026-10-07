@@ -62,6 +62,8 @@
 #include "llradiogroup.h"
 #include "llenvironment.h"
 #include "llweb.h"
+#include "lltextbox.h"
+#include "lluicolortable.h"
 
 const std::string FILTERS_FILENAME("filters.xml");
 
@@ -1004,6 +1006,41 @@ void LLPanelMainInventory::draw()
     LLPanel::draw();
     updateItemcountText();
     updateCombinationVisibility();
+    if (auto notice = dynamic_cast<LLTextBox*>(mQuickBindsNotice.get()))
+    {
+        const F32 alpha = llclamp(3.f - mQuickBindsNoticeTimer.getElapsedTimeF32(), 0.f, 1.f);
+        auto floater = gFloaterView->getParentFloater(this);
+        notice->setVisible(alpha > 0.f && floater && floater->hasFocus());
+        LLColor4 color = LLUIColorTable::instance().getColor("AccentColor");
+        color.mV[VALPHA] *= alpha;
+        notice->setColor(color);
+    }
+}
+
+void LLPanelMainInventory::toggleQuickBinds()
+{
+    const bool enabled = !gSavedSettings.getBOOL("InventoryQuickBinds");
+    gSavedSettings.setBOOL("InventoryQuickBinds", enabled);
+    LLFloater* floater = gFloaterView->getParentFloater(this);
+    if (!floater) return;
+    auto notice = dynamic_cast<LLTextBox*>(mQuickBindsNotice.get());
+    if (!notice)
+    {
+        LLTextBox::Params params;
+        params.name = "quick_binds_notice";
+        params.rect = LLRect(floater->getRect().getWidth() - 250, floater->getRect().getHeight() - 3,
+            floater->getRect().getWidth() - 60, floater->getRect().getHeight() - floater->getHeaderHeight());
+        params.follows.flags = FOLLOWS_RIGHT | FOLLOWS_TOP;
+        params.font = LLFontGL::getFontSansSerifSmall();
+        params.mouse_opaque = false;
+        notice = LLUICtrlFactory::create<LLTextBox>(params);
+        notice->setRightAlign();
+        floater->addChild(notice);
+        mQuickBindsNotice = notice->getHandle();
+    }
+    notice->setText(std::string(enabled ? "quick binds enabled" : "quick binds disabled"));
+    notice->setVisible(true);
+    mQuickBindsNoticeTimer.reset();
 }
 
 void LLPanelMainInventory::updateItemcountText()
@@ -1861,6 +1898,14 @@ void LLPanelMainInventory::onCustomAction(const LLSD& userdata)
 
     const std::string command_name = userdata.asString();
 
+    if (command_name == "worn_folder_count")
+    {
+        gSavedSettings.setBOOL("InventoryShowWornFolderCount", !gSavedSettings.getBOOL("InventoryShowWornFolderCount"));
+    }
+    if (command_name == "quick_binds")
+    {
+        toggleQuickBinds();
+    }
     if (command_name == "cleanup")
     {
         LLFloaterReg::showInstance("inventory_cleanup");
@@ -2270,6 +2315,8 @@ bool LLPanelMainInventory::isActionVisible(const LLSD& userdata)
 
 bool LLPanelMainInventory::isActionChecked(const LLSD& userdata)
 {
+    if (userdata.asString() == "worn_folder_count") return gSavedSettings.getBOOL("InventoryShowWornFolderCount");
+    if (userdata.asString() == "quick_binds") return gSavedSettings.getBOOL("InventoryQuickBinds");
     U32 sort_order_mask = (mSingleFolderMode && isGalleryViewMode()) ? mCombinationGalleryPanel->getSortOrder() :  getActivePanel()->getSortOrder();
     const std::string command_name = userdata.asString();
     if (command_name == "sort_by_name")

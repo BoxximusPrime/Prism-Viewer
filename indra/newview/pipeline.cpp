@@ -31,6 +31,7 @@
 // </AS:Chanayane>
 
 #include "pipeline.h"
+#include "llviewerautomation.h"
 #include "llvolumefog.h"
 
 // library includes
@@ -1473,6 +1474,8 @@ void LLPipeline::releaseScreenBuffers()
     for (auto& target : mTAAHistory) target.release();
     mGTAOReady = false;
     for (auto& target : mGTAO) target.release();
+    mPCSSDebugReady = false;
+    mPCSSDebug.release();
     mSSGISource.release();
     mSSGIResolved.release();
     for (auto& target : mSSGIHistory) target.release();
@@ -4255,6 +4258,7 @@ void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
     LLAppViewer::instance()->pingMainloopTimeout("Pipeline:RenderGeomDeferred");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL; //LL_RECORD_BLOCK_TIME(FTM_RENDER_GEOMETRY);
     LL_PROFILE_GPU_ZONE("renderGeomDeferred");
+    LL_AUTOMATION_GPU_SCOPE("geometry.opaque");
 
     llassert(!sRenderingHUDs);
 
@@ -4396,6 +4400,7 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
     LL_PROFILE_GPU_ZONE("renderGeomPostDeferred");
+    LL_AUTOMATION_GPU_SCOPE("geometry.alpha");
 
     if (gUseWireframe)
     {
@@ -8544,6 +8549,7 @@ void LLPipeline::beginTAAFrame(bool for_snapshot)
     mTAAMotionReady = false;
     if (for_snapshot || gSnapshot || gCubeSnapshot || sImpostorRender || mRT != &mMainRT ||
         gUseWireframe || (!isTAAAvailable() && !(isSSGIAvailable() && isTemporalMotionAvailable())) || gSavedSettings.getBOOL("RenderGTAODebug") ||
+        gSavedSettings.getBOOL("RenderPCSSDebug") ||
         gSavedSettings.getBOOL("BoxxySSSShowDepth") || gSavedSettings.getBOOL("BoxxySSSShowMask") || RenderBufferVisualization >= 0)
     {
         resetTAAHistory();
@@ -8650,6 +8656,7 @@ void LLPipeline::renderTAAMotion(bool for_ssgi)
 {
     if (!(for_ssgi ? mTemporalFrameActive : mTAAFrameActive) || gCubeSnapshot || sImpostorRender || mRT != &mMainRT || !sCull) return;
     LL_PROFILE_GPU_ZONE("TAA motion");
+    LL_AUTOMATION_GPU_SCOPE("TAA.motion");
     LLGLDisable blend(GL_BLEND);
     LLGLDisable cull(GL_CULL_FACE);
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
@@ -8795,7 +8802,7 @@ LLRenderTarget* LLPipeline::resolveTAA()
     // but should retain the same stateless presentation sharpening as the world.
     if (gSnapshot && !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
         LLFloaterSnapshot::photoActive() && isTAAAvailable() && !gUseWireframe &&
-        !gSavedSettings.getBOOL("RenderGTAODebug") && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
+        !gSavedSettings.getBOOL("RenderGTAODebug") && !gSavedSettings.getBOOL("RenderPCSSDebug") && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
         !gSavedSettings.getBOOL("BoxxySSSShowMask") && RenderBufferVisualization < 0 &&
         gSavedSettings.getS32("RenderTAADebug") == 0)
     {
@@ -8804,6 +8811,7 @@ LLRenderTarget* LLPipeline::resolveTAA()
     }
     if (!mTAAFrameActive || !mTAAOpaqueReady || !mTAAMotionReady || !isTAAAvailable()) return &mRT->screen;
     LL_PROFILE_GPU_ZONE("TAA resolve");
+    LL_AUTOMATION_GPU_SCOPE("TAA.resolve");
     auto& shader = gTAAResolveProgram;
     auto& history = mTAAHistory[mTAAIndex];
     history.bindTarget();
@@ -8956,15 +8964,17 @@ void LLPipeline::renderFinalize()
 
     // Inspect the AO signal after exposure, tone mapping, glow and DoF. The
     // geometry mask was captured with GTAO, before transparency changes depth.
-    const bool ssgi_debug = mSSGIReady && isSSGIAvailable() && gSavedSettings.getS32("RenderSSGIDebug") != 0;
-    if (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug") && !ssgi_debug)
+    const bool pcss_debug = mPCSSDebugReady && gSavedSettings.getBOOL("RenderPCSSDebug") &&
+        gSavedSettings.getBOOL("RenderPCSSEnabled") && RenderShadowDetail > 0;
+    const bool ssgi_debug = !pcss_debug && mSSGIReady && isSSGIAvailable() && gSavedSettings.getS32("RenderSSGIDebug") != 0;
+    if (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug") && !ssgi_debug && !pcss_debug)
     {
         renderGTAODebug(sourceBuffer);
     }
 
     if (ssgi_debug) renderSSGIDebug(sourceBuffer);
 
-    if (!ssgi_debug) renderTAADebug(*sourceBuffer);
+    if (!ssgi_debug && !pcss_debug) renderTAADebug(*sourceBuffer);
 
     if (RenderFSAAType == 1)
     {
@@ -8978,13 +8988,17 @@ void LLPipeline::renderFinalize()
         std::swap(sourceBuffer, targetBuffer);
     }
 
+    // This already contains display-ready white geometry and shadow visibility.
+    // Present after scene effects/AA so they cannot modify the inspected signal.
+    if (pcss_debug) sourceBuffer = &mPCSSDebug;
+
     // Reuse the TAA presentation filter and existing post buffers for every AA
     // mode. This is outside temporal history and before HUD/UI composition.
     if (gSavedSettings.getBOOL("RenderPostSharpenEnabled") &&
         gSavedSettings.getF32("RenderPostSharpenStrength") > 0.f && gTAACopyProgram.isComplete() &&
         mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender && !sRenderingHUDs &&
         RenderBufferVisualization < 0 && !(mTAAFrameActive && mTAAMotionReady && gSavedSettings.getS32("RenderTAADebug") != 0) &&
-        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !ssgi_debug && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
+        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !ssgi_debug && !pcss_debug && !gSavedSettings.getBOOL("BoxxySSSShowDepth") &&
         !gSavedSettings.getBOOL("BoxxySSSShowMask"))
     {
         LL_PROFILE_GPU_ZONE("Post sharpening");
@@ -8992,7 +9006,7 @@ void LLPipeline::renderFinalize()
         std::swap(sourceBuffer, targetBuffer);
     }
 
-    if (RenderBufferVisualization > -1)
+    if (RenderBufferVisualization > -1 && !pcss_debug)
     {
         switch (RenderBufferVisualization)
         {
@@ -9029,7 +9043,7 @@ void LLPipeline::renderFinalize()
     // Present the screen target.
 
     // Keep the diagnostic free of the final presentation noise.
-    LLGLSLShader& final_shader = ssgi_debug || (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) ?
+    LLGLSLShader& final_shader = pcss_debug || ssgi_debug || (isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) ?
         gDeferredPostNoDoFProgram : gDeferredPostNoDoFNoiseProgram;
     final_shader.bind();
     static LLCachedControl<bool> photo_grade(gSavedSettings, "PhotoGradeEnabled", false);
@@ -9044,7 +9058,7 @@ void LLPipeline::renderFinalize()
     // Leave diagnostic views ungraded. This stage is downstream of exposure and
     // temporal history, and runs for both the live scene and snapshot renders.
     const bool finishing = RenderBufferVisualization < 0 &&
-        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !ssgi_debug &&
+        !(isGTAOActive() && gSavedSettings.getBOOL("RenderGTAODebug")) && !ssgi_debug && !pcss_debug &&
         gSavedSettings.getS32("RenderTAADebug") == 0 && mRT == &mMainRT &&
         !gCubeSnapshot && !sImpostorRender && !sRenderingHUDs &&
         !gSavedSettings.getBOOL("BoxxySSSShowDepth") && !gSavedSettings.getBOOL("BoxxySSSShowMask");
@@ -9527,6 +9541,8 @@ void LLPipeline::renderDeferredLighting()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("renderDeferredLighting");
+    LL_AUTOMATION_GPU_SCOPE("lighting.total");
+    if (mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender) mPCSSDebugReady = false;
     if (mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender) mSSGIReady = false;
     if (!sCull)
     {
@@ -9614,6 +9630,7 @@ void LLPipeline::renderDeferredLighting()
         if ((RenderDeferredSSAO && !gCubeSnapshot) || RenderShadowDetail > 0)
         {
             LL_PROFILE_GPU_ZONE("sun program");
+            LL_AUTOMATION_GPU_SCOPE("lighting.sun_pcss");
             deferred_light_target->bindTarget();
             {  // paint shadow/SSAO light map (direct lighting lightmap)
                 LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("renderDeferredLighting - sun shadow");
@@ -9651,6 +9668,7 @@ void LLPipeline::renderDeferredLighting()
             // soften direct lighting lightmap
             LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("renderDeferredLighting - soften shadow");
             LL_PROFILE_GPU_ZONE("soften shadow");
+            LL_AUTOMATION_GPU_SCOPE("lighting.shadow_filter");
             // blur lightmap
             screen_target->bindTarget();
             glClearColor(1, 1, 1, 1);
@@ -9712,6 +9730,46 @@ void LLPipeline::renderDeferredLighting()
             unbindDeferredShader(gDeferredBlurLightProgram);
         }
 
+        // Save the exact filtered visibility while the opaque depth mask and
+        // shadow lightmap are still intact. Later transparency changes depth,
+        // and tone mapping/CAS reuse deferredLight for unrelated color data.
+        if (mRT == &mMainRT && !gCubeSnapshot && pcss_active &&
+            gSavedSettings.getBOOL("RenderPCSSDebug") && gPCSSDebugProgram.isComplete())
+        {
+            const U32 width = deferred_light_target->getWidth();
+            const U32 height = deferred_light_target->getHeight();
+            if (!mPCSSDebug.isComplete() || mPCSSDebug.getWidth() != width || mPCSSDebug.getHeight() != height)
+            {
+                mPCSSDebug.release();
+                mPCSSDebug.allocate(width, height, GL_RGBA8);
+            }
+            if (mPCSSDebug.isComplete())
+            {
+                LL_PROFILE_GPU_ZONE("PCSS debug");
+                LLGLDisable blend(GL_BLEND);
+                LLGLDisable cull(GL_CULL_FACE);
+                LLGLDepthTest depth(GL_FALSE, GL_FALSE);
+                mPCSSDebug.bindTarget();
+                gPCSSDebugProgram.bind();
+                gPCSSDebugProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, deferred_light_target, false, LLTexUnit::TFO_POINT);
+                gPCSSDebugProgram.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
+                gPCSSDebugProgram.uniform2f(LLStaticHashedString("projector_fade"),
+                    RenderShadowDetail > 1 && mShadowSpotLight[0].notNull() ? 1.f - mSpotLightFade[0] : 1.f,
+                    RenderShadowDetail > 1 && mShadowSpotLight[1].notNull() ? 1.f - mSpotLightFade[1] : 1.f);
+                mScreenTriangleVB->setBuffer();
+                mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
+                gPCSSDebugProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+                gPCSSDebugProgram.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
+                gPCSSDebugProgram.unbind();
+                mPCSSDebug.flush();
+                mPCSSDebugReady = true;
+            }
+        }
+        else if (mRT == &mMainRT && !gCubeSnapshot && !sImpostorRender)
+        {
+            mPCSSDebug.release();
+        }
+
         screen_target->bindTarget();
         if (sss_diffusion || ssgi_active)
         {
@@ -9741,6 +9799,7 @@ void LLPipeline::renderDeferredLighting()
 
             LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("renderDeferredLighting - atmospherics");
             LL_PROFILE_GPU_ZONE("atmospherics");
+            LL_AUTOMATION_GPU_SCOPE("lighting.atmospherics");
             bindDeferredShader(soften_shader);
 
             static LLCachedControl<F32> ssao_scale(gSavedSettings, "RenderSSAOIrradianceScale", 0.5f);
@@ -9796,6 +9855,7 @@ void LLPipeline::renderDeferredLighting()
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("renderDeferredLighting - local lights");
                 LL_PROFILE_GPU_ZONE("local lights");
+                LL_AUTOMATION_GPU_SCOPE("lighting.local");
                 bindDeferredShader(gDeferredLightProgram);
 
                 if (mCubeVB.isNull())
@@ -9908,6 +9968,7 @@ void LLPipeline::renderDeferredLighting()
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("renderDeferredLighting - projectors");
                 LL_PROFILE_GPU_ZONE("projectors");
+                LL_AUTOMATION_GPU_SCOPE("lighting.projectors_pcss");
                 LLGLDepthTest depth(GL_TRUE, GL_FALSE);
                 bindDeferredShader(gDeferredSpotLightProgram);
 
@@ -9951,6 +10012,7 @@ void LLPipeline::renderDeferredLighting()
                 LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("renderDeferredLighting - fullscreen lights");
                 LLGLDepthTest depth(GL_FALSE);
                 LL_PROFILE_GPU_ZONE("fullscreen lights");
+                LL_AUTOMATION_GPU_SCOPE("lighting.fullscreen");
 
                 U32 count = 0;
 
@@ -10178,6 +10240,7 @@ bool LLPipeline::isSSGIAvailable() const
 void LLPipeline::renderSSGI(bool sss_diffusion)
 {
     LL_PROFILE_GPU_ZONE("SSGI");
+    LL_AUTOMATION_GPU_SCOPE("SSGI.total");
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
     LLGLDisable cull(GL_CULL_FACE);
     LLGLDisable blend(GL_BLEND);
@@ -10190,6 +10253,7 @@ void LLPipeline::renderSSGI(bool sss_diffusion)
     const bool capture_diagnostic = diagnostic == 1 || diagnostic >= 3;
     {
         LL_PROFILE_GPU_ZONE("SSGI geometry");
+        LL_AUTOMATION_GPU_SCOPE("SSGI.geometry");
         // Keep physical normals separate from normal-map shading. Reconstruct
         // once per pixel, rather than fetching four extra depths at every ray step.
         mSSGISource.bindTarget();
@@ -10202,6 +10266,7 @@ void LLPipeline::renderSSGI(bool sss_diffusion)
     }
     {
         LL_PROFILE_GPU_ZONE("SSGI trace");
+        LL_AUTOMATION_GPU_SCOPE("SSGI.trace");
         mSSGI[0].bindTarget();
         bindDeferredShader(gSSGITraceProgram);
         gSSGITraceProgram.bindTexture(LLShaderMgr::SSGI_SOURCE, &mSSGISource, false, LLTexUnit::TFO_POINT);
@@ -10218,6 +10283,7 @@ void LLPipeline::renderSSGI(bool sss_diffusion)
     }
     {
         LL_PROFILE_GPU_ZONE("SSGI filter");
+        LL_AUTOMATION_GPU_SCOPE("SSGI.filter");
         static const LLStaticHashedString denoiseMode("ssgi_denoise_mode"), filterStride("ssgi_filter_stride");
         const S32 denoise = llclamp(gSavedSettings.getS32("RenderSSGIDenoise"), 0, 2);
         const S32 passes = denoise == 0 ? 1 : 3;
@@ -10241,6 +10307,7 @@ void LLPipeline::renderSSGI(bool sss_diffusion)
     }
     {
         LL_PROFILE_GPU_ZONE("SSGI receiver resolve");
+        LL_AUTOMATION_GPU_SCOPE("SSGI.receiver_resolve");
         mSSGIResolved.bindTarget();
         auto& shader = gSSGIResolveProgram;
         bindDeferredShader(shader);
@@ -10260,6 +10327,7 @@ void LLPipeline::renderSSGI(bool sss_diffusion)
     }
     {
         LL_PROFILE_GPU_ZONE("SSGI temporal denoise");
+        LL_AUTOMATION_GPU_SCOPE("SSGI.temporal");
         auto& shader = gSSGITemporalProgram;
         auto& target = mSSGIHistory[mSSGIIndex];
         auto& history = mSSGIHistory[1 - mSSGIIndex];
@@ -10292,6 +10360,7 @@ void LLPipeline::renderSSGI(bool sss_diffusion)
     }
     {
         LL_PROFILE_GPU_ZONE("SSGI compose");
+        LL_AUTOMATION_GPU_SCOPE("SSGI.compose");
         const GLenum compose_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
         if (sss_diffusion) glDrawBuffers(2, compose_buffers);
         else glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -10366,12 +10435,14 @@ void LLPipeline::renderGTAO()
     if (!isGTAOAvailable()) return;
 
     LL_PROFILE_GPU_ZONE("GTAO");
+    LL_AUTOMATION_GPU_SCOPE("GTAO.total");
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
     LLGLDisable cull(GL_CULL_FACE);
     LLGLDisable blend(GL_BLEND);
     gGL.setColorMask(true, true);
     {
         LL_PROFILE_GPU_ZONE("GTAO horizon search");
+        LL_AUTOMATION_GPU_SCOPE("GTAO.horizon");
         mGTAO[0].bindTarget();
         bindDeferredShader(gGTAOProgram);
         mScreenTriangleVB->setBuffer();
@@ -10382,6 +10453,7 @@ void LLPipeline::renderGTAO()
     if (gSavedSettings.getF32("RenderGTAODenoise") > 0.f)
     {
         LL_PROFILE_GPU_ZONE("GTAO denoise");
+        LL_AUTOMATION_GPU_SCOPE("GTAO.denoise");
         for (U32 pass = 0; pass < 2; ++pass)
         {
             auto& source = mGTAO[pass];
@@ -10442,6 +10514,7 @@ void LLPipeline::renderSSSOverlays()
     if (!pool) return;
 
     LL_PROFILE_GPU_ZONE("Skin colour overlays");
+    LL_AUTOMATION_GPU_SCOPE("SSS.overlays");
     U32 width = mRT->deferredScreen.getWidth(), height = mRT->deferredScreen.getHeight();
     if (!mSSSOverlayBase.isComplete() || mSSSOverlayBase.getWidth() != width || mSSSOverlayBase.getHeight() != height)
     {
@@ -10508,6 +10581,7 @@ void LLPipeline::renderSSSOverlays()
 void LLPipeline::renderSSSDiffusion(LLRenderTarget& source, F32 radius, bool smoothing)
 {
     LL_PROFILE_GPU_ZONE("Skin diffusion");
+    LL_AUTOMATION_GPU_SCOPE("SSS.diffusion");
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
     LLGLDisable cull(GL_CULL_FACE);
     LLGLDisable blend(GL_BLEND);
@@ -10636,6 +10710,7 @@ void LLPipeline::renderVolumeClouds()
     if (!mVolumeCloudsActive || gCubeSnapshot || sImpostorRender || sRenderingHUDs || mRT != &mMainRT) return;
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("volumetric clouds");
+    LL_AUTOMATION_GPU_SCOPE("volumetric_clouds.total");
     auto& environment = LLEnvironment::instance();
     const auto sky = environment.getCurrentSky();
     LLViewerTexture* texture = gSky.mVOSkyp->getCloudNoiseTex();
@@ -10662,9 +10737,35 @@ void LLPipeline::renderVolumeClouds()
     // Shared EEP textures can retain filtering from another draw. Explicit LOD
     // only removes fine weather streaks when mip filtering is enabled.
     const S32 weather_unit = shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP, texture);
-    gGL.getTexUnit(weather_unit)->setTextureFilteringOption(LLTexUnit::TFO_TRILINEAR);
     const S32 next_weather_unit = shader.bindTexture(LLShaderMgr::CLOUD_NOISE_MAP_NEXT, next);
-    gGL.getTexUnit(next_weather_unit)->setTextureFilteringOption(LLTexUnit::TFO_TRILINEAR);
+    auto complete_weather_mips = [](S32 channel, LLViewerTexture* weather)
+    {
+        auto* unit = gGL.getTexUnit(channel);
+        unit->activate();
+        // Fetched textures stop at MAX_DISCARD_LEVEL, often leaving a 32x32
+        // last mip. The 16x EEP detail needs still coarser levels; otherwise
+        // textureLod clamps and extrudes fine texels into vertical columns.
+        // Extend only the missing tail, preserving all existing asset mips.
+        // Check the bound GL object so streamed replacements and shader reloads
+        // are handled without caching recyclable texture names.
+        if (weather->getGLTexture()->getTexName() && weather->getGLTexture()->getUseMipMaps())
+        {
+            GLint last_level = 0;
+            glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, &last_level);
+            S32 full_level = 0;
+            for (S32 size = llmax(weather->getWidth(), weather->getHeight()); size > 1; size >>= 1) ++full_level;
+            if (last_level < full_level)
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, last_level);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, full_level);
+                glGenerateMipmap(GL_TEXTURE_2D);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+            }
+        }
+        unit->setTextureFilteringOption(LLTexUnit::TFO_TRILINEAR);
+    };
+    complete_weather_mips(weather_unit, texture);
+    complete_weather_mips(next_weather_unit, next);
     const S32 noise_unit = shader.enableTexture(LLShaderMgr::DIFFUSE_MAP, LLTexUnit::TT_TEXTURE_3D);
     gGL.getTexUnit(noise_unit)->bindManual(LLTexUnit::TT_TEXTURE_3D, mVolumeCloudNoise);
     shader.uniformMatrix4fv(LLStaticHashedString("inv_proj"), 1, false, glm::value_ptr(inverse_projection));
@@ -10691,15 +10792,16 @@ void LLPipeline::renderVolumeClouds()
     shader.uniform3fv(LLStaticHashedString("vc_sun_direction"), 1, direction.mV);
     auto linear = [](F32 c) { c = llmax(c, 0.f); return c <= 0.04045f ? c/12.92f : powf((c+0.055f)/1.055f, 2.4f); };
     LLColor3 light = directional ? sky->getLightDiffuse() : LLColor3::black;
+    LLColor3 attenuation = LLColor3::black;
     if (environment.getIsSunUp())
     {
-        // Match cloudsF.glsl: clouds receive sunlight above the ground-level
-        // transmittance used by getLightDiffuse(), with a shorter air column.
+        // The shader uses authored EEP color for the same sunset hue as water,
+        // and linear radiance separately for the cloud-height brightness.
         light = sky->getSunlightColor();
-        const LLColor3 attenuation = sky->getLightAttenuation(sky->getMaxY());
-        const F32 path = 1.f / llmax(1e-6f, direction.mV[2]*2.f);
-        for (S32 i = 0; i < 3; ++i) light.mV[i] *= expf(-attenuation.mV[i]*path);
+        attenuation = sky->getLightAttenuation(sky->getMaxY());
     }
+    shader.uniform3fv(LLStaticHashedString("vc_light_attenuation"), 1, attenuation.mV);
+    shader.uniform3fv(LLStaticHashedString("vc_light_source"), 1, light.mV);
     // Scale direct and scattered sunlight together before exposure metering.
     const F32 sunlight_scale = environment.getIsSunUp() ? llclamp(gSavedSettings.getF32("RenderVolumeCloudSunlight"), 0.f, 2.f) : 1.f;
     const F32 strength = gSavedSettings.getF32(gSavedSettings.getBOOL("RenderHDREnabled") ? "RenderHDRSkySunlightScale" : "RenderSkySunlightScale") * sunlight_scale;
@@ -10923,6 +11025,7 @@ void LLPipeline::renderVolumeFog()
     if (!prepareVolumeFog(ground && volumes.empty())) return;
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("volume fog");
+    LL_AUTOMATION_GPU_SCOPE("volumetric_fog.total");
     // The preceding water/object draw may have left a model transform active.
     gGLLastMatrix = nullptr;
     gGL.matrixMode(LLRender::MM_MODELVIEW);
@@ -12776,6 +12879,7 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("SSS depth maps");
+    LL_AUTOMATION_GPU_SCOPE("SSS.depth_maps");
     const glm::mat4 savedView = get_current_modelview(), savedProj = get_current_projection();
     const glm::mat4 lastView = get_last_modelview(), lastProj = get_last_projection();
     const auto cameraID = LLViewerCamera::sCurCameraID;
@@ -13020,6 +13124,7 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE; //LL_RECORD_BLOCK_TIME(FTM_GEN_SUN_SHADOW);
     LL_PROFILE_GPU_ZONE("generateSunShadow");
+    LL_AUTOMATION_GPU_SCOPE("shadows.maps");
 
     LLDisableOcclusionCulling no_occlusion;
 

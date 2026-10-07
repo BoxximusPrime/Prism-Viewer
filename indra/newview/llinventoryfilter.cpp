@@ -673,13 +673,17 @@ const std::string& LLInventoryFilter::getFilterSubString(bool trim) const
 
 std::string::size_type LLInventoryFilter::getStringMatchOffset(LLFolderViewModelItem* item) const
 {
+    return getStringMatchRange(item).first;
+}
+
+std::pair<size_t, size_t> LLInventoryFilter::getStringMatchRange(LLFolderViewModelItem* item) const
+{
+    std::pair<size_t, size_t> match{std::string::npos, 0};
     if (mSearchType == SEARCHTYPE_NAME)
     {
-        const std::string& term = mSearchQuery.getFirstIncludedTerm();
-        return term.empty() ? std::string::npos : item->getSearchableName().find(term);
+        mSearchQuery.matches(item->getSearchableName(), &match);
     }
-
-    return std::string::npos;
+    return match;
 }
 
 bool LLInventoryFilter::isDefault() const

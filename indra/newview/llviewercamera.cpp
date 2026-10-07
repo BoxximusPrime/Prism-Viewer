@@ -234,6 +234,14 @@ const LLMatrix4 &LLViewerCamera::getModelview() const
     return mModelviewMatrix;
 }
 
+void LLViewerCamera::updateNearClip()
+{
+    static LLCachedControl<F32> near_clip(gSavedSettings, "RenderNearClip", 0.1f);
+    const F32 distance = near_clip();
+    setNear(llclamp(llfinite(distance) ? distance : 0.1f,
+        MIN_NEAR_PLANE, llmin(10.f, getFar() * 0.5f)));
+}
+
 void LLViewerCamera::calcProjection(const F32 far_distance) const
 {
     F32 fov_y = getView();

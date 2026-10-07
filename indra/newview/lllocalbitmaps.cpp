@@ -83,6 +83,8 @@ LLLocalBitmap::LLLocalBitmap(std::string filename)
     , mLinkStatus(LS_ON)
     , mUpdateRetries(LL_LOCAL_UPDATE_RETRIES)
 {
+    const std::string parent = gDirUtilp->getBaseFileName(gDirUtilp->getDirName(mFilename));
+    if (!parent.empty()) mShortName = parent + "/" + mShortName;
     mTrackingID.generate();
 
     /* extension */

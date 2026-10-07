@@ -87,6 +87,11 @@
 
 // newview includes
 #include "llaccordionctrl.h"
+#include "lloutfitslist.h"
+#include "llpanelwearing.h"
+#include "llpaneloutfitedit.h"
+#include "llinventorylistitem.h"
+#include "llappearancemgr.h"
 #include "llbox.h"
 #include "llchicletbar.h"
 #include "llconsole.h"
@@ -3009,9 +3014,10 @@ void LLViewerWindow::draw()
 // Takes a single keyup event, usually when UI is visible
 bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
 {
-    if ((key == 'E' || key == 'T') && mInventoryShortcutKeyHandled[key == 'T'])
+    const S32 inventory_shortcut = key == 'E' ? 0 : key == 'T' ? 1 : key == 'D' ? 2 : key == 'B' ? 3 : -1;
+    if (inventory_shortcut >= 0 && mInventoryShortcutKeyHandled[inventory_shortcut])
     {
-        mInventoryShortcutKeyHandled[key == 'T'] = false;
+        mInventoryShortcutKeyHandled[inventory_shortcut] = false;
         return true;
     }
     if (LLSetKeyBindDialog::recordKey(key, mask, false))
@@ -3067,10 +3073,13 @@ bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
         || (gMenuBarView && gMenuBarView->getHighlightedItem() && gMenuBarView->getHighlightedItem()->isActive());
 }
 
-static bool handle_inventory_delete_shortcut(KEY key, MASK mask)
+static bool handle_inventory_action_shortcut(KEY key, MASK mask)
 {
     LLUICtrl* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
-    if (key != 'D' || mask != MASK_CONTROL || !focus || focus->acceptsTextInput()
+    const bool toggle = key == 'B' && mask == MASK_SHIFT;
+    const bool duplicate = key == 'D' && mask == MASK_CONTROL;
+    const bool remove = key == 'D' && mask == MASK_SHIFT;
+    if ((!toggle && !duplicate && !remove) || !focus || focus->acceptsTextInput()
         || gFocusMgr.focusLocked() || gFocusMgr.getKeystrokesOnly()) return false;
 
     LLView* inventory = nullptr;
@@ -3094,13 +3103,57 @@ static bool handle_inventory_delete_shortcut(KEY key, MASK mask)
         }
     }
     if (!inventory || !inventory->isInVisibleChain() || !inventory->isInEnabledChain()) return false;
-    if (!gKeyboard->getKeyRepeated(key)) inventory->handleKeyHere(KEY_DELETE, MASK_NONE);
+    LLFloater* inventory_floater = gFloaterView->getParentFloater(inventory);
+    if (remove && (!inventory_floater || !inventory_floater->hasFocus())) return false;
+    if (gKeyboard->getKeyRepeated(key)) return true;
+    if (toggle)
+    {
+        LLFloater* floater = gFloaterView->getParentFloater(inventory);
+        auto main = floater ? floater->findChild<LLPanelMainInventory>("panel_main_inventory") : nullptr;
+        if (!main) return false;
+        main->toggleQuickBinds();
+    }
+    else if (remove) inventory->handleKeyHere(KEY_DELETE, MASK_NONE);
+    else
+    {
+        auto panel = dynamic_cast<LLInventoryPanel*>(inventory);
+        LLEditMenuHandler* handler = panel ? static_cast<LLEditMenuHandler*>(panel->getRootFolder())
+            : dynamic_cast<LLInventoryGallery*>(inventory);
+        if (!handler || !handler->canCopy()) return true;
+        uuid_vec_t ids;
+        if (panel)
+        {
+            for (auto row : panel->getRootFolder()->getSelectedItems())
+                if (auto item = dynamic_cast<LLFolderViewModelItemInventory*>(row->getViewModelItem()))
+                    ids.push_back(item->getUUID());
+        }
+        else
+        {
+            const auto& selected = static_cast<LLInventoryGallery*>(inventory)->getSelectedItemIDs();
+            ids.assign(selected.begin(), selected.end());
+        }
+        for (const auto& id : ids)
+        {
+            // Duplicate into each item's own folder, without also duplicating
+            // children whose selected ancestor is already being copied.
+            // ponytail: quadratic overlap check; walk selected ancestors if large selections become slow.
+            if (!gInventory.isObjectDescendentOf(id, gInventory.getRootFolderID())
+                || std::any_of(ids.begin(), ids.end(), [&id](const LLUUID& parent)
+                    { return id != parent && gInventory.isObjectDescendentOf(id, parent); })) continue;
+            if (auto item = gInventory.getItem(id))
+                copy_inventory_item(gAgent.getID(), item->getPermissions().getOwner(), id,
+                    item->getParentUUID(), std::string(), nullptr);
+            else if (auto folder = gInventory.getCategory(id))
+                copy_inventory_category(&gInventory, folder, folder->getParentUUID());
+        }
+    }
     return true;
 }
 
 bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
 {
-    if ((mask != MASK_CONTROL && !(key == 'E' && mask == (MASK_CONTROL | MASK_SHIFT)))
+    const bool collapse_all = key == 'E' && mask == (MASK_CONTROL | MASK_SHIFT);
+    if ((!collapse_all && (mask != MASK_NONE || !gSavedSettings.getBOOL("InventoryQuickBinds")))
         || !mMouseInWindow || gAgentCamera.cameraMouselook()
         || !gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI)
         || gFocusMgr.focusLocked() || gFocusMgr.getMouseCapture() || gFocusMgr.getTopCtrl()
@@ -3114,6 +3167,10 @@ bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
     LLInventoryPanel* panel = nullptr;
     LLPanelMainInventory* main_inventory = nullptr;
     LLFloater* hovered_floater = nullptr;
+    LLOutfitsList* outfits = nullptr;
+    LLOutfitAccordionCtrlTab* outfit_tab = nullptr;
+    LLPanelInventoryListItemBase* outfit_item = nullptr;
+    bool wearing_or_edit = false;
     for (const auto& handle : mMouseHoverViews)
     {
         LLView* view = handle.get();
@@ -3121,6 +3178,14 @@ bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
             || !view->calcScreenBoundingRect().pointInRect(mCurrentMousePoint.mX, mCurrentMousePoint.mY))
         {
             continue;
+        }
+        if (auto item_row = dynamic_cast<LLPanelInventoryListItemBase*>(view)) outfit_item = item_row;
+        if (auto tab = dynamic_cast<LLOutfitAccordionCtrlTab*>(view)) outfit_tab = tab;
+        for (auto ancestor = view; ancestor; ancestor = ancestor->getParent())
+        {
+            if (auto list = dynamic_cast<LLOutfitsList*>(ancestor)) outfits = list;
+            if (dynamic_cast<LLPanelWearing*>(ancestor) || dynamic_cast<LLPanelOutfitEdit*>(ancestor))
+                wearing_or_edit = true;
         }
         if (auto inventory_panel = dynamic_cast<LLInventoryPanel*>(view))
         {
@@ -3135,6 +3200,40 @@ bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
             hovered_floater = floater;
         }
     }
+    LLUICtrl* focused_text = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
+    if (focused_text && focused_text->acceptsTextInput()) return false;
+    if (outfits || (wearing_or_edit && outfit_item))
+    {
+        if (gKeyboard->getKeyRepeated(key)) return true;
+        if (collapse_all && outfits) outfits->onCollapseAllFolders();
+        else if (key == 'E' && outfits && outfit_tab)
+            outfit_tab->changeOpenClose(outfit_tab->isExpanded());
+        else if (key == 'T' && outfit_item)
+        {
+            auto item = outfit_item->getItem();
+            if (item)
+            {
+                const LLUUID id = item->getLinkedUUID();
+                const bool worn = get_is_item_worn(id) || LLAppearanceMgr::instance().isLinkedInCOF(id);
+                if (worn && (item->getType() == LLAssetType::AT_OBJECT || item->getType() == LLAssetType::AT_CLOTHING))
+                    LLAppearanceMgr::instance().removeItemFromAvatar(id);
+                else if (!worn && outfits)
+                    LLAppearanceMgr::instance().wearItemOnAvatar(id, true, false);
+            }
+        }
+        else if (key == 'T' && outfits && outfit_tab)
+        {
+            LLInventoryModel::cat_array_t categories;
+            LLInventoryModel::item_array_t items;
+            gInventory.collectDescendents(outfit_tab->getFolderID(), categories, items, false);
+            uuid_vec_t worn;
+            for (const auto& item : items)
+                if ((item->getType() == LLAssetType::AT_OBJECT || item->getType() == LLAssetType::AT_CLOTHING)
+                    && get_is_item_worn(item)) worn.push_back(item->getLinkedUUID());
+            if (!worn.empty()) LLAppearanceMgr::instance().removeItemsFromAvatar(worn);
+        }
+        return true;
+    }
     // Include the inventory window's title bar and border in the shortcut area.
     if (!main_inventory && hovered_floater)
         main_inventory = hovered_floater->findChild<LLPanelMainInventory>("panel_main_inventory");
@@ -3145,6 +3244,7 @@ bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
     // another window does not take these keys while the pointer is over inventory.
     LLUICtrl* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
     LLFloater* floater = gFloaterView->getParentFloater(panel);
+    if (!collapse_all && (focus && focus->acceptsTextInput())) return false;
     if (focus && focus->acceptsTextInput()
         && (focus->hasAncestor(panel)
             || (main_inventory && focus->hasAncestor(main_inventory))
@@ -3211,12 +3311,11 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
     if (LLToolPoseIK::getInstance()->handleKey(key, mask)) return true;
     if (LLFloaterSnapshot::photoKey(key, mask)) return true;
 
-    if (handle_inventory_delete_shortcut(key, mask)) return true;
-
-    if (key == 'E' || key == 'T')
+    if (key == 'E' || key == 'T' || key == 'D' || key == 'B')
     {
-        const S32 shortcut = key == 'T';
-        mInventoryShortcutKeyHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut] || handleInventoryHoverKey(key, mask);
+        const S32 shortcut = key == 'E' ? 0 : key == 'T' ? 1 : key == 'D' ? 2 : 3;
+        mInventoryShortcutKeyHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut]
+            || ((key == 'E' || key == 'T') ? handleInventoryHoverKey(key, mask) : handle_inventory_action_shortcut(key, mask));
         // Character messages can arrive after key-up, so retain their routing
         // separately until the next press of that key, including queued repeats.
         mInventoryShortcutCharHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut];
@@ -3500,7 +3599,9 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
 bool LLViewerWindow::handleUnicodeChar(llwchar uni_char, MASK mask)
 {
     if ((mInventoryShortcutCharHandled[0] && (uni_char == 'e' || uni_char == 'E' || uni_char == 5))
-        || (mInventoryShortcutCharHandled[1] && (uni_char == 't' || uni_char == 'T' || uni_char == 20)))
+        || (mInventoryShortcutCharHandled[1] && (uni_char == 't' || uni_char == 'T' || uni_char == 20))
+        || (mInventoryShortcutCharHandled[2] && (uni_char == 'd' || uni_char == 'D' || uni_char == 4))
+        || (mInventoryShortcutCharHandled[3] && (uni_char == 'b' || uni_char == 'B' || uni_char == 2)))
     {
         return true;
     }

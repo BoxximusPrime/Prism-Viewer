@@ -145,6 +145,7 @@ public:
     virtual const std::string& getDisplayName() const = 0;
     virtual std::vector<std::pair<S32, S32>> getLabelHighlightRanges() const { return {}; }
     virtual bool isAttachmentPending() const { return false; }
+    virtual S32 getWornItemCount() const { return 0; }
     virtual const std::string& getSearchableName() const = 0;
 
     virtual std::string getSearchableDescription() const = 0;

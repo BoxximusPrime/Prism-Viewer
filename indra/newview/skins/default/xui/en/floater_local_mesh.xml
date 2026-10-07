@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<floater name="local_mesh" title="LOCAL MESH" width="430" height="566"
+ can_resize="false" can_minimize="true" save_rect="true" layout="topleft">
+    <floater.string name="no_target">No single object selected</floater.string>
+    <floater.string name="no_file">No local mesh assigned</floater.string>
+    <floater.string name="select_prim">Select one standalone, editable prim you own. Attachments, linksets and uploaded meshes are not supported yet.</floater.string>
+    <floater.string name="choose_file">Choose a static FBX, DAE, glTF or GLB model to preview on this prim.</floater.string>
+    <floater.string name="ready">Preview active. Use the normal Move, Rotate and Scale tools. Reload after exporting changes.</floater.string>
+    <floater.string name="auto_ready">Auto Reload is watching this model file, even while this window is closed.</floater.string>
+    <floater.string name="auto_waiting">Export changed. Waiting for the file to settle before reloading. Previous preview retained.</floater.string>
+    <floater.string name="auto_missing">Source file is missing, empty or unavailable. Previous preview retained; Auto Reload will resume when the file returns.</floater.string>
+    <floater.string name="auto_failed">Auto Reload could not load this export. Previous preview retained. Export again or click Reload to retry.</floater.string>
+    <floater.string name="load_failed">Could not load this model. Use a static mesh without rigging. Check its external files and the viewer log. Any previous preview is unchanged.</floater.string>
+    <floater.string name="shader_unavailable">This graphics configuration cannot render glTF mesh previews.</floater.string>
+    <floater.string name="removed">Local preview removed. The original prim is visible again.</floater.string>
+    <floater.string name="material_help">Enable overrides to edit roughness/metallic. Uncheck to use the material's values. Reload preserves overrides; Reset restores the exported material.</floater.string>
+    <floater.string name="material_loading">Loading PBR material. The previous appearance stays visible until it is ready.</floater.string>
+    <floater.string name="material_failed">Could not load the PBR material. Previous appearance retained. Choose another material or Reset to Export.</floater.string>
+    <text name="intro" left="16" top="32" width="398" height="34" wrap="true" layout="topleft">
+        Preview a mesh in-world before uploading. Only you see the replacement; others still see the prim.
+    </text>
+    <text name="target_label" left="16" top="78" width="60" height="18" font.style="BOLD" layout="topleft">Prim</text>
+    <text name="target" left="80" top="78" width="330" height="18" use_ellipses="true" layout="topleft"/>
+    <text name="file_label" left="16" top="104" width="60" height="18" font.style="BOLD" layout="topleft">File</text>
+    <text name="filename" left="80" top="104" width="330" height="18" use_ellipses="true" layout="topleft"/>
+    <button name="load" label="Load Mesh..." left="16" top="138" width="130" height="24" layout="topleft"/>
+    <button name="reload" label="Reload" left="154" top="138" width="110" height="24" layout="topleft"/>
+    <button name="remove" label="Remove Preview" left="272" top="138" width="142" height="24" layout="topleft"/>
+    <check_box name="auto_reload" label="Auto Reload" left="16" top="170" width="398" height="22"
+     initial_value="true" layout="topleft" tool_tip="Watch this preview's model file for new exports, even with this window closed. Keeps placement and material overrides."/>
+    <text name="status" left="16" top="204" width="398" height="60" wrap="true" layout="topleft"/>
+    <text left="16" top="267" width="70" height="18" font.style="BOLD" layout="topleft">Surface</text>
+    <combo_box name="material_slot" left="86" top="264" width="328" height="23" layout="topleft"/>
+    <texture_picker name="material" label="PBR Material" left="16" top="299" width="92" height="70"
+     no_commit_on_selection="true" allow_no_texture="true" layout="topleft"
+     tool_tip="Choose an inventory or local PBR material for this preview."/>
+    <check_box name="override_factors" label="Override roughness / metallic" left="126" top="303" width="288" height="22"
+     initial_value="false" layout="topleft" tool_tip="Off uses the assigned or exported material's factors. Turning this off clears your numeric overrides."/>
+    <spinner name="roughness" label="Roughness" left="126" top="333" width="190" height="22" label_width="98"
+     min_val="0" max_val="1" increment="0.05" decimal_digits="2" initial_value="0.5" enabled="false" layout="topleft"/>
+    <spinner name="metallic" label="Metallic" left="126" top="363" width="190" height="22" label_width="98"
+     min_val="0" max_val="1" increment="0.05" decimal_digits="2" initial_value="0" enabled="false" layout="topleft"/>
+    <button name="reset_material" label="Reset to Export" left="126" top="396" width="150" height="23" layout="topleft"/>
+    <text name="material_status" left="16" top="429" width="398" height="49" wrap="true" layout="topleft"/>
+    <text name="placement" left="16" top="487" width="398" height="34" wrap="true" text_color="LabelDisabledColor" layout="topleft">
+        Initially centered and fitted to the prim, keeping proportions on a cube. Reload preserves that origin and scale.
+    </text>
+    <text name="scope" left="16" top="526" width="398" height="32" wrap="true" text_color="LabelDisabledColor" layout="topleft">
+        Session only. Physics and land impact remain the prim's.
+        Supports .fbx / .dae / .glb / .gltf; no rigging.
+    </text>
+</floater>

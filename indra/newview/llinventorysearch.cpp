@@ -15,6 +15,26 @@ bool is_separator(char character)
 {
     return LLStringOps::isSpace(character) || character == '+';
 }
+
+size_t find_term(const std::string& text, const std::string& term, bool whole_word, bool space_boundary)
+{
+    size_t position = text.find(term);
+    while (position != std::string::npos)
+    {
+        const size_t end = position + term.size();
+        const auto boundary = [space_boundary](char character)
+        {
+            return space_boundary ? LLStringOps::isSpace(character) : !LLStringUtil::isPartOfWord(character);
+        };
+        if (!whole_word || ((position == 0 || boundary(text[position - 1]))
+            && (end == text.size() || boundary(text[end]))))
+        {
+            return position;
+        }
+        position = text.find(term, position + 1);
+    }
+    return std::string::npos;
+}
 }
 
 LLInventorySearchQuery::LLInventorySearchQuery(const std::string& query)
@@ -96,8 +116,9 @@ LLInventorySearchQuery::LLInventorySearchQuery(const std::string& query)
                  && mIncludedClauses.front().front().find_first_of(" \t\r\n") == std::string::npos;
 }
 
-bool LLInventorySearchQuery::matches(const std::string& text) const
+bool LLInventorySearchQuery::matches(const std::string& text, std::pair<size_t, size_t>* match) const
 {
+    if (match) *match = {std::string::npos, 0};
     std::string searchable = text;
     LLStringUtil::toUpper(searchable);
 
@@ -109,36 +130,24 @@ bool LLInventorySearchQuery::matches(const std::string& text) const
         }
     }
 
-    if (mExactWord)
-    {
-        const std::string& term = mIncludedClauses.front().front();
-        size_t position = searchable.find(term);
-        while (position != std::string::npos)
-        {
-            const size_t end = position + term.size();
-            if ((position == 0 || LLStringOps::isSpace(searchable[position - 1]))
-                && (end == searchable.size() || LLStringOps::isSpace(searchable[end])))
-            {
-                return true;
-            }
-            position = searchable.find(term, position + 1);
-        }
-        return false;
-    }
-
+    const bool whole_word = mExactWord || mIncludedClauses.size() > 1;
     for (const auto& clause : mIncludedClauses)
     {
         bool clause_matches = true;
+        std::pair<size_t, size_t> first_match{std::string::npos, 0};
         for (const std::string& term : clause)
         {
-            if (searchable.find(term) == std::string::npos)
+            const size_t position = find_term(searchable, term, whole_word, mExactWord);
+            if (position == std::string::npos)
             {
                 clause_matches = false;
                 break;
             }
+            if (first_match.first == std::string::npos) first_match = {position, term.size()};
         }
         if (clause_matches)
         {
+            if (match) *match = first_match;
             return true;
         }
     }

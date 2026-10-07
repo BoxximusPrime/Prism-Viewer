@@ -1831,6 +1831,14 @@ void LLPanelObject::draw()
         getChildView("copy_" + transform)->setEnabled(menuEnableItem(transform + "_copy"));
         getChildView("paste_" + transform)->setEnabled(menuEnableItem(transform + "_paste"));
     }
+    auto selection = LLSelectMgr::getInstance()->getSelection();
+    const auto* selected = selection->getFirstObject();
+    const bool child_prim = selection->getObjectCount() == 1 && selected &&
+        selected->getPCode() == LL_PCODE_VOLUME && !selected->isRootEdit();
+    getChildView("zero_pos")->setVisible(child_prim);
+    getChildView("zero_pos")->setEnabled(menuEnableItem("pos_zero"));
+    getChildView("one_size")->setEnabled(menuEnableItem("size_one"));
+    getChildView("zero_rot")->setEnabled(menuEnableItem("rot_zero"));
     getChildView("copy_shape")->setEnabled(mMenuClipboardParams->getEnabled());
     getChildView("paste_shape")->setEnabled(mMenuClipboardParams->getEnabled() && menuEnableItem("params_paste"));
 
@@ -2060,6 +2068,38 @@ void LLPanelObject::menuDoToSelected(const LLSD& userdata)
 {
     std::string command = userdata.asString();
 
+    if (command == "pos_zero" || command == "size_one" || command == "rot_zero")
+    {
+        // Re-read selection/permissions in case they changed since the last draw.
+        getState();
+        if (!menuEnableItem(command)) return;
+        if (command == "pos_zero")
+        {
+            // The displayed position is in region/edit space. Zero the child's
+            // parent-relative offset directly, including linked attachments.
+            mObject->setPositionParent(LLVector3::zero);
+            LLManip::rebuild(mObject);
+            LLSelectMgr::getInstance()->sendMultipleUpdate(UPD_POSITION);
+            LLSelectMgr::getInstance()->updateSelectionCenter();
+        }
+        else if (command == "size_one")
+        {
+            mCtrlScaleX->set(1.f);
+            mCtrlScaleY->set(1.f);
+            mCtrlScaleZ->set(1.f);
+            sendScale(false);
+        }
+        else
+        {
+            mCtrlRotX->set(0.f);
+            mCtrlRotY->set(0.f);
+            mCtrlRotZ->set(0.f);
+            sendRotation(false);
+        }
+        refresh();
+        return;
+    }
+
     // paste
     if (command == "psr_paste")
     {
@@ -2111,6 +2151,18 @@ void LLPanelObject::menuDoToSelected(const LLSD& userdata)
 bool LLPanelObject::menuEnableItem(const LLSD& userdata)
 {
     std::string command = userdata.asString();
+
+    if (command == "pos_zero" || command == "size_one" || command == "rot_zero")
+    {
+        if (mObject.isNull() || mObject->isDead()) return false;
+        if (command == "pos_zero")
+        {
+            auto selection = LLSelectMgr::getInstance()->getSelection();
+            return selection->getObjectCount() == 1 && selection->getFirstObject() == mObject &&
+                mObject->getPCode() == LL_PCODE_VOLUME && !mObject->isRootEdit() && mCtrlPosX->getEnabled();
+        }
+        return command == "size_one" ? mCtrlScaleX->getEnabled() : mCtrlRotX->getEnabled();
+    }
 
     // paste options
     if (command == "psr_paste")

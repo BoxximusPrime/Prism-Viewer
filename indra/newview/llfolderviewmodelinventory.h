@@ -61,6 +61,7 @@ public:
     virtual LLInventoryObject* getInventoryObject() const = 0;
     std::vector<std::pair<S32, S32>> getLabelHighlightRanges() const override;
     bool isAttachmentPending() const override;
+    S32 getWornItemCount() const override;
     virtual void requestSort();
     virtual bool canSortContent() const { return getUUID().notNull(); }
     virtual void setPassedFilter(bool filtered, S32 filter_generation, std::string::size_type string_offset = std::string::npos, std::string::size_type string_size = 0);

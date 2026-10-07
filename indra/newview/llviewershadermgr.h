@@ -50,7 +50,8 @@ public:
     static void releaseInstance();
 
     void initAttribsAndUniforms(void);
-    void setShaders();
+    // False if loading was skipped or a shader family failed.
+    bool setShaders();
     void unloadShaders();
     void shaderProgramStarted(const LLGLSLShader* shader) override;
     void shaderProgramProcessed(const LLGLSLShader* shader, bool success) override;
@@ -246,6 +247,7 @@ extern LLGLSLShader         gDeferredBlurLightProgram;
 extern LLGLSLShader         gGTAOProgram;
 extern LLGLSLShader         gGTAOBlurProgram;
 extern LLGLSLShader         gGTAODebugProgram;
+extern LLGLSLShader         gPCSSDebugProgram;
 extern LLGLSLShader         gSSGITraceProgram;
 extern LLGLSLShader         gSSGIGeometryProgram;
 extern LLGLSLShader         gSSGIFilterProgram;

@@ -2303,13 +2303,7 @@ bool LLInventoryGallery::isItemCopyable(const LLUUID & item_id)
     LLViewerInventoryItem* item = gInventory.getItem(item_id);
     if (item)
     {
-        // Can't copy worn objects.
-        // Worn objects are tied to their inworld conterparts
-        // Copy of modified worn object will return object with obsolete asset and inventory
-        if (get_is_item_worn(item_id))
-        {
-            return false;
-        }
+        // Worn items can be copied using their saved inventory asset.
 
         static LLCachedControl<bool> inventory_linking(gSavedSettings, "InventoryLinking", true);
         return (item->getIsLinkType() && inventory_linking)

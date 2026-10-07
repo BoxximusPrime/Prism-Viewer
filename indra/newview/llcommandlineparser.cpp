@@ -611,6 +611,15 @@ void setControlValueCB(const LLCommandLineParser::token_vector_t& value,
 
                     ctrl->setValue(llsdArray, false);
                 }
+                else if (ctrl->isType(TYPE_LLSD) && option == "leap")
+                {
+                    // --leap is documented as a command line, not LLSD notation.
+                    // Keep a single command consistent with the composing case
+                    // above; otherwise an ordinary executable path fails parsing.
+                    LLSD commands = LLSD::emptyArray();
+                    commands.append(onevalue(option, value));
+                    ctrl->setValue(commands, false);
+                }
                 else if (ctrl->isType(TYPE_LLSD))
                 {
                     // Command-line LLSD should support a notation format string

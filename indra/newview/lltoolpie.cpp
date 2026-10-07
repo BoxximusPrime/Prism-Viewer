@@ -582,7 +582,8 @@ bool LLToolPie::shouldBlockClickAction(MASK mask, LLViewerObject* object, LLView
 
     // Resolve inherited linkset actions just as the action cursor does.
     const U8 action = final_click_action(object);
-    return action == CLICK_ACTION_SIT;
+    // Already seated: the Sit action falls through to Touch instead of sitting.
+    return action == CLICK_ACTION_SIT && isAgentAvatarValid() && !gAgentAvatarp->isSitting();
 }
 
 ECursorType LLToolPie::cursorFromObject(LLViewerObject* object)

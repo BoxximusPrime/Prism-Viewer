@@ -10,3 +10,9 @@
 
 - Keep `FEATURES.md` up to date. When adding or substantially changing a major user-facing viewer feature, update the relevant section with a concise bullet as part of the same change.
 - Mark work as in progress when it is not yet committed or confirmed complete.
+
+## Live rendering tests
+
+- Use the local `prism-viewer` MCP for launch, remembered login, camera replay, screenshots, and rendering captures. Setup and measurement semantics are in `doc/viewer-mcp.md`.
+- For a direct capture, call `profile_start` without changing camera or graphics settings. Camera locking is optional. When a test does change the camera or settings, save the original camera and restore temporary changes afterward. Compare at the same viewport dimensions; GPU scopes are inclusive and must not be added together.
+- Treat short integration captures as smoke tests. Optimization conclusions require warmed, repeated captures and matching visual checks in scenes that exercise the feature.

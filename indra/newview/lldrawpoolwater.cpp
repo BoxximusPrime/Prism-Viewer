@@ -28,6 +28,7 @@
 #include <vector>
 #include "llfeaturemanager.h"
 #include "lldrawpoolwater.h"
+#include "llviewerautomation.h"
 
 #include "llviewercontrol.h"
 #include "lldir.h"
@@ -220,6 +221,7 @@ void LLDrawPoolWater::beginPostDeferredPass(S32 pass)
 void LLDrawPoolWater::updateWaveField()
 {
     LL_PROFILE_GPU_ZONE("water wave field");
+    LL_AUTOMATION_GPU_SCOPE("water.wave_field");
     const F64 now = LLFrameTimer::getElapsedSeconds();
     updateLocalWaterWake(now);
     const F64 dt = mWaveLastTime < 0.0 ? 0.0 : llmax(0.0, now - mWaveLastTime);
@@ -415,6 +417,7 @@ void LLDrawPoolWater::renderPostDeferred(S32 pass)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
     LL_PROFILE_GPU_ZONE("forward water");
+    LL_AUTOMATION_GPU_SCOPE("water.surface");
     LLGLDisable blend(GL_BLEND);
 
     gGL.setColorMask(true, true);

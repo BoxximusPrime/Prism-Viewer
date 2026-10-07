@@ -6,6 +6,15 @@
  mouse_opaque="false"
  name="menu_view_default"
  visible="false">
+    <menu_item_check label="Enable Quick Binds" name="quick_binds" layout="topleft">
+        <on_click function="Inventory.GearDefault.Custom.Action" parameter="quick_binds" />
+        <on_check function="Inventory.GearDefault.Check" parameter="quick_binds" />
+    </menu_item_check>
+    <menu_item_check label="Show Equipped Counts" name="worn_folder_count" layout="topleft">
+        <on_click function="Inventory.GearDefault.Custom.Action" parameter="worn_folder_count" />
+        <on_check function="Inventory.GearDefault.Check" parameter="worn_folder_count" />
+    </menu_item_check>
+    <menu_item_separator/>
     <menu_item_check
      label="Sort by Name"
      layout="topleft"

@@ -44,7 +44,7 @@ def run(sdl, gl):
     global_source=read('class1/deferred/globalF.glsl')
     # Unrelated fog and color-space inputs are identity fixtures. Actual normal
     # encoding, material sampling/factors, roughness and GGX are exercised.
-    helpers='uniform float sss_object;\n'+function(global_source,'vec4 encodeNormal(')
+    helpers='uniform float sss_object;\nuniform float ssgi_avatar;\n'+function(global_source,'vec4 encodeNormal(')
     helpers+='vec3 srgb_to_linear(vec3 c){return c;}\nvoid mirrorClip(vec3 p){}\n'
     opaque_source='#define GBUFFER_FLAG_HAS_PBR 1.0\n'+read('class1/deferred/pbropaqueF.glsl')
     materials=[gpu.program(opaque_source+helpers+h,VERTEX) for h in (
@@ -153,13 +153,15 @@ void main() {
     forward_stubs=forward_stubs.replace('layout(location=0) out', 'out')
     forward_stubs+='''
 bool isSSSOverlay(vec3 p){return false;}
+vec4 applyVolumeFogAlpha(vec3 p,vec4 c){return c;}
 vec3 pbrCalcPointLightOrSpotLight(int i,vec3 d,vec3 s,float r,float m,
     vec3 n,vec3 p,vec3 v,vec3 lp,vec3 ld,vec3 lc,float ls,float f,float pt,float a){return vec3(0);}
 '''
     gl.GetUniformBlockIndex=C.WINFUNCTYPE(U,U,C.c_char_p)(sdl.SDL_GL_GetProcAddress(b'glGetUniformBlockIndex'))
     gl.UniformBlockBinding=C.WINFUNCTYPE(None,U,U,U)(sdl.SDL_GL_GetProcAddress(b'glUniformBlockBinding'))
     material_data=[0.0]*48
-    material_data[44:48]=[0,.2,.5,-1.5]
+    material_data[43]=1  # occlusion strength
+    material_data[44:48]=[1,.2,.5,-1]  # normal scale, roughness, metallic, alpha cutoff
     ubo=gpu.obj(gl.GenBuffers)
     gl.BindBuffer(0x8A11,ubo)
     gl.BufferData(0x8A11,48*C.sizeof(F),(F*48)(*material_data),0x88E4)

@@ -21,6 +21,7 @@
 /.build-variables/
 /.logs/
 .venv
+/.codex/config.toml
 CMakeCache.txt
 cmake_install.cmake
 LICENSES

@@ -31,6 +31,7 @@ def native_inputs():
     calculation=re.search(r'const glm::mat[34] view_to_world = [^;]+;',body)[0]
     upload=next(line for line in body.splitlines() if '"vc_view_to_world"' in line)
     sunlight='\n'.join(re.search(r'const F32 '+name+r' = [^;]+;',body)[0] for name in ('sunlight_scale','strength'))
+    light_upload=body[body.index('    LLColor3 light ='):body.index('    // Adjust lighting optical depth')]
     lighting='\n'.join(re.search(r'shader.uniform1f\(LLStaticHashedString\("'+name+r'"\).*?;',body,re.S)[0]
                        for name in ('vc_light_absorption','vc_edge_glow','vc_internal_light'))
     ambient=next(line for line in body.splitlines() if 'auto linear =' in line)
@@ -67,7 +68,15 @@ using U8 = unsigned char;
 F32 llclamp(F32 x, F32 lo, F32 hi) { return std::clamp(x,lo,hi); }
 F32 llmin(F32 x, F32 y) { return std::min(x,y); }
 F32 llmax(F32 x, F32 y) { return std::max(x,y); }
-struct Color { F32 mV[3]; };
+struct Color { F32 mV[3]; static const Color black; };
+const Color Color::black={0,0,0};
+using LLColor3=Color;
+struct Sky {
+    Color getLightDiffuse() const { return {.03f,.05f,.09f}; }
+    Color getSunlightColor() const { return {1.5f,1.f,.5f}; }
+    Color getLightAttenuation(F32) const { return {.15f,.25f,.4f}; }
+    F32 getMaxY() const { return 1000.f; }
+} sky_value;
 struct Environment {
     bool sun;
     F32 elevation;
@@ -103,6 +112,12 @@ struct AmbientShader {
     Color color;
     void uniform3f(const char*, F32 r, F32 g, F32 b) { color={r,g,b}; }
 };
+struct LightShader : AmbientShader {
+    Color attenuation, source;
+    void uniform3fv(const char* name, int, const F32* v) {
+        (std::string(name)=="vc_light_source" ? source : attenuation)={v[0],v[1],v[2]};
+    }
+};
 int main() {
     _setmode(_fileno(stdout),_O_BINARY);
     static_assert(sizeof(glm::mat3)==12*sizeof(float), "Use the viewer's padded GLM ABI");
@@ -131,6 +146,25 @@ int main() {
         assert(shader.values.at("vc_edge_glow")==std::clamp(value,0.f,2.f));
         assert(shader.values.at("vc_internal_light")==std::clamp(value,0.f,2.f));
     }
+    // The sun upload must contain unattenuated linear radiance plus separate
+    // optical depth and authored color. Moon diffuse already includes attenuation.
+    for (bool directional : {false,true}) for (bool sun : {false,true}) {
+        if (sun && !directional) continue;
+        environment.sun=sun;
+        gSavedSettings.hdr=true;
+        gSavedSettings.amount=.5f;
+        auto* sky=&sky_value;
+        LightShader shader;
+        auto linear=[](F32 c) { return c<=.04045f ? c/12.92f : std::pow((c+.055f)/1.055f,2.4f); };
+        LIGHT_UPLOAD
+        Color expected=sun ? sky->getSunlightColor() : directional ? sky->getLightDiffuse() : Color::black;
+        Color optical=sun ? sky->getLightAttenuation(0) : Color::black;
+        for (int i=0;i<3;++i) {
+            assert(std::abs(shader.color.mV[i]-linear(expected.mV[i])*(sun ? 1.f : 2.f))<1e-6f);
+            assert(shader.attenuation.mV[i]==optical.mV[i]);
+            assert(shader.source.mV[i]==expected.mV[i]);
+        }
+    }
     for (F32 elevation : {-1.f,-.1f,-.05f,0.f,.05f,.1f,1.f})
     for (F32 gain : {-2.f,0.f,.5f,1.f,2.f,9.f}) {
         environment.elevation=elevation;
@@ -151,7 +185,7 @@ int main() {
     NOISE_CREATION
     std::cout.write(reinterpret_cast<const char*>(noise.data()),noise.size());
 }
-'''.replace('CASES',rows).replace('CALCULATION',calculation).replace('UPLOAD',upload).replace('SUNLIGHT',sunlight).replace('LIGHTING',lighting).replace('AMBIENT',ambient).replace('NOISE_CREATION',noise_creation)
+'''.replace('LIGHT_UPLOAD',light_upload).replace('CASES',rows).replace('CALCULATION',calculation).replace('UPLOAD',upload).replace('SUNLIGHT',sunlight).replace('LIGHTING',lighting).replace('AMBIENT',ambient).replace('NOISE_CREATION',noise_creation)
     compiler=shutil.which('g++')
     assert compiler,'g++ must be on PATH for the native camera upload regression'
     with tempfile.TemporaryDirectory(prefix='prism-cloud-camera-') as directory:
@@ -184,9 +218,18 @@ def run(sdl, gl, native):
     program=gl.CreateProgram()
     vertex='void main(){vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(p[gl_VertexID],0,1);}'
     fragment=(ROOT/'indra/newview/app_settings/shaders/class1/deferred/volumeCloudF.glsl').read_text()
+    # Compare the extra high-elevation scattering against the prior lighting
+    # while retaining the exact production density, shadow and transport code.
+    fragment='uniform bool test_disable_high_light;\n'+fragment.replace(
+        'vec3 scatter = vec3(0.0);',
+        'if (test_disable_high_light) high_light = 0.0;\n    vec3 scatter = vec3(0.0);')
     # Test-only entry to inspect the exact density used by view and light rays.
     fragment='uniform int test_density_mode;\n'+fragment.replace('void main()\n{', '''void main()
 {
+    if (test_density_mode == 3) {
+        frag_color = vec4(cloudSunlight(), 1.0);
+        return;
+    }
     if (test_density_mode != 0) {
         float density = cloudDensity(vc_camera, test_density_mode == 1);
         frag_color = vec4(density, 0.0, 0.0, 1.0);
@@ -266,6 +309,71 @@ def run(sdl, gl, native):
         nonlocal checks
         assert max(abs(x-y) for x,y in zip(actual,wanted))<tolerance,(name,actual,wanted)
         checks+=1
+    # Isolate atmospheric transport from cloud shape. Compare with a ray's
+    # geometric exit distance through a finite spherical shell. Brightness uses
+    # the cloud half-column; hue follows the surface/water EEP convention.
+    integer('test_density_mode',3)
+    shell = math.sqrt(1.0025)-1
+    optical = (.15,.25,.4)
+    color = (2,1,.5)
+    def linear(c):
+        return c/12.92 if c <= .04045 else ((c+.055)/1.055)**2.4
+    def encoded(c):
+        return c*12.92 if c <= .0031308 else 1.055*c**(1/2.4)-.055
+    def luminance(rgb):
+        return sum(c*w for c,w in zip(rgb,(.2126,.7152,.0722)))
+    source = tuple(map(encoded,color))
+    vector('vc_light_attenuation',*optical)
+    vector('vc_sun_color',*color)
+    vector('vc_light_source',*source)
+    previous = None
+    for degrees in (0,.001,.01,.1,.5,1,2,5,10,20,45,90):
+        elevation = math.sin(math.radians(degrees))
+        vector('vc_sun_direction',math.cos(math.radians(degrees)),0,elevation)
+        exit_distance = -elevation+math.sqrt(elevation**2+2*shell+shell**2)
+        energy = luminance([c*math.exp(-a*exit_distance/(2*shell)) for c,a in zip(color,optical)])
+        hue = [linear(c*math.exp(-a*exit_distance/shell)) for c,a in zip(source,optical)]
+        expected = [c*energy/luminance(hue) for c in hue]
+        result = render()
+        check('finite atmospheric brightness and EEP hue',result,expected+[1])
+        assert 0 < luminance(result[:3]) <= luminance(color)+1e-6
+        if previous is not None:
+            assert luminance(previous[:3]) <= luminance(result[:3])+1e-6
+        previous = result
+    # Actual Purple preset: water is warm even though its authored sun is blue.
+    # Exercise that case, neutral light and the low end of the sRGB transfer.
+    purple_optical = tuple((b+.25*1.1)*.00052*656.2 for b in (.139779,.384996,.77))
+    for source in ((1.5,1.53,2.83857),(1,1,1),(.02,.035,.07)):
+        vector('vc_light_source',*source)
+        vector('vc_light_attenuation',*purple_optical)
+        for elevation in (0,.001,.0941078,.5,1):
+            vector('vc_sun_direction',math.sqrt(1-elevation**2),0,elevation)
+            distance = (-elevation+math.sqrt(elevation**2+2*shell+shell**2))/shell
+            hue = [linear(c*math.exp(-a*distance)) for c,a in zip(source,purple_optical)]
+            for gain in (0,.22,1,2):
+                radiance = [linear(c)*gain for c in source]
+                vector('vc_sun_color',*radiance)
+                energy = luminance([c*math.exp(-a*distance*.5) for c,a in zip(radiance,purple_optical)])
+                expected = [c*energy/luminance(hue) for c in hue]
+                result = render()
+                check('preset hue and gain-independent chromaticity',result,expected+[1])
+                if source[0]==1.5 and elevation==.0941078 and gain>0:
+                    assert result[0]>result[1]>result[2], result
+                    water = [linear(c*math.exp(-a/elevation)) for c,a in zip(source,purple_optical)]
+                    # Curvature bounds the cloud path; at this 5.4-degree sunset
+                    # its hue remains close to water's unbounded atmosphere path.
+                    check('Purple cloud/water chromaticity',
+                          [c/luminance(result[:3]) for c in result[:3]],
+                          [c/luminance(water) for c in water], .2)
+    vector('vc_sun_color',*color)
+    vector('vc_light_attenuation',0,0,0)
+    check('already attenuated moonlight unchanged',render(),list(color)+[1])
+    vector('vc_sun_color',0,0,0)
+    vector('vc_light_attenuation',*optical)
+    check('atmosphere cannot create light',render(),[0,0,0,1])
+    vector('vc_light_attenuation',0,0,0)
+    vector('vc_sun_direction',0,0,1)
+    integer('test_density_mode',0)
     clear=[0,0,0,1]
     full=render(); assert full[3]<.8,full
     check('wall before layer',render(50),clear)
@@ -348,6 +456,28 @@ def run(sdl, gl, native):
     check('moonlight remains dim',render(100),[v*.01 for v in noon[:3]]+[noon[3]])
     vector('vc_sun_color',0,0,0)
     check('no artificial daylight at night',render(100),[0,0,0,noon[3]])
+    noise(bytes([255])*(64**3))
+    vector('vc_sun_color',1,1,1); scalar('vc_internal_light',.15)
+    for elevation in (-.1,0,.0941078,.1499,.15,.1501,.35,.65,1):
+        vector('vc_sun_direction',math.sqrt(1-elevation**2),0,elevation)
+        integer('test_disable_high_light',1); baseline=render(100)
+        integer('test_disable_high_light',0); filled=render(100)
+        check('daylight fill preserves cloud opacity',[filled[3]],[baseline[3]])
+        if elevation<=.15:
+            check('sunset and twilight lighting unchanged',filled,baseline)
+        elif elevation==.1501:
+            check('daylight fill fades in continuously',filled,baseline,1e-6)
+        else:
+            assert filled[0]>baseline[0],('high light reaches shaded interior',elevation,filled,baseline)
+            checks+=1
+        if elevation==1:
+            assert filled[0]>baseline[0]*1.3,('overhead light lifts dark underside',filled,baseline)
+            vector('vc_sun_color',.01,.01,.01)
+            check('high moon scales with available radiance',render(100),
+                  [v*.01 for v in filled[:3]]+[filled[3]])
+            vector('vc_sun_color',0,0,0)
+            check('overhead darkness has no fill',render(100),[0,0,0,filled[3]])
+    scalar('vc_internal_light',1); noise(bytes([128])*(64**3))
     vector('vc_sun_direction',.9701425,0,.2425356); vector('vc_sun_color',2,.5,.1)
     sunset=render(100)
     check('sunset color preserved',[sunset[0],sunset[0]],[sunset[1]*4,sunset[2]*20])
@@ -358,15 +488,15 @@ def run(sdl, gl, native):
     vector('vc_camera',0,0,100); vector('vc_density',0,0,.1)
     vector('vc_sun_color',1,1,1); vector('vc_sun_direction',0,1,0); rim=render(20)
     vector('vc_sun_direction',0,-1,0); face=render(20)
-    assert .55<face[0]/rim[0]<.6,('soft rim relative to sun-facing body',face,rim)
+    assert .7<face[0]/rim[0]<1.0,('bounded rim relative to sun-facing body',face,rim)
     # Eight closer light probes retain the original 15-step shadow reach.
     shadow=.0025*(250/8)*15
     surrounding=.0025*200*((1-top_fade)+4*(1-side_fade))/5
     def phase(mu,g):
         return (1-g*g)/max(1+g*g-2*g*mu,.05)**1.5
-    source=.45+.35*phase(-1,.45)+.2*phase(-1,-.2)
+    source=.45+.35*phase(-1,.3)+.2*phase(-1,-.2)
     source=source*math.exp(-shadow)+(.5+.5*math.exp(-surrounding*.35))*(
-        .4*(.7+.3*phase(-1,.25))*math.exp(-shadow*.25)+.25*math.exp(-shadow*.05))
+        .4*(.7+.3*phase(-1,.09))*math.exp(-shadow*.25)+.25*math.exp(-shadow*.05))
     rate=.0025+1/18000
     check('closer light probes retain full shadow reach',[face[0]],
           [source*.0025/rate*(1-math.exp(-rate*20))],.0001)
@@ -481,6 +611,37 @@ def run(sdl, gl, native):
             gl.ActiveTexture(0x84C0+unit)
             anisotropy=F(); gl.GetTexParameterfv(TEXTURE,0x84FE,C.byref(anisotropy))
             check('restore configured filtering for classic clouds',[anisotropy.value],[4])
+    # Real fetched textures cap MAX_LEVEL at 5-discard, not at the 1x1 mip.
+    # Midday's 16x detail can therefore retain 32-texel stripes even with
+    # trilinear filtering. Exercise the production tail completion against an
+    # independently generated full chain, including streamed replacements.
+    scalar('vc_blend',0); scalar('vc_coverage',.27)
+    vector('vc_detail',0,0,.89); vector('vc_camera',-2500*8*.015,0,-100)
+    for width,height in ((1024,1024),(512,512),(256,128)):
+        last_level = int(math.log2(width))-5
+        stripe = max(width//32,1)
+        for unit,tex in ((1,weather),(2,next_weather)):
+            gl.ActiveTexture(0x84C0+unit); gl.BindTexture(TEXTURE,tex)
+            gl.TexParameteri(TEXTURE,0x813D,1000)
+            weather_image(unit,tex,width,height,
+                          [.4 if (x//stripe)%2==0 else .8 for y in range(height) for x in range(width)])
+        reference=render()
+        for unit,tex in ((1,weather),(2,next_weather)):
+            gl.ActiveTexture(0x84C0+unit); gl.BindTexture(TEXTURE,tex)
+            gl.TexParameteri(TEXTURE,0x813D,last_level)
+        truncated=render()
+        assert abs(truncated[3]-reference[3])>.01,('truncated mip chain must reproduce pillars',width,reference,truncated)
+        native.reset(0); native.cloud_weather(weather,next_weather)
+        check('complete streamed weather mip tail',render(),reference,.0005)
+        for blend in (.5,1):
+            scalar('vc_blend',blend)
+            check('complete both weather mip tails',render(),reference,.0005)
+        scalar('vc_blend',0)
+        native.cloud_weather(weather,weather)
+        check('same weather texture on both units',render(),reference,.0005)
+        native.cloud_weather(weather,next_weather)
+    vector('vc_detail',0,0,0)
+
     # Large EEP features must still control coverage after filtering.
     scalar('vc_blend',0)
     weather_image(1,weather,512,128,[.4 if x<256 else .8 for y in range(128) for x in range(512)])
@@ -628,7 +789,12 @@ def run(sdl, gl, native):
         check('ray excludes camera translation',render(4000),expected,.0005)
     mat3(horizontal)
     vector('vc_camera',200,400,100); original=render(400)
-    vector('vc_camera',320200,320400,100); check('world period remains seamless',render(400),original,.0002)
+    vector('vc_camera',320200,320400,100)
+    # HDR radiance can exceed one; compare relative color error while retaining
+    # the original absolute transmittance tolerance for world-coordinate rounding.
+    scale=[max(1,abs(v)) for v in original[:3]]+[1]
+    check('world period remains seamless',[v/s for v,s in zip(render(400),scale)],
+          [v/s for v,s in zip(original,scale)],.0002)
     vector('vc_camera',200,400,100)
     gl.Uniform2f(loc('vc_scroll'),0,.1); scrolled=render(400)
     gl.Uniform2f(loc('vc_scroll'),0,0); vector('vc_camera',200,2400,100)

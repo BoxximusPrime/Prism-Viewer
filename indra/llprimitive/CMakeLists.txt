@@ -10,8 +10,20 @@ include(LLPrimitive)
 include(GLM)
 include(TinyGLTF)
 
+# Pinned, vendored FBX parser; compiled as C without the viewer's C++ PCH.
+add_library(ufbx STATIC ../lib/ufbx/ufbx.c)
+if(MSVC)
+    # The parser deliberately constructs infinity. Keep its diagnostics scoped
+    # here instead of deferring them into the viewer's /WX link-time build.
+    set_target_properties(ufbx PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+    target_compile_options(ufbx PRIVATE /fp:precise /wd4756)
+else()
+    target_compile_options(ufbx PRIVATE -fno-fast-math)
+endif()
+
 set(llprimitive_SOURCE_FILES
     lldaeloader.cpp
+    llfbxloader.cpp
     llgltfmaterial.cpp
     llmaterialid.cpp
     llmaterial.cpp
@@ -31,6 +43,7 @@ set(llprimitive_SOURCE_FILES
 set(llprimitive_HEADER_FILES
     CMakeLists.txt
     lldaeloader.h
+    llfbxloader.h
     llgltfmaterial.h
     llgltfmaterial_templates.h
     legacy_object_types.h
@@ -58,6 +71,7 @@ add_library (llprimitive ${llprimitive_SOURCE_FILES})
 target_include_directories( llprimitive  INTERFACE   ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(llprimitive
+        ufbx
         llcommon
         llmath
         llmessage

@@ -50,8 +50,9 @@ layout (std140) uniform GLTFMaterials
     // [gltf_material_id + [4-5]] -  metallic roughness transform
     // [gltf_material_id + [6-7]] -  emissive transform
     // [gltf_material_id + [8-9]] -  occlusion transform
-    // [gltf_material_id + 10]    -  emissive factor
-    // [gltf_material_id + 11]    -  .r unused, .g roughness, .b metalness, .a minimum alpha
+    // [1].zw, [3].zw            -  unbaked base color factor (otherwise white)
+    // [gltf_material_id + 10]    -  .rgb emissive factor, .a occlusion strength
+    // [gltf_material_id + 11]    -  .r normal scale, .g roughness, .b metalness, .a minimum alpha
 
     // Transforms are packed as follows
     // packed[0] = vec4(scale.x, scale.y, rotation, offset.x)
@@ -309,21 +310,26 @@ void main()
 #endif
 
 #ifndef UNLIT
-    vec3 n = (mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz;
-    vec3 t = (mat*vec4(tangent.xyz+position.xyz,1.0)).xyz-pos.xyz;
-
-    n = normalize(n);
-    vary_tangent = normalize(gltf_tangent_space_transform(vec4(t, tangent.w), n, texture_normal_transform));
-    vary_sign = tangent.w;
+    mat3 basis = mat3(mat);
+    vec3 n = normalize(transpose(inverse(basis)) * normal);
+    vec3 t = basis * tangent.xyz;
+    t = normalize(t - n * dot(n, t));
+    float handedness = tangent.w * (determinant(basis) < 0.0 ? -1.0 : 1.0);
+    vary_tangent = normalize(gltf_tangent_space_transform(vec4(t, handedness), n, texture_normal_transform));
+    vary_sign = handedness;
     vary_normal = n;
 #endif
 
     vertex_color = diffuse_color;
+    if (gltf_material_id != -1)
+    {
+        int idx = gltf_material_id * 12;
+        vertex_color *= vec4(gltf_material_data[idx+1].zw, gltf_material_data[idx+3].zw);
+    }
 #ifdef ALPHA_BLEND
     vary_fragcoord = vert.xyz;
 #endif
 }
-
 
 
 

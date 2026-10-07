@@ -31,6 +31,7 @@
 // </AS:Chanayane>
 
 #include "llappviewer.h"
+#include "llviewerautomation.h"
 #include "llposestudio.h"
 
 // Viewer includes
@@ -1339,6 +1340,7 @@ bool LLAppViewer::frame()
 bool LLAppViewer::doFrame()
 {
     resumeMainloopTimeout("Main:doFrameStart");
+    LLViewerAutomation::processRequests();
 #ifdef LL_DISCORD
     {
         LL_PROFILE_ZONE_NAMED("discord_callbacks");
@@ -1503,6 +1505,7 @@ bool LLAppViewer::doFrame()
                 pingMainloopTimeout("Main:Display");
                 gGLActive = true;
 
+                LLViewerAutomation::beginFrame();
                 display();
 
                 {
@@ -1512,6 +1515,7 @@ bool LLAppViewer::doFrame()
                     gPipeline.mReflectionMapManager.update();
                     LLFloaterSnapshot::update(); // take snapshots
                     LLFloaterSimpleSnapshot::update();
+                    LLViewerAutomation::endFrame();
                     gGLActive = false;
                 }
 
@@ -1750,6 +1754,7 @@ bool LLAppViewer::cleanup()
 
     // Kill off LLLeap objects. We can find them all because LLLeap is derived
     // from LLInstanceTracker.
+    LLViewerAutomation::cleanup();
     LLLeap::instance_snapshot().deleteAll();
 
     //flag all elements as needing to be destroyed immediately
@@ -5612,6 +5617,7 @@ void LLAppViewer::idle()
     }
 
     LLViewerCamera::getInstance()->applyCameraSmoothing();
+    LLViewerAutomation::applyCamera();
 
     // update media focus
     LLViewerMediaFocus::getInstance()->update();

@@ -2331,13 +2331,8 @@ bool LLItemBridge::isItemCopyable(bool can_copy_as_link) const
         return false;
     }
 
-    // Can't copy worn objects.
-    // Worn objects are tied to their inworld conterparts
-    // Copy of modified worn object will return object with obsolete asset and inventory
-    if (get_is_item_worn(mUUID))
-    {
-        return false;
-    }
+    // Copy the saved inventory asset, including for worn attachments. Live
+    // in-world changes are saved separately when the attachment is detached.
 
     static LLCachedControl<bool> inventory_linking(gSavedSettings, "InventoryLinking", true);
     return (can_copy_as_link && inventory_linking)

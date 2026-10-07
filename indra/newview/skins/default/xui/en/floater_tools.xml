@@ -66,7 +66,7 @@
         Click and drag to select land
     </floater.string>
     <floater.string name="status_selectcount">
-        [OBJ_COUNT] objects selected, land impact [LAND_IMPACT] [secondlife:///app/openfloater/object_weights More info]
+        Objects: [OBJ_COUNT]    Land impact: [LAND_IMPACT]    [secondlife:///app/openfloater/object_weights Details]
     </floater.string>
     <floater.string name="status_remaining_capacity">
         Remaining capacity [LAND_CAPACITY].
@@ -554,50 +554,6 @@
         width="180">
         <check_box.commit_callback function="BuildTool.selectComponent" />
     </check_box>
-    <button
-        name="select_previous_link"
-        follows="left|top"
-        layout="topleft"
-        left="200"
-        top="140"
-        width="24"
-        height="24"
-        image_overlay="Arrow_Small_Left"
-        visible="false"
-        enabled="false"
-        tool_tip="Select the previous linked part; wraps to the last part.">
-        <button.commit_callback function="Tools.SelectNextPart" parameter="previous_linked" />
-    </button>
-    <text
-        name="selection_link_number"
-        follows="left|top"
-        layout="topleft"
-        left="227"
-        top="146"
-        width="80"
-        height="18"
-        halign="center"
-        font="DejaVu"
-        font.size="LSmall"
-        mouse_opaque="false"
-        visible="false"
-        tool_tip="The selected prim's link number for scripts. Linked roots are 1; unlinked prims are 0.">
-        Link: [LINK_NUMBER]
-    </text>
-    <button
-        name="select_next_link"
-        follows="left|top"
-        layout="topleft"
-        left="310"
-        top="140"
-        width="24"
-        height="24"
-        image_overlay="Arrow_Small_Right"
-        visible="false"
-        enabled="false"
-        tool_tip="Select the next linked part; wraps to the root.">
-        <button.commit_callback function="Tools.SelectNextPart" parameter="next_linked" />
-    </button>
     <button
         follows="left|top"
         height="24"
@@ -1108,53 +1064,6 @@
         visible="false">
         <button.commit_callback function="BuildTool.applyToSelection" />
     </button>
-    <text
-        text_color="LabelDisabledColor"
-        type="string"
-        length="1"
-        height="18"
-        follows="left|top"
-        font="DejaVu"
-        font.size="LSmall"
-        layout="topleft"
-        name="selection_empty"
-        width="536"
-        left="12"
-        top="224">
-		Nothing selected.
-	</text>
-    <text
-        text_color="LabelTextColor"
-        type="string"
-        length="1"
-        height="18"
-        follows="left|top"
-        font="DejaVu"
-        font.size="LSmall"
-        layout="topleft"
-        name="selection_faces"
-        visible="false"
-        width="182"
-        left="366"
-        top="224"
-        use_ellipses="true">
-    Faces selected: [FACES_STRING]
-  </text>
-    <text
-        text_color="LabelTextColor"
-        type="string"
-        length="1"
-        height="18"
-        follows="left|top"
-        font="DejaVu"
-        font.size="LSmall"
-        layout="topleft"
-        name="selection_count"
-        visible="false"
-        width="348"
-        left="12"
-        top="224">
-	</text>
     <!-- <text -->
     <!-- text_color="LtGray_50" -->
     <!--  type="string" -->
@@ -1181,31 +1090,107 @@
     <!--  width="143"> -->
     <!--     Prims: [COUNT] -->
     <!-- </text> -->
-    <check_box
-        name="checkbox parcel walls"
-        control_name="ShowParcelBoundaryWalls"
-        label="Parcel walls"
-        tool_tip="Show parcel boundary walls up to 10 metres above your avatar. Off by default."
-        follows="left|top"
-        layout="topleft"
-        left="12"
-        top="244"
-        width="180"
-        height="18"
-        font="DejaVu"
-        font.size="LSmall" />
-    <view_border
-        bevel_style="none"
-        follows="left|top"
-        height="0"
-        layout="topleft"
-        name="cost_text_border"
-        width="536"
-        left="12"
-        top="264" />
+    <panel name="selection_summary" left="12" top="224" width="536" height="42"
+        layout="topleft" follows="left|top|right" mouse_opaque="false" border="false"
+        background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
+        <panel name="selection_summary_fill" left="1" top="1" width="534" height="40"
+            layout="topleft" follows="all" mouse_opaque="false" border="false"
+            background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
+        <text
+            text_color="LabelDisabledColor"
+            type="string"
+            length="1"
+            height="18"
+            follows="left|top"
+            font="DejaVu"
+            font.size="LSmall"
+            layout="topleft"
+            name="selection_empty"
+            width="512"
+            left="12"
+            top="12">
+            Nothing selected.
+        </text>
+        <text
+            text_color="LabelTextColor"
+            type="string"
+            length="1"
+            height="18"
+            follows="left|top|right"
+            font="DejaVu"
+            font.size="LSmall"
+            layout="topleft"
+            name="selection_count"
+            visible="false"
+            width="512"
+            left="12"
+            top="12">
+        </text>
+        <text
+            text_color="LabelTextColor"
+            type="string"
+            length="1"
+            height="18"
+            follows="left|top"
+            font="DejaVu"
+            font.size="LSmall"
+            layout="topleft"
+            name="selection_faces"
+            visible="false"
+            width="306"
+            left="12"
+            top="38"
+            use_ellipses="true">
+            Faces selected: [FACES_STRING]
+        </text>
+        <button
+            name="select_previous_link"
+            follows="right|top"
+            layout="topleft"
+            left="346"
+            top="33"
+            width="24"
+            height="24"
+            image_overlay="Arrow_Small_Left"
+            visible="false"
+            enabled="false"
+            tool_tip="Select the previous linked part; wraps to the last part.">
+            <button.commit_callback function="Tools.SelectNextPart" parameter="previous_linked" />
+        </button>
+        <text
+            name="selection_link_number"
+            follows="right|top"
+            layout="topleft"
+            left="374"
+            top="38"
+            width="102"
+            height="18"
+            halign="center"
+            font="DejaVu"
+            font.size="LSmall"
+            mouse_opaque="false"
+            visible="false"
+            tool_tip="The selected prim's link number for scripts. Linked roots are 1; unlinked prims are 0.">
+            Part: [LINK_NUMBER]
+        </text>
+        <button
+            name="select_next_link"
+            follows="right|top"
+            layout="topleft"
+            left="480"
+            top="33"
+            width="24"
+            height="24"
+            image_overlay="Arrow_Small_Right"
+            visible="false"
+            enabled="false"
+            tool_tip="Select the next linked part; wraps to the root.">
+            <button.commit_callback function="Tools.SelectNextPart" parameter="next_linked" />
+        </button>
+    </panel>
     <tab_container
         follows="all"
-        height="646"
+        height="636"
         halign="center"
         name="Object Info Tabs"
         tab_max_width="108"
@@ -1221,7 +1206,7 @@
         font="DejaVu"
         font.size="LSmall"
         left="12"
-        top="266"
+        top="276"
         layout="topleft">
         <tab_button image_hover_unselected="Prism_Tab_Hover"
                     image_hover_selected="Prism_Tab_Selected_Hover"
@@ -1258,7 +1243,8 @@
             <panel.string name="text modify info 4">You can't modify these objects</panel.string>
             <panel.string name="text modify info 5">You can't modify this object across a region boundary</panel.string>
             <panel.string name="text modify info 6">You can't modify these objects across a region boundary</panel.string>
-            <panel.string name="text modify warning">You must select entire object to set permissions</panel.string>
+            <panel.string name="text modify warning">Select the whole object to change permissions.</panel.string>
+            <panel.string name="text modify warning tooltip">Permissions apply to the whole linked object. Turn off Edit linked and select the object to change them.</panel.string>
             <panel.string name="Cost Default">Price: L$</panel.string>
             <panel.string name="Cost Total">Total Price: L$</panel.string>
             <panel.string name="Cost Per Unit">Price Per: L$</panel.string>
@@ -1268,12 +1254,12 @@
                 color="DkGray2"
                 opaque="false"
                 follows="all"
-                height="620"
+                height="608"
                 layout="topleft"
                 left="0"
                 name="general_scroll"
                 reserve_scroll_corner="false"
-                top="0"
+                top="12"
                 width="536">
                 <panel
                     border="false"
@@ -1802,11 +1788,11 @@
             width="536">
             <scroll_container
                 follows="all"
-                height="620"
+                height="614"
                 layout="topleft"
                 left="0"
                 name="object_scroll"
-                top="0"
+                top="6"
                 width="536">
                 <panel
                     border="false"
@@ -1894,6 +1880,20 @@
                         font.size="Small"
                         font.style="BOLD"
                         tool_tip="Position (meters)" text_color="EditSectionHeading">Position (m)</text>
+                    <button
+                        height="22"
+                        label="Zero"
+                        layout="topleft"
+                        left="278"
+                        name="zero_pos"
+                        top="58"
+                        width="52"
+                        visible="false"
+                        font="DejaVu"
+                        font.size="LSmall"
+                        tool_tip="Move this child prim to its linkset's local origin (0, 0, 0)">
+                        <button.commit_callback function="PanelObject.menuDoToSelected" parameter="pos_zero" />
+                    </button>
                     <button
                         height="22"
                         label="Copy"
@@ -2001,6 +2001,19 @@
                         tool_tip="Size (meters)" text_color="EditSectionHeading">Size (m)</text>
                     <button
                         height="22"
+                        label="One"
+                        layout="topleft"
+                        left="278"
+                        name="one_size"
+                        top="138"
+                        width="52"
+                        font="DejaVu"
+                        font.size="LSmall"
+                        tool_tip="Set all three size values to 1 meter">
+                        <button.commit_callback function="PanelObject.menuDoToSelected" parameter="size_one" />
+                    </button>
+                    <button
+                        height="22"
                         label="Copy"
                         layout="topleft"
                         left="336"
@@ -2104,6 +2117,19 @@
                         font.size="Small"
                         font.style="BOLD"
                         tool_tip="Rotation (degrees)" text_color="EditSectionHeading">Rotation (°)</text>
+                    <button
+                        height="22"
+                        label="Zero"
+                        layout="topleft"
+                        left="278"
+                        name="zero_rot"
+                        top="218"
+                        width="52"
+                        font="DejaVu"
+                        font.size="LSmall"
+                        tool_tip="Set all three displayed rotation values to 0 degrees">
+                        <button.commit_callback function="PanelObject.menuDoToSelected" parameter="rot_zero" />
+                    </button>
                     <button
                         height="22"
                         label="Copy"
@@ -2744,11 +2770,11 @@
                 color="DkGray2"
                 opaque="false"
                 follows="all"
-                height="620"
+                height="612"
                 left="0"
                 name="features_scroll"
                 reserve_scroll_corner="false"
-                top="0"
+                top="8"
                 width="536">
                 <panel
                     border="false"
@@ -3375,7 +3401,7 @@
                 height="82"
                 left="12"
                 name="content_actions_section"
-                top="0"
+                top="12"
                 width="512" mouse_opaque="false" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
                         <panel name="content_actions_section_fill" left="1" top="1" width="510" height="80" layout="topleft" follows="all" mouse_opaque="false" border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
                 <text
@@ -3412,12 +3438,12 @@
                 max_length_chars="300"
                 name="contents_filter"
                 text_pad_left="10"
-                top="94"
+                top="106"
                 width="512" />
-            <panel name="content_inventory_background" left="12" top="130" width="512" height="490"
+            <panel name="content_inventory_background" left="12" top="142" width="512" height="478"
                 follows="all" layout="topleft" mouse_opaque="false" border="false" background_visible="true"
                 bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBorder">
-                <panel name="content_inventory_fill" left="1" top="1" width="510" height="488"
+                <panel name="content_inventory_fill" left="1" top="1" width="510" height="476"
                     follows="all" layout="topleft" mouse_opaque="false" border="false" background_visible="true"
                     bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="EditSectionBackground" />
             </panel>
@@ -3425,10 +3451,10 @@
                 border="false"
                 border_visible="false"
                 follows="all"
-                height="490"
+                height="478"
                 left="12"
                 name="contents_inventory"
-                top="130"
+                top="142"
                 width="512" />
         </panel>
     </tab_container>

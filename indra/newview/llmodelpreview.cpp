@@ -32,6 +32,7 @@
 
 #include "llmodelloader.h"
 #include "lldaeloader.h"
+#include "llfbxloader.h"
 #include "gltf/llgltfloader.h"
 #include "llfloatermodelpreview.h"
 
@@ -798,11 +799,9 @@ void LLModelPreview::loadModel(std::string filename, S32 lod, bool force_disable
     auto load_textures_cb =
             [preview_handle](LLImportMaterial& material, void* opaque) { return LLModelPreview::loadTextures(material, preview_handle); };
 
-    // three possible file extensions, .dae .gltf .glb
-    // check for .dae and if not then assume one of the .gl??
-    std::string filename_lc(filename);
-    LLStringUtil::toLower(filename_lc);
-    if (std::string::npos != filename_lc.rfind(".dae"))
+    std::string extension = gDirUtilp->getExtension(filename);
+    LLStringUtil::toLower(extension);
+    if (extension == "dae")
     {
         mModelLoader = new LLDAELoader(
             filename,
@@ -819,6 +818,23 @@ void LLModelPreview::loadModel(std::string filename, S32 lod, bool force_disable
             gSavedSettings.getU32("ImporterModelLimit"),
             gSavedSettings.getU32("ImporterDebugMode"),
             gSavedSettings.getBOOL("ImporterPreprocessDAE"));
+    }
+    else if (extension == "fbx")
+    {
+        mModelLoader = new LLFBXLoader(
+            filename,
+            lod,
+            &LLModelPreview::loadedCallback,
+            &LLModelPreview::lookupJointByName,
+            load_textures_cb,
+            &LLModelPreview::stateChangedCallback,
+            this,
+            mJointTransformMap,
+            mJointsFromNode,
+            joint_alias_map,
+            LLSkinningUtil::getMaxJointCount(),
+            gSavedSettings.getU32("ImporterModelLimit"),
+            gSavedSettings.getU32("ImporterDebugMode"));
     }
     else
     {
@@ -3345,7 +3361,7 @@ void LLModelPreview::lookupLODModelFiles(S32 lod)
     LLStringUtil::toLower(lod_filename_lower);
 
     // Check for each supported file extension
-    std::vector<std::string> supported_exts = { ".dae", ".gltf", ".glb" };
+    std::vector<std::string> supported_exts = { ".dae", ".fbx", ".gltf", ".glb" };
     std::string found_ext;
     std::string::size_type ext_pos = std::string::npos;
 

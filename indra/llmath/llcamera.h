@@ -44,7 +44,7 @@ constexpr F32 MAX_FAR_PLANE     = 100000.0f; //1000000.0f; // Max allowed. Not g
 constexpr F32 MAX_FAR_CLIP      = 512.0f;
 
 constexpr F32 MIN_ASPECT_RATIO  = 0.02f;
-constexpr F32 MIN_NEAR_PLANE    = 0.1f;
+constexpr F32 MIN_NEAR_PLANE    = 0.001f;
 constexpr F32 MIN_FAR_PLANE     = 0.2f;
 
 // Min/Max FOV values for square views. Call getMin/MaxView to get extremes based on current aspect ratio.
@@ -222,6 +222,5 @@ protected:
 
 
 #endif
-
 
 

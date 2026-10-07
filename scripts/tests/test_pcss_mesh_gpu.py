@@ -1,6 +1,6 @@
 """Check PCSS on a curved mesh, behind a solid wall, and at an emitter's horizon.
 
-Run: .venv/Scripts/python.exe scripts/tests/test_pcss_mesh_gpu.py [--images]
+Run: .venv/Scripts/python.exe scripts/tests/test_pcss_mesh_gpu.py [--images] [--glsl330]
 Uses the production PCSS/shadow helpers, real D24 camera/shadow rasterization,
 and both deferred and forward receivers. Python stdlib, bundled SDL3/GLM and g++.
 """
@@ -70,7 +70,8 @@ def run(sdl, gl):
             sources += [(0x8B30, (SHADERS / (name + '.glsl')).read_text()) for name in ('shadowUtil', 'pcssUtil', 'sssDepthUtil')]
         for kind, source in sources:
             shader = gl.CreateShader(kind)
-            src = C.c_char_p(('#version 430 core\n#define SUN_SHADOW\n#define PCSS_SHADOW\n' + source).encode())
+            version = 330 if '--glsl330' in sys.argv else 430
+            src = C.c_char_p((f'#version {version} core\n#define SUN_SHADOW\n#define PCSS_SHADOW\n' + source).encode())
             gl.ShaderSource(shader, 1, C.byref(src), None)
             gl.CompileShader(shader)
             ok, log = I(), C.create_string_buffer(16384)
@@ -305,9 +306,12 @@ def run(sdl, gl):
                 assert len(visible)>10000
                 assert max(visible)<.001, (mode,distance,angle,wall_slope,'light through solid wall',max(visible))
             else:
-                backlit=[output[i] for i in range(0,len(output),4) if output[i+3]>.5 and output[i+1]<-.1]
+                # Check the occluded interior. Near the terminator a finite
+                # shadow texel/filter can include unoccluded space; a geometric
+                # horizon cap hid that transition by blackening whole faces.
+                backlit=[output[i] for i in range(0,len(output),4) if output[i+3]>.5 and output[i+1]<-.4]
                 if distance != 1.3:
-                    assert len(backlit)>1000
+                    assert len(backlit)>100
                     assert max(backlit)<.001, (mode,distance,'light behind geometric face',max(backlit))
                 front=[output[i] for i in range(0,len(output),4) if output[i+3]>.5 and output[i+1]>.2]
                 assert len(front)>10000
@@ -337,12 +341,72 @@ def run(sdl, gl):
                   if near[i+1]>.2 and far[i+1]>.2 and near[i+3]>.5 and far[i+3]>.5)
         assert error<.01, (mode,'normal changed with camera scale',error)
 
-    # A clear map isolates the part of a disk emitter above a receiver's
-    # geometric horizon. Compare to independent numerical area integration,
-    # including normal sign (a plane's orientation is otherwise arbitrary).
+    # An unobstructed sunset wall must retain clear shadow visibility despite
+    # D24 camera-depth noise. Material lighting handles the surface horizon;
+    # the shadow factor must not impose an additional per-face light cutoff.
+    gl.BindFramebuffer(0x8D40, shadow_fbo)
+    gl.DepthMask(1)
+    gl.Clear(0x0100)
+    points = [v for x,y in ((-256,-256),(256,-256),(-256,256),(256,-256),(256,256),(-256,256))
+              for v in (x,y,-.3*x-.12*y)]
+    values = (F*len(points))(*points)
+    gl.BindBuffer(0x8892, obj(gl.GenBuffers))
+    gl.BufferData(0x8892, C.sizeof(values), values, 0x88E4)
+    gl.VertexAttribPointer(0, 3, 0x1406, 0, 0, None)
+    length = math.sqrt(1+.3**2+.12**2)
+    normal = [.3/length,.12/length,1/length]
+    tangent = [1/math.sqrt(1+.3**2),0,-.3/math.sqrt(1+.3**2)]
+    light = [[1/512,0,0,.5],[0,1/512,0,.5],[0,0,-1/4096,.5],[0,0,0,1]]
+    horizon_error = 0
+    for distance in (12,40,80):
+        for phase in (-.25,0,.25):
+            near, far, f = .1, 1024, 9.25
+            proj = [[f,0,phase/SIZE,0],[0,f,-phase/SIZE,0],
+                    [0,0,-(far+near)/(far-near),-2*far*near/(far-near)],[0,0,-1,0]]
+            gl.BindFramebuffer(0x8D40, camera_fbo)
+            gl.UseProgram(capture)
+            gl.Enable(0x0B71)
+            gl.DepthFunc(0x0201)
+            gl.DepthMask(1)
+            gl.Clear(0x4100)
+            matrix(capture,'projection',proj)
+            uniform(capture,'camera_distance',distance)
+            uniform(capture,'model_scale',1)
+            gl.DrawArrays(4,0,len(points)//3)
+            gl.UseProgram(lighting)
+            matrix(lighting,'inv_proj',inverse(proj))
+            for i in range(4):
+                matrix(lighting,f'shadow_matrix[{i}]',light)
+                matrix(lighting,f'pcss_inverse_matrix[{i}]',inverse(light))
+            uniform(lighting,'shadow_clip',64,128,256,512)
+            angular_radius = math.tan(math.radians(1.45)*.5)
+            uniform(lighting,'pcss_params',angular_radius,1.3,.007,.05)
+            uniform(lighting,'planar_receiver',1,integer=True)
+            uniform(lighting,'sun_up_factor',1,integer=True)
+            gl.BindFramebuffer(0x8D40, output_fbo)
+            gl.FramebufferTexture2D(0x8D40,0x8D00,0x0DE1,0,0)
+            gl.Disable(0x0B71)
+            for nl in (-.005,0,.005):
+                direction = [t*math.sqrt(1-nl*nl)+n*nl for t,n in zip(tangent,normal)]
+                uniform(lighting,'sun_dir',*direction)
+                gl.DrawArrays(4,0,3)
+                output=(F*(SIZE*SIZE*4))()
+                gl.ReadPixels(0,0,SIZE,SIZE,0x1908,0x1406,output)
+                expected=1.
+                errors=[abs(output[(y*SIZE+x)*4]-expected) for y in range(64,192) for x in range(64,192)]
+                mean=sum(errors)/len(errors)
+                horizon_error=max(horizon_error,mean)
+                assert mean < .01 and max(errors) < .04, ('sunset wall horizon',distance,phase,nl,mean,max(errors))
+                cases += 1
+    print(f'  Sunset D24 wall horizon: worst mean visibility error {horizon_error:.6f}')
+
+    # Clear depth must stay unoccluded across every face normal, including
+    # exit faces. This reproduces the sharp triangle cutouts on uneven roofs:
+    # the old geometric horizon stamped black facets over a clear shadow map.
     horizon=program('''void main() { vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3)); gl_Position=vec4(p[gl_VertexID],0,1); }''',
         get_pos + '''uniform sampler2D rawDepth; uniform mat4 test_light, test_inverse;
             uniform float source_radius, normal_sign;
+            uniform float stripe_span, stripe_nl;
             float pcssShadow(sampler2D depthMap, mat4 lightMatrix, mat4 inverseMatrix,
                 vec4 start, vec3 normal, vec3 lightDir, float sourceRadius);
             out vec4 color;
@@ -350,6 +414,10 @@ def run(sdl, gl):
                 float nx=(gl_FragCoord.x/256.0-0.5)*0.4;
                 vec3 n=normal_sign*vec3(nx,0,sqrt(1-nx*nx));
                 vec4 p=vec4(0,0,-4,1);
+                if (stripe_span > 0) {
+                    n=vec3(stripe_nl,0,sqrt(1.0-stripe_nl*stripe_nl));
+                    p.y=(gl_FragCoord.x/256.0-.5)*stripe_span;
+                }
                 float s=pcssShadow(rawDepth,test_light,test_inverse,test_light*p,n,vec3(1,0,0),source_radius);
                 color=vec4(s,0,0,1);
             }''', True)
@@ -365,7 +433,6 @@ def run(sdl, gl):
     uniform(horizon,'pcss_quality',2,integer=True)
     uniform(horizon,'pcss_world_up',0,0,1)
     uniform(horizon,'pcss_world_north',0,1,0)
-    disk=[(x/64,y/64) for y in range(-64,65) for x in range(-64,65) if x*x+y*y<=64*64]
     for source_radius in (0,.5):
         # The source lies along +X while the camera sees a +Z-facing plane.
         # Projector emitter axes are Y/Z and its origin is (4,0,-4).
@@ -374,18 +441,48 @@ def run(sdl, gl):
         matrix(horizon,'test_light',light)
         matrix(horizon,'test_inverse',inverse(light))
         uniform(horizon,'source_radius',source_radius)
-        for sign in (1,-1):
-            uniform(horizon,'normal_sign',sign)
-            gl.DrawArrays(4,0,3)
-            output=(F*(SIZE*4))()
-            gl.ReadPixels(0,0,SIZE,1,0x1908,0x1406,output)
-            angular_radius=source_radius/4 if source_radius else math.tan(math.radians(5))
-            for i in range(SIZE):
-                nx=((i+.5)/SIZE-.5)*.4
-                nz=math.sqrt(1-nx*nx)
-                visible=sum(nx+nz*angular_radius*y>0 for _,y in disk)/len(disk)
-                assert abs(output[i*4]-visible)<.01, ('finite emitter horizon',source_radius,sign,i,output[i*4],visible)
-            cases += 1
+        for stored,expected in ((1.,1.),(.1,0.)):
+            # A real blocker must still win on every face; removing the cap
+            # must not amount to bypassing shadow comparisons on exit faces.
+            gl.ActiveTexture(0x84C1)
+            gl.BindTexture(0x0DE1,shadow)
+            depths=(F*(SIZE*SIZE))(*([stored]*(SIZE*SIZE)))
+            gl.TexImage2D(0x0DE1,0,0x81A6,SIZE,SIZE,0,0x1902,0x1406,depths)
+            for sign in (1,-1):
+                uniform(horizon,'normal_sign',sign)
+                gl.DrawArrays(4,0,3)
+                output=(F*(SIZE*4))()
+                gl.ReadPixels(0,0,SIZE,1,0x1908,0x1406,output)
+                for i in range(SIZE):
+                    assert abs(output[i*4]-expected)<.001, ('map visibility across face horizon',stored,source_radius,sign,i,output[i*4])
+                cases += 1
+    # Coarse entry-depth coverage on an exit face produces alternating raster
+    # bands. The antialias footprint must average coverage without changing
+    # the physical softness of light-facing contacts (covered in pcss_gpu).
+    stripes=[.45 if x%2==0 else 1. for y in range(SIZE) for x in range(SIZE)]
+    gl.ActiveTexture(0x84C1); gl.BindTexture(0x0DE1,shadow)
+    gl.TexImage2D(0x0DE1,0,0x81A6,SIZE,SIZE,0,0x1902,0x1406,(F*len(stripes))(*stripes))
+    stripe_error=0.
+    for source_radius in (0,.0001):
+        light=([[-.5,.5,0,2],[-.5,0,.5,4],[-64/63,0,0,192/63],[-1,0,0,4]] if source_radius else
+               [[0,1/128,0,.5],[0,0,1/128,.5],[-1/128,0,0,.5],[0,0,0,1]])
+        matrix(horizon,'test_light',light); matrix(horizon,'test_inverse',inverse(light))
+        uniform(horizon,'source_radius',source_radius)
+        uniform(horizon,'stripe_span',(8 if source_radius else 128)*16/SIZE)
+        uniform(horizon,'pcss_params',.005,2,.005,0)
+        # Infinitesimal offsets isolate the radius transition even for the
+        # tiny projector emitter, without appreciably tilting its depth plane.
+        for nl in (-.2,-1e-9,0,1e-9):
+            uniform(horizon,'stripe_nl',nl)
+            for quality in (0,1,2):
+                uniform(horizon,'pcss_quality',quality,integer=True)
+                gl.DrawArrays(4,0,3)
+                output=(F*(SIZE*4))(); gl.ReadPixels(0,0,SIZE,1,0x1908,0x1406,output)
+                error=max(abs(output[i*4]-.5) for i in range(SIZE))
+                stripe_error=max(stripe_error,error)
+                assert error < .1, ('exit-face raster stripes',source_radius,nl,quality,error)
+                cases+=1
+    print(f'  Exit-face raster stripes: worst coverage error {stripe_error:.6f}')
     # A caster outside the receiver-fitted near plane still casts a shadow
     # with GL_DEPTH_CLAMP, but its flattened depth used to change softness.
     # Compile the production C++ fit, rasterize both projections into D24,
