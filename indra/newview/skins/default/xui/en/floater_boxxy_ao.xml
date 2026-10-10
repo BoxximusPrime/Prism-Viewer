@@ -54,7 +54,7 @@
    left_pad="10"
    width="155"
    height="20"
-   tool_tip="When off, furniture-provided sit animations are left alone" />
+   tool_tip="Normal object sits always use your AO. Enable this to also use your AO while the seat plays a scripted animation." />
 
   <text
    left="12"

@@ -103,6 +103,7 @@ public:
     bool tick() override;
     LLUUID overrideMotion(const LLUUID& motion, bool start);
     bool isActiveOverride(const LLUUID& asset) const;
+    bool isSitOverrideSuppressed() const;
     void onMouselookChanged(bool mouselook);
     void onBelowWaterChanged(bool below_water);
     void onRegionChanged();
@@ -163,6 +164,7 @@ private:
     LLUUID resolveAnimationAsset(Animation& animation);
     void startCurrentOverride();
     void applyPendingOverrideIfReady();
+    void updateSitOverride();
     void stopCurrentOverride(bool restore_stock);
     void stopStockMotionVariants(const LLUUID& motion);
     void restartCycleTimer(State* state);
