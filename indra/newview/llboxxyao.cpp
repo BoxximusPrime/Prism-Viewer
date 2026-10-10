@@ -31,6 +31,7 @@
 #include "lltoolbarview.h"
 #include "llviewercontrol.h"
 #include "llviewerinventory.h"
+#include "llviewerobjectlist.h"
 #include "llvoavatarself.h"
 
 namespace
@@ -209,6 +210,7 @@ bool LLBoxxyAO::tick()
     }
 
     completePendingCycleStop(false);
+    updateSitOverride();
     applyPendingOverrideIfReady();
 
     State* state = getCurrentState();
@@ -820,6 +822,11 @@ LLBoxxyAO::State* LLBoxxyAO::stateForMotion(const LLUUID& motion) const
         return nullptr;
     }
 
+    if (motion == ANIM_AGENT_SIT_FEMALE)
+    {
+        return stateForType(mCurrentSet, STATE_SITTING);
+    }
+
     if (motion == ANIM_AGENT_SIT_GROUND)
     {
         return stateForType(mCurrentSet, STATE_SITTING_GROUND);
@@ -880,6 +887,49 @@ bool LLBoxxyAO::isActiveOverride(const LLUUID& asset) const
     }
     return std::any_of(mCurrentSet->states.begin(), mCurrentSet->states.end(),
         [&asset](const State& state) { return state.current_asset == asset; });
+}
+
+bool LLBoxxyAO::isSitOverrideSuppressed() const
+{
+    const State* state = getCurrentState();
+    if (!state || state->type != STATE_SITTING || mCurrentSet->override_sits || !isAgentAvatarValid())
+        return false;
+    const LLViewerObject* seat = static_cast<LLViewerObject*>(gAgentAvatarp->getParent());
+    if (!seat) return false;
+    for (const auto& source : gAgentAvatarp->mAnimationSources)
+    {
+        // Source entries can outlive their animation until the next avatar update.
+        if (!gAgentAvatarp->mSignaledAnimations.count(source.second) ||
+            source.second == ANIM_AGENT_SIT || source.second == ANIM_AGENT_SIT_FEMALE) continue;
+        const LLViewerObject* object = gObjectList.findObject(source.first);
+        // A seated avatar also resolves to the seat root; its AO echoes are not furniture poses.
+        if (object && !object->isAvatar() && object->getRootEdit() == seat->getRootEdit()) return true;
+    }
+    return false;
+}
+
+void LLBoxxyAO::updateSitOverride()
+{
+    State* state = getCurrentState();
+    if (!mEnabled || !state || state->type != STATE_SITTING ||
+        !isAgentAvatarValid() || !gAgentAvatarp->isSitting() || !gAgentAvatarp->getParent()) return;
+    if (isSitOverrideSuppressed())
+    {
+        if (state->current_asset.notNull())
+        {
+            completePendingCycleStop(true);
+            gAgent.sendAnimationRequest(state->current_asset, ANIM_REQUEST_STOP);
+            gAgentAvatarp->getMotionController().stopMotionWithEaseOut(state->current_asset);
+            state->current_asset.setNull();
+            mCycleTimer.stop();
+            mOverrideApplyPending = false;
+            mChangedSignal();
+        }
+    }
+    else if (state->current_asset.isNull() && !state->animations.empty())
+    {
+        startCurrentOverride();
+    }
 }
 
 bool LLBoxxyAO::isTransientMotion(const LLUUID& motion) const
@@ -1037,7 +1087,7 @@ LLUUID LLBoxxyAO::overrideMotion(const LLUUID& motion, bool start)
                 mChangedSignal();
             }
         }
-        if (motion == ANIM_AGENT_SIT && !mCurrentSet->override_sits)
+        if (state->type == STATE_SITTING && isSitOverrideSuppressed())
         {
             return LLUUID::null;
         }
@@ -1170,6 +1220,10 @@ void LLBoxxyAO::stopStockMotionVariants(const LLUUID& motion)
             ANIM_AGENT_STAND_4
         };
     }
+    else if (state && state->type == STATE_SITTING)
+    {
+        stock_motions = { ANIM_AGENT_SIT, ANIM_AGENT_SIT_FEMALE };
+    }
     else if (state && state->type == STATE_WALKING)
     {
         stock_motions =
@@ -1241,7 +1295,7 @@ void LLBoxxyAO::applyPendingOverrideIfReady()
         mOverrideApplyPending = false;
         return;
     }
-    if (mLastMotion == ANIM_AGENT_SIT && !mCurrentSet->override_sits)
+    if (isSitOverrideSuppressed())
     {
         mOverrideApplyPending = false;
         return;
@@ -1347,9 +1401,9 @@ void LLBoxxyAO::setOverrideSits(Set* set, bool enabled)
     {
         return;
     }
+    const State* state = getCurrentState();
     const bool is_active_sit = set == mCurrentSet && mEnabled &&
-        (mLastMotion == ANIM_AGENT_SIT || mLastMotion == ANIM_AGENT_SIT_GROUND ||
-         mLastMotion == ANIM_AGENT_SIT_GROUND_CONSTRAINED);
+        state && state->type == STATE_SITTING;
     if (is_active_sit)
     {
         stopCurrentOverride(true);
@@ -1358,7 +1412,7 @@ void LLBoxxyAO::setOverrideSits(Set* set, bool enabled)
     set->override_sits = enabled;
     saveSetOptions(set);
 
-    if (is_active_sit && enabled)
+    if (is_active_sit)
     {
         startCurrentOverride();
     }
@@ -1715,18 +1769,25 @@ void LLBoxxyAO::cycle(S32 direction)
 void LLBoxxyAO::playAnimation(S32 index)
 {
     State* state = getCurrentState();
-    if (!state || index < 0 || index >= static_cast<S32>(state->animations.size()))
-    {
-        return;
-    }
+    if (!mEnabled || !isAgentAvatarValid() || !state || isSitOverrideSuppressed() ||
+        index < 0 || index >= static_cast<S32>(state->animations.size())) return;
     state->current_animation = static_cast<U32>(index);
-    performCycle(0);
+    if (state->current_asset.isNull())
+    {
+        // Keep the explicit selection instead of randomizing on this retry.
+        mOverrideApplyPending = true;
+        startCurrentOverride();
+    }
+    else
+    {
+        performCycle(0);
+    }
 }
 
 void LLBoxxyAO::performCycle(S32 direction)
 {
     State* state = getCurrentState();
-    if (!mEnabled || !state || state->animations.empty() || state->current_asset.isNull())
+    if (!mEnabled || !state || isSitOverrideSuppressed() || state->animations.empty() || state->current_asset.isNull())
     {
         return;
     }

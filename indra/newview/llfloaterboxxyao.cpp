@@ -216,7 +216,7 @@ void LLFloaterBoxxyAO::updateControls()
     getChild<LLButton>("move_up")->setEnabled(has_animation && selectedAnimationIndex() > 0);
     getChild<LLButton>("move_down")->setEnabled(has_animation && state &&
         selectedAnimationIndex() + 1 < static_cast<S32>(state->animations.size()));
-    const bool editing_current_state = state && state == engine.getCurrentState();
+    const bool editing_current_state = state && state == engine.getCurrentState() && !engine.isSitOverrideSuppressed();
     getChild<LLButton>("play_animation")->setEnabled(has_animation && editing_current_state && engine.isEnabled());
     getChild<LLButton>("previous_animation")->setEnabled(editing_current_state && state->animations.size() > 1);
     getChild<LLButton>("next_animation")->setEnabled(editing_current_state && state->animations.size() > 1);
@@ -228,6 +228,10 @@ void LLFloaterBoxxyAO::updateControls()
     else if (!has_state)
     {
         mDropHint->setValue("Select an animation state.");
+    }
+    else if (state == engine.getCurrentState() && engine.isSitOverrideSuppressed())
+    {
+        mDropHint->setValue("This seat is playing an animation. Enable Override scripted sits to use your AO sit.");
     }
     else
     {

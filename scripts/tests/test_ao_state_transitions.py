@@ -81,6 +81,7 @@ LLBoxxyAO::~LLBoxxyAO() = default;
 LLBoxxyAO* active_ao = nullptr;
 LLBoxxyAO& LLBoxxyAO::instance() { return *active_ao; }
 bool LLBoxxyAO::tick() { return false; }
+void LLBoxxyAO::saveSetOptions(Set*) {}
 LLUUID LLBoxxyAO::resolveAnimationAsset(Animation& animation) { return animation.asset_id; }
 #define LL_DEBUGS(tag) if (false) std::cerr
 #define LL_INFOS(tag) if (false) std::cerr
@@ -190,7 +191,21 @@ struct LLCharacter {
     bool startMotion(LLUUID id) { return mMotionController.startMotion(id); }
     bool stopMotion(LLUUID id, bool immediate = false) { return mMotionController.stopMotionLocally(id, immediate); }
 };
+struct LLViewerObject {
+    bool avatar = false;
+    bool isAvatar() const { return avatar; }
+    LLViewerObject* root = this;
+    LLViewerObject* getRootEdit() const { return root; }
+};
+struct ObjectList {
+    std::map<LLUUID, LLViewerObject*> objects;
+    LLViewerObject* findObject(LLUUID id) { auto i=objects.find(id); return i==objects.end()?nullptr:i->second; }
+} gObjectList;
 struct LLVOAvatar : LLCharacter {
+    LLViewerObject* parent = nullptr;
+    LLViewerObject* getParent() { return parent; }
+    bool isSitting() { return parent != nullptr; }
+    std::multimap<LLUUID, LLUUID> mAnimationSources;
     bool mInAir = false;
     std::map<LLUUID, int> mSignaledAnimations;
     LLMotionController& getMotionController() { return mMotionController; }
@@ -225,6 +240,8 @@ harness += "void loadOptions(LLBoxxyAO::State* state, const std::vector<std::str
 for name in (
     "initializeStates", "stateForType", "stateForMotion", "getCurrentState", "isActiveOverride",
     "isTransientMotion", "overrideMotion", "stopStockMotionVariants",
+    "isSitOverrideSuppressed", "updateSitOverride", "playAnimation",
+    "stopCurrentOverride", "setOverrideSits", "applyPendingOverrideIfReady",
     "startCurrentOverride", "restartCycleTimer", "performCycle", "completePendingCycleStop",
 ):
     harness += method(name) + "\n"
@@ -235,9 +252,12 @@ harness += r'''
 struct Fixture {
     LLBoxxyAO ao;
     LLBoxxyAO::Set set;
+    LLViewerObject seat, child, unrelated;
     Fixture() {
         active_ao = &ao;
         avatar = {};
+        child.root = &seat;
+        gObjectList.objects = {{LLUUID(900), &seat}, {LLUUID(901), &child}, {LLUUID(902), &unrelated}};
         gAgent.requests.clear();
         random_roll = 0.75f;
         ao.initializeStates(set);
@@ -284,6 +304,78 @@ struct Fixture {
     }
 };
 int main() {
+    // Plain seats work with scripted overrides off, including the female stock variant.
+    for (LLUUID stock : {ANIM_AGENT_SIT, ANIM_AGENT_SIT_FEMALE}) {
+        Fixture f;
+        avatar.parent = &f.seat;
+        assert(!f.set.override_sits);
+        const LLUUID sit = f.event(stock, true);
+        assert(sit.notNull() && !f.ao.isSitOverrideSuppressed());
+        assert(f.state(ANIM_AGENT_SIT).current_asset == sit);
+        // A seated avatar's getRootEdit() resolves to its seat too. AO echoes
+        // sourced by that avatar must never be mistaken for furniture poses.
+        LLViewerObject self;
+        self.avatar = true;
+        self.root = &f.seat;
+        gObjectList.objects[LLUUID(903)] = &self;
+        avatar.mAnimationSources.emplace(LLUUID(903), sit);
+        avatar.mSignaledAnimations[sit] = 1;
+        const auto request_count = gAgent.requests.size();
+        for (int tick = 0; tick < 100; ++tick) {
+            assert(!f.ao.isSitOverrideSuppressed());
+            f.ao.updateSitOverride();
+            assert(f.state(stock).current_asset == sit);
+            assert(gAgent.requests.size() == request_count);
+        }
+        f.ao.stopStockMotionVariants(stock);
+        assert(f.stopped(ANIM_AGENT_SIT) && f.stopped(ANIM_AGENT_SIT_FEMALE));
+        // A scripted flag alone, unrelated object or old source entry must not suppress it.
+        avatar.mAnimationSources.emplace(LLUUID(901), LLUUID(999));
+        avatar.mAnimationSources.emplace(LLUUID(902), LLUUID(998));
+        avatar.mSignaledAnimations[LLUUID(998)] = 1;
+        assert(!f.ao.isSitOverrideSuppressed());
+        // A seat child starts its pose after the normal sit was already overridden.
+        avatar.mSignaledAnimations[LLUUID(999)] = 1;
+        assert(f.ao.isSitOverrideSuppressed());
+        f.ao.updateSitOverride();
+        assert(f.state(stock).current_asset.isNull() && f.stopped(sit));
+        assert(!f.stopped(LLUUID(999)));
+        f.ao.playAnimation(1);
+        assert(f.state(stock).current_asset.isNull());
+        f.ao.setOverrideSits(&f.set, true);
+        assert(f.state(stock).current_asset.notNull());
+        f.ao.setOverrideSits(&f.set, false);
+        assert(f.state(stock).current_asset.isNull());
+        // Clearing only the live animation is enough; stale sources are ignored.
+        avatar.mSignaledAnimations.erase(LLUUID(999));
+        f.ao.updateSitOverride();
+        assert(f.state(stock).current_asset.notNull());
+        f.ao.setOverrideSits(&f.set, true);
+        f.ao.setOverrideSits(&f.set, false);
+        assert(f.state(stock).current_asset.notNull()); // Plain sit continues after toggling off.
+    }
+    {
+        Fixture f;
+        avatar.parent = &f.seat;
+        f.ao.mLastMotion = ANIM_AGENT_SIT;
+        auto& sit = f.state(ANIM_AGENT_SIT);
+        sit.randomize_on_start = true;
+        random_roll = 0.f;
+        f.ao.playAnimation(1);
+        assert(sit.current_asset == sit.animations[1].asset_id);
+        assert(sit.current_animation == 1); // Manual selection starts even without an active override.
+        f.ao.playAnimation(-1);
+        assert(sit.current_animation == 1);
+    }
+    {
+        Fixture f;
+        f.event(ANIM_AGENT_SIT_GROUND_CONSTRAINED, true);
+        const LLUUID ground = f.state(ANIM_AGENT_SIT_GROUND_CONSTRAINED).current_asset;
+        assert(ground.notNull());
+        f.ao.setOverrideSits(&f.set, true);
+        f.ao.setOverrideSits(&f.set, false);
+        assert(!f.stopped(ground)); // The object-sit setting must not interrupt ground sits.
+    }
     // Every AO state can randomly choose any listed animation without timed
     // cycling. Reasserting a continuous action keeps that choice; disabling
     // random entry resumes the remembered animation on the next action.
@@ -531,6 +623,11 @@ int main() {
         Fixture f;
         LLUUID stand = f.event(ANIM_AGENT_STAND, true);
         LLUUID next = mode == 2 ? ANIM_AGENT_SIT : ANIM_AGENT_WALK;
+        if (mode == 2) {
+            avatar.parent = &f.seat;
+            avatar.mAnimationSources.emplace(LLUUID(901), LLUUID(999));
+            avatar.mSignaledAnimations[LLUUID(999)] = 1;
+        }
         if (mode == 0) f.state(next).animations.clear();
         if (mode == 1) f.state(next).animations[0].asset_id.setNull();
         assert(f.event(next, true).isNull());
@@ -672,7 +769,7 @@ int main() {
         assert(std::count(gAgent.requests.begin(), gAgent.requests.end(),
             std::make_pair(swim, int(ANIM_REQUEST_START))) == 1);
     }
-    std::cout << "PASS: random action entry and remembered selections across all 25 states, remembered stands after walking, invalid-index fallback, option persistence and stable asset retries; stable observer-facing swim starts, real idle transitions, underwater slow-flight AO mapping; all primary AO state handoffs, missing/delayed stock stops, walk variants, stock fallback, "
+    std::cout << "PASS: plain/scripted object sits, late seat animations, ground-sit independence and manual sit startup; random action entry and remembered selections across all 25 states, remembered stands after walking, invalid-index fallback, option persistence and stable asset retries; stable observer-facing swim starts, real idle transitions, underwater slow-flight AO mapping; all primary AO state handoffs, missing/delayed stock stops, walk variants, stock fallback, "
                  "pending stand cycles, same-state rotation, layered typing, loop exits, duplicate blend instances "
                  "and delayed custom-asset echoes; authored fades and local starts without echo restarts\n";
 }
