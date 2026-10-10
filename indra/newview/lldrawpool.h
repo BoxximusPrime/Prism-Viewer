@@ -40,6 +40,7 @@ class LLDrawInfo;
 class LLVOAvatar;
 class LLGLSLShader;
 class LLMeshSkinInfo;
+class LLXformMatrix;
 
 class LLDrawPool
 {
@@ -353,7 +354,8 @@ public:
     static void applyModelMatrix(const LLDrawInfo& params);
     static bool skipSSSDepth(const LLDrawInfo& params);
     // For rendering that doesn't use LLDrawInfo for some reason
-    static void applyModelMatrix(const LLMatrix4* model_matrix);
+    static LLMatrix4 getModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform, LLVector3& origin);
+    static void applyModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform = nullptr);
     void pushBatches(U32 type, bool texture = true, bool batch_textures = false);
     void pushUntexturedBatches(U32 type);
 

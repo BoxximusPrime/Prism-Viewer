@@ -128,6 +128,7 @@ public:
     const LLVector3&    getPositionW() const        { return mWorldPosition; }
     const LLQuaternion& getWorldRotation() const    { return mWorldRotation; }
     const LLVector3&    getWorldPosition() const    { return mWorldPosition; }
+    LLVector3 getWorldPositionRelativeTo(const LLVector3& origin) const;
 };
 
 class LLXformMatrix : public LLXform

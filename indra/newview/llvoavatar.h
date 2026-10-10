@@ -917,6 +917,8 @@ public:
         // Float array ready to be sent to GL
         std::vector<F32> mGLMp;
         std::vector<F32> mPreviousGLMp;
+        LLVector3 mRenderOrigin;
+        LLVector3 mPreviousRenderOrigin;
         U32 mPreviousFrame = 0;
 
         MatrixPaletteCache() :

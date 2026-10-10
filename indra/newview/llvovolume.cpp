@@ -5765,6 +5765,14 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         model_mat = &(drawable->getRegion()->mRenderMatrix);
     }
 
+    const LLXformMatrix* model_xform = nullptr;
+    const LLViewerObject* render_root = facep->getViewerObject()->getRootEdit();
+    if (!rigged && drawable->isActive() && render_root->isAttachment() && !render_root->isHUDAttachment())
+    {
+        model_xform = drawable->isState(LLDrawable::ANIMATED_CHILD) || drawable->isRoot()
+            ? &drawable->mXform : &drawable->getParent()->mXform;
+    }
+
     //drawable->getVObj()->setDebugText(llformat("%d", drawable->isState(LLDrawable::ANIMATED_CHILD)));
 
     const LLTextureEntry* te = facep->getTextureEntry();
@@ -5900,6 +5908,7 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_vec.push_back(draw_info);
         draw_info->mTextureMatrix = tex_mat;
         draw_info->mModelMatrix = model_mat;
+        draw_info->mModelXform = model_xform;
         draw_info->mTAAStatic = taa_static;
 
         draw_info->mBump  = bump;

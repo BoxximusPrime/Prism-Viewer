@@ -55,6 +55,7 @@
 #include "m4math.h"
 #include "llmatrix4a.h"
 #include "llperfstats.h"
+#include "glm/gtc/type_ptr.hpp"
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -105,9 +106,14 @@ void LLViewerJointMesh::uploadJointMatrices()
     size_t num_joints = llmin(reference_mesh->mJointRenderData.size(), LL_CHARACTER_MAX_JOINTS_PER_MESH);
     for (joint_num = 0; joint_num < num_joints; joint_num++)
     {
-        LLMatrix4 joint_mat = *reference_mesh->mJointRenderData[joint_num]->mWorldMatrix;
-
-        joint_mat *= LLDrawPoolAvatar::getModelView();
+        LLJoint* joint = reference_mesh->mJointRenderData[joint_num]->mJoint;
+        LLMatrix4 joint_mat = joint->getWorldMatrix();
+        const LLVector3 origin = joint->getXform()->getRoot()->getPosition();
+        joint_mat.setTranslation(joint->getXform()->getWorldPositionRelativeTo(origin));
+        const glm::dmat4 view = glm::translate(glm::dmat4(glm::make_mat4(gGLModelView)),
+            glm::dvec3(origin.mV[0], origin.mV[1], origin.mV[2]));
+        const glm::mat4 joint_view(view * glm::dmat4(glm::make_mat4(&joint_mat.mMatrix[0][0])));
+        joint_mat = LLMatrix4(glm::value_ptr(joint_view));
         gJointMatUnaligned[joint_num] = joint_mat;
         gJointRotUnaligned[joint_num] = joint_mat.getMat3();
     }
@@ -289,7 +295,12 @@ U32 LLViewerJointMesh::drawShape( F32 pixelArea, bool first_pass, bool is_dummy)
     {
         gGL.pushMatrix();
         LLMatrix4 jointToWorld = getWorldMatrix();
-        gGL.multMatrix((GLfloat*)jointToWorld.mMatrix);
+        const LLVector3 origin = getXform()->getRoot()->getPosition();
+        jointToWorld.setTranslation(getXform()->getWorldPositionRelativeTo(origin));
+        const glm::dmat4 view = glm::translate(glm::dmat4(gGL.getModelviewMatrix()),
+            glm::dvec3(origin.mV[0], origin.mV[1], origin.mV[2]));
+        const glm::mat4 joint_view(view * glm::dmat4(glm::make_mat4(&jointToWorld.mMatrix[0][0])));
+        gGL.loadMatrix(glm::value_ptr(joint_view));
         buff->setBuffer();
         buff->drawRange(LLRender::TRIANGLES, start, end, count, offset);
         gGL.popMatrix();

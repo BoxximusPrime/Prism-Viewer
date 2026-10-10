@@ -1702,7 +1702,7 @@ void LLVOAvatar::calculateSpatialExtents(LLVector4a& newMin, LLVector4a& newMax)
             for (S32 joint_num = 0; joint_num < mesh->mJointRenderData.size(); joint_num++)
             {
                 LLVector4a trans;
-                trans.load3( mesh->mJointRenderData[joint_num]->mWorldMatrix->getTranslation().mV);
+                trans.load3(mesh->mJointRenderData[joint_num]->mJoint->getWorldMatrix().getTranslation().mV);
                 update_min_max(newMin, newMax, trans);
             }
         }
@@ -10715,6 +10715,7 @@ const LLVOAvatar::MatrixPaletteCache& LLVOAvatar::updateSkinInfoMatrixPalette(co
         if (gSavedSettings.getU32("RenderFSAAType") == 3)
         {
             entry.mPreviousGLMp = entry.mGLMp;
+            entry.mPreviousRenderOrigin = entry.mRenderOrigin;
             entry.mPreviousFrame = entry.mFrame;
         }
         else
@@ -10727,13 +10728,14 @@ const LLVOAvatar::MatrixPaletteCache& LLVOAvatar::updateSkinInfoMatrixPalette(co
         //build matrix palette
         U32 count = LLSkinningUtil::getMeshJointCount(skin);
         entry.mMatrixPalette.resize(count);
-        LLSkinningUtil::initSkinningMatrixPalette(&(entry.mMatrixPalette[0]), count, skin, this);
+        entry.mRenderOrigin = getRootJoint()->getWorldPosition();
+        LLSkinningUtil::initSkinningMatrixPalette(entry.mMatrixPalette.data(), count, skin, this, &entry.mRenderOrigin);
 
-        const LLMatrix4a* mat = &(entry.mMatrixPalette[0]);
+        const LLMatrix4a* mat = entry.mMatrixPalette.data();
 
         entry.mGLMp.resize(count * 12);
 
-        F32* mp = &(entry.mGLMp[0]);
+        F32* mp = entry.mGLMp.data();
 
         for (U32 i = 0; i < count; ++i)
         {

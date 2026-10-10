@@ -53,6 +53,7 @@
 #include "llglcommonfunc.h"
 #include "llvoavatar.h"
 #include "llviewershadermgr.h"
+#include "glm/gtc/type_ptr.hpp"
 
 extern bool gCubeSnapshot;
 
@@ -706,17 +707,42 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
             params.mSSSFrameTag = gPipeline.mSSSFrameTag;
         }
     }
-    applyModelMatrix(params.mModelMatrix);
+    applyModelMatrix(params.mModelMatrix, params.mModelXform);
 }
 
-void LLRenderPass::applyModelMatrix(const LLMatrix4* model_matrix)
+LLMatrix4 LLRenderPass::getModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform, LLVector3& origin)
+{
+    LLMatrix4 model;
+    origin.clear();
+    if (model_matrix)
+    {
+        model = *model_matrix;
+        if (model_xform)
+        {
+            origin = model_xform->getRoot()->getPosition();
+            model.setTranslation(model_xform->getWorldPositionRelativeTo(origin));
+        }
+    }
+    return model;
+}
+
+void LLRenderPass::applyModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform)
 {
     if (model_matrix != gGLLastMatrix)
     {
         gGLLastMatrix = model_matrix;
         gGL.matrixMode(LLRender::MM_MODELVIEW);
         gGL.loadMatrix(gGLModelView);
-        if (model_matrix)
+        if (model_xform)
+        {
+            LLVector3 origin;
+            const LLMatrix4 model = getModelMatrix(model_matrix, model_xform, origin);
+            const glm::dmat4 view = glm::translate(glm::dmat4(glm::make_mat4(gGLModelView)),
+                glm::dvec3(origin.mV[0], origin.mV[1], origin.mV[2]));
+            const glm::mat4 modelview(view * glm::dmat4(glm::make_mat4(&model.mMatrix[0][0])));
+            gGL.loadMatrix(glm::value_ptr(modelview));
+        }
+        else if (model_matrix)
         {
             gGL.multMatrix((GLfloat*) model_matrix->mMatrix);
         }
@@ -825,6 +851,7 @@ bool LLRenderPass::uploadMatrixPalette(LLVOAvatar* avatar, LLMeshSkinInfo* skinI
         return false;
     }
 
+    LLGLSLShader::sCurBoundShaderPtr->setMatrixPaletteOrigin(mpc.mRenderOrigin);
     LLGLSLShader::sCurBoundShaderPtr->uniformMatrix3x4fv(LLViewerShaderMgr::AVATAR_MATRIX,
         count,
         false,
@@ -861,6 +888,7 @@ bool LLRenderPass::uploadMatrixPalette(LLVOAvatar* avatar, LLMeshSkinInfo* skinI
 
     if (!skipLastSkin)
     {
+        LLGLSLShader::sCurBoundShaderPtr->setMatrixPaletteOrigin(mpc.mRenderOrigin);
         LLGLSLShader::sCurBoundShaderPtr->uniformMatrix3x4fv(LLViewerShaderMgr::AVATAR_MATRIX,
             count,
             false,
@@ -899,6 +927,7 @@ bool LLRenderPass::uploadMatrixPalette(LLVOAvatar* avatar, LLMeshSkinInfo* skinI
 
     if (!skipLastSkin)
     {
+        LLGLSLShader::sCurBoundShaderPtr->setMatrixPaletteOrigin(mpc.mRenderOrigin);
         LLGLSLShader::sCurBoundShaderPtr->uniformMatrix3x4fv(LLViewerShaderMgr::AVATAR_MATRIX,
             count,
             false,

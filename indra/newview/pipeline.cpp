@@ -8771,29 +8771,33 @@ void LLPipeline::renderTAAMotion(bool for_ssgi)
                 LLDrawInfo* info = *it;
                 LLCullResult::increment_iterator(it, end);
                 if (!info || !info->mCount || !visited.insert(info).second) continue;
-                LLMatrix4 model;
-                if (info->mModelMatrix) model = *info->mModelMatrix;
+                LLVector3 origin;
+                LLMatrix4 model = LLRenderPass::getModelMatrix(info->mModelMatrix, info->mModelXform, origin);
                 bool valid = mTAALastFrame + 1 == gFrameCount && info->mTAAFrame == mTAALastFrame;
                 glm::mat4 previous_model = glm::make_mat4(&(valid ? info->mTAAModel : model).mMatrix[0][0]);
+                LLVector3 previous_origin = valid ? info->mTAAOrigin : origin;
                 if (rigged)
                 {
                     if (!info->mAvatar || !info->mSkinInfo) continue;
                     const auto& palette = info->mAvatar->updateSkinInfoMatrixPalette(info->mSkinInfo);
                     if (palette.mGLMp.empty()) continue;
                     valid &= palette.mPreviousFrame == mTAALastFrame && palette.mPreviousGLMp.size() == palette.mGLMp.size();
+                    shader.setMatrixPaletteOrigin(palette.mRenderOrigin);
+                    previous_origin = valid ? palette.mPreviousRenderOrigin : palette.mRenderOrigin;
                     shader.uniformMatrix3x4fv(LLViewerShaderMgr::AVATAR_MATRIX, U32(palette.mGLMp.size() / 12), false, palette.mGLMp.data());
                     glUniformMatrix3x4fv(shader.getUniformLocation(LLStaticHashedString("taa_previous_palette")),
                         GLsizei(palette.mGLMp.size() / 12), GL_FALSE,
                         valid ? palette.mPreviousGLMp.data() : palette.mGLMp.data());
                 }
-                glm::mat4 previous_mv = mTAAPreviousView * previous_model;
+                glm::mat4 previous_mv(glm::translate(glm::dmat4(mTAAPreviousView),
+                    glm::dvec3(previous_origin.mV[0], previous_origin.mV[1], previous_origin.mV[2])) * glm::dmat4(previous_model));
                 glm::mat4 previous_mvp = mTAAPreviousProjection * previous_mv;
                 shader.uniformMatrix4fv(LLStaticHashedString("taa_previous_mvp"), 1, false, glm::value_ptr(previous_mvp));
                 shader.uniformMatrix4fv(LLStaticHashedString("taa_previous_modelview"), 1, false, glm::value_ptr(previous_mv));
                 // Negative alpha permits static-detail retention. Avatars, active
                 // objects, flexi and animated textures always use strict rejection.
                 shader.uniform1f(LLStaticHashedString("taa_reactive"), valid ? (info->mTAAStatic && !rigged ? -1.f : 0.f) : 1.f);
-                LLRenderPass::applyModelMatrix(info->mModelMatrix);
+                LLRenderPass::applyModelMatrix(info->mModelMatrix, info->mModelXform);
                 info->mVertexBuffer->setBuffer();
                 info->mVertexBuffer->drawRange(LLRender::TRIANGLES, info->mStart, info->mEnd, info->mCount, info->mOffset);
                 // GI needs opaque motion before skin diffusion. TAA still runs
@@ -8801,7 +8805,7 @@ void LLPipeline::renderTAAMotion(bool for_ssgi)
                 // pose available until that pass has consumed it.
                 if (!for_ssgi || !mTAAFrameActive)
                 {
-                    info->mTAAModel = model; info->mTAAFrame = gFrameCount;
+                    info->mTAAModel = model; info->mTAAOrigin = origin; info->mTAAFrame = gFrameCount;
                 }
             }
         }

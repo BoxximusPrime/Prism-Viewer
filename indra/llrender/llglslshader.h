@@ -289,6 +289,8 @@ public:
     static void unbind();
 
     U32 mMatHash[LLRender::NUM_MATRIX_MODES];
+    LLVector3 mMatrixPaletteOrigin;
+    void setMatrixPaletteOrigin(const LLVector3& origin);
     U32 mLightHash;
 
     GLuint mProgramObject;

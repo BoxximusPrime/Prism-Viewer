@@ -941,15 +941,32 @@ void LLRender::syncMatrices()
 
     static glm::mat4 cached_normal;
     static U32 cached_normal_hash = 0xFFFFFFFF;
+    static LLVector3 cached_palette_origin;
 
     if (shader)
     {
+        const LLVector3& origin = shader->mMatrixPaletteOrigin;
+        if (origin != cached_palette_origin)
+        {
+            cached_palette_origin = origin;
+            cached_inv_mdv_hash = cached_normal_hash = cached_mvp_mdv_hash = 0xFFFFFFFF;
+        }
+        const auto modelview = [&]()
+        {
+            if (origin.isExactlyZero())
+            {
+                return mMatrix[MM_MODELVIEW][mMatIdx[MM_MODELVIEW]];
+            }
+            // Cancel the large avatar/camera translations before rounding to float.
+            return glm::mat4(glm::translate(glm::dmat4(mMatrix[MM_MODELVIEW][mMatIdx[MM_MODELVIEW]]),
+                glm::dvec3(origin.mV[0], origin.mV[1], origin.mV[2])));
+        };
         bool mvp_done = false;
 
         U32 i = MM_MODELVIEW;
         if (mMatHash[MM_MODELVIEW] != shader->mMatHash[MM_MODELVIEW])
         { //update modelview, normal, and MVP
-            const glm::mat4& mat = mMatrix[MM_MODELVIEW][mMatIdx[MM_MODELVIEW]];
+            const glm::mat4 mat = modelview();
 
             S32 normal_loc = shader->getUniformLocation(LLShaderMgr::NORMAL_MATRIX);
             S32 inverse_loc = shader->getUniformLocation(LLShaderMgr::INVERSE_MODELVIEW_MATRIX);
@@ -1041,9 +1058,8 @@ void LLRender::syncMatrices()
                 {
                     if (cached_mvp_mdv_hash != mMatHash[MM_MODELVIEW] || cached_mvp_proj_hash != mMatHash[MM_PROJECTION])
                     {
-                        U32 mdv = MM_MODELVIEW;
                         cached_mvp = mat;
-                        cached_mvp *= mMatrix[mdv][mMatIdx[mdv]];
+                        cached_mvp *= modelview();
                         cached_mvp_mdv_hash = mMatHash[MM_MODELVIEW];
                         cached_mvp_proj_hash = mMatHash[MM_PROJECTION];
                     }

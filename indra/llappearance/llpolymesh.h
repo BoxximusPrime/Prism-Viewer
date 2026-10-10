@@ -145,10 +145,10 @@ public:
 class LLJointRenderData
 {
 public:
-    LLJointRenderData(const LLMatrix4* world_matrix, LLSkinJoint* skin_joint) : mWorldMatrix(world_matrix), mSkinJoint(skin_joint) {}
+    LLJointRenderData(LLJoint* joint, LLSkinJoint* skin_joint) : mJoint(joint), mSkinJoint(skin_joint) {}
     ~LLJointRenderData(){}
 
-    const LLMatrix4*        mWorldMatrix;
+    LLJoint*               mJoint;
     LLSkinJoint*            mSkinJoint;
 };
 
