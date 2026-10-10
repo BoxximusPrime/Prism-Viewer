@@ -521,10 +521,11 @@ bool LLMessageSystem::checkMessages(LockMessageChecker&, S64 frame_count )
         S32 num_acks = 0;
         S32 true_rcv_size = 0;
         bool recv_packet_id_checked = false;
+        bool ping_handled = false;
 
         U8* buffer = mTrueReceiveBuffer;
 
-        mTrueReceiveSize = receivePacketOrDrop((char *)mTrueReceiveBuffer, recv_packet_id_checked);
+        mTrueReceiveSize = receivePacketOrDrop((char *)mTrueReceiveBuffer, recv_packet_id_checked, ping_handled);
         // If you want to dump all received packets into SecondLife.log, uncomment this
         //dumpPacketToLog();
 
@@ -689,7 +690,9 @@ bool LLMessageSystem::checkMessages(LockMessageChecker&, S64 frame_count )
             if ( valid_packet )
             {
                 logValidMsg(cdp, host, recv_reliable, recv_resent, num_acks>0, recv_packet_id_checked );
-                valid_packet = mTemplateMessageReader->readMessage(buffer, host);
+                // Pings handled during a render pause still pass through validation,
+                // sequencing and ACK processing, but must not update RTT twice.
+                valid_packet = ping_handled || mTemplateMessageReader->readMessage(buffer, host);
             }
 
             // It's possible that the circuit went away, because ANY message can disable the circuit
@@ -911,9 +914,10 @@ void LLMessageSystem::setDropPercentage(F32 percent_to_drop)
     mDropPercentage = percent_to_drop;
 }
 
-S32 LLMessageSystem::receivePacketOrDrop(char* datap, bool& packet_id_already_checked)
+S32 LLMessageSystem::receivePacketOrDrop(char* datap, bool& packet_id_already_checked, bool& ping_handled)
 {
     packet_id_already_checked = false;
+    ping_handled = false;
 
     if (getNumBufferedPackets() > 0)
     {
@@ -928,6 +932,7 @@ S32 LLMessageSystem::receivePacketOrDrop(char* datap, bool& packet_id_already_ch
         mLastSender      = pkt.getHost();
         mLastReceivingIF = pkt.getReceivingInterface();
         packet_id_already_checked = pkt.getPacketIDChecked();
+        ping_handled = pkt.getPingHandled();
 
         if (packet_size > 0)
         {
@@ -990,7 +995,92 @@ S32 LLMessageSystem::receivePacketOrDrop(char* datap, bool& packet_id_already_ch
     return packet_size;
 }
 
-S32 LLMessageSystem::bufferInboundPacket()
+// Only the two fixed transport ping messages may bypass normal dispatch.
+// Decode into private storage because compilation can run inside a message handler.
+static U8 circuitPing(const U8* data, S32 size, U8& ping_id)
+{
+    if (size < LL_MINIMUM_VALID_PACKET_SIZE) return 0;
+    if (data[0] & LL_ACK_FLAG)
+    {
+        size -= 1 + data[size - 1] * S32(sizeof(TPACKETID));
+        if (size < LL_MINIMUM_VALID_PACKET_SIZE) return 0;
+    }
+    U8 expanded[MAX_BUFFER_SIZE];
+    if (data[0] & LL_ZERO_CODE_FLAG)
+    {
+        if (data[size - 1] == 0) return 0; // Incomplete zero run.
+        bool overflow = false;
+        size = LLZeroCode::decode(data, size, expanded, sizeof(expanded), LL_PACKET_ID_SIZE, overflow);
+        if (overflow || size < LL_MINIMUM_VALID_PACKET_SIZE) return 0;
+        data = expanded;
+    }
+    const U8 message = data[LL_PACKET_ID_SIZE];
+    if (message != 1 && message != 2) return 0; // StartPingCheck / CompletePingCheck
+    const S32 payload = LL_PACKET_ID_SIZE + 1 + data[PHL_OFFSET];
+    if (size != payload + (message == 1 ? 5 : 1)) return 0;
+    ping_id = data[payload];
+    return message;
+}
+
+void LLMessageSystem::sendCircuitMessage(LLCircuitData* circuit, LLTemplateMessageBuilder& builder)
+{
+    U8 buffer[MAX_BUFFER_SIZE] = {};
+    const U32 size = builder.buildMessage(buffer, sizeof(buffer), 0);
+    circuit->nextPacketOutID();
+    const U32 id = htonl(circuit->getPacketOutID());
+    memcpy(buffer + PHL_PACKET_ID, &id, sizeof(id));
+    if (sendPacketToSocket(reinterpret_cast<const char*>(buffer), size, circuit->getHost()))
+        circuit->addBytesOut(S32Bytes(size));
+    else
+        ++mSendPacketFailureCount;
+    ++mPacketsOut;
+    mTotalBytesOut += size;
+}
+
+void LLMessageSystem::pumpCircuitKeepAlive()
+{
+    const F64Seconds now = getMessageTimeSeconds(true);
+    // Bound work under sustained traffic; ordinary packets stay in the existing queues.
+    for (U32 i = 0; i < 256 && bufferInboundPacket(true) > 0; ++i) {}
+
+    LLTemplateMessageBuilder builder(mMessageTemplates);
+    LLCircuit::circuit_data_map::iterator it, end;
+    mCircuitInfo.getCircuitRange(LLHost(), it, end);
+    for (; it != end; ++it)
+    {
+        LLCircuitData* circuit = it->second;
+        if (!circuit->isAlive() || now - circuit->mLastPingSendTime < circuit->mHeartbeatInterval) continue;
+        circuit->mLastPingSendTime = now;
+        circuit->pingTimerStart();
+        builder.newMessage(_PREHASH_StartPingCheck);
+        builder.nextBlock(_PREHASH_PingID);
+        builder.addU8(_PREHASH_PingID, circuit->nextPingID());
+        // Keep duplicate history until queued reliable messages have been dispatched.
+        builder.addU32(_PREHASH_OldestUnacked, 0);
+        sendCircuitMessage(circuit, builder);
+    }
+
+    for (auto& entry : mCircuitInfo.mSendAckMap)
+    {
+        LLCircuitData* circuit = entry.second;
+        for (size_t first = 0; first < circuit->mAcks.size(); first += 250)
+        {
+            builder.newMessage(_PREHASH_PacketAck);
+            const size_t last = llmin(first + 250, circuit->mAcks.size());
+            for (size_t i = first; i < last; ++i)
+            {
+                builder.nextBlock(_PREHASH_Packets);
+                builder.addU32(_PREHASH_ID, circuit->mAcks[i]);
+            }
+            sendCircuitMessage(circuit, builder);
+        }
+        circuit->mAcks.clear();
+        circuit->mAckCreationTime = 0.f;
+    }
+    mCircuitInfo.mSendAckMap.clear();
+}
+
+S32 LLMessageSystem::bufferInboundPacket(bool circuit_only)
 {
     LLHost invalid_host;
     LLPacketBuffer pkt(invalid_host, nullptr, 0);
@@ -1036,7 +1126,8 @@ S32 LLMessageSystem::bufferInboundPacket()
         TPACKETID recv_packet_id = ntohl(*((U32*)(&data[1])));
 
         // Harvest piggybacked ACKs for outbound messages from the packet tail of this inbound message
-        if (cdp && (data[0] & LL_ACK_FLAG))
+        // Reliable completion callbacks can touch scene state; defer them until resume.
+        if (cdp && !circuit_only && (data[0] & LL_ACK_FLAG))
         {
             U8 num_acks = (U8)data[packet_size - 1];
             S32 true_rcv_size = packet_size - 1;
@@ -1075,6 +1166,23 @@ S32 LLMessageSystem::bufferInboundPacket()
             {
                 cdp->checkPacketInID(recv_packet_id, recv_resent);
                 pkt.setPacketIDChecked(true);
+            }
+
+            if (circuit_only && cdp->isAlive())
+            {
+                U8 ping_id = 0;
+                const U8 ping = circuitPing(reinterpret_cast<const U8*>(data), packet_size, ping_id);
+                if (ping == 1)
+                {
+                    LLTemplateMessageBuilder builder(mMessageTemplates);
+                    builder.newMessage(_PREHASH_CompletePingCheck);
+                    builder.nextBlock(_PREHASH_PingID);
+                    builder.addU8(_PREHASH_PingID, ping_id);
+                    sendCircuitMessage(cdp, builder);
+                }
+                else if (ping == 2)
+                    cdp->pingTimerStop(ping_id);
+                pkt.setPingHandled(ping != 0);
             }
         }
 

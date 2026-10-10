@@ -366,6 +366,7 @@ public:
     void renderDeferredLighting();
     void renderVolumeFog();
     void bindVolumeFogAlpha(LLGLSLShader& shader);
+    void bindHairSettings(LLGLSLShader& shader);
     void bindVolumeFogMedia(LLGLSLShader& shader, const std::vector<LLVolumeFog::Volume>& volumes, bool ground);
     bool prepareVolumeFog(bool ground_only = false);
     bool useGroundFog() const;
@@ -389,6 +390,10 @@ public:
 
     void generateSunShadow(LLCamera& camera);
     void pushShadowRenderTypeMask();
+    void generateHairDepth(LLCamera& camera);
+    void updateHairDepthFocus(LLCamera& camera);
+    void bindHairDepth(LLGLSLShader& shader);
+    void setHairDepthUniforms(LLGLSLShader& shader, bool hair = false);
     void generateSSSDepth(LLCamera& camera);
     void updateSSSDepthFocus(LLCamera& camera);
     void bindSSSDepth(LLGLSLShader& shader);
@@ -768,6 +773,20 @@ public:
     LLRenderTarget          mSpotShadow[2];
     bool                    mHasSSSGeometry = false;
     U32                     mSSSFrameTag = 0;
+    LLRenderTarget          mHairBounds, mHairDensity;
+    glm::dmat4              mHairDepthMatrix[3] = { glm::dmat4(1), glm::dmat4(1), glm::dmat4(1) };
+    glm::vec4               mHairDepthProjection[3] = {};
+    glm::vec3               mHairDepthOrigin[2] = {};
+    glm::vec3               mHairDepthValid = glm::vec3(0);
+    LLVector3               mHairDepthFocus;
+    glm::vec3               mHairDepthRenderedFocus = glm::vec3(0);
+    bool                    mHairDepthFocusValid = false;
+    LLUUID                  mHairDepthFocusID;
+    F32                     mHairDepthFocusFade = 0.f;
+    LLPointer<LLDrawable>    mHairDepthLights[2];
+    glm::vec2               mHairDepthLightFade = glm::vec2(0);
+    S32                     mHairDepthPass = 0;
+    S32                     mHairDepthSlot = 0;
     LLRenderTarget          mSSSDepth[3];
     glm::dmat4              mSSSDepthMatrix[3] = { glm::dmat4(1), glm::dmat4(1), glm::dmat4(1) };
     glm::vec3               mSSSDepthOrigin[2] = {};

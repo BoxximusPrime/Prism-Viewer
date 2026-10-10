@@ -152,7 +152,7 @@ protected:
 protected:
     LLFrameTimer        mHelpTextTimer;
     bool                mInSnapRegime;
-    bool                mTemporarySnap = false;
+    bool                mSnapInverted = false;
     LLSafeHandle<LLObjectSelection> mObjectSelection;
     EManipPart          mHighlightedPart;
     EManipPart          mManipPart;

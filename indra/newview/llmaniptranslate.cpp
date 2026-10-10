@@ -823,8 +823,8 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
         {
             // ...just went outside the slop region
             mMouseOutsideSlop = true;
-            // With the grid off, Shift is reserved for temporary snapping.
-            if (mask == MASK_COPY && !mTemporarySnap)
+            // Shift is reserved for temporarily inverting grid snapping.
+            if (mask == MASK_COPY && !mSnapInverted)
             {
                 // ...we're trying to make a copy
                 LLSelectMgr::getInstance()->selectDuplicate(LLVector3::zero, false);
@@ -896,7 +896,7 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
 
     F64 off_axis_magnitude;
 
-    if (mTemporarySnap)
+    if (mSnapInverted && isSnapEnabled())
     {
         // Use the handle's drag plane even before any ruler has been rendered.
         cursor_point_snap_line = mDragSelectionStartGlobal + relative_move;
@@ -909,7 +909,7 @@ bool LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
 
     if (isSnapEnabled())
     {
-        if (axis_exists && (mTemporarySnap || off_axis_magnitude > mSnapOffsetMeters))
+        if (axis_exists && (mSnapInverted || off_axis_magnitude > mSnapOffsetMeters))
         {
             mInSnapRegime = true;
             LLVector3 cursor_snap_agent = gAgent.getPosAgentFromGlobal(cursor_point_snap_line);

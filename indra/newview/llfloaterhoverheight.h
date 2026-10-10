@@ -33,7 +33,7 @@
 class LLFloaterShoeHeight : public LLModalDialog
 {
 public:
-    LLFloaterShoeHeight(const LLSD& key) : LLModalDialog(key) {}
+    LLFloaterShoeHeight(const LLSD& key) : LLModalDialog(key, false) {}
     bool postBuild() override;
     void onOpen(const LLSD& key) override;
 private:

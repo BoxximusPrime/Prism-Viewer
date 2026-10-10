@@ -608,7 +608,7 @@ void LLManipRotate::drag( S32 x, S32 y, MASK mask )
         return;
     }
 
-    const bool aim = mManipPart == LL_ROT_GENERAL && (mask & MASK_SHIFT) && !mTemporarySnap &&
+    const bool aim = mManipPart == LL_ROT_GENERAL && (mask & MASK_SHIFT) && (mask & MASK_CONTROL) &&
         mObjectSelection->getSelectType() != SELECT_TYPE_HUD;
     mAimHit = false;
     if (aim != mAimMode)
@@ -636,7 +636,7 @@ void LLManipRotate::drag( S32 x, S32 y, MASK mask )
         mRotation = dragConstrained(x, y);
     }
 
-    if (mTemporarySnap)
+    if (mSnapInverted && isSnapEnabled())
     {
         // Snap the normal drag angle on every handle, including the free sphere
         // and edge-on rings, without needing to drag outside to the ruler.
@@ -1538,7 +1538,7 @@ LLQuaternion LLManipRotate::dragConstrained( S32 x, S32 y )
         bool hit = getMousePointOnPlaneAgent(projected_mouse, x, y, snap_plane_center, constraint_axis);
         projected_mouse -= snap_plane_center;
 
-        if (gSavedSettings.getBOOL("SnapEnabled")) {
+        if (isSnapEnabled() && !mSnapInverted) {
             S32 snap_plane = 0;
 
             F32 dot = cam_to_snap_plane * constraint_axis;
@@ -1732,7 +1732,7 @@ LLQuaternion LLManipRotate::dragConstrained( S32 x, S32 y )
             return LLQuaternion::DEFAULT;
         }
 
-        if (gSavedSettings.getBOOL("SnapEnabled") && projected_mouse.magVec() > SNAP_GUIDE_INNER_RADIUS * mRadiusMeters)
+        if (isSnapEnabled() && !mSnapInverted && projected_mouse.magVec() > SNAP_GUIDE_INNER_RADIUS * mRadiusMeters)
         {
             if (!mInSnapRegime)
             {
@@ -1781,7 +1781,7 @@ LLQuaternion LLManipRotate::dragConstrained( S32 x, S32 y )
         }
     }
 
-    if (!mTemporarySnap)
+    if (!mSnapInverted)
     {
         F32 rot_step = gSavedSettings.getF32("RotationStep");
         F32 step_size = DEG_TO_RAD * rot_step;

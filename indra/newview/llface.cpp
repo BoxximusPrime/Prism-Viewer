@@ -1373,6 +1373,13 @@ bool LLFace::getGeometryVolume(const LLVolume& volume,
     bool rebuild_tangent = rebuild_pos && mVertexBuffer->hasDataType(LLVertexBuffer::TYPE_TANGENT);
     bool rebuild_weights = rebuild_pos && mVertexBuffer->hasDataType(LLVertexBuffer::TYPE_WEIGHT4);
 
+    if (rebuild_tcoord && mVertexBuffer->hasDataType(LLVertexBuffer::TYPE_TEXCOORD3))
+    {
+        LLStrider<LLVector2> mesh_uv;
+        mVertexBuffer->getTexCoord3Strider(mesh_uv, mGeomIndex, mGeomCount);
+        for (S32 i = 0; i < num_vertices; ++i) mesh_uv[i] = LLVector2(vf.mTexCoords[i]);
+    }
+
     const U8 bump_code = tep ? tep->getBumpmap() : 0;
 
     bool is_static = mDrawablep->isStatic();

@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <map>
 
 class LLJoint;
 class LLVOAvatar;
@@ -47,6 +48,7 @@ public:
     void resetPose();
     LLSD serializePose() const;
     bool loadPose(const LLSD& data);
+    bool applyLocalRotations(const std::map<std::string, std::array<float, 4>>& rotations);
 
     struct BonePose
     {

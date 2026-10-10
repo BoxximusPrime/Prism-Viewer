@@ -54,6 +54,8 @@ public:
     // the high/low priority inbound queue).
     bool    getPacketIDChecked() const          { return mPacketIDChecked; }
     void    setPacketIDChecked(bool checked)    { mPacketIDChecked = checked; }
+    bool    getPingHandled() const             { return mPingHandled; }
+    void    setPingHandled(bool handled)       { mPingHandled = handled; }
 
 protected:
     char    mData[NET_BUFFER_SIZE]; // packet data       /* Flawfinder : ignore */
@@ -61,6 +63,7 @@ protected:
     LLHost  mHost;                  // source/dest IP and port
     LLHost  mReceivingIF;           // source/dest IP and port
     bool    mPacketIDChecked = false;
+    bool    mPingHandled = false;
 };
 
 #endif

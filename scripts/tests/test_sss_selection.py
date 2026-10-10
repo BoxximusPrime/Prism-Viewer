@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def main():
     source = (ROOT / 'indra/newview/pipeline.cpp').read_text()
     start = source.index('F32 advanceSSSDepthFade(')
-    end = source.index('\n}\n\nvoid LLPipeline::updateSSSDepthFocus(', start)
+    end = source.index('\n}\n\nvoid LLPipeline::updateHairDepthFocus(', start)
     functions = source[start:end]
     cpp = r'''
 #include <glm/glm.hpp>

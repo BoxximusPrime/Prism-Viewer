@@ -214,6 +214,7 @@ public:
     bool getTexCoord0Strider(LLStrider<LLVector2>& strider, U32 index=0, S32 count = -1);
     bool getTexCoord1Strider(LLStrider<LLVector2>& strider, U32 index=0, S32 count = -1);
     bool getTexCoord2Strider(LLStrider<LLVector2>& strider, U32 index=0, S32 count = -1);
+    bool getTexCoord3Strider(LLStrider<LLVector2>& strider, U32 index=0, S32 count = -1);
     bool getNormalStrider(LLStrider<LLVector3>& strider, U32 index=0, S32 count = -1);
     bool getNormalStrider(LLStrider<LLVector4a>& strider, U32 index = 0, S32 count = -1);
     bool getTangentStrider(LLStrider<LLVector3>& strider, U32 index=0, S32 count = -1);

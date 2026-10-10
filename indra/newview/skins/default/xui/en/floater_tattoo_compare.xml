@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="tattoo_compare" title="COMPARE ITEMS" width="430" height="390"
+ layout="topleft" can_resize="false" can_minimize="true" single_instance="true"
+ save_rect="true">
+ <string name="loading">Loading selected items and your current outfit...</string>
+ <string name="preparing">Preparing previews</string>
+ <string name="ready">Pause on a choice for 2 seconds to share it with others. Closing keeps it; Cancel restores your original look.</string>
+ <string name="position_label">[CURRENT] of [TOTAL]</string>
+ <string name="busy">Wait for your outfit to finish loading and close appearance editing, then try again.</string>
+ <string name="invalid">Select tattoo, eye, or skin wearables from your inventory. Items in Trash, the Library, or Marketplace listings cannot be compared.</string>
+ <string name="mixed">Compare one kind of item at a time: tattoos, eyes, or skins.</string>
+ <string name="count">Select between 2 and 16 different items of the same kind, then choose Compare Items.</string>
+ <string name="layer_limit">There is no room for another clothing layer. Include the worn tattoo you want to replace, or remove a layer first.</string>
+ <string name="empty">These items have no textures to compare.</string>
+ <string name="cache_limit">Comparison needs about [REQUIRED] MiB more GPU memory; [AVAILABLE] MiB is available for it. Select fewer items and try again.</string>
+ <string name="asset_failed">An item could not be loaded. Your outfit has not been changed.</string>
+ <string name="texture_failed">A required texture is missing. Your outfit has not been changed.</string>
+ <string name="render_failed">A preview could not be rendered. Comparison ended; your current outfit has been left in place.</string>
+ <string name="timeout">The previews did not finish loading. Wait for textures to load and try again.</string>
+ <string name="changed">Comparison ended because your outfit, selected items, region, or appearance editing changed. Your current outfit has been left in place.</string>
+ <string name="sharing">Sharing this choice with others. You can keep comparing while it bakes.</string>
+ <string name="applying">Finishing the outfit update. Your local preview stays visible while it bakes...</string>
+ <string name="applied">Your outfit is now updated.</string>
+ <string name="apply_interrupted">The final outfit update was interrupted or took too long. The preview has ended; check your worn items before trying again.</string>
+ <text name="instructions" left="12" top="32" width="406" height="38" wrap="true">
+Compare tattoos, eyes, or skins. For tattoos, include your worn alternative in the selection to replace it.
+ </text>
+ <text name="status" left="12" top="78" width="406" height="48" wrap="true" />
+ <scroll_list name="items" left="12" top="136" width="406" height="160" multi_select="false"
+  draw_heading="false" commit_on_selection_change="true" enabled="false">
+  <column name="name" label="Item" width="396" />
+ </scroll_list>
+ <button name="previous" label="Previous" left="12" top="306" width="106" height="24" enabled="false" />
+ <text name="position" left="124" top="311" width="182" height="18" halign="center" />
+ <button name="next" label="Next" left="312" top="306" width="106" height="24" enabled="false" />
+ <button name="cancel" label="Cancel" left="174" top="350" width="106" height="24" />
+ <button name="keep" label="Keep &amp; Close" left="288" top="350" width="130" height="24" enabled="false" />
+</floater>

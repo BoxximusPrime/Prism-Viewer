@@ -9,6 +9,7 @@
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llfloaterposestudio.h"
+#include "llposerlink.h"
 #include "llfloaterreg.h"
 #include "llfocusmgr.h"
 #include "llrender2dutils.h"
@@ -163,7 +164,7 @@ LLToolPoseIK::LLToolPoseIK() : LLTool("Pose Studio") {}
 
 bool LLToolPoseIK::available() const
 {
-    return !gDisconnected && !gAgentCamera.cameraMouselook()
+    return !gDisconnected && !LLPoserLink::isLinked() && !gAgentCamera.cameraMouselook()
         && !LLToolMgr::getInstance()->inBuildMode()
         && gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI)
         && gSavedSettings.getBOOL("PoseStudioShowIKHandles")

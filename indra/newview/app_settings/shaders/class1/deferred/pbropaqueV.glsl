@@ -48,6 +48,9 @@ in vec3 position;
 in vec4 diffuse_color;
 in vec3 normal;
 in vec4 tangent;
+out vec4 vary_hair_tangent;
+out vec2 vary_hair_texcoord;
+
 in vec2 texcoord0;
 
 out vec2 base_color_texcoord;
@@ -96,6 +99,8 @@ void main()
 #endif
 
     n = normalize(n);
+    vary_hair_tangent = vec4(t, tangent.w);
+    vary_hair_texcoord = texcoord0;
 
     vec4 transformed_tangent = tangent_space_transform(vec4(t, tangent.w), n, texture_normal_transform, texture_matrix0);
     vary_tangent = normalize(transformed_tangent.xyz);

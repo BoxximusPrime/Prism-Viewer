@@ -16,6 +16,7 @@
 #include "lljoint.h"
 #include "llnotificationsutil.h"
 #include "llposestudio.h"
+#include "llposerlink.h"
 #include "llscrolllistctrl.h"
 #include "llsdserialize.h"
 #include "llsliderctrl.h"
@@ -114,7 +115,7 @@ LLFloaterPoseStudio::LLFloaterPoseStudio(const LLSD& key) : LLFloater(key) {}
 
 LLFloaterPoseStudio::~LLFloaterPoseStudio()
 {
-    if (LLPoseStudio::instanceExists()) LLPoseStudio::instance().end();
+    if (LLPoseStudio::instanceExists() && !LLPoserLink::isLinked()) LLPoseStudio::instance().end();
 }
 
 bool LLFloaterPoseStudio::postBuild()
@@ -173,7 +174,7 @@ void LLFloaterPoseStudio::onOpen(const LLSD& key)
 
 void LLFloaterPoseStudio::onClose(bool app_quitting)
 {
-    LLPoseStudio::instance().end();
+    if (!LLPoserLink::isLinked()) LLPoseStudio::instance().end();
 }
 
 void LLFloaterPoseStudio::draw()
@@ -397,18 +398,20 @@ void LLFloaterPoseStudio::refresh()
         buildJointRows();
         refreshRotation();
     }
-    const bool can_edit = active && mJointList->hasSelectedItem();
+    const bool local_edit = active && !LLPoserLink::isLinked();
+    const bool can_edit = local_edit && mJointList->hasSelectedItem();
     getChild<LLButton>("start")->setEnabled(available && !active);
     getChild<LLButton>("end")->setEnabled(active);
     getChild<LLButton>("reset_joint")->setEnabled(can_edit);
-    getChild<LLButton>("reset_pose")->setEnabled(active);
+    getChild<LLButton>("reset_pose")->setEnabled(local_edit);
     getChild<LLButton>("save_pose")->setEnabled(active);
-    getChild<LLButton>("load_pose")->setEnabled(active);
+    getChild<LLButton>("load_pose")->setEnabled(local_edit);
     for (LLSliderCtrl* rotation : mRotation) rotation->setEnabled(can_edit);
     for (LLSliderCtrl* position : mPosition) position->setEnabled(can_edit);
 
     const char* status = "ready";
     if (!available) status = "unavailable";
+    else if (LLPoserLink::isLinked()) status = "poser_link";
     else if (mStartFailed) status = "capture_failed";
     else if (active) status = gSavedSettings.getBOOL("BoxxyFreezeAvatarAnimations") ? "posing_frozen" : "posing";
     else if (studio.getEndReason() == LLPoseStudio::EndReason::SKELETON_CHANGED) status = "skeleton_changed";

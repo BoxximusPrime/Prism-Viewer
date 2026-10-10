@@ -908,6 +908,7 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, bool depth_only, bool rigged)
                     continue;
                 }
 
+                LLRenderPass::applyModelMatrix(params);
                 bool tex_setup = TexSetup(&params, (mat != nullptr));
                 if (!depth_only && (!params.mFullbright || (gltf_mat && gltf_mat->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_BLEND)))
                     gPipeline.bindAlphaLights(*current_shader, params, ext);

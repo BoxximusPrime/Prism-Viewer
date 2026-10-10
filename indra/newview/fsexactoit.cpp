@@ -299,6 +299,7 @@ bool FSExactOIT::loadShaders(bool success, S32 shader_level, bool use_sun_shadow
         return success;
     }
 
+    LLShaderMgr::instance()->beginShaderBatch();
     if (gltf_enabled) success = loadGLTFShaders(shader_level, use_sun_shadow);
     if (success) success = loadPBRGlowShaders(shader_level);
     if (success) success = loadAlphaShaders(shader_level, use_sun_shadow);
@@ -307,6 +308,7 @@ bool FSExactOIT::loadShaders(bool success, S32 shader_level, bool use_sun_shadow
     if (success) success = loadMaterialAlphaShaders(shader_level, use_sun_shadow, shader_list);
     if (success) success = loadEmissiveShaders(shader_level);
     if (success) success = loadCompositeShader(shader_level);
+    success = LLShaderMgr::instance()->finishShaderBatch() && success;
     if (success) loadControlShaders(shader_level);
     if (success) loadComputeSortShaders(shader_level);
     return success;

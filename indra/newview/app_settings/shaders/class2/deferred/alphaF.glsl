@@ -193,9 +193,58 @@ vec3 calcPointLightOrSpotLight(int light_index, vec3 light_col, vec3 diffuse, ve
 }
 
 vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
+uniform float hair_object;
+uniform int hair_debug;
+#ifndef IS_AVATAR_SKIN
+mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
+in vec4 vary_hair_tangent;
+in vec2 vary_hair_texcoord;
+mat3 hairVertexFrame() { return hairMeshFrame(vary_position, vary_texcoord0, vary_hair_texcoord, vary_norm, vary_hair_tangent); }
+#else
+mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
+mat3 hairVertexFrame() { return hairMeshFrame(vary_position, vary_texcoord0, vary_texcoord0, vary_norm, vec4(0)); }
+#endif
+
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
+vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
+vec3 decodeHairTangent(vec3 n, float angle);
+vec3 hairSafeNormalize(vec3 v, vec3 fallback);
+vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
+vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
+float hairSunShadow(vec3 pos, float fallback);
+float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
+vec3 hairDiffuse(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l);
+vec3 hairLocalLight(int index, vec3 base, vec3 n, vec3 t, vec3 pos, float variation);
+
+
+vec4 hairDiffuseLookup(vec2 uv) {
+#ifdef USE_INDEXED_TEX
+    return diffuseLookup(uv);
+#else
+    return texture(diffuseMap, uv);
+#endif
+}
+vec2 hairTextureSize() {
+#ifdef USE_INDEXED_TEX
+    return diffuseLookupSize();
+#else
+    return vec2(textureSize(diffuseMap, 0));
+#endif
+}
 
 void main()
 {
+    vec3 norm = normalize(vary_norm);
+#ifdef USE_DIFFUSE_TEX
+    vec4 diffuse_tap = texture(diffuseMap, vary_texcoord0.xy);
+#endif
+#ifdef USE_INDEXED_TEX
+    vec4 diffuse_tap = diffuseLookup(vary_texcoord0.xy);
+#endif
+    vec3 hair_preview;
+    float hair_variation;
+    vec3 strand = hairSurface(vary_position, vary_texcoord0, norm, diffuse_tap, true, hair_preview, hair_variation);
     mirrorClip(vary_position);
 #if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
     if (isSSSOverlay(vary_position)) discard;
@@ -208,20 +257,10 @@ void main()
 #endif
 
     vec2 frag = vary_fragcoord.xy/vary_fragcoord.z*0.5+0.5;
-
     vec4 pos = vec4(vary_position, 1.0);
 #ifndef IS_AVATAR_SKIN
     // clip against water plane unless this is a legacy avatar skin
     waterClip(pos.xyz);
-#endif
-    vec3 norm = normalize(vary_norm);
-
-#ifdef USE_DIFFUSE_TEX
-    vec4 diffuse_tap = texture(diffuseMap,vary_texcoord0.xy);
-#endif
-
-#ifdef USE_INDEXED_TEX
-    vec4 diffuse_tap = diffuseLookup(vary_texcoord0.xy);
 #endif
 
     vec4 diffuse_srgb = diffuse_tap;
@@ -337,6 +376,16 @@ void main()
     LIGHT_LOOP(6)
     LIGHT_LOOP(7)
 
+    if (hair_object > 0.5)
+    {
+        vec3 hairSun = classic_mode > 0 ? srgb_to_linear(sunlit * 0.7) : sunlit;
+        vec3 hairAmbient = classic_mode > 0 ? srgb_to_linear(irradiance * 0.9) : irradiance;
+        color.rgb = hairAmbient * diffuse_linear.rgb + hairDirectVisibility(diffuse_linear.rgb, norm, strand,
+            -normalize(pos.xyz), normalize(light_dir), hair_variation, shadow, hairSunShadow(pos.xyz, shadow)) * hairSun;
+        light = vec4(0);
+        for (int i = 1; i < 8; ++i) light.rgb += hairLocalLight(i, diffuse_linear.rgb, norm, strand, pos.xyz, hair_variation);
+    }
+
     // The final Classic boost belongs to environment lighting; opaque local
     // lights are added after that boost. Match them before fog and OIT capture.
     color.rgb += light.rgb / final_scale;
@@ -352,6 +401,7 @@ void main()
 #if !defined(IS_HUD) && !defined(FOR_IMPOSTOR)
     color = applyVolumeFogAlpha(pos.xyz, color);
 #endif
+    if (hair_object > 0.5 && hair_debug != 0) color.rgb = hair_preview;
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(color, vec4(0));
 #ifdef EXACT_OIT

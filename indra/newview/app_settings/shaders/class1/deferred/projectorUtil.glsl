@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
+uniform int classic_mode;
 vec3 srgb_to_linear(vec3 color);
 float calcLegacyDistanceAttenuation(float distance, float falloff);
 void calcHalfVectors(vec3 lv, vec3 n, vec3 v, out vec3 h, out vec3 l,
@@ -53,7 +54,6 @@ uniform sampler2D alphaProjectionMap3;
 uniform sampler2D alphaProjectionMap4;
 uniform sampler2D alphaProjectionMap5;
 uniform sampler2D lightFunc;
-uniform int classic_mode;
 uniform int alpha_projector_mask;
 uniform mat4 alpha_projector_matrix[6];
 uniform vec3 alpha_projector_plane[6];
@@ -224,4 +224,47 @@ vec3 calcAlphaPBRProjectedLight(int light_index, vec3 pos, vec3 norm, vec3 v, ve
     result *= classic_mode > 0 ? 0.9 : 1.0;
 #endif
     return max(result, vec3(0.0));
+}
+
+uniform vec4 light_position[8];
+uniform vec3 light_direction[8];
+uniform vec4 light_attenuation[8];
+uniform vec2 light_deferred_attenuation[8];
+uniform vec3 light_diffuse[8];
+vec3 hairSafeNormalize(vec3 v, vec3 fallback);
+vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
+vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
+float hairSunShadow(vec3 pos, float fallback);
+float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
+
+vec3 hairLocalLight(int index, vec3 base, vec3 n, vec3 t, vec3 pos, float variation)
+{
+    float radius = light_deferred_attenuation[index].x;
+    float falloff = light_deferred_attenuation[index].y;
+    vec3 lv = light_position[index].xyz - pos;
+    float distance = length(lv);
+    if (radius <= 0.0 || distance >= radius) return vec3(0);
+    float attenuation = calcLegacyDistanceAttenuation(distance / radius, falloff);
+    vec3 projected = vec3(1);
+    float shadow = 1.0;
+    vec3 ambient = vec3(0);
+#ifdef ALPHA_PROJECTORS
+    if (hasAlphaProjector(index))
+    {
+        vec2 tc;
+        if (!alphaProjectorVars(index - 2, pos, n, light_position[index].xyz, radius, falloff,
+            tc, lv, attenuation, projected, shadow)) return vec3(0);
+        float nl = dot(n, hairSafeNormalize(lv, n));
+        ambient = base * alphaProjectorAmbiance(index - 2, tc, attenuation, max(nl, 0.0) * attenuation, nl);
+    }
+    else
+#endif
+    {
+        float spot = max(dot(-light_direction[index], hairSafeNormalize(lv, n)), light_attenuation[index].z);
+        attenuation *= spot * spot;
+    }
+    float transmission = hairLocalShadow(pos, pos + lv, shadow);
+    vec3 result = hairDirectVisibility(base, n, t, -normalize(pos), hairSafeNormalize(lv, n), variation, shadow, transmission) *
+        projected * attenuation + ambient;
+    return result * light_diffuse[index] * (classic_mode > 0 ? 0.9 : 1.0);
 }

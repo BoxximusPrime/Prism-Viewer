@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <notifications>
+  <notification name="PrismGTAODenoiseWithoutTAA" type="alertmodal">
+    GTAO can look noisy without TAA. SMAA, FXAA and antialiasing disabled do not provide TAA's smoothing across frames.
+
+Would you like Prism to set GTAO denoising to 1.70 automatically?
+
+You can also adjust it in Preferences &gt; Graphics &gt; GTAO &gt; Denoising.
+    <form>
+      <button index="0" name="SetDenoising" text="Yes, set to 1.70" />
+      <button index="1" name="Keep" text="No, keep mine" default="true" />
+    </form>
+  </notification>
   <notification name="MusicStreamError" type="notify" icon="notifytip.tga">
     Music stream cannot play: [REASON]
   </notification>
@@ -12903,5 +12914,21 @@ are wearing now.
 [OPTIONS]
 Import the animations, order, cycling and supported sit option without those options?
     <usetemplate name="okcancelbuttons" notext="Cancel" yestext="Import" />
+  </notification>
+  <notification icon="alertmodal.tga" name="PoserLinkRequest" type="alertmodal">
+Poser is trying to link to Prism on this computer.
+
+Link code: [CODE]
+
+Accept only if this code matches the one shown in Poser. Poser will control your avatar's local pose, including playback and scrubbing. Only you see this preview; nothing is uploaded.
+
+Use Avatar &gt; Stop Poser live link to end the session. Each new link requires approval.
+    <form name="form">
+      <button index="0" name="Accept" text="Accept link" />
+      <button default="true" index="1" name="Reject" text="Reject" />
+    </form>
+  </notification>
+  <notification icon="notify.tga" name="PoserLinkStarted" type="notify">
+Poser live link is active. Pose, play or scrub in Poser to preview on your avatar. Avatar &gt; Stop Poser live link restores normal animation.
   </notification>
 </notifications>

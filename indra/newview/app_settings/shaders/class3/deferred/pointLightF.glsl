@@ -95,6 +95,15 @@ vec3 pointSSSTransmission(float nl, float nv, float strength, vec3 pos, vec3 ori
     return capSSSTransmission(getSSSTransmissionWithDepth(nl, nv, strength, path, 1.0) * sss_point_transmission_boost);
 }
 
+uniform int hair_debug;
+vec3 decodeHairTangent(vec3 n, float angle);
+vec3 hairSafeNormalize(vec3 v, vec3 fallback);
+vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
+vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
+float hairSunShadow(vec3 pos, float fallback);
+float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
+vec3 hairDiffuse(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l);
+
 void main()
 {
     vec3 final_color = vec3(0);
@@ -128,7 +137,17 @@ void main()
     float dist_atten = calcLegacyDistanceAttenuation(dist, falloff);
     grazingDirect = smoothstep(0.0, 0.10, dot(n, normalize(lv))) * dist_atten;
 
-    if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR))
+    if (GBUFFER_HAIR_FLAG(gb.gbufferFlag) > 0.5)
+    {
+            if (hair_debug != 0) discard;
+        vec3 base = GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR) ? diffuse : srgb_to_linear(diffuse);
+        vec3 strand = decodeHairTangent(n, gb.envIntensity);
+        vec3 direction = hairSafeNormalize(lv, n);
+        float transmission = hairLocalShadow(pos, trans_center.xyz, 1.0);
+        final_color = hairDirectVisibility(base, n, strand, v, direction, gb.specular.a, 1.0, transmission) * color * dist_atten;
+        diffuseLighting = hairDiffuseVisibility(base, n, strand, v, direction, 1.0, transmission) * color * dist_atten;
+    }
+    else if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR))
     {
         vec3 colorEmissive = gb.emissive.rgb;
         vec3 orm = spec.rgb;

@@ -32,6 +32,7 @@
 
 #include "llvovolume.h"
 
+#include <cctype>
 #include <deque>
 #include <sstream>
 #include <unordered_map>
@@ -146,15 +147,16 @@ bool hasSSSTag(std::string value)
     return value.find("[sss]") != std::string::npos;
 }
 
-bool matchesSSSWhitelist(std::string name, bool overlay = false)
+bool matchesSurfaceNames(std::string name, int category = 0)
 {
     static LLCachedControl<std::string> whitelist(gSavedSettings, "BoxxySSSWhitelist");
     static LLCachedControl<std::string> overlays(gSavedSettings, "BoxxySSSOverlayNames");
-    static std::string cached_settings[2];
-    static std::vector<std::string> cached_terms[2];
-    auto& cached_setting = cached_settings[overlay];
-    auto& terms = cached_terms[overlay];
-    const std::string& setting = overlay ? overlays : whitelist;
+    static LLCachedControl<std::string> hair(gSavedSettings, "BoxxyHairNames");
+    static std::string cached_settings[3];
+    static std::vector<std::string> cached_terms[3];
+    auto& cached_setting = cached_settings[category];
+    auto& terms = cached_terms[category];
+    const std::string& setting = category == 2 ? hair : (category == 1 ? overlays : whitelist);
     if (setting != cached_setting)
     {
         cached_setting = setting;
@@ -168,9 +170,12 @@ bool matchesSSSWhitelist(std::string name, bool overlay = false)
     LLStringUtil::toLower(name);
     for (const std::string& term : terms)
     {
-        if (!term.empty() && name.find(term) != std::string::npos)
+        if (term.empty()) continue;
+        for (size_t pos = name.find(term); pos != std::string::npos; pos = name.find(term, pos + 1))
         {
-            return true;
+            // Hair is a word prefix: accept hairstyle, but do not classify chairs.
+            if (category != 2 || pos == 0 || !std::isalnum(static_cast<unsigned char>(name[pos - 1])))
+                return true;
         }
     }
     return false;
@@ -803,15 +808,18 @@ void LLVOVolume::updateTextures()
     updateTextureVirtualSize();
 
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
-    if (sss_enabled && isVisible() && !isHUDAttachment() && mSSSUpdateTimer.getElapsedTimeF32() >= 1.f)
+    static LLCachedControl<bool> hair_enabled(gSavedSettings, "BoxxyHairEnabled", false);
+    if ((sss_enabled || hair_enabled || mLastHairState) && isVisible() && !isHUDAttachment() && mSSSUpdateTimer.getElapsedTimeF32() >= 1.f)
     {
         mSSSUpdateTimer.reset();
         const bool state_initialized = mSSSStateInitialized;
         const bool previous_state = mLastSSSState;
         const bool previous_overlay = mLastSSSOverlayState;
+        const bool previous_hair = mLastHairState;
+        const bool hair = isHairEnabled();
         const bool enabled = isSSSEnabled();
         const bool overlay = isSSSOverlayEnabled();
-        if (state_initialized && (enabled != previous_state || overlay != previous_overlay) && mDrawable.notNull())
+        if (state_initialized && (enabled != previous_state || overlay != previous_overlay || hair != previous_hair) && mDrawable.notNull())
         {
             // The SSS flag belongs to draw batches. Updating vertex data alone
             // leaves existing batches with the previous eligibility flag.
@@ -3794,6 +3802,23 @@ bool LLVOVolume::isMesh() const
     return false;
 }
 
+bool LLVOVolume::isHairEnabled() const
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "BoxxyHairEnabled", false);
+    const LLViewerObject* root = getRootEdit();
+    mLastHairState = false;
+    if (!enabled || !root || root->isHUDAttachment()) return false;
+
+    if (!root->hasCachedObjectName() && isVisible() && getRegion() &&
+        (LLViewerCamera::instance().getOrigin() - getRenderPosition()).magVec() <= 64.f &&
+        sRenderQueuedObjectIDs.insert(root->getID()).second)
+        sRenderPropertyRequests.push_front({ root->getID(), getID() });
+
+    mLastHairState = matchesSurfaceNames(root->hasCachedObjectName() ?
+        root->getCachedObjectName() : root->getAttachmentItemName(), 2);
+    return mLastHairState;
+}
+
 bool LLVOVolume::isSSSOverlayEnabled() const
 {
     mLastSSSOverlayState = false;
@@ -3813,8 +3838,8 @@ bool LLVOVolume::isSSSOverlayEnabled() const
     }
     // Server root names work for no-mod attachments and for other avatars.
     // Own inventory supplies an immediate fallback while properties arrive.
-    mLastSSSOverlayState = matchesSSSWhitelist(root->hasCachedObjectName() ?
-        root->getCachedObjectName() : root->getAttachmentItemName(), true);
+    mLastSSSOverlayState = matchesSurfaceNames(root->hasCachedObjectName() ?
+        root->getCachedObjectName() : root->getAttachmentItemName(), 1);
     return mLastSSSOverlayState;
 }
 
@@ -3852,7 +3877,7 @@ bool LLVOVolume::isSSSEnabled() const
         // The in-world root name works for other avatars and no-mod linksets.
         // Local inventory is an immediate fallback while root properties load.
         std::string name = root_name_available ? linkset_root->getCachedObjectName() : attachment_name;
-        automatic_match = matchesSSSWhitelist(name);
+        automatic_match = matchesSurfaceNames(name);
     }
 
     if (!own_description_available || !root_description_available || (detect_name && !root_name_available))
@@ -4717,6 +4742,7 @@ void LLVOVolume::preUpdateGeom()
 
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 36.0f);
+    static LLCachedControl<bool> hair_enabled(gSavedSettings, "BoxxyHairEnabled", false);
     const F64 now = LLFrameTimer::getElapsedSeconds();
     // Release simulator-only selections after their full properties arrive, or
     // on timeout. Always clean up, including after the user disables SSS.
@@ -4755,7 +4781,7 @@ void LLVOVolume::preUpdateGeom()
         LLVOVolume* volume = dynamic_cast<LLVOVolume*>(object);
         if (!volume || volume->isDead() || (request.mFog && !gSavedSettings.getBOOL("RenderVolumeFog")) ||
             (!request.mProjector && !request.mFog &&
-            (!sss_enabled || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))))
+            ((!sss_enabled && !hair_enabled) || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))))
         {
             sRenderQueuedObjectIDs.erase(request.mObjectID);
             continue;
@@ -4769,7 +4795,8 @@ void LLVOVolume::preUpdateGeom()
             ((request.mProjector ? (relevance_volume->getIsLight() && relevance_volume->isLightSpotlight()) :
                                  relevance_volume->isVisible()) &&
             (LLViewerCamera::instance().getOrigin() - relevance_volume->getRenderPosition()).magVec() <=
-                (request.mProjector ? LLViewerCamera::instance().getFar() : llmax(F32(sss_max_distance), 1.f))));
+                (request.mProjector ? LLViewerCamera::instance().getFar() :
+                    llmax(F32(sss_max_distance), hair_enabled ? 64.f : 1.f))));
         if (!relevant)
         {
             // Visible volumes enqueue again when they return to range.
@@ -5814,8 +5841,9 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
 
     LLDrawInfo* info = idx >= 0 ? draw_vec[idx] : nullptr;
     LLVOVolume* volume = facep->getDrawable()->getVOVolume();
-    const bool sss = volume && volume->isSSSEnabled();
-    const bool sss_overlay = volume && volume->isSSSOverlayEnabled();
+    const bool hair = volume && volume->isHairEnabled();
+    const bool sss = volume && volume->isSSSEnabled() && !hair;
+    const bool sss_overlay = volume && volume->isSSSOverlayEnabled() && !hair;
     const LLViewerObject* attachment_root = volume ? volume->getRootEdit() : nullptr;
     const bool ssgi_avatar = (attachment_root && attachment_root->isAttachment()) ||
         (facep->mAvatar && !facep->mAvatar->isControlAvatar());
@@ -5838,6 +5866,8 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         info->mTextureMatrix == tex_mat &&
         info->mModelMatrix == model_mat &&
         info->mShaderMask == shader_mask &&
+        info->mHair == hair &&
+        info->mHairObject == (hair ? volume : nullptr) &&
         info->mSSS == sss &&
         info->mSSGIAvatar == ssgi_avatar &&
         info->mSSSOverlay == sss_overlay &&
@@ -5890,6 +5920,8 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
         draw_info->mMaterial = mat;
         draw_info->mGLTFMaterial = gltf_mat;
         draw_info->mShaderMask = shader_mask;
+        draw_info->mHair = hair;
+        draw_info->mHairObject = hair ? volume : nullptr;
         draw_info->mSSS = sss;
         draw_info->mSSGIAvatar = ssgi_avatar;
         draw_info->mSSSOverlay = sss_overlay;
@@ -6461,9 +6493,9 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
     }
 
     //PROCESS NON-ALPHA FACES
-    U32 simple_mask = LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_NORMAL | LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR;
+    U32 simple_mask = LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_TEXCOORD3 | LLVertexBuffer::MAP_TANGENT | LLVertexBuffer::MAP_NORMAL | LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR;
     U32 alpha_mask = simple_mask | 0x80000000; //hack to give alpha verts their own VBO
-    U32 bump_mask = LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_TEXCOORD1 | LLVertexBuffer::MAP_NORMAL | LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR;
+    U32 bump_mask = LLVertexBuffer::MAP_TEXCOORD3 | LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_TEXCOORD1 | LLVertexBuffer::MAP_NORMAL | LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR;
     U32 fullbright_mask = LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR;
 
     U32 norm_mask = simple_mask | LLVertexBuffer::MAP_TEXCOORD1 | LLVertexBuffer::MAP_TANGENT;

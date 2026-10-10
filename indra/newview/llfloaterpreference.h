@@ -133,6 +133,7 @@ protected:
     void setRecommended();
     // callback for when client modifies a render option
     void onRenderOptionEnable();
+    void onAntialiasingChanged();
     // callback for when client turns on impostors
     void onAvatarImpostorsEnable();
 
@@ -222,6 +223,7 @@ private:
     bool mLanguageChanged;
     bool mAvatarDataInitialized;
     U32 mLastQualityLevel = 0;
+    U32 mLastAntialiasingType = 0;
     std::string mPriorInstantMessageLogPath;
 
     bool mOriginalHideOnlineStatus;

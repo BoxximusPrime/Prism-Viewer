@@ -40,6 +40,16 @@ public:
 
     virtual void shaderProgramStarted(const LLGLSLShader*) {}
     virtual void shaderProgramProcessed(const LLGLSLShader*, bool) {}
+    virtual void shaderCompileIdle() {}
+
+    // createShader() submits work inside a batch; finishShaderBatch() returns its result.
+    void beginShaderBatch();
+    bool finishShaderBatch();
+    bool isShaderBatching() const { return mShaderBatching; }
+    bool isShaderPending(const LLGLSLShader* shader) const;
+    void queueShader(LLGLSLShader* shader);
+    void waitForShader(GLuint object, bool program);
+    bool checkProgramLink(GLuint object, bool suppress_errors = false);
 
     // Note: although you can use statically hashed strings to just bind a random uniform, it's generally preferably that you use this.
     // Always document what the actual shader uniform is next to the shader uniform in this struct.
@@ -229,6 +239,8 @@ public:
         SSS_DEPTH0,
         SSS_DEPTH1,
         SSS_DEPTH2,
+        HAIR_BOUNDS,
+        HAIR_DENSITY,
         DEFERRED_POSITION,                  //  "positionMap"
         DEFERRED_DIFFUSE,                   //  "diffuseRect"
         DEFERRED_SPECULAR,                  //  "specularRect"
@@ -437,6 +449,16 @@ public:
     std::string mShaderCacheDir;
 
 protected:
+
+    struct PendingShader
+    {
+        LLGLSLShader* shader;
+        LLShaderFeatures features;
+    };
+    std::vector<PendingShader> mPendingShaders;
+    bool mShaderBatching = false;
+    bool mShaderBatchSuccess = true;
+    void flushShaderBatch();
 
     // our parameter manager singleton instance
     static LLShaderMgr * sInstance;

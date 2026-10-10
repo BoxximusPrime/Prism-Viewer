@@ -31,6 +31,11 @@ in vec3 position;
 in vec4 diffuse_color;
 in vec3 normal;
 in vec2 texcoord0;
+in vec2 texcoord3;
+in vec4 tangent;
+out vec4 vary_hair_tangent;
+out vec2 vary_hair_texcoord;
+
 
 out vec3 vary_normal;
 
@@ -54,6 +59,7 @@ void main()
     mat4 mat = getObjectSkinnedTransform();
     mat = modelview_matrix * mat;
     vec4 pos = mat * vec4(position.xyz, 1.0);
+    vary_hair_tangent = vec4(mat3(mat) * tangent.xyz, tangent.w);
     vary_position = pos.xyz;
     gl_Position = projection_matrix * pos;
     vary_normal = normalize((mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz);
@@ -61,10 +67,12 @@ void main()
     vary_position = (modelview_matrix * vec4(position.xyz, 1.0)).xyz;
     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
     vary_normal = normalize(normal_matrix * normal);
+    vary_hair_tangent = vec4(normal_matrix * tangent.xyz, tangent.w);
 #endif
 
     vary_texcoord0 = (texture_matrix0 * vec4(texcoord0,0,1)).xy;
 
+    vary_hair_texcoord = texcoord3;
     passTextureIndex();
 
     vertex_color = diffuse_color;

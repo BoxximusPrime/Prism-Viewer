@@ -48,8 +48,12 @@ in vec3 normal;
 in vec2 texcoord0;
 
 
-#ifdef HAS_NORMAL_MAP
 in vec4 tangent;
+in vec2 texcoord3;
+out vec4 vary_hair_tangent;
+out vec2 vary_hair_texcoord;
+
+#ifdef HAS_NORMAL_MAP
 in vec2 texcoord1;
 
 out vec3 vary_tangent;
@@ -100,9 +104,9 @@ void main()
 
 #ifdef HAS_SKIN
     vec3 n = normalize((mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz);
-#ifdef HAS_NORMAL_MAP
     vec3 t = normalize((mat*vec4(tangent.xyz+position.xyz,1.0)).xyz-pos.xyz);
 
+#ifdef HAS_NORMAL_MAP
     vary_tangent = t;
     vary_sign = tangent.w;
     vary_normal = n;
@@ -111,9 +115,9 @@ void main()
 #endif //HAS_NORMAL_MAP
 #else //HAS_SKIN
     vec3 n = normalize(normal_matrix * normal);
-#ifdef HAS_NORMAL_MAP
     vec3 t = normalize(normal_matrix * tangent.xyz);
 
+#ifdef HAS_NORMAL_MAP
     vary_tangent = t;
     vary_sign = tangent.w;
     vary_normal = n;
@@ -122,6 +126,8 @@ void main()
 #endif //HAS_NORMAL_MAP
 #endif //HAS_SKIN
 
+    vary_hair_tangent = vec4(t, tangent.w);
+    vary_hair_texcoord = texcoord3;
     vertex_color = diffuse_color;
 
 #if !defined(HAS_SKIN)

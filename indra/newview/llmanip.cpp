@@ -200,13 +200,13 @@ F32 LLManip::getSubdivisionLevel(const LLVector3 &reference_point, const LLVecto
 
 void LLManip::handleSelect()
 {
-    mTemporarySnap = false;
+    mSnapInverted = false;
     mObjectSelection = LLSelectMgr::getInstance()->getEditSelection();
 }
 
 void LLManip::handleDeselect()
 {
-    mTemporarySnap = false;
+    mSnapInverted = false;
     mHighlightedPart = LL_NO_PART;
     mManipPart = LL_NO_PART;
     mObjectSelection = NULL;
@@ -258,20 +258,19 @@ void LLManip::updateGridSettings()
 
 bool LLManip::updateSnapMode(MASK mask)
 {
-    const bool previous = mTemporarySnap;
-    // Shift also works while Ctrl/Alt is held to temporarily select another tool.
+    const bool previous = mSnapInverted;
+    // Shift inverts the saved grid setting, including with Ctrl/Alt held for another tool.
     // Reserve Ctrl+Shift on the free rotation sphere for aiming at the cursor.
     const bool aiming = mManipPart == LL_ROT_GENERAL && (mask & MASK_CONTROL);
-    mTemporarySnap = hasMouseCapture() && (mask & MASK_SHIFT) && !aiming &&
-        mManipPart != LL_NO_PART && mManipPart != LL_TRANSLATE_CENTER &&
-        !gSavedSettings.getBOOL("SnapEnabled");
-    if (mTemporarySnap) updateGridSettings();
-    return previous != mTemporarySnap;
+    mSnapInverted = hasMouseCapture() && (mask & MASK_SHIFT) && !aiming &&
+        mManipPart != LL_NO_PART && mManipPart != LL_TRANSLATE_CENTER;
+    if (mSnapInverted && isSnapEnabled()) updateGridSettings();
+    return previous != mSnapInverted;
 }
 
 bool LLManip::isSnapEnabled() const
 {
-    return gSavedSettings.getBOOL("SnapEnabled") || mTemporarySnap;
+    return gSavedSettings.getBOOL("SnapEnabled") != mSnapInverted;
 }
 
 bool LLManip::getMousePointOnPlaneAgent(LLVector3& point, S32 x, S32 y, LLVector3 origin, LLVector3 normal)

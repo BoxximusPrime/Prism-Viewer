@@ -17,7 +17,8 @@ VERTEX = """
 uniform vec2 sample_offset;
 uniform float normal_slope;
 out vec3 vary_position, vary_normal, vary_tangent, vary_fragcoord;
-out vec4 vertex_color;
+out vec4 vertex_color, vary_hair_tangent;
+out vec2 vary_hair_texcoord;
 flat out float vary_sign;
 out vec2 base_color_texcoord, normal_texcoord, metallic_roughness_texcoord, emissive_texcoord;
 out vec2 base_color_uv, normal_uv, metallic_roughness_uv, occlusion_uv, emissive_uv;
@@ -32,6 +33,7 @@ void main() {
     vec2 pixel=uv*vec2(96,64)-sample_offset;
     vary_normal=vec3((pixel-vec2(48.37,32.19))*normal_slope,1);
     vary_tangent=vec3(1,0,0); vary_sign=1;
+    vary_hair_tangent=vec4(1,0,0,1); vary_hair_texcoord=uv;
     vary_position=vec3(0,0,-2); vary_fragcoord=vec3(0,0,1); vertex_color=vec4(1);
 }
 """
@@ -46,8 +48,9 @@ def run(sdl, gl):
     # encoding, material sampling/factors, roughness and GGX are exercised.
     helpers='uniform float sss_object;\nuniform float ssgi_avatar;\n'+function(global_source,'vec4 encodeNormal(')
     helpers+='vec3 srgb_to_linear(vec3 c){return c;}\nvoid mirrorClip(vec3 p){}\n'
-    opaque_source='#define GBUFFER_FLAG_HAS_PBR 1.0\n'+read('class1/deferred/pbropaqueF.glsl')
-    materials=[gpu.program(opaque_source+helpers+h,VERTEX) for h in (
+    helpers+='#define GBUFFER_AVATAR_FLAG(data) 0.0\n'+read('class1/deferred/hairUtil.glsl')
+    opaque_source='#define GBUFFER_FLAG_HAS_PBR 1.0\n'+read('class1/deferred/pbropaqueF.glsl').replace('uniform float hair_object;', '').replace('uniform int hair_debug;', '')
+    materials=[gpu.program(helpers+opaque_source+h,VERTEX) for h in (
         'float filterPBRRoughness(float r,vec3 n){return r;}\n',helper)]
     util=read('class1/deferred/deferredUtil.glsl')
     brdf=util[util.index('struct PBRInfo'):util.index('bool hasAlphaProjector(')]
@@ -153,7 +156,6 @@ void main() {
     forward_stubs=forward_stubs.replace('layout(location=0) out', 'out')
     forward_stubs+='''
 bool isSSSOverlay(vec3 p){return false;}
-vec4 applyVolumeFogAlpha(vec3 p,vec4 c){return c;}
 vec3 pbrCalcPointLightOrSpotLight(int i,vec3 d,vec3 s,float r,float m,
     vec3 n,vec3 p,vec3 v,vec3 lp,vec3 ld,vec3 lc,float ls,float f,float pt,float a){return vec3(0);}
 '''
@@ -191,7 +193,10 @@ vec3 pbrCalcPointLightOrSpotLight(int i,vec3 d,vec3 s,float r,float m,
         for oit in (False,True):
             defines='#define MAX_UBO_VEC4S 12\n#define ALPHA_BLEND 1\n#define HAS_ALPHA_MASK 1\n'
             if oit: defines+='#define EXACT_OIT 1\n'
-            prog=gpu.program(defines+read(path)+helper+forward_stubs,VERTEX)
+            prog=gpu.program(defines+'#define GBUFFER_AVATAR_FLAG(data) 0.0\n'+read('class1/deferred/hairUtil.glsl')+
+                             '#define HAIR_DENSITY_MAPS 1\n'+read('class1/deferred/hairDepthUtil.glsl').replace('uniform vec4 hair_params;', '')+
+                read(path).replace('uniform float hair_object;', '').replace('uniform int hair_debug;', '')+helper+forward_stubs+
+                'vec3 hairLocalLight(int i,vec3 b,vec3 n,vec3 t,vec3 p,float variation){return vec3(0);}',VERTEX)
             if gltf:
                 block=gl.GetUniformBlockIndex(prog,b'GLTFMaterials')
                 gl.UniformBlockBinding(prog,block,0)

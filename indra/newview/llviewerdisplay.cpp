@@ -821,6 +821,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
                   //try to generate a shadow before the first frame is through
                     gPipeline.generateSunShadow(*LLViewerCamera::getInstance());
                     gPipeline.generateSSSDepth(*LLViewerCamera::getInstance());
+                    gPipeline.generateHairDepth(*LLViewerCamera::getInstance());
                 }
 
                 LLVertexBuffer::unbind();

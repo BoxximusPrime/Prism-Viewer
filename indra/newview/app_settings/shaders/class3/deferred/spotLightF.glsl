@@ -109,6 +109,15 @@ void prepareSSSDepth(vec3 pos);
 float sampleLocalSSSPath(vec3 pos, vec3 lightOrigin);
 vec3 getSSSTransmissionWithDepth(float nl, float nv, float strength, float path, float shadow);
 
+uniform int hair_debug;
+vec3 decodeHairTangent(vec3 n, float angle);
+vec3 hairSafeNormalize(vec3 v, vec3 fallback);
+vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
+vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
+float hairSunShadow(vec3 pos, float fallback);
+float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
+vec3 hairDiffuse(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l);
+
 void main()
 {
     vec3 final_color = vec3(0,0,0);
@@ -175,7 +184,25 @@ void main()
 
     vec3 amb_rgb = vec3(0);
 
-    if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR))
+    if (GBUFFER_HAIR_FLAG(gb.gbufferFlag) > 0.5)
+    {
+            if (hair_debug != 0) discard;
+        vec3 base = GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR) ? diffuse : srgb_to_linear(diffuse);
+        vec3 strand = decodeHairTangent(n, gb.envIntensity);
+        if (proj_tc.z > 0.0 && all(greaterThan(proj_tc.xy, vec2(0))) && all(lessThan(proj_tc.xy, vec2(1))))
+        {
+            vec3 direction = hairSafeNormalize(lv, n);
+            float transmission = hairLocalShadow(pos, pos + lv, shadow);
+            vec3 incident = getProjectedLightDiffuseColor(l_dist, proj_tc.xy) * dist_atten;
+            final_color = hairDirectVisibility(base, n, strand, v, direction, gb.specular.a, shadow, transmission) * incident;
+            diffuseLighting = hairDiffuseVisibility(base, n, strand, v, direction, shadow, transmission) * incident;
+            vec3 ambient = getProjectedLightAmbiance((rawNl > 0.0 ? rawNl * 0.5 + 0.5 : 0.0) * proj_ambiance,
+                dist_atten, max(rawNl, 0.0) * dist_atten, rawNl, 1.0, proj_tc.xy) * base;
+            final_color += ambient;
+            diffuseLighting += ambient;
+        }
+    }
+    else if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR))
     {
         vec3 orm = spec.rgb;
         float perceptualRoughness = orm.g;

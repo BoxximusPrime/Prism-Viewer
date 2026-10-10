@@ -48,6 +48,7 @@
 #include "llenvironment.h"
 #include "llerrorcontrol.h"
 #include "llworld.h"
+#include "message.h"
 #include "llsky.h"
 #include "llstring.h"
 
@@ -82,7 +83,9 @@ static U32 sShaderProgramsProcessed = 0;
 static U32 sShaderProgramsTotal = 0;
 static std::set<const LLGLSLShader*> sProcessedShaderPrograms;
 static bool sShaderProgressUIReady = false;
-static LLTimer sShaderProgramTimer;
+static std::map<const LLGLSLShader*, F64> sShaderProgramStarted;
+static LLTimer sShaderNetworkTimer;
+static U32 sShaderNetworkPumps = 0;
 static std::string sCurrentShaderName;
 static LLTimer sShaderProgressTimer;
 
@@ -637,7 +640,7 @@ static U32 shaderProgramCount()
         + (gSavedSettings.getBOOL("LocalTerrainPaintEnabled") ? 1 : 0)
         + (gGLManager.mHasCubeMapArray ? 3 : 0);
     const bool gltf = (gSavedSettings.getBOOL("GLTFEnabled") || gSavedSettings.getBOOL("LocalMeshRendering"));
-    const U32 deferred_programs = 110
+    const U32 deferred_programs = 111
         + 1 // volumetric clouds
         + 1 // upload model PBR preview
         + 2 * LLMaterial::SHADER_COUNT
@@ -774,6 +777,9 @@ public:
         sShaderProgramsProcessed = 0;
         sShaderProgramsTotal = shaderProgramCount();
         sProcessedShaderPrograms.clear();
+        sShaderProgramStarted.clear();
+        sShaderNetworkPumps = 0;
+        sShaderNetworkTimer.reset();
         sShaderProgressUIReady = false;
         sShaderProgressTimer.reset();
         LL_INFOS("ShaderProgress") << "Shader compilation planned: " << sShaderProgramsTotal << " programs" << LL_ENDL;
@@ -789,6 +795,7 @@ public:
 
     ~ShaderCompilationPauseGuard()
     {
+        LL_INFOS("ShaderProgress") << "Shader network service: " << sShaderNetworkPumps << " pumps" << LL_ENDL;
         sShaderCompilationActive = false;
         if (mResumeAgent)
         {
@@ -799,6 +806,26 @@ public:
 private:
     bool mResumeAgent = false;
 };
+
+void LLViewerShaderMgr::shaderCompileIdle()
+{
+    if (!sShaderCompilationActive) return;
+    if (sShaderNetworkTimer.getElapsedTimeF32() >= 0.05f)
+    {
+        LLAppViewer::instance()->pingMainloopTimeout("shader compilation");
+        if (gMessageSystem)
+        {
+            gMessageSystem->pumpCircuitKeepAlive();
+            ++sShaderNetworkPumps;
+        }
+        sShaderNetworkTimer.reset();
+    }
+    if (sShaderProgressTimer.getElapsedTimeF32() >= 0.1f)
+    {
+        displayShaderCompilationMessage();
+        sShaderProgressTimer.reset();
+    }
+}
 
 void LLViewerShaderMgr::shaderProgramStarted(const LLGLSLShader* shader)
 {
@@ -811,7 +838,8 @@ void LLViewerShaderMgr::shaderProgramStarted(const LLGLSLShader* shader)
         displayShaderCompilationMessage();
         sShaderProgressTimer.reset();
     }
-    sShaderProgramTimer.reset();
+    sShaderProgramStarted[shader] = LLTimer::getTotalSeconds();
+    shaderCompileIdle();
 }
 
 void LLViewerShaderMgr::shaderProgramProcessed(const LLGLSLShader* shader, bool success)
@@ -820,7 +848,8 @@ void LLViewerShaderMgr::shaderProgramProcessed(const LLGLSLShader* shader, bool 
     // A lower shader-class fallback is still the same program slot.
     if (sProcessedShaderPrograms.insert(shader).second) ++sShaderProgramsProcessed;
     if (shader == &gUIProgram) sShaderProgressUIReady = success;
-    const F32 seconds = sShaderProgramTimer.getElapsedTimeF32();
+    const F32 seconds = F32(LLTimer::getTotalSeconds() - sShaderProgramStarted.at(shader));
+    sShaderProgramStarted.erase(shader);
     if (seconds >= 5.f || !success)
     {
         LL_WARNS("ShaderProgress") << "Shader " << shader->mName << " took " << seconds
@@ -831,6 +860,7 @@ void LLViewerShaderMgr::shaderProgramProcessed(const LLGLSLShader* shader, bool 
         displayShaderCompilationMessage();
         sShaderProgressTimer.reset();
     }
+    shaderCompileIdle();
 }
 
 bool LLViewerShaderMgr::setShaders()
@@ -1138,6 +1168,8 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     shaders.push_back( make_pair( "objects/nonindexedTextureV.glsl",        1 ) );
 
     std::map<std::string, std::string> attribs;
+    if (gGLManager.mNumTextureImageUnits >= 32)
+        attribs["HAIR_DENSITY_MAPS"] = "1";
     // Six projector textures and two spot shadows in addition to the existing
     // 16-unit budget. Keep the existing lighting on smaller texture-unit GPUs.
     if (gSavedSettings.getBOOL("RenderAlphaProjectors") && gGLManager.mNumTextureImageUnits >= 24)
@@ -1246,6 +1278,8 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/projectorUtil.glsl",                   1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/gbufferUtil.glsl",                    1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/globalF.glsl",                          1));
+    index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/hairUtil.glsl",                          1));
+    index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/hairDepthUtil.glsl",                     1));
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/sssDepthUtil.glsl",                      1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/shadowUtil.glsl",                      1) );
     index_channels.push_back(-1);    shaders.push_back( make_pair( "deferred/pcssUtil.glsl",                        1) );
@@ -1640,6 +1674,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     }
 
     bool success = true;
+    beginShaderBatch();
 
     if (success)
     {
@@ -3560,6 +3595,8 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         add_common_permutations(&shader);
         success = shader.createShader();
     }
+
+    success = finishShaderBatch() && success;
 
     // Optional unlit box fog: shader failure must not disable deferred rendering.
     if (success)

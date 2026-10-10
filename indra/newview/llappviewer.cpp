@@ -33,6 +33,7 @@
 #include "llappviewer.h"
 #include "llviewerautomation.h"
 #include "llposestudio.h"
+#include "llposerlink.h"
 
 // Viewer includes
 #include "llversioninfo.h"
@@ -1340,6 +1341,7 @@ bool LLAppViewer::doFrame()
 {
     resumeMainloopTimeout("Main:doFrameStart");
     LLViewerAutomation::processRequests();
+    LLPoserLink::update();
 #ifdef LL_DISCORD
     {
         LL_PROFILE_ZONE_NAMED("discord_callbacks");
@@ -1715,6 +1717,8 @@ bool LLAppViewer::cleanup()
     }
     velopack_cleanup();
 #endif
+
+    LLPoserLink::shutdown();
 
     //ditch LLVOAvatarSelf instance
     gAgentAvatarp = NULL;

@@ -143,6 +143,8 @@ public:
     U8   mBump = 0;
     U8   mShiny = 0;
     bool mFullbright = false;
+    bool mHair = false;
+    const LLViewerObject* mHairObject = nullptr;
     bool mSSS = false;
     bool mSSGIAvatar = false;
     bool mSSSOverlay = false;

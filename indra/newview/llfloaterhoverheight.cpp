@@ -36,10 +36,15 @@
 #include "llvoavatarself.h"
 #include "llfloaterreg.h"
 #include "llscrolllistctrl.h"
+#include "llscrolllistitem.h"
+#include "llscrolllistcell.h"
+#include "lluicolortable.h"
 #include "lltextbox.h"
 #include "llviewerjointattachment.h"
 #include "llviewerobjectlist.h"
 #include "llvovolume.h"
+#include "lltextureentry.h"
+#include "llgltfmaterial.h"
 #include "lljointdata.h"
 #include "llpolyskeletaldistortion.h"
 #include "llskinningutil.h"
@@ -47,12 +52,44 @@
 #include "llworld.h"
 #include "pipeline.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <memory>
 
 namespace
 {
+    bool isLikelyFootwear(std::string name)
+    {
+        LLStringUtil::toLower(name);
+        for (char& c : name) if (c < 'a' || c > 'z') c = ' ';
+        name.erase(std::unique(name.begin(), name.end(), [](char a, char b) { return a == ' ' && b == ' '; }), name.end());
+        name = " " + name + " ";
+        // shortcut: English footwear terms; extend when localized names need prioritizing.
+        static const char* const terms[] = {
+            "shoe", "shoes", "footwear", "boot", "boots", "bootie", "booties", "bootee", "bootees",
+            "heel", "heels", "stiletto", "stilettos", "pump", "pumps", "wedge", "wedges",
+            "sneaker", "sneakers", "trainer", "trainers", "runner", "runners", "tennis",
+            "sandal", "sandals", "slipper", "slippers", "slide", "slides", "mule", "mules",
+            "clog", "clogs", "flat", "flats", "platform", "platforms", "flatform", "flatforms",
+            "loafer", "loafers", "moccasin", "moccasins", "espadrille", "espadrilles",
+            "brogue", "brogues", "oxford", "oxfords", "derby", "derbies", "monkstrap", "monkstraps",
+            "slingback", "slingbacks", "peep toe", "peep toes", "peeptoe", "peeptoes",
+            "mary jane", "mary janes", "maryjane", "maryjanes", "flip flop", "flip flops", "flipflop", "flipflops",
+            "high top", "high tops", "hightop", "hightops", "low top", "low tops", "lowtop", "lowtops",
+            "ankleboot", "ankleboots", "kneeboot", "kneeboots", "snowboot", "snowboots", "rainboot", "rainboots",
+            "gumboot", "gumboots", "wellington", "wellingtons", "wellies", "galosh", "galoshes",
+            "chukka", "chukkas", "sabatons", "sabot", "sabots", "cleat", "cleats", "ballet", "ballerina",
+            "jellyshoe", "jellyshoes", "huarache", "huaraches", "alpargata", "alpargatas",
+            "geta", "zori", "jutti", "juttis", "mojari", "mojaris"
+        };
+        for (const char* term : terms)
+        {
+            if (name.find(" " + std::string(term) + " ") != std::string::npos) return true;
+        }
+        return false;
+    }
+
     // A private skeleton uses the avatar's shape and attachment joint overrides
     // in its rest T-pose. Never touch the animated skeleton or rigged cache.
     class ShoeHeightSkeleton
@@ -127,49 +164,74 @@ namespace
         std::map<LLJoint*, std::unique_ptr<LLJoint>> mJoints;
     };
 
+    bool shoeFaceHidden(const LLTextureEntry* te)
+    {
+        if (!te) return false;
+        // Use authored visibility, not camera culling or Show Transparent.
+        // PBR replaces legacy face alpha; opaque PBR ignores material alpha.
+        if (const auto* material = te->getGLTFRenderMaterial())
+        {
+            const F32 alpha = material->mBaseColor.mV[VALPHA];
+            return (material->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_BLEND && alpha <= 0.f) ||
+                (material->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_MASK && alpha < material->mAlphaCutoff);
+        }
+        return te->getAlpha() <= 0.f;
+    }
+
     bool lowestAttachmentVertex(LLViewerObject* object, ShoeHeightSkeleton& skeleton,
                                 const LLMatrix4& attachment_to_neutral, F32& lowest)
     {
         if (!object || object->isDead()) return false;
         if (auto* volume_object = dynamic_cast<LLVOVolume*>(object))
         {
-            LLVolume* volume = volume_object->getVolume();
-            if (!volume || (volume_object->isMesh() && !volume->isMeshAssetLoaded())) return false;
-            const bool rigged = volume_object->isRiggedMesh();
-            LLMatrix4a matrices[LL_MAX_JOINTS_PER_MESH_OBJECT];
-            const LLMeshSkinInfo* skin = nullptr;
-            U32 joint_count = 0;
-            if (rigged)
+            std::vector<S32> visible_faces;
+            for (S32 face_index = 0; face_index < volume_object->getNumTEs(); ++face_index)
             {
-                skin = volume_object->getSkinInfo();
-                if (!skin) return false;
-                joint_count = LLSkinningUtil::getMeshJointCount(skin);
-                if (joint_count > LL_MAX_JOINTS_PER_MESH_OBJECT || !skeleton.palette(skin, matrices, joint_count)) return false;
+                if (!shoeFaceHidden(volume_object->getTE(face_index))) visible_faces.push_back(face_index);
             }
-            if (!volume->getNumVolumeFaces()) return false;
-            for (S32 face_index = 0; face_index < volume->getNumVolumeFaces(); ++face_index)
+            // A hidden link needs no geometry or skin data, but its children
+            // may still be visible and must be visited below.
+            if (!visible_faces.empty())
             {
-                const LLVolumeFace& face = volume->getVolumeFace(face_index);
-                if (!face.mPositions || !face.mNumVertices) return false;
-                if (rigged && !face.mWeights) return false;
-                for (S32 vertex = 0; vertex < face.mNumVertices; ++vertex)
+                LLVolume* volume = volume_object->getVolume();
+                if (!volume || (volume_object->isMesh() && !volume->isMeshAssetLoaded())) return false;
+                const bool rigged = volume_object->isRiggedMesh();
+                LLMatrix4a matrices[LL_MAX_JOINTS_PER_MESH_OBJECT];
+                const LLMeshSkinInfo* skin = nullptr;
+                U32 joint_count = 0;
+                if (rigged)
                 {
-                    LLVector3 position(face.mPositions[vertex].getF32ptr());
-                    if (rigged)
+                    skin = volume_object->getSkinInfo();
+                    if (!skin) return false;
+                    joint_count = LLSkinningUtil::getMeshJointCount(skin);
+                    if (joint_count > LL_MAX_JOINTS_PER_MESH_OBJECT || !skeleton.palette(skin, matrices, joint_count)) return false;
+                }
+                if (!volume->getNumVolumeFaces()) return false;
+                for (S32 face_index : visible_faces)
+                {
+                    if (face_index >= volume->getNumVolumeFaces()) return false;
+                    const LLVolumeFace& face = volume->getVolumeFace(face_index);
+                    if (!face.mPositions || !face.mNumVertices) return false;
+                    if (rigged && !face.mWeights) return false;
+                    for (S32 vertex = 0; vertex < face.mNumVertices; ++vertex)
                     {
-                        LLMatrix4a weighted;
-                        LLSkinningUtil::getPerVertexSkinMatrix(face.mWeights[vertex].getF32ptr(), matrices, false, weighted, joint_count);
-                        LLVector4a bound, posed;
-                        skin->mBindShapeMatrix.affineTransform(face.mPositions[vertex], bound);
-                        weighted.affineTransform(bound, posed);
-                        position.set(posed.getF32ptr());
+                        LLVector3 position(face.mPositions[vertex].getF32ptr());
+                        if (rigged)
+                        {
+                            LLMatrix4a weighted;
+                            LLSkinningUtil::getPerVertexSkinMatrix(face.mWeights[vertex].getF32ptr(), matrices, false, weighted, joint_count);
+                            LLVector4a bound, posed;
+                            skin->mBindShapeMatrix.affineTransform(face.mPositions[vertex], bound);
+                            weighted.affineTransform(bound, posed);
+                            position.set(posed.getF32ptr());
+                        }
+                        else
+                        {
+                            position = volume_object->volumePositionToAgent(position) * attachment_to_neutral;
+                        }
+                        if (!position.isFinite()) return false;
+                        lowest = llmin(lowest, position.mV[VZ]);
                     }
-                    else
-                    {
-                        position = volume_object->volumePositionToAgent(position) * attachment_to_neutral;
-                    }
-                    if (!position.isFinite()) return false;
-                    lowest = llmin(lowest, position.mV[VZ]);
                 }
             }
         }
@@ -241,16 +303,27 @@ void LLFloaterShoeHeight::onOpen(const LLSD& key)
         for (const auto& object : point->mAttachedObjects)
         {
             if (!object || object->isDead()) continue;
+            const std::string name = object->getAttachmentItemName();
+            const bool footwear = isLikelyFootwear(name);
             LLSD row;
             row["id"] = object->getID();
             row["columns"][0]["column"] = "name";
-            row["columns"][0]["value"] = object->getAttachmentItemName();
+            row["columns"][0]["value"] = name;
             row["columns"][1]["column"] = "point";
             row["columns"][1]["value"] = point->getName();
-            list->addElement(row);
+            row["columns"][2]["column"] = "footwear";
+            row["columns"][2]["value"] = footwear ? "0" : "1";
+            row["columns"][2]["visible"] = false;
+            LLScrollListItem* item = list->addElement(row);
+            if (footwear && item)
+            {
+                for (S32 column = 0; column < 2; ++column)
+                    item->getColumn(column)->setColor(LLUIColorTable::instance().getColor("LtGreen"));
+            }
         }
     }
     list->sortByColumnIndex(0, true);
+    list->sortByColumnIndex(2, true);
     if (!list->getItemCount()) getChild<LLTextBox>("status")->setText(getString("no_attachments"));
 }
 
@@ -284,21 +357,28 @@ void LLFloaterShoeHeight::applyHeight()
     LLMatrix4 attachment_to_neutral = attachment->getWorldMatrix();
     attachment_to_neutral.invert();
     attachment_to_neutral *= skeleton.joint(attachment)->getWorldMatrix();
-    if (!lowestAttachmentVertex(object, skeleton, attachment_to_neutral, lowest) || !std::isfinite(lowest))
+    if (!lowestAttachmentVertex(object, skeleton, attachment_to_neutral, lowest))
     {
         fail("not_loaded");
+        return;
+    }
+    if (!std::isfinite(lowest))
+    {
+        fail("no_visible_geometry");
         return;
     }
     // Hover is a direct meter offset on mRoot. Compare the sampled sole with
     // the rendered floor, using the simulator support plane only as a guide.
     LLVector3 ground;
     if (!findShoeGround(*gAgentAvatarp, ground)) { fail("ground_unavailable"); return; }
-    const F32 height = gAgentAvatarp->getHoverOffset().mV[VZ] + ground.mV[VZ] - lowest;
+    const F32 extra_offset = getChild<LLSliderCtrl>("extra_offset")->getValueF32();
+    const F32 height = gAgentAvatarp->getHoverOffset().mV[VZ] + ground.mV[VZ] - lowest + llclamp(extra_offset, -0.05f, 0.05f);
     LL_INFOS("ShoeHeight") << "Attachment " << object->getID()
         << " current hover " << gAgentAvatarp->getHoverOffset().mV[VZ]
         << " ground " << ground.mV[VZ] << " neutral sole " << lowest
         << " physical center " << gAgentAvatarp->getRenderPosition().mV[VZ]
         << " body height " << gAgentAvatarp->mBodySize.mV[VZ]
+        << " extra offset " << extra_offset
         << " calculated hover " << height << LL_ENDL;
     if (!std::isfinite(height) || height < MIN_HOVER_Z || height > MAX_HOVER_Z)
     {

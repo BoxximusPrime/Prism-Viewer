@@ -36,7 +36,7 @@
     <text name="shift_title" layout="topleft" left="126" top="14" width="340" height="20"
      font="SansSerif" font.style="BOLD" text_color="LabelTextColor" mouse_opaque="false">Temporary snapping</text>
     <text name="shift_body" layout="topleft" left="126" top="40" width="340" height="48"
-     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">With Snap to grid off, hold Shift while moving, scaling or rotating to snap. Release to move freely. Ctrl can stay held on rotation rings.</text>
+     font="SansSerifSmall" word_wrap="true" text_color="0.73 0.79 0.79 1" mouse_opaque="false">Hold Shift to reverse Snap to grid while moving, scaling or rotating. Release to restore it. Works with Ctrl held on rotation rings too.</text>
    </panel>
    <panel name="aim_card" layout="topleft" left="16" top="392" width="482" height="102"
     border="false" background_visible="true" bg_alpha_image="Rounded_Rect" bg_alpha_image_overlay="0.105 0.135 0.14 1">

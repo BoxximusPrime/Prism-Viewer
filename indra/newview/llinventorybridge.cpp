@@ -26,6 +26,7 @@
 
 #include "llviewerprecompiledheaders.h"
 #include "llfloaterinventoryllmsort.h"
+#include "llfloatertattoocompare.h"
 #include "llinventorybridge.h"
 
 // external projects
@@ -7703,6 +7704,12 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 
         items.push_back(std::string("Wearable And Object Separator"));
         items.push_back(std::string("Wearable Edit"));
+        if (mWearableType == LLWearableType::WT_TATTOO || mWearableType == LLWearableType::WT_EYES ||
+            mWearableType == LLWearableType::WT_SKIN)
+        {
+            items.push_back("Compare Tattoos");
+            if (!LLFloaterTattooCompare::canCompare(mUUID)) disabled_items.push_back("Compare Tattoos");
+        }
 
         if (((flags & FIRST_SELECTED_ITEM) == 0) || (item && !gAgentWearables.isWearableModifiable(item->getUUID())))
         {
@@ -8706,6 +8713,8 @@ void LLFolderViewGroupedItemBridge::groupFilterContextMenu(folder_view_item_dequ
     menuentry_vec_t disabled_items;
     if (get_selection_item_uuids(selected_items, ids))
     {
+        if (!LLFloaterTattooCompare::canCompareSelection(ids))
+            disabled_items.push_back("Compare Tattoos");
         if (!LLAppearanceMgr::instance().canAddWearables(ids, false) && canWearSelected(ids))
         {
             disabled_items.push_back(std::string("Wearable And Object Wear"));

@@ -127,8 +127,8 @@ def run(sdl, gl):
             stubs = stubs.replace("vec3 linear_to_srgb(vec3 c) { return c; }", "")
             stubs += (SHADERS / "class1/environment/srgbF.glsl").read_text().split("vec3 ColorFromRadiance")[0]
         for kind, source in [(0x8B31, vertex), (0x8B30, fragment), (0x8B30, stubs)] + [
-            (0x8B30, (SHADERS / f"class1/deferred/{name}.glsl").read_text())
-            for name in ("gbufferUtil", "sssDepthUtil", "shadowUtil")
+            (0x8B30, '#define HAIR_DENSITY_MAPS 1\n'+(SHADERS / f"class1/deferred/{name}.glsl").read_text())
+            for name in ("gbufferUtil", "sssDepthUtil", "shadowUtil", "hairUtil", "hairDepthUtil")
         ]:
             shader = gl.CreateShader(kind)
             source = C.c_char_p(("#version 430 core\n" + flags + PREAMBLE + source).encode())

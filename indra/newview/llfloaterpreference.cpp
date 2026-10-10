@@ -371,6 +371,7 @@ LLFloaterPreference::LLFloaterPreference(const LLSD& key)
     mCommitCallbackRegistrar.add("Pref.AvatarImpostorsEnable",  boost::bind(&LLFloaterPreference::onAvatarImpostorsEnable, this));
     mCommitCallbackRegistrar.add("Pref.UpdateIndirectMaxNonImpostors", boost::bind(&LLFloaterPreference::updateMaxNonImpostors, this));
     mCommitCallbackRegistrar.add("Pref.UpdateIndirectMaxComplexity",    boost::bind(&LLFloaterPreference::updateMaxComplexity, this));
+    mCommitCallbackRegistrar.add("Pref.AntialiasingChanged", boost::bind(&LLFloaterPreference::onAntialiasingChanged, this));
     mCommitCallbackRegistrar.add("Pref.RenderOptionUpdate",     boost::bind(&LLFloaterPreference::onRenderOptionEnable, this));
     mCommitCallbackRegistrar.add("Pref.WindowedMod",            boost::bind(&LLFloaterPreference::onCommitWindowedMode, this));
     mCommitCallbackRegistrar.add("Pref.UpdateSliderText",       boost::bind(&LLFloaterPreference::refreshUI,this));
@@ -609,6 +610,9 @@ LLFloaterPreference::~LLFloaterPreference()
 
 void LLFloaterPreference::draw()
 {
+    // Keep the transition baseline current after presets, defaults or debug edits.
+    // Only the antialiasing dropdown's commit opens the denoising offer.
+    mLastAntialiasingType = gSavedSettings.getU32("RenderFSAAType");
     bool has_first_selected = (mDisabledPopups->getFirstSelected()!=NULL);
     mEnablePopupBtn->setEnabled(has_first_selected);
 
@@ -751,6 +755,7 @@ void LLFloaterPreference::cancel(const std::vector<std::string> settings_to_skip
 
 void LLFloaterPreference::onOpen(const LLSD& key)
 {
+    mLastAntialiasingType = gSavedSettings.getU32("RenderFSAAType");
     // this variable and if that follows it are used to properly handle do not disturb mode response message
     static bool initialized = false;
     // if user is logged in and we haven't initialized do not disturb mode response yet, do it
@@ -879,6 +884,31 @@ void LLFloaterPreference::onOpen(const LLSD& key)
 void LLFloaterPreference::onRenderOptionEnable()
 {
     refreshEnabledGraphics();
+}
+
+void LLFloaterPreference::onAntialiasingChanged()
+{
+    const U32 mode = gSavedSettings.getU32("RenderFSAAType");
+    const bool leaving_taa = mLastAntialiasingType == 3 && mode < 3;
+    mLastAntialiasingType = mode;
+    refreshEnabledGraphics();
+
+    const F32 denoise = gSavedSettings.getF32("RenderGTAODenoise");
+    if (!leaving_taa || !gSavedSettings.getBOOL("RenderGTAOEnabled") || denoise >= 1.7f) return;
+
+    LLNotificationsUtil::add("PrismGTAODenoiseWithoutTAA", LLSD(), LLSD(),
+        [mode, denoise](const LLSD& notification, const LLSD& response)
+        {
+            if (LLNotificationsUtil::getSelectedOption(notification, response) != 0) return;
+            // Ignore a stale response if another action changed these preferences.
+            if (gSavedSettings.getU32("RenderFSAAType") != mode ||
+                !gSavedSettings.getBOOL("RenderGTAOEnabled") ||
+                gSavedSettings.getF32("RenderGTAODenoise") != denoise) return;
+
+            gSavedSettings.setF32("RenderGTAODenoise", 1.7f);
+            gSavedSettings.setString("PresetGraphicActive", "");
+            LLPresetsManager::getInstance()->triggerChangeSignal();
+        });
 }
 
 void LLFloaterPreference::onAvatarImpostorsEnable()
@@ -3031,6 +3061,10 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("RenderPCSSQuality")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSCleanup")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSStablePattern")->resetToDefault(true);
+    for (const char* control : { "BoxxyHairEnabled", "BoxxyHairNames", "BoxxyHairRoughness",
+        "BoxxyHairShine", "BoxxyHairBrightnessCompensation", "BoxxyHairStrandVariation", "BoxxyHairTransmission", "BoxxyHairThickness", "BoxxyHairDirection",
+        "BoxxyHairAutoDirection", "BoxxyHairFlowScale", "BoxxyHairFlowSmoothing", "BoxxyHairNormalEnabled", "BoxxyHairNormalStrength", "BoxxyHairNormalScale", "BoxxyHairNormalRejection", "BoxxyHairDebug" })
+        gSavedSettings.getControl(control)->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSEnabled")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSAutoDetect")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSWhitelist")->resetToDefault(true);

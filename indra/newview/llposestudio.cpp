@@ -355,6 +355,36 @@ bool LLPoseStudio::loadPose(const LLSD& data)
     return true;
 }
 
+bool LLPoseStudio::applyLocalRotations(const std::map<std::string, std::array<float, 4>>& rotations)
+{
+    LLVOAvatar* avatar = resolveAvatar();
+    if (!avatar || !matchesSkeleton(*avatar) || rotations.size() != mJoints.size()) return false;
+    // Validate every name/value before changing any bone. Positions/scales stay avatar-specific.
+    for (const JointPose& pose : mJoints)
+    {
+        const auto found = rotations.find(pose.name);
+        if (found == rotations.end()) return false;
+        F32 norm = 0.f;
+        for (float value : found->second)
+        {
+            if (!llfinite(value)) return false;
+            norm += value * value;
+        }
+        if (!llfinite(norm) || fabsf(norm - 1.f) > .001f) return false;
+    }
+    for (JointPose& pose : mJoints)
+    {
+        const auto& q = rotations.at(pose.name);
+        pose.rotation = LLQuaternion(q[0], q[1], q[2], q[3]);
+        pose.rotation.normalize();
+        const LLQuaternion offset = pose.rotation * ~pose.captured.rotation;
+        offset.getEulerAngles(&pose.degrees.mV[VX], &pose.degrees.mV[VY], &pose.degrees.mV[VZ]);
+        pose.degrees *= RAD_TO_DEG;
+        pose.position_offset.clear();
+    }
+    return true;
+}
+
 const char* LLPoseStudio::getIKJointName(S32 limb)
 {
     return limb >= 0 && limb < 4 ? IK_JOINTS[limb][2] : "";

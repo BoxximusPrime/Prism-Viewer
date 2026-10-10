@@ -32,6 +32,7 @@
 #endif
 
 #include "llviewermenu.h"
+#include "llposerlink.h"
 
 // linden library includes
 #include "llavatarnamecache.h"  // IDEVO (I Are Not Men!)
@@ -9988,6 +9989,9 @@ void initialize_menus()
 
     LLUICtrl::EnableCallbackRegistry::Registrar& enable = LLUICtrl::EnableCallbackRegistry::currentRegistrar();
     LLUICtrl::CommitCallbackRegistry::Registrar& commit = LLUICtrl::CommitCallbackRegistry::currentRegistrar();
+
+    commit.add("Avatar.StopPoserLink", [](LLUICtrl*, const LLSD&) { LLPoserLink::disconnect(); });
+    enable.add("Avatar.HasPoserLink", [](LLUICtrl*, const LLSD&) { return LLPoserLink::isLinked(); });
 
     // Generic enable and visible
     // Don't prepend MenuName.Foo because these can be used in any menu.

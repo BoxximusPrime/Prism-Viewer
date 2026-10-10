@@ -62,6 +62,7 @@ LLPacketBuffer::~LLPacketBuffer ()
 
 void LLPacketBuffer::init(S32 hSocket)
 {
+    mPacketIDChecked = mPingHandled = false;
     mSize = receive_packet(hSocket, mData);
     mHost = ::get_sender();
     mReceivingIF = ::get_receiving_interface();
@@ -69,6 +70,7 @@ void LLPacketBuffer::init(S32 hSocket)
 
 void LLPacketBuffer::init(const char* buffer, S32 data_size, const LLHost& host)
 {
+    mPacketIDChecked = mPingHandled = false;
     if (data_size > NET_BUFFER_SIZE)
     {
         LL_ERRS() << "Initializing packet with size=" << data_size << " > " << NET_BUFFER_SIZE << LL_ENDL;

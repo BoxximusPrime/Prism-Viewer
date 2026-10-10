@@ -25,10 +25,12 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llfloatertattoocompare.h"
 
 #include "llboxxyao.h"
 #include "llboxxyvip.h"
 #include "llposestudio.h"
+#include "llposerlink.h"
 #include "llvoavatar.h"
 #include "llfloatersnapshot.h"
 
@@ -5178,6 +5180,7 @@ void LLVOAvatar::restorePhotoEyeRotations()
 
 void LLVOAvatar::updatePhotoEyeRotations()
 {
+    if (isSelf() && LLPoserLink::isLinked()) return;
     static LLCachedControl<bool> look_at_camera(gSavedSettings, "PhotoLookAtCamera", false);
     if (!look_at_camera || !LLFloaterSnapshot::photoActive() || mIsDummy || !isVisible()) return;
     const LLVector3 camera = gAgentCamera.getCameraPositionAgent();
@@ -9744,6 +9747,13 @@ void LLVOAvatar::updateMeshTextures()
         {
             debugColorizeSubMeshes(i,LLColor4::blue);
         }
+
+        if (isSelf())
+        {
+            if (auto* preview = LLFloaterTattooCompare::getPreviewTexture(i))
+                for (auto* mesh : mBakedTextureDatas[i].mJointMeshes)
+                    if (mesh) mesh->setTexture(preview);
+        }
     }
 
     // set texture and color of hair manually if we are not using a baked image.
@@ -10662,6 +10672,8 @@ void LLVOAvatar::applyParsedAppearanceMessage(LLAppearanceMessageContents& conte
 
 LLViewerTexture* LLVOAvatar::getBakedTexture(const U8 te)
 {
+    if (isSelf())
+        if (auto* preview = LLFloaterTattooCompare::getPreviewTexture(te)) return preview;
     if (te < 0 || te >= BAKED_NUM_INDICES)
     {
         return NULL;
@@ -10957,7 +10969,8 @@ void LLVOAvatar::useBakedTexture( const LLUUID& id )
                     LLAvatarJointMesh* mesh = (*iter);
                     if (mesh)
                     {
-                        mesh->setTexture( image_baked );
+                        auto* preview = isSelf() ? LLFloaterTattooCompare::getPreviewTexture(i) : nullptr;
+                        mesh->setTexture(preview ? preview : image_baked);
                     }
                 }
             }

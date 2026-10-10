@@ -477,7 +477,7 @@
   <key>RenderGTAODenoise</key>
   <map>
     <key>Comment</key><string>GTAO edge-aware spatial smoothing strength (0 to 2). 0 shows the unfiltered signal, 1 is normal.</string>
-    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>2</real>
+    <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0</real>
   </map>
   <key>RenderPCSSStablePattern</key>
   <map>
@@ -534,6 +534,125 @@
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
     <key>Value</key><real>3</real>
+  </map>
+  <key>BoxxyHairEnabled</key>
+  <map>
+    <key>Comment</key><string>Enable experimental name-matched hair lighting.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>BoxxyHairNames</key>
+  <map>
+    <key>Comment</key><string>Comma-separated case-insensitive word prefixes in object root names for hair lighting.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>String</string>
+    <key>Value</key><string>hair</string>
+  </map>
+  <key>BoxxyHairRoughness</key>
+  <map>
+    <key>Comment</key><string>Width of directional hair highlights.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.35</real>
+  </map>
+  <key>BoxxyHairShine</key>
+  <map>
+    <key>Comment</key><string>Strength of the two hair specular lobes.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.7</real>
+  </map>
+  <key>BoxxyHairBrightnessCompensation</key>
+  <map>
+    <key>Comment</key><string>Adjust hair highlight strength using base colour brightness: zero preserves the current look, higher values soften dark hair highlights and strengthen light hair highlights.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
+  </map>
+  <key>BoxxyHairStrandVariation</key>
+  <map>
+    <key>Comment</key><string>Texture-driven variation in hair highlight width: zero disables, one preserves the default, two doubles the strength.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>BoxxyHairTransmission</key>
+  <map>
+    <key>Comment</key><string>Hair transmission and internal scattering strength, with focused hair-density shadows.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.5</real>
+  </map>
+  <key>BoxxyHairThickness</key>
+  <map>
+    <key>Comment</key><string>Estimated fiber absorption and hair-layer attenuation, independent of texture transparency.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>BoxxyHairDirection</key>
+  <map>
+    <key>Comment</key><string>Strand direction in degrees from texture V toward U.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
+  </map>
+  <key>BoxxyHairAutoDirection</key>
+  <map>
+    <key>Comment</key><string>Detect the local strand axis from diffuse texture structure.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>BoxxyHairFlowScale</key>
+  <map>
+    <key>Comment</key><string>Strand detection sample spacing in resident texture texels (0.5-8).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>2</real>
+  </map>
+  <key>BoxxyHairFlowSmoothing</key>
+  <map>
+    <key>Comment</key><string>Blend local gradients with the neighborhood structure tensor (0-1).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.75</real>
+  </map>
+  <key>BoxxyHairNormalEnabled</key>
+  <map>
+    <key>Comment</key><string>Generate normal detail for legacy hair without an authored normal or bump map.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>BoxxyHairNormalStrength</key>
+  <map>
+    <key>Comment</key><string>Strength of texture-derived hair normals (0-2).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.35</real>
+  </map>
+  <key>BoxxyHairNormalScale</key>
+  <map>
+    <key>Comment</key><string>Generated normal detail size in resident texture texels (0.25-8).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>BoxxyHairNormalRejection</key>
+  <map>
+    <key>Comment</key><string>Suppress broad painted shading in generated hair normals (0-1).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>BoxxyHairDebug</key>
+  <map>
+    <key>Comment</key><string>Hair preview: 0 lighting, 1 strand direction, 2 detection confidence.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>0</integer>
   </map>
   <key>BoxxySSSEnabled</key>
   <map>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <floater name="pose_studio" title="Pose Studio" width="480" height="820"
          layout="topleft" legacy_header_height="18" save_rect="true" single_instance="true">
+  <string name="poser_link">Poser live link controls this pose. End posing to disconnect.</string>
   <string name="ready">Start posing to hold your current pose.</string>
   <string name="unavailable">Your avatar must be in world and ready to pose.</string>
   <string name="capture_failed">Your pose could not be captured. Let your avatar finish loading, then try again.</string>

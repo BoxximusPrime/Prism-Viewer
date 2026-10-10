@@ -141,6 +141,28 @@ vec3 pbrCalcPointLightOrSpotLight(int light_index, vec3 diffuseColor, vec3 specu
                     float lightSize, float falloff, float is_pointlight, float ambiance);
 
 vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
+uniform float hair_object;
+uniform int hair_debug;
+mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
+in vec4 vary_hair_tangent;
+in vec2 vary_hair_texcoord;
+mat3 hairVertexFrame() { return hairMeshFrame(vary_position, base_color_texcoord, vary_hair_texcoord, vary_normal, vary_hair_tangent); }
+
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
+vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
+vec3 decodeHairTangent(vec3 n, float angle);
+vec3 hairSafeNormalize(vec3 v, vec3 fallback);
+vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
+vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
+float hairSunShadow(vec3 pos, float fallback);
+float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
+vec3 hairDiffuse(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l);
+vec3 hairLocalLight(int index, vec3 base, vec3 n, vec3 t, vec3 pos, float variation);
+
+
+vec4 hairDiffuseLookup(vec2 uv) { return texture(diffuseMap, uv); }
+vec2 hairTextureSize() { return vec2(textureSize(diffuseMap, 0)); }
 
 void main()
 {
@@ -150,6 +172,7 @@ void main()
     vec3  pos         = vary_position;
 
     vec4 basecolor = texture(diffuseMap, base_color_texcoord.xy).rgba;
+    vec4 diffuse_tap = basecolor;
     basecolor.rgb = srgb_to_linear(basecolor.rgb);
     vec3 col = vertex_color.rgb * basecolor.rgb;
 
@@ -165,6 +188,10 @@ void main()
     float perceptualRoughness = filterPBRRoughness(orm.g * roughnessFactor, norm);
     float metallic = orm.b * metallicFactor;
     float ao = orm.r;
+
+    vec3 hair_preview;
+    float hair_variation;
+    vec3 strand = hairSurface(vary_position, base_color_texcoord, norm, diffuse_tap, false, hair_preview, hair_variation);
 
     // Derivatives must precede alpha/overlay/water/mirror discards.
 #ifndef MODEL_PREVIEW
@@ -241,6 +268,15 @@ void main()
     float final_scale = 1.0;
     if (classic_mode > 0)
         final_scale = 1.1;
+    if (hair_object > 0.5)
+    {
+        vec3 hairSun = classic_mode > 0 ? srgb_to_linear(sunlit * 0.7) : sunlit;
+        vec3 hairAmbient = classic_mode > 0 ? srgb_to_linear(irradiance * 0.9) : irradiance;
+        color = hairAmbient * col * ao + hairDirectVisibility(col, norm, strand, v,
+            normalize(light_dir), hair_variation, scol, hairSunShadow(pos.xyz, scol)) * hairSun + colorEmissive;
+        light = vec3(0);
+        for (int i = 1; i < 8; ++i) light += hairLocalLight(i, col, norm, strand, pos, hair_variation);
+    }
     // Opaque local lights are added after the Classic environment boost.
     color.rgb += light.rgb / final_scale;
 
@@ -256,6 +292,7 @@ void main()
 #ifndef MODEL_PREVIEW
     final_color = applyVolumeFogAlpha(pos.xyz, final_color);
 #endif
+    if (hair_object > 0.5 && hair_debug != 0) final_color.rgb = hair_preview;
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color.rgb * final_scale,a), vec4(0));
 #ifdef EXACT_OIT

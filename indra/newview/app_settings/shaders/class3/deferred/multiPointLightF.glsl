@@ -93,6 +93,15 @@ vec3 pointSSSTransmission(float nl, float nv, float strength, vec3 pos, vec3 ori
     return capSSSTransmission(getSSSTransmissionWithDepth(nl, nv, strength, path, 1.0) * sss_point_transmission_boost);
 }
 
+uniform int hair_debug;
+vec3 decodeHairTangent(vec3 n, float angle);
+vec3 hairSafeNormalize(vec3 v, vec3 fallback);
+vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
+vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
+float hairSunShadow(vec3 pos, float fallback);
+float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
+vec3 hairDiffuse(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l);
+
 void main()
 {
     vec3 final_color = vec3(0, 0, 0);
@@ -120,7 +129,23 @@ void main()
     vec3  h, l, v = -normalize(pos);
     float nh, nv, vh, lightDist;
 
-    if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR))
+    if (GBUFFER_HAIR_FLAG(gb.gbufferFlag) > 0.5)
+    {
+            if (hair_debug != 0) discard;
+        vec3 base = GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR) ? diffuse : srgb_to_linear(diffuse);
+        vec3 strand = decodeHairTangent(n, gb.envIntensity);
+        for (int i = 0; i < LIGHT_COUNT; ++i)
+        {
+            vec3 lv = light[i].xyz - pos;
+            float distance = length(lv);
+            float attenuation = calcLegacyDistanceAttenuation(distance / max(light[i].w, 0.0001), light_col[i].a);
+            vec3 direction = hairSafeNormalize(lv, n);
+            float transmission = hairLocalShadow(pos, light[i].xyz, 1.0);
+            final_color += hairDirectVisibility(base, n, strand, v, direction, gb.specular.a, 1.0, transmission) * light_col[i].rgb * attenuation;
+            diffuseLighting += hairDiffuseVisibility(base, n, strand, v, direction, 1.0, transmission) * light_col[i].rgb * attenuation;
+        }
+    }
+    else if (GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR))
     {
         vec3 colorEmissive = gb.emissive.rgb;
         vec3 orm = spec.rgb;
