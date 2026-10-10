@@ -228,6 +228,7 @@ set(viewer_SOURCE_FILES
     llfloaterboxxytpose.cpp
     llfloaterposestudio.cpp
     llposestudio.cpp
+    llposerlink.cpp
     lltoolposeik.cpp
     llfloaterconversationpreview.cpp
     llfloatercreatelandmark.cpp
@@ -260,6 +261,7 @@ set(viewer_SOURCE_FILES
     llfloaterhelpbrowser.cpp
     llfloaterquickprefs.cpp
     llfloaterhoverheight.cpp
+    llfloatertattoocompare.cpp
     llfloaterhud.cpp
     llfloaterimagepreview.cpp
     llfloaterimsessiontab.cpp
@@ -937,6 +939,8 @@ set(viewer_HEADER_FILES
     llfloaterboxxytpose.h
     llfloaterposestudio.h
     llposestudio.h
+    llposerlink.h
+    llposerlinkprotocol.h
     lltoolposeik.h
     llfloaterconversationpreview.h
     llfloatercreatelandmark.h
@@ -970,6 +974,7 @@ set(viewer_HEADER_FILES
     llfloaterhelpbrowser.h
     llfloaterquickprefs.h
     llfloaterhoverheight.h
+    llfloatertattoocompare.h
     llfloaterhud.h
     llfloaterimagepreview.h
     llfloaterimnearbychat.h

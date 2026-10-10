@@ -3162,6 +3162,9 @@ static bool handle_inventory_action_shortcut(KEY key, MASK mask)
 
 bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
 {
+    const auto* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
+    if (focus && focus->acceptsTextInput()) return false;
+
     const bool collapse_all = key == 'E' && mask == (MASK_CONTROL | MASK_SHIFT);
     if ((!collapse_all && (mask != MASK_NONE || !gSavedSettings.getBOOL("InventoryQuickBinds")))
         || !mMouseInWindow || gAgentCamera.cameraMouselook()
@@ -3210,8 +3213,6 @@ bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
             hovered_floater = floater;
         }
     }
-    LLUICtrl* focused_text = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
-    if (focused_text && focused_text->acceptsTextInput()) return false;
     if (outfits || (wearing_or_edit && outfit_item))
     {
         if (gKeyboard->getKeyRepeated(key)) return true;
@@ -3249,19 +3250,6 @@ bool LLViewerWindow::handleInventoryHoverKey(KEY key, MASK mask)
         main_inventory = hovered_floater->findChild<LLPanelMainInventory>("panel_main_inventory");
     if (!panel && main_inventory) panel = main_inventory->getActivePanel();
     if (!panel || !panel->isInVisibleChain() || !panel->isInEnabledChain()) return false;
-
-    // Inventory search and inline rename retain normal text editing. Chat in
-    // another window does not take these keys while the pointer is over inventory.
-    LLUICtrl* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
-    LLFloater* floater = gFloaterView->getParentFloater(panel);
-    if (!collapse_all && (focus && focus->acceptsTextInput())) return false;
-    if (focus && focus->acceptsTextInput()
-        && (focus->hasAncestor(panel)
-            || (main_inventory && focus->hasAncestor(main_inventory))
-            || (floater && focus->hasAncestor(floater))))
-    {
-        return false;
-    }
 
     LLFolderView* root = panel->getRootFolder();
     if (root && !gKeyboard->getKeyRepeated(key))
@@ -3324,12 +3312,22 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
     if (key == 'E' || key == 'T' || key == 'D' || key == 'B')
     {
         const S32 shortcut = key == 'E' ? 0 : key == 'T' ? 1 : key == 'D' ? 2 : 3;
-        mInventoryShortcutKeyHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut]
-            || ((key == 'E' || key == 'T') ? handleInventoryHoverKey(key, mask) : handle_inventory_action_shortcut(key, mask));
-        // Character messages can arrive after key-up, so retain their routing
-        // separately until the next press of that key, including queued repeats.
-        mInventoryShortcutCharHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut];
-        if (mInventoryShortcutKeyHandled[shortcut]) return true;
+        const auto* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
+        if (focus && focus->acceptsTextInput())
+        {
+            // A rename or another editor may have gained focus since the previous key press.
+            mInventoryShortcutKeyHandled[shortcut] = false;
+            mInventoryShortcutCharHandled[shortcut] = false;
+        }
+        else
+        {
+            mInventoryShortcutKeyHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut]
+                || ((key == 'E' || key == 'T') ? handleInventoryHoverKey(key, mask) : handle_inventory_action_shortcut(key, mask));
+            // Character messages can arrive after key-up, so retain their routing
+            // separately until the next press of that key, including queued repeats.
+            mInventoryShortcutCharHandled[shortcut] = mInventoryShortcutKeyHandled[shortcut];
+            if (mInventoryShortcutKeyHandled[shortcut]) return true;
+        }
     }
 
     LLFocusableElement* keyboard_focus = gFocusMgr.getKeyboardFocus();
@@ -3608,10 +3606,12 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
 
 bool LLViewerWindow::handleUnicodeChar(llwchar uni_char, MASK mask)
 {
-    if ((mInventoryShortcutCharHandled[0] && (uni_char == 'e' || uni_char == 'E' || uni_char == 5))
+    const auto* focus = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
+    if (!(focus && focus->acceptsTextInput())
+        && ((mInventoryShortcutCharHandled[0] && (uni_char == 'e' || uni_char == 'E' || uni_char == 5))
         || (mInventoryShortcutCharHandled[1] && (uni_char == 't' || uni_char == 'T' || uni_char == 20))
         || (mInventoryShortcutCharHandled[2] && (uni_char == 'd' || uni_char == 'D' || uni_char == 4))
-        || (mInventoryShortcutCharHandled[3] && (uni_char == 'b' || uni_char == 'B' || uni_char == 2)))
+        || (mInventoryShortcutCharHandled[3] && (uni_char == 'b' || uni_char == 'B' || uni_char == 2))))
     {
         return true;
     }

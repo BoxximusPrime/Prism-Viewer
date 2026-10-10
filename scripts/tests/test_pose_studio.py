@@ -38,6 +38,7 @@ harness = r'''
 #include <map>
 #include <string>
 #include <vector>
+namespace LLPoserLink { bool isLinked() { return false; } }
 using F32=float; using F64=double; using U32=unsigned; using S32=int;
 constexpr float F32_MAX=std::numeric_limits<float>::max();
 constexpr int VX=0,VY=1,VZ=2,VW=3,VS=3;
@@ -364,6 +365,22 @@ int main() {
     assert(studio.begin(avatar));gObjectList.objects.erase(1);writes=shoulder.writes;
     studio.end();assert(!studio.isActive());assert(writes==shoulder.writes);
     std::cout<<"PASS: capture, local rotation/descendants, 100 animation/freeze frames, resets, exact restoration, stale skeleton and target lifecycle\n";
+    // Absolute live-link rotations must not compound with the pose captured from the AO.
+    gObjectList.objects[1]=&avatar;assert(studio.begin(avatar));
+    const auto live_session=studio.getSession();
+    std::map<std::string,std::array<float,4>> live_rotations;
+    for(auto* joint:avatar.joints)live_rotations[joint->name]={0,0,0,1};
+    const auto live_rotation=rotation(25,-15,80);
+    for(int i=0;i<4;++i)live_rotations["mShoulderLeft"][i]=live_rotation.mQ[i];
+    assert(studio.applyLocalRotations(live_rotations));studio.afterUpdate(avatar);
+    same(shoulder.rot,live_rotation);same(pelvis.rot,LLQuaternion());assert(studio.getSession()==live_session);
+    auto bad_rotations=live_rotations;bad_rotations.erase("mPelvis");assert(!studio.applyLocalRotations(bad_rotations));
+    bad_rotations=live_rotations;bad_rotations["unknown"]={0,0,0,1};assert(!studio.applyLocalRotations(bad_rotations));
+    bad_rotations=live_rotations;bad_rotations["mWristLeft"]={0,0,0,0};assert(!studio.applyLocalRotations(bad_rotations));
+    bad_rotations=live_rotations;bad_rotations["mWristLeft"][0]=std::numeric_limits<float>::infinity();assert(!studio.applyLocalRotations(bad_rotations));
+    studio.beforeUpdate(avatar);studio.afterUpdate(avatar);same(shoulder.rot,live_rotation);
+    studio.end();same(shoulder.rot,base);assert(!studio.applyLocalRotations(live_rotations));
+    std::cout<<"PASS: absolute live-link pose, atomic invalid-pose rejection, stable session and restoration\n";
     // Exercise all four actual limb mappings with rotated parent frames,
     // unequal lengths and edited local positions. Targets are in agent space.
     for(int posture=0;posture<2;++posture) for(int limb=0;limb<4;++limb) {

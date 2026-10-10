@@ -464,6 +464,89 @@
 
   </panel>
 
+  <panel follows="all" height="410" label="Hair" layout="topleft"
+    name="graphics_hair_panel" width="517">
+    <scroll_container name="HairScroll" follows="all" layout="topleft"
+      left="0" top="0" width="517" height="410" reserve_scroll_corner="false">
+    <panel name="HairContent" follows="left|top" layout="topleft" left="0" top="0" width="495" height="825">
+    <text follows="left|top|right" height="34" layout="topleft" left="20" top="8"
+      name="HairDescription" width="355" word_wrap="true">Strand highlights and coloured scattering for opaque, cutout and blended hair.</text>
+    <button name="HairDefaults" label="Default" follows="right|top" layout="topleft"
+      left="400" top="8" width="80" height="23">
+      <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_hair_panel" />
+    </button>
+    <check_box control_name="BoxxyHairEnabled" name="BoxxyHairEnabled" height="20"
+      label="Enable experimental hair lighting" layout="topleft" left="30" top="51" width="440" />
+    <text name="HairNamesLabel" layout="topleft" left="30" top="82" width="440" height="18">Object name matches:</text>
+    <line_editor name="BoxxyHairNames" control_name="BoxxyHairNames" enabled_control="BoxxyHairEnabled"
+      layout="topleft" left="30" top="103" width="450" height="23" max_length_bytes="2048"
+      tool_tip="Comma-separated word prefixes in the linkset root name, ignoring case: hair matches hairstyle. Applies to all lit faces. Works with no-mod attachments. Clear to disable matching." />
+    <slider name="BoxxyHairRoughness" control_name="BoxxyHairRoughness" enabled_control="BoxxyHairEnabled"
+      label="Roughness:" layout="topleft" left="30" top="143" width="450" height="20"
+      label_width="165" min_val=".12" max_val="1" increment=".01" decimal_digits="2"
+      tool_tip="Highlight width. Local strand contrast adds subtle variation, fading as texture detail becomes too small to resolve." />
+    <slider name="BoxxyHairShine" control_name="BoxxyHairShine" enabled_control="BoxxyHairEnabled"
+      label="Highlight strength:" layout="topleft" left="30" top="178" width="450" height="20"
+      label_width="165" min_val="0" max_val="2" increment=".01" decimal_digits="2" />
+    <slider name="BoxxyHairBrightnessCompensation" control_name="BoxxyHairBrightnessCompensation" enabled_control="BoxxyHairEnabled"
+      label="Brightness compensation:" layout="topleft" left="30" top="213" width="450" height="20"
+      label_width="185" min_val="0" max_val="4" increment=".05" decimal_digits="2"
+      tool_tip="Uses hair colour to balance the shine: dark hair gets softer highlights, light hair stronger highlights, and medium grey stays neutral. 0 preserves the original look; 1 applies normal compensation; higher values up to 4 make it stronger. Highlight strength still controls overall shine." />
+    <slider name="BoxxyHairStrandVariation" control_name="BoxxyHairStrandVariation" enabled_control="BoxxyHairEnabled"
+      label="Strand variation:" layout="topleft" left="30" top="248" width="450" height="20"
+      label_width="165" min_val="0" max_val="2" increment=".05" decimal_digits="2"
+      tool_tip="Texture-driven breakup of the shine. Zero gives uniform roughness; 1 preserves the default; 2 doubles the variation. Fine detail fades with distance." />
+    <slider name="BoxxyHairTransmission" control_name="BoxxyHairTransmission" enabled_control="BoxxyHairEnabled"
+      label="Light scattering:" layout="topleft" left="30" top="283" width="450" height="20"
+      label_width="165" min_val="0" max_val="1" increment=".01" decimal_digits="2"
+      tool_tip="Coloured backlighting and softer light within the strands. Overlapping hair reduces transmission; heads and walls block it. Zero disables scattering." />
+    <slider name="BoxxyHairThickness" control_name="BoxxyHairThickness" enabled_control="BoxxyHairEnabled"
+      label="Optical thickness:" layout="topleft" left="30" top="318" width="450" height="20"
+      label_width="165" min_val=".25" max_val="4" increment=".05" decimal_digits="2"
+      tool_tip="Higher values absorb more light through the fibers and overlapping hair layers. Does not change texture transparency." />
+    <text name="HairFlowHeading" layout="topleft" left="30" top="356" width="440" height="18" font="SansSerifBold">Strand direction</text>
+    <check_box name="BoxxyHairAutoDirection" control_name="BoxxyHairAutoDirection" enabled_control="BoxxyHairEnabled"
+      label="Detect direction from texture" layout="topleft" left="30" top="382" width="440" height="20" />
+    <slider name="BoxxyHairFlowScale" control_name="BoxxyHairFlowScale" enabled_control="BoxxyHairEnabled"
+      label="Detection scale:" layout="topleft" left="30" top="412" width="450" height="20"
+      label_width="185" min_val="0.5" max_val="8" increment="0.25" decimal_digits="2"
+      tool_tip="Spacing in texture texels. Smaller follows fine strands; larger follows broader locks." />
+    <slider name="BoxxyHairFlowSmoothing" control_name="BoxxyHairFlowSmoothing" enabled_control="BoxxyHairEnabled"
+      label="Flow smoothing:" layout="topleft" left="30" top="444" width="450" height="20"
+      label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
+      tool_tip="Higher values average nearby strand gradients for a steadier direction." />
+    <slider name="BoxxyHairDirection" control_name="BoxxyHairDirection" enabled_control="BoxxyHairEnabled"
+      label="Manual / fallback angle:" layout="topleft" left="30" top="476" width="450" height="20"
+      label_width="185" min_val="0" max_val="180" increment="1" decimal_digits="2"
+      tool_tip="0 follows texture V; 90 follows U. Used when detection is off or uncertain." />
+    <text name="HairPreviewLabel" layout="topleft" left="30" top="511" width="175" height="18">Preview:</text>
+    <combo_box name="BoxxyHairDebug" control_name="BoxxyHairDebug" enabled_control="BoxxyHairEnabled"
+      layout="topleft" left="215" top="507" width="265" height="23">
+      <combo_box.item label="Normal lighting" name="lighting" value="0" />
+      <combo_box.item label="Direction colours" name="direction" value="1" />
+      <combo_box.item label="Detection confidence" name="confidence" value="2" />
+    </combo_box>
+    <text name="HairNormalHeading" layout="topleft" left="30" top="556" width="440" height="18" font="SansSerifBold">Generated normal detail</text>
+    <check_box name="BoxxyHairNormalEnabled" control_name="BoxxyHairNormalEnabled" enabled_control="BoxxyHairEnabled"
+      label="Extract detail when no normal map exists" layout="topleft" left="30" top="582" width="440" height="20" />
+    <slider name="BoxxyHairNormalStrength" control_name="BoxxyHairNormalStrength" enabled_control="BoxxyHairEnabled"
+      label="Normal strength:" layout="topleft" left="30" top="614" width="450" height="20"
+      label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2"
+      tool_tip="Strength of generated ridges. Zero preserves the mesh normal." />
+    <slider name="BoxxyHairNormalScale" control_name="BoxxyHairNormalScale" enabled_control="BoxxyHairEnabled"
+      label="Detail scale:" layout="topleft" left="30" top="646" width="450" height="20"
+      label_width="185" min_val="0.25" max_val="8" increment="0.25" decimal_digits="2"
+      tool_tip="Sample spacing in texture texels. Lower values extract finer detail." />
+    <slider name="BoxxyHairNormalRejection" control_name="BoxxyHairNormalRejection" enabled_control="BoxxyHairEnabled"
+      label="Shading rejection:" layout="topleft" left="30" top="678" width="450" height="20"
+      label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
+      tool_tip="Higher values suppress broad painted highlights and shadows in the extracted detail." />
+    <text name="HairHelp" layout="topleft" left="30" top="718" width="450" height="88"
+      word_wrap="true" text_color="LtGray_50">Direction colours show the local strand axis; dim areas use more of the fallback angle. Confidence runs from black (uncertain) to white (strong). Generated normals follow the detected flow. PBR and authored normal maps keep their normals. Texture colours and transparency are preserved.</text>
+    </panel>
+    </scroll_container>
+  </panel>
+
   <panel
     follows="all"
     height="410"
@@ -985,7 +1068,7 @@ Combined: transmitted light from all lights, including blur.</text>
       label="Denoising:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="208" width="450" height="20" min_val="0" max_val="2"
       increment="0.05" decimal_digits="2" show_text="true"
-      tool_tip="Smooths noise while preserving surface edges. 1.00 is normal; 0 shows the raw samples for inspection." />
+      tool_tip="Smooths noise while preserving surface edges. Use 0 with TAA; 1.70 is recommended with SMAA, FXAA or antialiasing disabled." />
     <slider name="RenderGTAOFalloff" control_name="RenderGTAOFalloff"
       label="Distance falloff:" label_width="190" follows="left|top" layout="topleft"
       left="30" top="239" width="450" height="20" min_val="0.1" max_val="1"
@@ -1093,7 +1176,7 @@ Combined: transmitted light from all lights, including blur.</text>
       <combo_box.item label="FXAA" value="1" />
       <combo_box.item label="SMAA" value="2" />
       <combo_box.item label="TAA" value="3" />
-      <combo_box.commit_callback function="Pref.RenderOptionUpdate" />
+      <combo_box.commit_callback function="Pref.AntialiasingChanged" />
     </combo_box>
     <slider name="RenderTAAHistoryWeight" control_name="RenderTAAHistoryWeight"
       label="History weight:" label_width="190" follows="left|top" layout="topleft"

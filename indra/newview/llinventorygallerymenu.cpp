@@ -25,6 +25,7 @@
 
 #include "llviewerprecompiledheaders.h"
 #include "llfloaterinventoryllmsort.h"
+#include "llfloatertattoocompare.h"
 
 #include "llinventorygallery.h"
 #include "llinventorygallerymenu.h"
@@ -135,6 +136,11 @@ LLContextMenu* LLInventoryGalleryContextMenu::createMenu()
 void LLInventoryGalleryContextMenu::doToSelected(const LLSD& userdata)
 {
     std::string action = userdata.asString();
+    if (action == "compare_tattoos")
+    {
+        LLFloaterTattooCompare::show(mUUIDs);
+        return;
+    }
     if (action == "llm_sort")
     {
         LLFloaterInventoryLLMSort::show(mUUIDs);
@@ -596,6 +602,12 @@ void LLInventoryGalleryContextMenu::updateMenuItemsVisibility(LLContextMenu* men
 
     std::vector<std::string> items;
     std::vector<std::string> disabled_items;
+
+    if (std::all_of(mUUIDs.begin(), mUUIDs.end(), LLFloaterTattooCompare::canCompare))
+    {
+        items.push_back("Compare Tattoos");
+        if (!LLFloaterTattooCompare::canCompareSelection(mUUIDs)) disabled_items.push_back("Compare Tattoos");
+    }
 
     bool is_agent_inventory = gInventory.isObjectDescendentOf(selected_id, gInventory.getRootFolderID());
     bool is_link = obj->getIsLinkType();

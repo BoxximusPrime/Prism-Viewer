@@ -1405,6 +1405,14 @@ void LLPipeline::releaseGLBuffers()
     mSSSWide.release();
     mSSSWideScratch.release();
     mSSSWideResult.release();
+    mHairBounds.release();
+    mHairDensity.release();
+    mHairDepthValid = glm::vec3(0);
+    mHairDepthFocusValid = false;
+    mHairDepthFocusID.setNull();
+    mHairDepthFocusFade = 0.f;
+    for (auto& light : mHairDepthLights) light = nullptr;
+    mHairDepthLightFade = glm::vec2(0);
     for (auto& target : mSSSDepth) target.release();
     mSSSDepthValid = glm::vec3(0);
     mSSSDepthFocusValid = false;
@@ -3240,6 +3248,10 @@ void LLPipeline::shiftObjects(const LLVector3 &offset)
     mSSSDepthFocusID.setNull();
     mSSSDepthFocusFade = 0.f;
     mSSSDepthValid = glm::vec3(0);
+    mHairDepthFocusValid = false;
+    mHairDepthFocusID.setNull();
+    mHairDepthFocusFade = 0.f;
+    mHairDepthValid = glm::vec3(0);
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     assertInitialized();
 
@@ -4390,7 +4402,10 @@ void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
     if (!gCubeSnapshot && !sImpostorRender && mRT == &mMainRT)
+    {
         updateSSSDepthFocus(camera);
+        updateHairDepthFocus(camera);
+    }
 
 }
 
@@ -4609,7 +4624,10 @@ void LLPipeline::renderGeomShadow(LLCamera& camera)
                 LLVertexBuffer::unbind();
                 poolp->beginShadowPass(i);
                 if (LLGLSLShader::sCurBoundShaderPtr)
+                {
                     setSSSDepthUniforms(*LLGLSLShader::sCurBoundShaderPtr);
+                    setHairDepthUniforms(*LLGLSLShader::sCurBoundShaderPtr);
+                }
                 for (iter2 = iter1; iter2 != mPools.end(); iter2++)
                 {
                     LLDrawPool *p = *iter2;
@@ -9218,6 +9236,27 @@ static void bindWaterLighting(LLGLSLShader& shader)
     }
 }
 
+void LLPipeline::bindHairSettings(LLGLSLShader& shader)
+{
+    static LLCachedControl<bool> automatic(gSavedSettings, "BoxxyHairAutoDirection", true);
+    static LLCachedControl<F32> scale(gSavedSettings, "BoxxyHairFlowScale", 2.f);
+    static LLCachedControl<F32> smoothing(gSavedSettings, "BoxxyHairFlowSmoothing", 0.75f);
+    static LLCachedControl<bool> detail(gSavedSettings, "BoxxyHairNormalEnabled", true);
+    static LLCachedControl<F32> strength(gSavedSettings, "BoxxyHairNormalStrength", 0.35f);
+    static LLCachedControl<F32> detail_scale(gSavedSettings, "BoxxyHairNormalScale", 1.f);
+    static LLCachedControl<F32> rejection(gSavedSettings, "BoxxyHairNormalRejection", 1.f);
+    static LLCachedControl<F32> variation(gSavedSettings, "BoxxyHairStrandVariation", 1.f);
+    static LLCachedControl<F32> brightness(gSavedSettings, "BoxxyHairBrightnessCompensation", 0.f);
+    static LLCachedControl<S32> debug(gSavedSettings, "BoxxyHairDebug", 0);
+    shader.uniform3f(LLStaticHashedString("hair_flow"), automatic ? 1.f : 0.f,
+        llclamp(F32(scale), 0.5f, 8.f), llclamp(F32(smoothing), 0.f, 1.f));
+    shader.uniform3f(LLStaticHashedString("hair_detail"), detail ? llclamp(F32(strength), 0.f, 2.f) : 0.f,
+        llclamp(F32(detail_scale), 0.25f, 8.f), llclamp(F32(rejection), 0.f, 1.f));
+    shader.uniform1i(LLStaticHashedString("hair_debug"), llclamp(S32(debug), 0, 2));
+    shader.uniform1f(LLStaticHashedString("hair_variation_strength"), llclamp(F32(variation), 0.f, 2.f));
+    shader.uniform1f(LLStaticHashedString("hair_brightness_compensation"), llclamp(F32(brightness), 0.f, 4.f));
+}
+
 void LLPipeline::bindDeferredShaderFast(LLGLSLShader& shader)
 {
     if (shader.mCanBindFast)
@@ -9229,6 +9268,7 @@ void LLPipeline::bindDeferredShaderFast(LLGLSLShader& shader)
         bindLightFunc(shader);
         bindShadowMaps(shader);
         bindSSSDepth(shader);
+        bindHairDepth(shader);
         bindReflectionProbes(shader);
         bindAlphaProjectors(shader, false);
     }
@@ -9249,6 +9289,14 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     bindSSSOverlay(shader);
     bindWaterLighting(shader);
     bindVolumeFogAlpha(shader);
+    bindHairSettings(shader);
+    static LLCachedControl<F32> hair_roughness(gSavedSettings, "BoxxyHairRoughness", 0.35f);
+    static LLCachedControl<F32> hair_shine(gSavedSettings, "BoxxyHairShine", 0.7f);
+    static LLCachedControl<F32> hair_transmission(gSavedSettings, "BoxxyHairTransmission", 0.5f);
+    static LLCachedControl<F32> hair_thickness(gSavedSettings, "BoxxyHairThickness", 1.f);
+    shader.uniform4f(LLStaticHashedString("hair_params"), llclamp(F32(hair_roughness), 0.12f, 1.f),
+        llclamp(F32(hair_shine), 0.f, 2.f), llclamp(F32(hair_transmission), 0.f, 1.f),
+        llclamp(F32(hair_thickness), 0.25f, 4.f));
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<S32> sss_mode(gSavedSettings, "BoxxySSSMode", 2);
     static LLCachedControl<F32> sss_strength(gSavedSettings, "BoxxySSSStrength", 1.0f);
@@ -9281,6 +9329,7 @@ void LLPipeline::bindDeferredShader(LLGLSLShader& shader, LLRenderTarget* light_
     static const LLStaticHashedString sss_shadow_thickness_name("sss_shadow_thickness");
     shader.uniform1i(sss_shadow_thickness_name, sss_shadow_thickness ? 1 : 0);
     bindSSSDepth(shader);
+    bindHairDepth(shader);
     static const LLStaticHashedString transmission_smoothing("sss_transmission_smoothing");
     shader.uniform1i(transmission_smoothing, mSSSTransmissionSmoothing && !gCubeSnapshot &&
         !sImpostorRender && mRT == &mMainRT ? 1 : 0);
@@ -12038,6 +12087,8 @@ void LLPipeline::unbindDeferredShader(LLGLSLShader &shader)
     }
 
     for (U32 i = 0; i < 3; ++i) shader.disableTexture(LLShaderMgr::SSS_DEPTH0 + i);
+    shader.disableTexture(LLShaderMgr::HAIR_BOUNDS);
+    shader.disableTexture(LLShaderMgr::HAIR_DENSITY);
     for (U32 i = 0; i < 6; ++i) shader.disableTexture(LLShaderMgr::PCSS_DEPTH0 + i);
     shader.disableTexture(LLShaderMgr::DEFERRED_NOISE);
     shader.disableTexture(LLShaderMgr::DEFERRED_LIGHTFUNC);
@@ -12243,14 +12294,16 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
         LLRenderPass::PASS_NORMSPEC_EMISSIVE
     };
 
-    LLGLEnable cull(GL_CULL_FACE);
+    LLGLState cull(GL_CULL_FACE, mHairDepthPass < 2);
+    LLGLState blend(GL_BLEND, mHairDepthPass == 3);
+    if (mHairDepthPass == 3) gGL.blendFunc(LLRender::BF_ONE, LLRender::BF_ONE);
 
     //enable depth clamping if available
     LLGLEnable clamp_depth(depth_clamp ? GL_DEPTH_CLAMP : 0);
 
-    LLGLDepthTest depth_test(GL_TRUE, GL_TRUE, GL_LESS);
+    LLGLDepthTest depth_test(mHairDepthPass != 3, mHairDepthPass != 3, GL_LESS);
 
-    if (mSSSDepthPass != 2)
+    if (mSSSDepthPass != 2 && mHairDepthPass < 2)
     {
         updateCull(shadow_cam, result);
         stateSort(shadow_cam, result);
@@ -12296,13 +12349,16 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
         S32 shadow_detail = RenderShadowDetail;
 
         // if not using VSM, disable color writes
-        if (shadow_detail <= 2 && mSSSDepthPass == 0)
+        if (shadow_detail <= 2 && mSSSDepthPass == 0 && mHairDepthPass == 0)
         {
             gGL.setColorMask(false, false);
         }
 
         if (mSSSDepthPass != 0)
             gGL.setColorMask(mSSSDepthPass == 1, mSSSDepthPass == 1, mSSSDepthPass == 2, mSSSDepthPass == 2);
+
+        if (mHairDepthPass != 0)
+            gGL.setColorMask(mHairDepthPass >= 2, mHairDepthPass != 2, mHairDepthPass == 3, mHairDepthPass == 3);
 
         LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("shadow simple"); //LL_RECORD_BLOCK_TIME(FTM_SHADOW_SIMPLE);
         LL_PROFILE_GPU_ZONE("shadow simple");
@@ -12326,7 +12382,7 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
 
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("shadow geom");
-        renderGeomShadow(shadow_cam);
+        if (mHairDepthPass < 2) renderGeomShadow(shadow_cam);
     }
 
     {
@@ -12422,6 +12478,8 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
     gGL.matrixMode(LLRender::MM_MODELVIEW);
     gGL.popMatrix();
     gGLLastMatrix = NULL;
+
+    if (mHairDepthPass == 3) gGL.setSceneBlendType(LLRender::BT_ALPHA);
 
     // reset occlusion culling flag
     sUseOcclusion = saved_occlusion;
@@ -12764,6 +12822,315 @@ F32 sssLightScore(const LLColor3& color, F32 distance, F32 radius, F32 falloff)
     const F32 luminance = color.mV[0] * 0.2126f + color.mV[1] * 0.7152f + color.mV[2] * 0.0722f;
     return luminance * attenuation * attenuation * 2.f;
 }
+}
+
+void LLPipeline::updateHairDepthFocus(LLCamera& camera)
+{
+    LLUUID selected;
+    LLVector3 selected_position, retained_position = mHairDepthFocus;
+    F32 nearest = F32_MAX;
+    const F32 range = 32.f;
+    if (sCull && gSavedSettings.getBOOL("BoxxyHairEnabled") &&
+        gSavedSettings.getF32("BoxxyHairTransmission") > 0.f)
+    {
+        for (U32 type = 0; type < LLRenderPass::NUM_RENDER_TYPES; ++type)
+        {
+            auto* end = endRenderMap(type);
+            for (auto* i = beginRenderMap(type); i != end; LLCullResult::increment_iterator(i, end))
+            {
+                const LLDrawInfo* info = *i;
+                const LLViewerObject* object = info->mHairObject;
+                if (!object || object->isDead() || info->mFullbright) continue;
+                // Both rigged and unrigged attachments focus on their owning avatar.
+                // Standalone tagged objects use their own rendered position.
+                const LLVOAvatar* avatar = info->mAvatar.notNull() ? info->mAvatar.get() : object->getAvatar();
+                if (avatar) object = avatar;
+                const LLVector3 pos = object->getRenderPosition();
+                const F32 distance = (pos - camera.getOrigin()).lengthSquared();
+                const bool retained = object->getID() == mHairDepthFocusID;
+                if (retained) retained_position = pos;
+                if (distance >= range * range) continue;
+                const F32 score = distance * (retained ? 0.8f : 1.f);
+                if (score < nearest)
+                {
+                    nearest = score;
+                    selected = object->getID();
+                    selected_position = pos;
+                }
+            }
+        }
+    }
+    const bool retained = selected.notNull() && selected == mHairDepthFocusID;
+    mHairDepthFocusFade = advanceSSSDepthFade(mHairDepthFocusFade, retained, gFrameIntervalSeconds.value());
+    mHairDepthFocus = retained ? selected_position : retained_position;
+    // Finish fading the old subject before changing the projection.
+    if (mHairDepthFocusFade == 0.f)
+    {
+        mHairDepthFocusID = selected;
+        if (selected.notNull()) mHairDepthFocus = selected_position;
+    }
+    mHairDepthFocusValid = mHairDepthFocusID.notNull() && mHairDepthFocusFade > 0.f;
+}
+
+void LLPipeline::setHairDepthUniforms(LLGLSLShader& shader, bool hair)
+{
+    shader.uniform1i(LLStaticHashedString("hair_depth_pass"), mHairDepthPass);
+    shader.uniform1i(LLStaticHashedString("hair_depth_object"), hair ? 1 : 0);
+    shader.uniform1i(LLStaticHashedString("hair_depth_blend"), mSSSDepthOpaque ? 0 : 1);
+    if (mHairDepthPass == 0) return;
+    shader.uniform1i(LLStaticHashedString("hair_depth_slot"), mHairDepthSlot);
+    shader.uniform4fv(LLStaticHashedString("hair_depth_projection"), 3, glm::value_ptr(mHairDepthProjection[0]));
+    const S32 channel = shader.enableTexture(LLShaderMgr::HAIR_BOUNDS);
+    if (channel >= 0)
+    {
+        // Never sample the attachment being written by the first two passes.
+        if (mHairDepthPass == 3) gGL.getTexUnit(channel)->bind(&mHairBounds);
+        else gGL.getTexUnit(channel)->bind(LLViewerFetchedTexture::sBlackImagep);
+    }
+}
+
+void LLPipeline::bindHairDepth(LLGLSLShader& shader)
+{
+    bool used = false;
+    LLRenderTarget* targets[] = { &mHairBounds, &mHairDensity };
+    for (U32 i = 0; i < 2; ++i)
+    {
+        const S32 channel = shader.enableTexture(LLShaderMgr::HAIR_BOUNDS + i);
+        if (channel < 0) continue;
+        used = true;
+        if (targets[i]->isComplete())
+        {
+            gGL.getTexUnit(channel)->bind(targets[i]);
+            gGL.getTexUnit(channel)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
+            gGL.getTexUnit(channel)->setTextureAddressMode(LLTexUnit::TAM_CLAMP);
+        }
+        else gGL.getTexUnit(channel)->bind(LLViewerFetchedTexture::sBlackImagep);
+    }
+    if (!used) return;
+    const glm::mat4 view = get_current_modelview();
+    const glm::dmat4 inverseView = glm::inverse(glm::dmat4(view));
+    glm::mat4 transforms[3];
+    for (U32 i = 0; i < 3; ++i) transforms[i] = glm::mat4(mHairDepthMatrix[i] * inverseView);
+    glm::vec3 origins[2];
+    for (U32 i = 0; i < 2; ++i) origins[i] = mul_mat4_vec3(view, mHairDepthOrigin[i]);
+    const glm::vec3 center = mul_mat4_vec3(view, mHairDepthRenderedFocus);
+    const glm::vec3 active = !gCubeSnapshot && !sImpostorRender && mRT == &mMainRT &&
+        gSavedSettings.getBOOL("BoxxyHairEnabled") ? mHairDepthValid : glm::vec3(0);
+    shader.uniformMatrix4fv(LLStaticHashedString("hair_depth_matrix"), 3, false, glm::value_ptr(transforms[0]));
+    shader.uniform4fv(LLStaticHashedString("hair_depth_projection"), 3, glm::value_ptr(mHairDepthProjection[0]));
+    shader.uniform3fv(LLStaticHashedString("hair_depth_valid"), 1, glm::value_ptr(active));
+    shader.uniform3fv(LLStaticHashedString("hair_depth_origin"), 2, glm::value_ptr(origins[0]));
+    shader.uniform4f(LLStaticHashedString("hair_depth_focus"), center.x, center.y, center.z, 2.5f);
+}
+
+void LLPipeline::generateHairDepth(LLCamera& camera)
+{
+    mHairDepthValid = glm::vec3(0);
+    if (gGLManager.mNumTextureImageUnits < 32 || !sRenderDeferred || gCubeSnapshot || sImpostorRender || mRT != &mMainRT ||
+        !mHairDepthFocusValid || !gSavedSettings.getBOOL("BoxxyHairEnabled") ||
+        gSavedSettings.getF32("BoxxyHairTransmission") <= 0.f)
+        return;
+
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
+    LL_PROFILE_GPU_ZONE("Hair depth maps");
+    LL_AUTOMATION_GPU_SCOPE("Hair.depth_maps");
+    const glm::mat4 savedView = get_current_modelview(), savedProj = get_current_projection();
+    const glm::mat4 lastView = get_last_modelview(), lastProj = get_last_projection();
+    const auto cameraID = LLViewerCamera::sCurCameraID;
+    LLCullResult* savedCull = sCull;
+    const glm::vec3 center(mHairDepthFocus);
+    mHairDepthRenderedFocus = center;
+    const F32 radius = 2.5f;
+    // shortcut: one nearby subject and two local lights; atlas more subjects only if crowded scenes need it.
+    const U32 resolution = 1024;
+    if (mHairBounds.getWidth() != resolution * 3 || !mHairBounds.isComplete() || !mHairDensity.isComplete())
+    {
+        mHairBounds.release();
+        mHairDensity.release();
+        if (!mHairBounds.allocate(resolution * 3, resolution, GL_RG32F, true) ||
+            !mHairDensity.allocate(resolution * 3, resolution, GL_RGBA16F))
+        {
+            mHairBounds.release();
+            mHairDensity.release();
+            return;
+        }
+    }
+    LLDrawable* desired[2] = {};
+    F32 scores[2] = {};
+    S32 count = 0;
+    for (const auto& light : mNearbyLights)
+    {
+        if (++count > gSavedSettings.getS32("RenderLocalLightCount")) break;
+        LLDrawable* drawable = light.drawable;
+        if (!drawable || drawable->isDead()) continue;
+        LLVOVolume* volume = drawable->getVOVolume();
+        if (!volume || (volume->isAttachment() && !sRenderAttachedLights)) continue;
+        const bool spot = volume->isLightSpotlight();
+        if (spot && !sssProjectorIntersectsSphere(getProjectorParams(drawable).agentMatrix, center, radius))
+            continue;
+        const F32 distance = glm::distance(glm::vec3(drawable->getPositionAgent()), center);
+        F32 score = sssLightScore(volume->getLightLinearColor(), llmax(distance - radius, 0.f),
+            volume->getLightRadius() * 1.5f, volume->getLightFalloff(DEFERRED_LIGHT_FALLOFF));
+        // Keep comparable lights in their slots instead of exchanging them every frame.
+        if (drawable == mHairDepthLights[0] || drawable == mHairDepthLights[1]) score *= 1.25f;
+        if (score > scores[0])
+        {
+            scores[1] = scores[0]; desired[1] = desired[0];
+            scores[0] = score; desired[0] = drawable;
+        }
+        else if (score > scores[1]) { scores[1] = score; desired[1] = drawable; }
+    }
+    LLDrawable* lights[2] = {};
+    for (U32 i = 0; i < 2; ++i)
+    {
+        if (mHairDepthLights[i].notNull() && mHairDepthLights[i]->isDead())
+        {
+            mHairDepthLights[i] = nullptr;
+            mHairDepthLightFade[i] = 0.f;
+        }
+        const bool retained = mHairDepthLights[i].notNull() &&
+            (mHairDepthLights[i] == desired[0] || mHairDepthLights[i] == desired[1]);
+        mHairDepthLightFade[i] = advanceSSSDepthFade(mHairDepthLightFade[i], retained, gFrameIntervalSeconds.value());
+        if (mHairDepthLightFade[i] == 0.f && !retained)
+        {
+            mHairDepthLights[i] = nullptr;
+            for (LLDrawable* candidate : desired)
+            {
+                if (candidate && candidate != mHairDepthLights[1 - i])
+                {
+                    mHairDepthLights[i] = candidate;
+                    break;
+                }
+            }
+        }
+        lights[i] = mHairDepthLights[i];
+    }
+    // Keep the depth projection in agent space. A camera-space round trip
+    // perturbs the entire map even when neither the light nor subject moves.
+    for (U32 i = 0; i < 2; ++i)
+    {
+        if (!lights[i]) continue;
+        mHairDepthOrigin[i] = lights[i]->getVOVolume()->isLightSpotlight() ?
+            getProjectorParams(lights[i]).agentOrigin :
+            glm::vec3(lights[i]->getPositionAgent());
+    }
+    LLDisableOcclusionCulling no_occlusion;
+    pushShadowRenderTypeMask();
+    const bool firstPerson = isAgentAvatarValid() && gAgentCamera.getCameraMode() == CAMERA_MODE_MOUSELOOK &&
+        LLVOAvatar::sVisibleInFirstPerson;
+    if (firstPerson) gAgentAvatarp->updateAttachmentVisibility(CAMERA_MODE_THIRD_PERSON);
+    LLGLDisable blend(GL_BLEND);
+    LLGLDepthTest depth(GL_TRUE, GL_TRUE, GL_LESS); // Depth clears must work even after a read-only pass.
+    GLint savedCullFace;
+    glGetIntegerv(GL_CULL_FACE_MODE, &savedCullFace);
+    gGL.setColorMask(true, true);
+    mHairBounds.bindTarget();
+    glClearColor(1000000.f, 1000000.f, 0.f, 0.f);
+    mHairBounds.clear();
+    mHairBounds.flush();
+    mHairDensity.bindTarget();
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    mHairDensity.clear();
+    mHairDensity.flush();
+    static LLCullResult results[3];
+    const glm::mat4 bias = glm::translate(glm::mat4(1), glm::vec3(0.5f)) * glm::scale(glm::mat4(1), glm::vec3(0.5f));
+    for (U32 i = 0; i < 3; ++i)
+    {
+        // Transmission needs a subject-focused projection even when ordinary
+        // shadows are on: their cascades and projector slots follow the camera.
+        if (i > 0 && (!lights[i - 1] || mHairDepthLightFade[i - 1] <= 0.f)) continue;
+        glm::vec3 origin;
+        glm::mat4 proj, view;
+        bool projectorView = false;
+        F32 farClip;
+        if (i == 0)
+        {
+            const glm::vec3 direction = glm::normalize(glm::vec3(LLEnvironment::instance().getIsSunUp() ? mSunDir : mMoonDir));
+            const F32 reach = llclamp(RenderFarClip, 32.f, 128.f);
+            origin = center + direction * reach;
+            farClip = reach + radius;
+            proj = glm::ortho(-radius, radius, -radius, radius, 0.01f, farClip);
+        }
+        else
+        {
+            origin = mHairDepthOrigin[i - 1];
+            const F32 distance = glm::distance(origin, center);
+            LLVOVolume* volume = lights[i - 1]->getVOVolume();
+            const F32 maxFov = 2.617994f; // 150 degrees
+            // Inside this distance the focused cone cannot enclose the subject.
+            // A close projector may illuminate hair behind the center-facing camera.
+            projectorView = volume->isLightSpotlight() && distance * sinf(maxFov * 0.5f) <= radius;
+            if (!projectorView && distance < 0.05f) continue;
+            farClip = distance + radius;
+            // Spend depth precision on the subject and the longest allowed hair path.
+            // Depth clamping below preserves opaque blockers nearer to the light.
+            const F32 nearClip = llmax(0.01f, distance - radius - 0.3f);
+            if (projectorView)
+            {
+                const LLVector3 scale = volume->getScale();
+                view = getProjectorParams(lights[i - 1]).agentView;
+                proj = glm::perspective(volume->getSpotLightParams().mV[0],
+                    scale.mV[VX] / scale.mV[VY], nearClip, farClip);
+            }
+            else
+            {
+                const F32 fov = llmin(2.f * asinf(llmin(radius / distance, 0.99f)), maxFov);
+                proj = glm::perspective(llmax(fov, 0.05f), 1.f, nearClip, farClip);
+            }
+        }
+        if (!projectorView)
+        {
+            const glm::vec3 direction = glm::normalize(center - origin);
+            const glm::vec3 up = fabsf(direction.z) > 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
+            view = glm::lookAt(origin, center, up);
+        }
+        mHairDepthSlot = i;
+        mHairDepthProjection[i] = glm::vec4(proj[2][2], proj[3][2], proj[2][3], proj[3][3]);
+        set_current_modelview(view);
+        set_current_projection(proj);
+        set_last_modelview(view);
+        set_last_projection(proj);
+        LLCamera shadowCamera = camera;
+        shadowCamera.setOrigin(LLVector3(origin));
+        shadowCamera.setFar(farClip);
+        LLViewerCamera::updateFrustumPlanes(shadowCamera, false, false, true);
+        // CPU culling must retain the light-side blockers that GL_DEPTH_CLAMP preserves.
+        if (i > 0) shadowCamera.ignoreAgentFrustumPlane(LLCamera::AGENT_PLANE_NEAR);
+        LLViewerCamera::sCurCameraID = i == 0 ? LLViewerCamera::CAMERA_SUN_SHADOW0 :
+            (LLViewerCamera::eCameraID)(LLViewerCamera::CAMERA_SPOT_SHADOW0 + i - 1);
+        RenderSpotLight = i == 0 ? nullptr : lights[i - 1];
+        for (S32 pass = 1; pass <= 3; ++pass)
+        {
+            mHairDepthPass = pass;
+            LLRenderTarget& target = pass == 3 ? mHairDensity : mHairBounds;
+            target.bindTarget();
+            glViewport(i * resolution, 0, resolution, resolution);
+            gGLViewport[0] = i * resolution;
+            gGLViewport[1] = 0;
+            gGLViewport[2] = gGLViewport[3] = resolution;
+            if (pass < 3) target.clear(GL_DEPTH_BUFFER_BIT);
+            glCullFace(GL_BACK);
+            renderShadow(view, proj, shadowCamera, results[i], true);
+            target.flush();
+        }
+        mHairDepthPass = 0;
+        RenderSpotLight = nullptr;
+        // At skybox altitudes a float projected matrix loses millimeter-scale
+        // depth before the camera translation can cancel it during binding.
+        mHairDepthMatrix[i] = glm::dmat4(bias) * glm::dmat4(proj) * glm::dmat4(view);
+        mHairDepthValid[i] = mHairDepthFocusFade * (i == 0 ? 1.f : mHairDepthLightFade[i - 1]);
+    }
+    glCullFace(savedCullFace);
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    set_current_modelview(savedView);
+    set_current_projection(savedProj);
+    set_last_modelview(lastView);
+    set_last_projection(lastProj);
+    LLViewerCamera::sCurCameraID = cameraID;
+    if (savedCull) grabReferences(*savedCull);
+    gGL.setColorMask(true, true);
+    popRenderTypeMask();
+    if (firstPerson) gAgentAvatarp->updateAttachmentVisibility(gAgentCamera.getCameraMode());
 }
 
 void LLPipeline::updateSSSDepthFocus(LLCamera& camera)

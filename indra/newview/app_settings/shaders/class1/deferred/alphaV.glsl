@@ -46,6 +46,12 @@ in vec4 diffuse_color;
 #endif
 
 in vec2 texcoord0;
+#ifndef IS_AVATAR_SKIN
+in vec4 tangent;
+in vec2 texcoord3;
+out vec4 vary_hair_tangent;
+out vec2 vary_hair_texcoord;
+#endif
 
 #ifdef HAS_SKIN
 mat4 getObjectSkinnedTransform();
@@ -81,6 +87,7 @@ void main()
 
     norm = position.xyz + normal.xyz;
     norm = normalize((trans * vec4(norm, 1.0)).xyz - pos.xyz);
+    vary_hair_tangent = vec4(mat3(trans) * tangent.xyz, tangent.w);
     vec4 frag_pos = projection_matrix * pos;
     gl_Position = frag_pos;
 #else
@@ -102,6 +109,7 @@ void main()
     gl_Position = frag_pos;
 #else
     norm = normalize(normal_matrix * normal);
+    vary_hair_tangent = vec4(normal_matrix * tangent.xyz, tangent.w);
     vec4 vert = vec4(position.xyz, 1.0);
     pos = (modelview_matrix * vert);
     gl_Position = modelview_projection_matrix*vec4(position.xyz, 1.0);
@@ -115,6 +123,9 @@ void main()
 
     vary_texcoord0 = (texture_matrix0 * vec4(texcoord0,0,1)).xy;
 
+#ifndef IS_AVATAR_SKIN
+    vary_hair_texcoord = texcoord3;
+#endif
     vary_norm = norm;
     vary_position = pos.xyz;
 

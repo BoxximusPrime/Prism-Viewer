@@ -94,6 +94,7 @@
 #include "llfloatergroups.h"
 #include "llfloaterhelpbrowser.h"
 #include "llfloaterhoverheight.h"
+#include "llfloatertattoocompare.h"
 #include "llfloaterquickprefs.h"
 #include "llfloaterhud.h"
 #include "llfloaterimagepreview.h"
@@ -417,6 +418,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("quick_preferences", "floater_quick_preferences.xml", &LLFloaterReg::build<LLFloaterQuickPrefs>);
     LLFloaterReg::add("edit_hover_height", "floater_edit_hover_height.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterHoverHeight>);
     LLFloaterReg::add("shoe_height", "floater_shoe_height.xml", &LLFloaterReg::build<LLFloaterShoeHeight>);
+    LLFloaterReg::add("tattoo_compare", "floater_tattoo_compare.xml", &LLFloaterReg::build<LLFloaterTattooCompare>);
     LLFloaterReg::add("hud", "floater_hud.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterHUD>);
 
     LLFloaterReg::add("impanel", "floater_im_session.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterIMSession>);

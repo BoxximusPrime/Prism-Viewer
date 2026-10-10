@@ -47,6 +47,7 @@ class LLViewerObject;
 
 class LLAgentWearables : public LLInitClass<LLAgentWearables>, public LLWearableData
 {
+    friend class LLTattooPreviewBuffer;
     //--------------------------------------------------------------------
     // Constructors / destructors / Initializers
     //--------------------------------------------------------------------

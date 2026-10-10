@@ -465,6 +465,8 @@ public:
 
     // returns total number of buffered packets after the drain
     S32     drainUdpSocket();
+    // Service transport only while scene updates cannot safely be dispatched.
+    void    pumpCircuitKeepAlive();
 
     // Inbound Packet-loss simulation controls
     void dropPackets(U32 num_to_drop);
@@ -969,11 +971,12 @@ private:
     // Sets packet_id_already_checked to whether checkPacketInID() was already
     // run for this packet back when it was buffered (see bufferInboundPacket()).
     // Returns packet_size, or 0 if no packet or packet was dropped.
-    S32  receivePacketOrDrop(char* datap, bool& packet_id_already_checked);
+    S32  receivePacketOrDrop(char* datap, bool& packet_id_already_checked, bool& ping_handled);
 
     // Read one raw packet from mSocket into inbound message queues
     // Returns packet_size (0 if no packet was available).
-    S32  bufferInboundPacket();
+    S32  bufferInboundPacket(bool circuit_only = false);
+    void sendCircuitMessage(LLCircuitData* circuit, LLTemplateMessageBuilder& builder);
 
     // Returns true if the next inbound packet should be intentionally dropped.
     bool computeDrop();

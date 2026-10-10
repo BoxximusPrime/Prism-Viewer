@@ -315,25 +315,57 @@ float getShadow(vec3 pos, vec3 norm)
 }
 
 vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
+uniform float hair_object;
+uniform int hair_debug;
+mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
+in vec4 vary_hair_tangent;
+in vec2 vary_hair_texcoord;
+mat3 hairVertexFrame() { return hairMeshFrame(vary_position, vary_texcoord0, vary_hair_texcoord, vary_normal, vary_hair_tangent); }
+
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
+vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
+vec3 decodeHairTangent(vec3 n, float angle);
+vec3 hairSafeNormalize(vec3 v, vec3 fallback);
+vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
+vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
+float hairSunShadow(vec3 pos, float fallback);
+float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
+vec3 hairDiffuse(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l);
+vec3 hairLocalLight(int index, vec3 base, vec3 n, vec3 t, vec3 pos, float variation);
+
+
+vec4 hairDiffuseLookup(vec2 uv) { return texture(diffuseMap, uv); }
+vec2 hairTextureSize() { return vec2(textureSize(diffuseMap, 0)); }
 
 void main()
 {
-    mirrorClip(vary_position);
-#if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
-    if (isSSSOverlay(vary_position)) discard;
-#endif
-    applyWaterClip();
 
     // diffcol == diffuse map combined with vertex color
-    vec4 diffcol = texture(diffuseMap, vary_texcoord0.xy);
+    vec4 diffuse_tap = texture(diffuseMap, vary_texcoord0.xy);
+    vec4 diffcol = diffuse_tap;
     diffcol.rgb *= vertex_color.rgb;
-    alphaMask(diffcol.a);
+
 
     // spec == specular map combined with specular color
     vec4 spec = getSpecular();
     float env = env_intensity * spec.a;
     float glossiness = specular_color.a;
     vec3 norm = getNormal(glossiness);
+    vec3 hair_preview;
+    float hair_variation;
+#ifdef HAS_NORMAL_MAP
+    bool generateNormal = false;
+#else
+    bool generateNormal = true;
+#endif
+    vec3 strand = hairSurface(vary_position, vary_texcoord0.xy, norm, diffuse_tap, generateNormal, hair_preview, hair_variation);
+    mirrorClip(vary_position);
+#if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
+    if (isSSSOverlay(vary_position)) discard;
+#endif
+    applyWaterClip();
+    alphaMask(diffcol.a);
 
     float emissive = getEmissive(diffcol);
 
@@ -447,6 +479,17 @@ void main()
     float final_scale = 1.0;
     if (classic_mode > 0)
         final_scale = 1.1;
+    if (hair_object > 0.5)
+    {
+        vec3 hairSun = classic_mode > 0 ? srgb_to_linear(sunlit * 0.7) : sunlit;
+        vec3 hairAmbient = classic_mode > 0 ? srgb_to_linear(ambenv * 0.9) : ambenv;
+        color = hairAmbient * diffcol.rgb + hairDirectVisibility(diffcol.rgb, norm, strand,
+            -normalize(pos), normalize(light_dir), hair_variation, shadow, hairSunShadow(pos, shadow)) * hairSun;
+        color = mix(color, diffcol.rgb, emissive);
+        light = vec3(0);
+        for (int i = 1; i < 8; ++i) light += hairLocalLight(i, diffcol.rgb, norm, strand, pos, hair_variation);
+        glare = 0.0;
+    }
     // Opaque local lights are added after the Classic environment boost.
     color += light / final_scale;
 
@@ -456,6 +499,7 @@ void main()
     glare = min(glare, 1.0);
     float al = max(diffcol.a, glare) * vertex_color.a;
     vec4 final_color = applyVolumeFogAlpha(pos.xyz, vec4(color * final_scale, al));
+    if (hair_object > 0.5 && hair_debug != 0) final_color.rgb = hair_preview;
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color * final_scale, al), vec4(0));
 #ifdef EXACT_OIT
@@ -472,7 +516,9 @@ void main()
 
     frag_data[0] = max(vec4(diffcol.rgb, emissive), vec4(0));        // gbuffer is sRGB for legacy materials
     frag_data[1] = max(vec4(spec.rgb, glossiness), vec4(0));           // XYZ = Specular color. W = Specular exponent.
-    frag_data[2] = encodeNormal(norm, env, flag);   // XY = Normal.  Z = Env. intensity. W = 1 skip atmos (mask off fog)
+    if (hair_object > 0.5) frag_data[1].a = hair_variation; // Hair replaces unused gloss with strand finish.
+    frag_data[2] = encodeHairNormal(norm, env, flag, strand);   // XY = Normal.  Z = Env. intensity. W = 1 skip atmos (mask off fog)
+    if (hair_object > 0.5 && hair_debug != 0) frag_data[0].rgb = hair_preview;
 
 #if defined(HAS_EMISSIVE)
     frag_data[3] = vec4(0, 0, 0, 0);

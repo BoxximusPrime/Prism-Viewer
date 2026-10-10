@@ -33,6 +33,10 @@ in vec4 diffuse_color;
 in vec3 normal;
 in vec2 texcoord0;
 in vec4 tangent;
+in vec2 texcoord3;
+out vec4 vary_hair_tangent;
+out vec2 vary_hair_texcoord;
+
 
 out vec3 vary_mat0;
 out vec3 vary_mat1;
@@ -65,6 +69,8 @@ void main()
     vec3 t = normalize(normal_matrix * tangent.xyz);
 #endif
 
+    vary_hair_tangent = vec4(t, tangent.w);
+    vary_hair_texcoord = texcoord3;
     vec3 b = cross(n, t) * tangent.w;
     vary_texcoord0 = (texture_matrix0 * vec4(texcoord0,0,1)).xy;
 

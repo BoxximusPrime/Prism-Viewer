@@ -459,6 +459,8 @@ void LLRenderPass::pushBatches(U32 type, bool texture, bool batch_textures)
 // zero-identity exit fragments are discarded by all focused-depth shaders.
 bool LLRenderPass::skipSSSDepth(const LLDrawInfo& params)
 {
+    if (LLPipeline::sShadowRender && gPipeline.mHairDepthPass != 0)
+        return (gPipeline.mHairDepthPass == 1) == (params.mHair && !params.mFullbright);
     return LLPipeline::sShadowRender && gPipeline.mSSSDepthPass == 2 &&
         (!gPipeline.mSSSDepthOpaque || params.mFullbright || !params.mSSSObject);
 }
@@ -494,6 +496,8 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
                     next->mVertexBuffer != pparams->mVertexBuffer ||
                     next->mModelMatrix != pparams->mModelMatrix ||
                     U64(pparams->mOffset) + count != next->mOffset ||
+                    (gPipeline.mHairDepthPass != 0 &&
+                     (next->mHair && !next->mFullbright) != (pparams->mHair && !pparams->mFullbright)) ||
                     (gPipeline.mSSSDepthPass != 0 &&
                      (next->mFullbright ? nullptr : next->mSSSObject) !=
                      (pparams->mFullbright ? nullptr : pparams->mSSSObject)))
@@ -612,6 +616,8 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
                     next->mAlphaMaskCutoff != pparams->mAlphaMaskCutoff ||
                     next->mTexture != pparams->mTexture ||
                     next->mTextureMatrix != pparams->mTextureMatrix ||
+                    (gPipeline.mHairDepthPass != 0 &&
+                     (next->mHair && !next->mFullbright) != (pparams->mHair && !pparams->mFullbright)) ||
                     (gPipeline.mSSSDepthPass != 0 &&
                      (next->mFullbright ? nullptr : next->mSSSObject) !=
                      (pparams->mFullbright ? nullptr : pparams->mSSSObject)) ||
@@ -677,6 +683,7 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
     {
         gPipeline.setSSSDepthUniforms(*LLGLSLShader::sCurBoundShaderPtr,
             params.mFullbright ? nullptr : params.mSSSObject);
+        gPipeline.setHairDepthUniforms(*LLGLSLShader::sCurBoundShaderPtr, params.mHair && !params.mFullbright);
     }
     // Shadow shaders do not write the G-buffer's skin-scattering marker.
     if (!LLPipeline::sShadowRender && LLGLSLShader::sCurBoundShaderPtr)
@@ -684,6 +691,13 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
         static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
         static const LLStaticHashedString sss_object("sss_object"), ssgi_avatar("ssgi_avatar");
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(ssgi_avatar, params.mSSGIAvatar ? 1.f : 0.f);
+        static LLCachedControl<bool> hair_enabled(gSavedSettings, "BoxxyHairEnabled", false);
+        static LLCachedControl<F32> hair_direction(gSavedSettings, "BoxxyHairDirection", 0.f);
+        const bool hair = params.mHair && hair_enabled && !params.mFullbright &&
+            !gCubeSnapshot && !LLPipeline::sImpostorRender && !LLPipeline::sRenderingHUDs;
+        LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLStaticHashedString("hair_object"), hair ? 1.f : 0.f);
+        LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLStaticHashedString("hair_direction"), F32(hair_direction) * DEG_TO_RAD);
+        gPipeline.bindHairSettings(*LLGLSLShader::sCurBoundShaderPtr);
         const bool skin = params.mSSS && sss_enabled && !gCubeSnapshot && !LLPipeline::sImpostorRender;
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(sss_object, skin ? 1.f : 0.f);
         if (skin && LLGLSLShader::sCurBoundShaderPtr->getUniformLocation(sss_object) >= 0)

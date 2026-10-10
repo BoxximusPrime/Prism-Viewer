@@ -36,6 +36,7 @@ harness = r'''
 #include <map>
 #include <string>
 #include <vector>
+namespace LLPoserLink { bool linked=false; bool isLinked(){return linked;} }
 using F32=float; using U32=unsigned; using S32=int;
 constexpr int VX=0,VY=1,VZ=2,VW=3,VS=3;
 constexpr float DEG_TO_RAD=3.14159265358979323846f/180.f;
@@ -124,7 +125,7 @@ struct LLVOAvatar {
     std::map<std::string,LLJoint*> joints;LLJoint root;LLJoint* mRoot=&root;
     LLJoint* mPhotoEyeJoints[4]={};LLQuaternion mPhotoEyeRotations[4];
     bool mNeedsSkin=false,mNeedsImpostorUpdate=false,mIsDummy=false,visible=true;
-    LLJoint* getJoint(const char* name){return joints[name];}bool isVisible(){return visible;}
+    LLJoint* getJoint(const char* name){return joints[name];}bool isVisible(){return visible;}bool self=true;bool isSelf(){return self;}
     void restorePhotoEyeRotations();void updatePhotoEyeRotations();
 };
 '''
@@ -160,6 +161,10 @@ int main(){
     LLFloaterSnapshot::active=true;avatar.mIsDummy=true;avatar.updatePhotoEyeRotations();
     assert(!avatar.mPhotoEyeJoints[0]);avatar.mIsDummy=false;
     avatar.visible=false;avatar.updatePhotoEyeRotations();assert(!avatar.mPhotoEyeJoints[0]);avatar.visible=true;
+    LLPoserLink::linked=true;avatar.updatePhotoEyeRotations();assert(!avatar.mPhotoEyeJoints[0]);
+    for(int i=0;i<4;++i)same(eyes[i].rot,underlying[i]);
+    avatar.self=false;avatar.updatePhotoEyeRotations();assert(avatar.mPhotoEyeJoints[0]);
+    avatar.restorePhotoEyeRotations();avatar.self=true;LLPoserLink::linked=false;
     // Camera coincident with one eye, absent Bento eye, and orphan joint are safe.
     gAgentCamera.pos=eyes[0].pos;avatar.joints[PHOTO_EYE_JOINTS[2]]=nullptr;eyes[3].parent=nullptr;
     avatar.updatePhotoEyeRotations();assert(!avatar.mPhotoEyeJoints[0] && !avatar.mPhotoEyeJoints[2] && !avatar.mPhotoEyeJoints[3]);

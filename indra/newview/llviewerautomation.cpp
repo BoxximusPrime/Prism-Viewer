@@ -72,7 +72,7 @@ bool finiteVector(const LLSD& a)
 }
 bool renderSetting(const std::string& name)
 {
-    return name.find("Render") == 0 || name.find("BoxxySSS") == 0 ||
+    return name.find("Render") == 0 || name.find("BoxxySSS") == 0 || name.find("BoxxyHair") == 0 ||
            name == "WindowWidth" || name == "WindowHeight" || name == "FullScreen" ||
            name == "MaxFPS" || name == "YieldTime" || name == "BackgroundYieldTime";
 }

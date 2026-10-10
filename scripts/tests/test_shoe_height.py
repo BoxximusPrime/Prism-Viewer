@@ -9,6 +9,7 @@ source = (ROOT / "indra/newview/llfloaterhoverheight.cpp").read_text()
 start = source.index("    class ShoeHeightSkeleton")
 end = source.index("\n}\n\nbool LLFloaterShoeHeight::postBuild", start)
 sampler = source[start:end]
+matcher = source[source.index("    bool isLikelyFootwear"):start]
 height_calculation = next(line.strip() for line in source.splitlines() if line.strip().startswith("const F32 height ="))
 world_source = (ROOT / "indra/newview/llworld.cpp").read_text()
 world_start = world_source.index("F32 LLWorld::resolveStepHeightGlobal(")
@@ -25,11 +26,16 @@ harness = r'''
 #include <limits>
 #include <algorithm>
 #include <sstream>
+#include <cctype>
 #define LL_INFOS(category) std::ostringstream()
 #define LL_ENDL std::endl
 std::string llformat(const char*,float value){return std::to_string(value);}
 using F32=float; using S32=int; using U32=unsigned;
 constexpr int VX=0,VY=1,VZ=2,LL_MAX_JOINTS_PER_MESH_OBJECT=8;
+constexpr int VALPHA=3;
+struct LLStringUtil {
+    static void toLower(std::string& text){for(char& c:text)c=std::tolower(static_cast<unsigned char>(c));}
+};
 using LLUUID=int;
 struct LLVector3 {
     float mV[3];
@@ -117,6 +123,16 @@ namespace LLSkinningUtil {
     }
 }
 struct LLVolumeFace {LLVector4a* mPositions=nullptr;LLVector4a* mWeights=nullptr;int mNumVertices=0;};
+struct LLGLTFMaterial {
+    enum {ALPHA_MODE_OPAQUE,ALPHA_MODE_BLEND,ALPHA_MODE_MASK};
+    struct Color {float mV[4]={1,1,1,1};} mBaseColor;
+    int mAlphaMode=ALPHA_MODE_OPAQUE;float mAlphaCutoff=.5f;
+};
+struct LLTextureEntry {
+    float alpha=1;LLGLTFMaterial* material=nullptr;
+    const LLGLTFMaterial* getGLTFRenderMaterial()const{return material;}
+    float getAlpha()const{return alpha;}
+};
 struct LLVolume {
     std::vector<LLVolumeFace> faces;bool loaded=true;
     bool isMeshAssetLoaded(){return loaded;}
@@ -131,6 +147,8 @@ struct LLViewerObject {
 };
 struct LLVOVolume:LLViewerObject {
     LLVolume volume;bool mesh=true,rigged=true;LLMeshSkinInfo* skin=nullptr;LLVector3 render_position;
+    LLTextureEntry texture;
+    int getNumTEs(){return volume.faces.size();}const LLTextureEntry* getTE(int){return &texture;}
     LLVolume* getVolume(){return &volume;}bool isMesh(){return mesh;}bool isRiggedMesh(){return rigged;}
     const LLMeshSkinInfo* getSkinInfo(){return skin;}
     LLVector3 volumePositionToAgent(LLVector3 p){return p+render_position;}
@@ -176,8 +194,17 @@ struct Pipeline {
     }
 } gPipeline;
 constexpr int VW=3;
-''' + ground_resolver + sampler + '\nfloat computedHeight(LLVOAvatarSelf* gAgentAvatarp, LLVector3 ground, float lowest){' + height_calculation + 'return height;}\n' + r'''
+''' + ground_resolver + matcher + sampler + '\nfloat computedHeight(LLVOAvatarSelf* gAgentAvatarp, LLVector3 ground, float lowest, float extra_offset=0.f){' + height_calculation + 'return height;}\n' + r'''
 int main(){
+    for(const char* name : {"[Brand] SHOE v2", "Combat Boots", "Stiletto-Heels", "Ankle_Booties", "Sneakers",
+        "Tennis trainers", "Flip--Flops", "Mary_Janes", "Peep   Toes", "High-Tops", "Moccasins", "Espadrilles",
+        "Brogues", "Oxford", "Derbies", "Huaraches", "Wellingtons", "Rainboots", "Loafers", "Mules",
+        "Clogs", "Sandals", "Platform wedges", "Ballet flats", "Slippers", "Slingbacks", "Jutti"}) assert(isLikelyFootwear(name));
+    for(const char* name : {"", "Body", "Booty shorts", "ShoeHorn HUD", "FlatChest", "Hair", "Snowboard", "Telephone"}) assert(!isLikelyFootwear(name));
+    LLTextureEntry visibility;
+    assert(!shoeFaceHidden(&visibility));visibility.alpha=0;assert(shoeFaceHidden(&visibility));
+    LLGLTFMaterial material;visibility.material=&material;assert(!shoeFaceHidden(&visibility));
+    material.mAlphaMode=LLGLTFMaterial::ALPHA_MODE_BLEND;material.mBaseColor.mV[VALPHA]=0;assert(shoeFaceHidden(&visibility));
     LLJoint root,pelvis,foot,point;
     root.setup("root",nullptr);root.position={0,0,11};
     pelvis.setup("pelvis",&root);pelvis.rest={0,0,PELVIS_BIND_Z};
@@ -227,6 +254,13 @@ int main(){
         assert(std::abs(computedHeight(&avatar,{0,0,altitude},lowest)-.2f)<.001f);
     }
     root.position={0,0,11};
+    // The trim is applied to a fresh base calculation, not accumulated in hover.
+    for(float trim:{-.05f,0.f,.025f,.05f})for(float previous:{-1.f,0.f,.2f,1.f}){
+        avatar.hover={0,0,previous};
+        near(computedHeight(&avatar,{0,0,10},10+previous-.2f,trim),.2f+trim);
+    }
+    avatar.hover={};near(computedHeight(&avatar,{0,0,10},9.8f,1.f),.25f);
+    near(computedHeight(&avatar,{0,0,10},9.8f,-1.f),.15f);
     // Exercise the actual production floor-plane resolver, including its clamp.
     // The old +/-0.5 m probe fabricates a floor half a meter above this platform.
     region.land.altitude=0;avatar.center={0,0,1365.91f};avatar.mBodySize={.5f,.5f,2.f};
@@ -278,4 +312,8 @@ with tempfile.TemporaryDirectory() as directory:
 
 for name in ("floater_shoe_height.xml", "floater_edit_hover_height.xml", "floater_quick_preferences.xml"):
     ET.parse(ROOT / "indra/newview/skins/default/xui/en" / name)
-print("PASS: neutral sampler, pelvis origin, repeatable meter correction, production floor clamp, rendered floor versus 5 cm step bias, collision/mesh differences, avatar/attachment filtering, missing floor, platform/terrain heights, and XUI XML.")
+picker = ET.parse(ROOT / "indra/newview/skins/default/xui/en/floater_shoe_height.xml")
+trim = picker.find("slider[@name='extra_offset']")
+assert (float(trim.get('min_val')), float(trim.get('max_val')), float(trim.get('initial_value'))) == (-.05, .05, 0.)
+assert picker.find("scroll_list/column[@name='footwear']").get('width') == '0'
+print("PASS: footwear names and word boundaries, extra-offset range and nonaccumulation, visible geometry, neutral sampler, floor calibration, and picker XML.")

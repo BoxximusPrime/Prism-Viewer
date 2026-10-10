@@ -400,7 +400,9 @@ void LLGLSLShader::unloadInternal()
     }
 
     //hack to make apple not complain
+#if LL_DARWIN
     glGetError();
+#endif
 
     stop_glerror();
 }
@@ -411,7 +413,8 @@ bool LLGLSLShader::createShader()
     // progress drawing outside the compiler's recursive call stack.
     LLShaderMgr::instance()->shaderProgramStarted(this);
     const bool success = createShaderInternal();
-    LLShaderMgr::instance()->shaderProgramProcessed(this, success);
+    if (!LLShaderMgr::instance()->isShaderPending(this))
+        LLShaderMgr::instance()->shaderProgramProcessed(this, success);
     return success;
 }
 
@@ -490,11 +493,24 @@ bool LLGLSLShader::createShaderInternal()
         unloadInternal();
         return false;
     }
+    if (success && !mUsingBinaryProgram && LLShaderMgr::instance()->isShaderBatching())
+    {
+        bindAttributes();
+        glLinkProgram(mProgramObject);
+        LLShaderMgr::instance()->queueShader(this);
+        return true;
+    }
+
     // Map attributes and uniforms
     if (success)
     {
         success = mapAttributes();
     }
+    return finishShader(success);
+}
+
+bool LLGLSLShader::finishShader(bool success)
+{
     if (success)
     {
         success = mapUniforms();
@@ -557,6 +573,7 @@ bool LLGLSLShader::createShaderInternal()
         // at least 24 fragment texture units (see loadBasicShaders).
         llassert(mActiveTextureChannels <=
             (getUniformLocation(LLShaderMgr::ALPHA_PROJECTION0) >= 0 ||
+             getUniformLocation(LLShaderMgr::HAIR_BOUNDS) >= 0 ||
              getUniformLocation(LLShaderMgr::PCSS_DEPTH0) >= 0 ? gGLManager.mNumTextureImageUnits : 16));
         unbind();
     }
@@ -672,19 +689,21 @@ void LLGLSLShader::attachObjects(GLuint* objects, S32 count)
     }
 }
 
-bool LLGLSLShader::mapAttributes()
+void LLGLSLShader::bindAttributes()
+{
+    for (U32 i = 0; i < LLShaderMgr::instance()->mReservedAttribs.size(); ++i)
+        glBindAttribLocation(mProgramObject, i, LLShaderMgr::instance()->mReservedAttribs[i].c_str());
+}
+
+bool LLGLSLShader::mapAttributes(bool do_link)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_SHADER;
 
     bool res = true;
-    if (!mUsingBinaryProgram)
+    if (!mUsingBinaryProgram && do_link)
     {
         //before linking, make sure reserved attributes always have consistent locations
-        for (U32 i = 0; i < LLShaderMgr::instance()->mReservedAttribs.size(); i++)
-        {
-            const char* name = LLShaderMgr::instance()->mReservedAttribs[i].c_str();
-            glBindAttribLocation(mProgramObject, i, (const GLchar*)name);
-        }
+        bindAttributes();
 
         //link the program
         res = link();

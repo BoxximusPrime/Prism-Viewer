@@ -65,6 +65,89 @@ LLShaderMgr * LLShaderMgr::instance()
     return sInstance;
 }
 
+void LLShaderMgr::beginShaderBatch()
+{
+    llassert_always(!mShaderBatching && mPendingShaders.empty());
+    mShaderBatchSuccess = true;
+    mShaderBatching = gGLManager.mGLExtensions.contains("GL_ARB_parallel_shader_compile") ||
+        gGLManager.mGLExtensions.contains("GL_KHR_parallel_shader_compile");
+    LL_INFOS("ShaderProgress") << "Parallel shader batch support: " << mShaderBatching << LL_ENDL;
+}
+
+bool LLShaderMgr::isShaderPending(const LLGLSLShader* shader) const
+{
+    return std::any_of(mPendingShaders.begin(), mPendingShaders.end(),
+        [shader](const PendingShader& pending) { return pending.shader == shader; });
+}
+
+void LLShaderMgr::queueShader(LLGLSLShader* shader)
+{
+    llassert_always(mShaderBatching && !isShaderPending(shader));
+    // Bound driver memory while leaving enough independent links in flight.
+    if (mPendingShaders.size() == 16) flushShaderBatch();
+    mPendingShaders.push_back({shader, shader->mFeatures});
+}
+
+void LLShaderMgr::waitForShader(GLuint object, bool program)
+{
+    shaderCompileIdle();
+    if (!gGLManager.mGLExtensions.contains("GL_ARB_parallel_shader_compile") &&
+        !gGLManager.mGLExtensions.contains("GL_KHR_parallel_shader_compile")) return;
+
+    // Both extensions share this token; older macOS headers do not declare it.
+    constexpr GLenum completion_status = 0x91B1;
+    GLint complete = GL_FALSE;
+    while (!complete)
+    {
+        if (program) glGetProgramiv(object, completion_status, &complete);
+        else glGetShaderiv(object, completion_status, &complete);
+        if (!complete)
+        {
+            shaderCompileIdle();
+            ms_sleep(1);
+        }
+    }
+}
+
+void LLShaderMgr::flushShaderBatch()
+{
+    if (!mPendingShaders.empty())
+        LL_INFOS("ShaderProgress") << "Finishing shader batch: " << mPendingShaders.size() << " programs" << LL_ENDL;
+    const bool batching = mShaderBatching;
+    mShaderBatching = false;
+    for (const PendingShader& pending : mPendingShaders)
+    {
+        LLGLSLShader* shader = pending.shader;
+        // Loaders apply runtime lighting flags after submission. Retry compilation
+        // with the original flags, then restore those runtime overrides.
+        const LLShaderFeatures runtime_features = shader->mFeatures;
+        shader->mFeatures = pending.features;
+        bool success = checkProgramLink(shader->mProgramObject);
+        if (success)
+        {
+            saveCachedProgramBinary(shader);
+            success = shader->finishShader(shader->mapAttributes(false));
+        }
+        else
+        {
+            // Retry synchronously to preserve per-source class fallback and diagnostics.
+            success = shader->createShaderInternal();
+        }
+        shader->mFeatures = runtime_features;
+        mShaderBatchSuccess &= success;
+        shaderProgramProcessed(shader, success);
+    }
+    mPendingShaders.clear();
+    mShaderBatching = batching;
+}
+
+bool LLShaderMgr::finishShaderBatch()
+{
+    flushShaderBatch();
+    mShaderBatching = false;
+    return mShaderBatchSuccess;
+}
+
 bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
 {
     llassert_always(shader != NULL);
@@ -226,6 +309,9 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
             return false;
         }
     }
+
+    if (!shader->attachFragmentObject("deferred/hairUtil.glsl")) return false;
+    if (!shader->attachFragmentObject("deferred/hairDepthUtil.glsl")) return false;
 
     if (features->hasFullGBuffer || features->hasShadows ||
         (features->hasReflectionProbes && gGLManager.mNumTextureImageUnits >= 24))
@@ -482,9 +568,10 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
     }
 #endif
 
+    // Error queries can serialize driver jobs; batched failures are checked at link completion.
     GLenum error = GL_NO_ERROR;
 
-    error = glGetError();
+    error = mShaderBatching ? GL_NO_ERROR : glGetError();
     if (error != GL_NO_ERROR)
     {
         LL_SHADER_LOADING_WARNS() << "GL ERROR entering loadShaderFile(): " << error << " for file: " << filename << LL_ENDL;
@@ -663,9 +750,10 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_IMPOSTOR_FLAG(data) (abs((data)-GBUFFER_FLAG_IMPOSTOR)<0.01)\n");
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_PBR      0.67\n"); // bit 1
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_HDRI      1.0\n");  // bit 2
-    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_AVATAR_FLAG(data) ((abs((data)-0.38)<0.015 || abs((data)-0.50)<0.015 || abs((data)-0.71)<0.015 || abs((data)-0.83)<0.015) ? 1.0 : 0.0)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_AVATAR_FLAG(data) ((abs((data)-0.38)<0.015 || abs((data)-0.50)<0.015 || abs((data)-0.71)<0.015 || abs((data)-0.83)<0.015 || abs((data)-0.26)<0.015 || abs((data)-0.59)<0.015) ? 1.0 : 0.0)\n");
     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_SSS_FLAG(data) ((abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.46)<0.025 || abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.79)<0.025) ? 1.0 : 0.0)\n");
-    extra_code_text[extra_code_count++] = strdup("#define GET_GBUFFER_FLAG(data, flag) (abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.12*GBUFFER_SSS_FLAG(data)-(flag))<0.1)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GBUFFER_HAIR_FLAG(data) ((abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.22)<0.015 || abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.55)<0.015) ? 1.0 : 0.0)\n");
+    extra_code_text[extra_code_count++] = strdup("#define GET_GBUFFER_FLAG(data, flag) (abs((data)-0.04*GBUFFER_AVATAR_FLAG(data)-0.12*GBUFFER_SSS_FLAG(data)+0.12*GBUFFER_HAIR_FLAG(data)-(flag))<0.1)\n");
 
     if (defines)
     {
@@ -776,6 +864,19 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
         }
     }
 
+    if (texture_index_channels > 0 && type == GL_FRAGMENT_SHADER)
+    {
+        std::string sizes = "vec2 diffuseLookupSize() {\n";
+        for (S32 i = 0; i < texture_index_channels; ++i)
+        {
+            if (texture_index_channels > 1)
+                sizes += llformat("if (vary_texture_index == %d) ", i);
+            sizes += llformat("return vec2(textureSize(tex%d, 0));\n", i);
+        }
+        sizes += "return vec2(1); }\n";
+        extra_code_text[extra_code_count++] = strdup(sizes.c_str());
+    }
+
     // Master definition can be found in deferredUtil.glsl
     extra_code_text[extra_code_count++] = strdup("struct GBufferInfo { vec4 albedo; vec4 specular; vec3 normal; vec4 emissive; float gbufferFlag; float envIntensity; float sss; };\n");
 
@@ -884,7 +985,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
     //create shader object
     GLuint ret = glCreateShader(type);
 
-    error = glGetError();
+    error = mShaderBatching ? GL_NO_ERROR : glGetError();
     if (error != GL_NO_ERROR)
     {
         LL_WARNS("ShaderLoading") << "GL ERROR in glCreateShader: " << error << " for file: " << open_file_name << LL_ENDL;
@@ -901,7 +1002,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
         LL_DEBUGS("ShaderLoading") << "glCreateShader done" << LL_ENDL;
         glShaderSource(ret, shader_code_count, (const GLchar**)shader_code_text, NULL);
 
-        error = glGetError();
+        error = mShaderBatching ? GL_NO_ERROR : glGetError();
         if (error != GL_NO_ERROR)
         {
             LL_WARNS("ShaderLoading") << "GL ERROR in glShaderSource: " << error << " for file: " << open_file_name << LL_ENDL;
@@ -916,7 +1017,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
         LL_DEBUGS("ShaderLoading") << "glShaderSource done" << U32(ret) << LL_ENDL;
         glCompileShader(ret);
 
-        error = glGetError();
+        error = mShaderBatching ? GL_NO_ERROR : glGetError();
         if (error != GL_NO_ERROR)
         {
             LL_WARNS("ShaderLoading") << "GL ERROR in glCompileShader: " << error << " for file: " << open_file_name << LL_ENDL;
@@ -930,9 +1031,13 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
         //check for errors
         LL_DEBUGS("ShaderLoading") << "glCompileShader done" << U32(ret) << LL_ENDL;
         GLint success = GL_TRUE;
-        glGetShaderiv(ret, GL_COMPILE_STATUS, &success);
+        if (!mShaderBatching)
+        {
+            waitForShader(ret, false);
+            glGetShaderiv(ret, GL_COMPILE_STATUS, &success);
+        }
 
-        error = glGetError();
+        error = mShaderBatching ? GL_NO_ERROR : glGetError();
         if (error != GL_NO_ERROR || success == GL_FALSE)
         {
             //an error occured, print log
@@ -989,6 +1094,13 @@ bool LLShaderMgr::linkProgramObject(GLuint obj, bool suppress_errors)
         LL_PROFILE_ZONE_NAMED_CATEGORY_SHADER("glLinkProgram");
         glLinkProgram(obj);
     }
+
+    return checkProgramLink(obj, suppress_errors);
+}
+
+bool LLShaderMgr::checkProgramLink(GLuint obj, bool suppress_errors)
+{
+    waitForShader(obj, true);
 
     GLint success = GL_TRUE;
 
@@ -1228,6 +1340,7 @@ bool LLShaderMgr::loadCachedProgramBinary(LLGLSLShader* shader)
 
                         error = glGetError();
                         GLint success = GL_TRUE;
+                        if (error == GL_NO_ERROR) waitForShader(shader->mProgramObject, true);
                         glGetProgramiv(shader->mProgramObject, GL_LINK_STATUS, &success);
                         if (error == GL_NO_ERROR && success == GL_TRUE)
                         {
@@ -1524,6 +1637,8 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("sssDepthMap0");
     mReservedUniforms.push_back("sssDepthMap1");
     mReservedUniforms.push_back("sssDepthMap2");
+    mReservedUniforms.push_back("hairBoundsMap");
+    mReservedUniforms.push_back("hairDensityMap");
 
     mReservedUniforms.push_back("positionMap");
     mReservedUniforms.push_back("diffuseRect");

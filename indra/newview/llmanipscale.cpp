@@ -866,7 +866,7 @@ void LLManipScale::dragCorner( S32 x, S32 y )
     LLVector3 projected_drag_pos2 = inverse_projected_vec(mScaleDir, orthogonal_component(mouse_on_plane2, mSnapGuideDir2));
 
     bool snap_enabled = isSnapEnabled();
-    if (snap_enabled && (mTemporarySnap || (mouse_on_plane1 - projected_drag_pos1) * mSnapGuideDir1 > mSnapRegimeOffset))
+    if (snap_enabled && (mSnapInverted || (mouse_on_plane1 - projected_drag_pos1) * mSnapGuideDir1 > mSnapRegimeOffset))
     {
         F32 drag_dist = mScaleDir * projected_drag_pos1; // Projecting the drag position allows for negative results, vs using the length which will result in a "reverse scaling" bug.
 
@@ -1078,7 +1078,7 @@ void LLManipScale::dragFace( S32 x, S32 y )
 
     bool snap_enabled = isSnapEnabled();
 
-    if (snap_enabled && (mTemporarySnap || dist_from_scale_line > mSnapRegimeOffset))
+    if (snap_enabled && (mSnapInverted || dist_from_scale_line > mSnapRegimeOffset))
     {
         mSnapRegime = static_cast<ESnapRegimes>(SNAP_REGIME_UPPER | SNAP_REGIME_LOWER); // A face drag doesn't have split regimes.
 

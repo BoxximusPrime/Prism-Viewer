@@ -26,6 +26,10 @@
 out vec4 frag_color;
 // Ordinary shadows keep their existing output. Focused SSS maps pack the first
 // entry (RG) and first exit (BA), selected by the render pass color mask.
+bool hairDepthCapture(float alpha, out vec4 result);
+uniform int hair_depth_pass;
+uniform int hair_depth_object;
+uniform int hair_depth_blend;
 uniform int sss_depth_pass;
 uniform float sss_depth_id;
 
@@ -47,6 +51,11 @@ void main()
 
     alpha *= vertex_color.a;
 
+    if (hair_depth_object != 0 && hair_depth_pass != 0)
+    {
+        if (hairDepthCapture(alpha, frag_color)) return;
+    }
+
     if (alpha < 0.05) // treat as totally transparent
     {
         discard;
@@ -60,6 +69,7 @@ void main()
         }
     }
 
+    if (hairDepthCapture(1.0, frag_color)) return;
     frag_color = sss_depth_pass == 0 ? vec4(1.0) :
         vec4(gl_FragCoord.z, sss_depth_id, gl_FragCoord.z, sss_depth_id);
 }

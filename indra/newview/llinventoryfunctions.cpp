@@ -26,6 +26,7 @@
 
 #include "llviewerprecompiledheaders.h"
 #include "llfloaterinventoryllmsort.h"
+#include "llfloatertattoocompare.h"
 
 #include <utility> // for std::pair<>
 
@@ -3321,6 +3322,15 @@ bool get_selection_object_uuids(LLFolderView *root, uuid_vec_t& ids)
 void LLInventoryAction::doToSelected(LLInventoryModel* model, LLFolderView* root, const std::string& action, bool user_confirm)
 {
     std::set<LLFolderViewItem*> selected_items = root->getSelectionList();
+    if (action == "compare_tattoos")
+    {
+        uuid_vec_t ids;
+        for (const auto* view : selected_items)
+            if (const auto* item = dynamic_cast<const LLFolderViewModelItemInventory*>(view->getViewModelItem()))
+                ids.push_back(item->getUUID());
+        LLFloaterTattooCompare::show(ids);
+        return;
+    }
     if (action == "llm_sort")
     {
         std::vector<LLUUID> ids;

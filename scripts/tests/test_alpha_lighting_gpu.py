@@ -37,6 +37,7 @@ vec3 srgb_to_linear(vec3 c) { return c; }
 vec3 linear_to_srgb(vec3 c) { return c; }
 void mirrorClip(vec3 p) {}
 void waterClip(vec3 p) {}
+vec4 applyVolumeFogAlpha(vec3 p, vec4 c) { return c; }
 float sampleDirectionalShadow(vec3 p, vec3 n, vec2 tc) { return 1.0; }
 void calcAtmosphericVarsLinear(vec3 p, vec3 n, vec3 l,
     out vec3 sunlit, out vec3 amblit, out vec3 additive, out vec3 atten)
@@ -69,7 +70,8 @@ uniform vec3 test_position;
 out vec3 vary_fragcoord, vary_position, vary_norm, vary_normal, vary_tangent;
 out vec2 vary_texcoord0, vary_texcoord1, vary_texcoord2;
 out vec2 base_color_texcoord, normal_texcoord, metallic_roughness_texcoord, emissive_texcoord;
-out vec4 vertex_color;
+out vec4 vertex_color, vary_hair_tangent;
+out vec2 vary_hair_texcoord;
 flat out float vary_sign;
 void main() {
     vec2 corners[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));
@@ -77,6 +79,7 @@ void main() {
     vary_fragcoord=vec3(0,0,1); vary_position=test_position;
     vary_norm=vec3(0,0,test_normal_length); vary_normal=vary_norm;
     vary_tangent=vec3(1,0,0); vary_sign=1.0;
+    vary_hair_tangent=vec4(1,0,0,1); vary_hair_texcoord=corners[gl_VertexID]*.5+.5;
     vary_texcoord0=vary_texcoord1=vary_texcoord2=vec2(0.5);
     base_color_texcoord=normal_texcoord=metallic_roughness_texcoord=emissive_texcoord=vec2(0.5);
     vertex_color=vec4(1,1,1,0.6);
@@ -105,6 +108,9 @@ def run(sdl, gl, projectors=False):
             stages.append((0x8B30, "#define SPOT_SHADOW 1\n" +
                            (SHADERS / "class1/deferred/shadowUtil.glsl").read_text()))
         stages.append((0x8B30, projector))
+        stages.append((0x8B30, '#define HAIR_DENSITY_MAPS 1\n'+(SHADERS / "class1/deferred/hairDepthUtil.glsl").read_text()))
+        stages.append((0x8B30, "#define GBUFFER_AVATAR_FLAG(data) 0.0\n" +
+                       (SHADERS / "class1/deferred/hairUtil.glsl").read_text()))
         for kind, source in stages:
             shader = gl.CreateShader(kind)
             source = C.c_char_p(("#version 430 core\n" + source).encode())

@@ -37,6 +37,7 @@ struct LLDrawInfo {
     float mAlphaMaskCutoff = .33f;
     int mTexture = 1, mTextureMatrix = 0;
     std::vector<int> mTextureList{1, 2};
+    bool mHair = false;
 };
 struct LLCullResult {
     using drawinfo_iterator = LLDrawInfo**;
@@ -45,6 +46,7 @@ struct LLCullResult {
 struct LLPipeline {
     inline static bool sShadowRender = true;
     int mSSSDepthPass = 0;
+    int mHairDepthPass = 0;
     bool mSSSDepthOpaque = true;
     std::vector<LLDrawInfo*> inputs;
     LLDrawInfo** beginRenderMap(U32) { return inputs.data(); }
@@ -152,6 +154,20 @@ int main() {
             }
         }
     }
+    gPipeline.mSSSDepthPass = 0;
+    for (int phase : {1,2,3}) {
+        for (bool fullbright : {false,true}) {
+            LLDrawInfo a{0,5,6,0}, b{6,11,6,6};
+            a.mHair = true; a.mFullbright = fullbright;
+            gPipeline.inputs = {&a,&b}; gPipeline.mHairDepthPass = phase;
+            submitted.clear(); draws = 0;
+            pass.pushMaskBatches(0,true,true);
+            assert(submitted.size() == (phase == 1 ? (fullbright ? 12u : 6u) : (fullbright ? 0u : 6u)));
+            for (const auto& r : submitted)
+                assert(fullbright || (phase == 1 ? std::get<2>(r) >= 6 : std::get<2>(r) < 6));
+        }
+    }
+    gPipeline.mHairDepthPass = 0;
     gPipeline.inputs.clear(); submitted.clear(); draws = 0;
     pass.pushMaskBatches(0, true, true);
     assert(draws == 0 && submitted.empty());

@@ -710,6 +710,16 @@ void LLParticlePartition::rebuildGeom(LLSpatialGroup* group)
                 geom_idx += 4;
             }
 
+            LLStrider<LLVector4a> tangents;
+            LLStrider<LLVector2> mesh_uv;
+            group->mVertexBuffer->getTangentStrider(tangents);
+            group->mVertexBuffer->getTexCoord3Strider(mesh_uv);
+            for (U32 i = 0; i < vertex_count; ++i)
+            {
+                tangents[i].clear();
+                mesh_uv[i].clear();
+            }
+
             LLStrider<LLVector2> texcoordsp;
 
             group->mVertexBuffer->getTexCoord0Strider(texcoordsp);

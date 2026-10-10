@@ -197,7 +197,7 @@ public:
     bool attachVertexObject(std::string object);
     void attachObject(GLuint object);
     void attachObjects(GLuint* objects = NULL, S32 count = 0);
-    bool mapAttributes();
+    bool mapAttributes(bool do_link = true);
     bool mapUniforms();
     void mapUniform(GLint index);
     void uniform1i(U32 index, GLint i);
@@ -370,7 +370,10 @@ public:
 #endif
 
 private:
+    friend class LLShaderMgr;
     bool createShaderInternal();
+    bool finishShader(bool success);
+    void bindAttributes();
     std::vector<U32> mBoundSamplerChannels;
     void unloadInternal();
     // This must be static because finishProfile() is called at least once

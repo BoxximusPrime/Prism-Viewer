@@ -46,7 +46,9 @@ public:
 
     enum
     {
-        VERTEX_DATA_MASK =  LLVertexBuffer::MAP_VERTEX |
+        VERTEX_DATA_MASK =  LLVertexBuffer::MAP_TANGENT |
+                            LLVertexBuffer::MAP_TEXCOORD3 |
+                            LLVertexBuffer::MAP_VERTEX |
                             LLVertexBuffer::MAP_NORMAL |
                             LLVertexBuffer::MAP_TEXCOORD0 |
                             LLVertexBuffer::MAP_COLOR |

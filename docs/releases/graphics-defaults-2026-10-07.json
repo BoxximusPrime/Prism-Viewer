@@ -1,8 +1,9 @@
 {
   "captured_date": "2026-10-07",
-  "source": "Confirmed current Prism saved preferences copied by the user to release-settings-current.xml; cloud sunlight strength subsequently revised to 0.08 at user request",
+  "source": "Confirmed current Prism saved preferences copied by the user to release-settings-current.xml; cloud sunlight strength subsequently revised to 0.08 and GTAO denoising to 0 at user request",
   "viewer_version": "0.8.0",
   "changed_settings": [
+    "RenderGTAODenoise",
     "BoxxySSSDepth",
     "BoxxySSSGrazingSmoothing",
     "BoxxySSSGrazingStrength",
@@ -101,7 +102,7 @@
     },
     "GTAO": {
       "RenderGTAODebug": false,
-      "RenderGTAODenoise": 2.0,
+      "RenderGTAODenoise": 0.0,
       "RenderGTAOEnabled": true,
       "RenderGTAOFalloff": 0.1,
       "RenderGTAOQuality": 1.0,

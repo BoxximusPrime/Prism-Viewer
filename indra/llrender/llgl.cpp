@@ -1596,6 +1596,17 @@ void LLGLManager::initExtensions()
     // Load entire OpenGL API through GetProcAddress, leaving sections beyond mGLVersion unloaded
     LL_DEBUGS("RenderInit") << "GL Probe: Getting symbols" << LL_ENDL;
 
+    // Request background compiler workers explicitly; some drivers otherwise
+    // serialize links even though the reported default hint is already unlimited.
+    const char* compiler_threads = mGLExtensions.contains("GL_ARB_parallel_shader_compile")
+        ? "glMaxShaderCompilerThreadsARB"
+        : (mGLExtensions.contains("GL_KHR_parallel_shader_compile") ? "glMaxShaderCompilerThreadsKHR" : nullptr);
+    if (compiler_threads)
+    {
+        auto set_threads = (PFNGLMAXSHADERCOMPILERTHREADSARBPROC)LL_GET_PROC_ADDRESS(compiler_threads);
+        if (set_threads) set_threads(0xFFFFFFFFu);
+    }
+
     // GL_VERSION_1_2
     if (mGLVersion < 1.19f)
     {

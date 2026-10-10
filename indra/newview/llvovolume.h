@@ -322,6 +322,7 @@ public:
     virtual bool isFlexible() const override;
     virtual bool isSculpted() const override;
     virtual bool isMesh() const override;
+    bool isHairEnabled() const;
     bool isSSSEnabled() const;
     bool isSSSOverlayEnabled() const;
     virtual bool isRiggedMesh() const override;
@@ -492,6 +493,7 @@ private:
     // accessed by getIsAnimatedObjectFast
     mutable bool mIsAnimatedObject = false;
     mutable bool mSSSStateInitialized = false;
+    mutable bool mLastHairState = false;
     mutable bool mLastSSSState = false;
     mutable bool mLastSSSOverlayState = false;
     LLFrameTimer mSSSUpdateTimer;

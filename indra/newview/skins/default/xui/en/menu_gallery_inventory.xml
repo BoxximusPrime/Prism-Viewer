@@ -391,6 +391,9 @@
          function="Inventory.DoToSelected"
          parameter="wear_add" />
     </menu_item_call>
+    <menu_item_call label="Compare Items..." layout="topleft" name="Compare Tattoos">
+        <menu_item_call.on_click function="Inventory.DoToSelected" parameter="compare_tattoos" />
+    </menu_item_call>
     <menu_item_call
      label="Detach From Yourself"
      layout="topleft"
