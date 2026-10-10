@@ -1129,6 +1129,15 @@ void LLGLSLShader::bind(U8 variant)
     mGLTFVariants[variant].bind();
 }
 
+void LLGLSLShader::setMatrixPaletteOrigin(const LLVector3& origin)
+{
+    if (mMatrixPaletteOrigin != origin)
+    {
+        mMatrixPaletteOrigin = origin;
+        mMatHash[LLRender::MM_MODELVIEW] = 0xFFFFFFFF;
+    }
+}
+
 void LLGLSLShader::bind(bool rigged)
 {
     if (rigged)

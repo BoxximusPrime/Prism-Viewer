@@ -66,6 +66,24 @@ LLXformMatrix::~LLXformMatrix()
 {
 }
 
+LLVector3 LLXform::getWorldPositionRelativeTo(const LLVector3& origin) const
+{
+    // Accumulate bone/attachment offsets before adding the large root translation.
+    LLVector3 position;
+    const LLXform* xform = this;
+    while (xform->mParent)
+    {
+        LLVector3 offset = xform->mPosition;
+        if (xform->mParent->getScaleChildOffset())
+        {
+            offset.scaleVec(xform->mParent->getScale());
+        }
+        position += offset * xform->mParent->getWorldRotation();
+        xform = xform->mParent;
+    }
+    return position + (xform->mPosition - origin);
+}
+
 void LLXformMatrix::update()
 {
     if (mParent)

@@ -129,13 +129,14 @@ void LLSkinningUtil::initSkinningMatrixPalette(
     LLMatrix4a* mat,
     S32 count,
     const LLMeshSkinInfo* skin,
-    LLVOAvatar *avatar)
+    LLVOAvatar *avatar,
+    const LLVector3* render_origin)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
 
     initJointNums(const_cast<LLMeshSkinInfo*>(skin), avatar);
 
-    if (skin->mInvBindMatrix.size() < count )
+    if (count <= 0 || skin->mInvBindMatrix.size() < count)
     {
         // faulty model? mInvBindMatrix.size() should have matched mJointNames.size()
         return;
@@ -151,10 +152,19 @@ void LLSkinningUtil::initSkinningMatrixPalette(
         if (joint)
         {
             world[j] = joint->getWorldMatrix4a();
+            if (render_origin)
+            {
+                const LLVector3 position = joint->getXform()->getWorldPositionRelativeTo(*render_origin);
+                world[j].mMatrix[3].set(position.mV[0], position.mV[1], position.mV[2], 1.f);
+            }
         }
         else
         {
-            mat[j] = skin->mInvBindMatrix[j];
+            world[j].setIdentity();
+            if (render_origin)
+            {
+                world[j].mMatrix[3].set(-render_origin->mV[0], -render_origin->mV[1], -render_origin->mV[2], 1.f);
+            }
 #if DEBUG_SKINNING
             // This  shouldn't  happen   -  in  mesh  upload,  skinned
             // rendering  should  be disabled  unless  all joints  are

@@ -59,6 +59,7 @@ class LLSpatialGroup;
 class LLViewerRegion;
 class LLViewerObject;
 class LLReflectionMap;
+class LLXformMatrix;
 
 void pushVerts(LLFace* face);
 
@@ -105,6 +106,7 @@ public:
     const LLMatrix4* mNormalMapMatrix = nullptr;
     const LLMatrix4* mTextureMatrix = nullptr;
     const LLMatrix4* mModelMatrix = nullptr;
+    const LLXformMatrix* mModelXform = nullptr;
     // Union of the existing batch's faces, in the same space as its vertices.
     // Animated rigged draws use their avatar's live agent-space bounds instead.
     LLAlphaLightSelection::Bounds mAlphaLightBounds;
@@ -112,6 +114,7 @@ public:
     U32 mAlphaLightFrame = ~0U;
     // Only the main TAA motion pass updates this; shadow/probe draws cannot age it.
     LLMatrix4 mTAAModel;
+    LLVector3 mTAAOrigin;
     U32 mTAAFrame = 0;
     bool mTAAStatic = false; // All batched faces are static, nonrigged geometry.
     // Non-owning identity of the source geometry; never extends an object's lifetime.
