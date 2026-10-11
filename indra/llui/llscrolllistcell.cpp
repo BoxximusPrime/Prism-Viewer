@@ -488,9 +488,16 @@ void LLScrollListText::draw(const LLColor4& color, const LLColor4& highlight_col
 LLScrollListCheck::LLScrollListCheck(const LLScrollListCell::Params& p)
 :   LLScrollListCell(p)
 {
-    LLCheckBoxCtrl::Params checkbox_p;
+    LLCheckBoxCtrl::Params checkbox_p(LLUICtrlFactory::getDefaultParams<LLCheckBoxCtrl>());
+    const S32 height = p.font()->getLineHeight();
     checkbox_p.name("checkbox");
-    checkbox_p.rect = LLRect(0, p.width, p.width, 0);
+    checkbox_p.font(p.font());
+    checkbox_p.rect = LLRect(0, height, p.width, 0);
+    // Cells draw from the row baseline; remove the standalone checkbox's label padding.
+    checkbox_p.label_text.rect = LLRect(0, height, 0, 0);
+    LLRect button_rect = checkbox_p.check_button.rect();
+    button_rect.setOriginAndSize(button_rect.mLeft, 0, button_rect.getWidth(), height);
+    checkbox_p.check_button.rect = button_rect;
     checkbox_p.enabled(p.enabled);
     checkbox_p.initial_value(p.value());
 
@@ -516,6 +523,11 @@ LLScrollListCheck::~LLScrollListCheck()
 {
     delete mCheckBox;
     mCheckBox = NULL;
+}
+
+S32 LLScrollListCheck::getHeight() const
+{
+    return mCheckBox->getRect().getHeight();
 }
 
 void LLScrollListCheck::draw(const LLColor4& color, const LLColor4& highlight_color)

@@ -154,6 +154,23 @@ class BenchmarkTests(unittest.TestCase):
 
 
 class MCPTests(unittest.TestCase):
+    def test_profile_result_preserves_cpu_summary_and_raw_artifact(self):
+        import server
+        cpu = {"avatar.animation": {"median": 2.5, "active_frames": 1}}
+        raw = [{"cpu_ms": {"avatar.animation": 5}}, {"cpu_ms": {}}]
+        capture = {"state": "complete", "cpu_ms": cpu, "samples": raw,
+                   "metadata": {"schema_version": 2, "settings": {"RenderVSyncEnable": True}}}
+        with tempfile.TemporaryDirectory() as folder, patch.object(vc, "ARTIFACTS", Path(folder)), \
+                patch.object(server.client, "call", return_value=capture), \
+                patch.object(server, "build_identity", return_value={"test": True}):
+            result = server.profile_result()
+            self.assertEqual(result["cpu_ms"], cpu)
+            self.assertNotIn("samples", result)
+            saved = json.loads(Path(result["artifact"]).read_text())
+            self.assertEqual(saved["samples"], raw)
+            self.assertEqual(saved["cpu_ms"], cpu)
+            self.assertTrue(saved["metadata"]["settings"]["RenderVSyncEnable"])
+
     def test_shader_reload_preserves_camera_and_settings_and_blocks_benchmark(self):
         import server
         with patch.object(server.client, "call", return_value={"reloaded": True}) as call:

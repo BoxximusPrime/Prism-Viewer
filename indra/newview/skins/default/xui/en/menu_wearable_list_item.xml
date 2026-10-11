@@ -110,6 +110,16 @@
          function="Wearable.RemoveFromOutfit" />
     </menu_item_call>
     <menu_item_call
+     label="Add to Collection Set"
+     layout="topleft"
+     visible="false"
+     name="collection_add" />
+    <menu_item_call
+     label="Remove from Collection Set"
+     layout="topleft"
+     visible="false"
+     name="collection_remove" />
+    <menu_item_call
      label="Create New"
      layout="topleft"
      visible="false"

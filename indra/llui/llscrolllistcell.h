@@ -235,7 +235,7 @@ public:
     LLScrollListCheck( const LLScrollListCell::Params&);
     /*virtual*/ ~LLScrollListCheck();
     /*virtual*/ void    draw(const LLColor4& color, const LLColor4& highlight_color);
-    /*virtual*/ S32     getHeight() const           { return 0; }
+    /*virtual*/ S32     getHeight() const;
     /*virtual*/ const LLSD  getValue() const;
     /*virtual*/ void    setValue(const LLSD& value);
     /*virtual*/ void    onCommit();

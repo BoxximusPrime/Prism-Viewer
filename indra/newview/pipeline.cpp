@@ -2728,6 +2728,7 @@ bool LLPipeline::isWaterClip()
 
 void LLPipeline::updateCull(LLCamera& camera, LLCullResult& result)
 {
+    LL_AUTOMATION_CPU_SCOPE("render.cull");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE; //LL_RECORD_BLOCK_TIME(FTM_CULL);
     LL_PROFILE_GPU_ZONE("updateCull"); // should always be zero GPU time, but drop a timer to flush stuff out
 
@@ -2973,6 +2974,7 @@ bool LLPipeline::updateDrawableGeom(LLDrawable* drawablep)
 
 void LLPipeline::updateGL()
 {
+    LL_AUTOMATION_CPU_SCOPE("render.gl_update");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     {
         while (!LLGLUpdate::sGLQ.empty())
@@ -3379,6 +3381,7 @@ void LLPipeline::markRebuild(LLDrawable *drawablep, LLDrawable::EDrawableFlags f
 
 void LLPipeline::stateSort(LLCamera& camera, LLCullResult &result)
 {
+    LL_AUTOMATION_CPU_SCOPE("render.state_sort");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("stateSort");
 

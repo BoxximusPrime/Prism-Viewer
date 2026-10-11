@@ -26,6 +26,7 @@
 */
 
 #include "llviewerprecompiledheaders.h"
+#include "llviewerautomation.h"
 
 #include "llskinningutil.h"
 #include "llvoavatar.h"
@@ -134,6 +135,7 @@ void LLSkinningUtil::initSkinningMatrixPalette(
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
 
+    LL_AUTOMATION_CPU_SCOPE("skinning.palette_build");
     initJointNums(const_cast<LLMeshSkinInfo*>(skin), avatar);
 
     if (count <= 0 || skin->mInvBindMatrix.size() < count)

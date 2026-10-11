@@ -55,7 +55,17 @@ bool LLFloaterBoxxyTPose::postBuild()
     }
     mPoseCombo->selectFirstItem();
     mPoseCombo->setCommitCallback(boost::bind(&LLFloaterBoxxyTPose::onPoseSelected, this));
+    getChild<LLUICtrl>("pose_prev")->setCommitCallback([this](LLUICtrl*, const LLSD&) { cyclePose(-1); });
+    getChild<LLUICtrl>("pose_next")->setCommitCallback([this](LLUICtrl*, const LLSD&) { cyclePose(1); });
     return true;
+}
+
+void LLFloaterBoxxyTPose::cyclePose(S32 direction)
+{
+    const S32 count = mPoseCombo->getItemCount();
+    if (count == 0) return;
+    mPoseCombo->setCurrentByIndex((mPoseCombo->getCurrentIndex() + direction + count) % count);
+    onPoseSelected();
 }
 
 void LLFloaterBoxxyTPose::onOpen(const LLSD& key)

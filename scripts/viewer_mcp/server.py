@@ -152,7 +152,7 @@ def profile_start(frames: int = 180, warmup_frames: int = 120) -> dict:
 
 @mcp.tool(annotations=READ)
 def profile_result(save: bool = True) -> dict:
-    """Read capture progress or final per-stage GPU/CPU-frame statistics. Save raw samples and full metadata on completion."""
+    """Read capture progress or GPU and main-thread CPU stage statistics (animation, skinning, scene updates, rendering, presentation). CPU/GPU scopes are inclusive wall/elapsed times, not utilization. Save raw samples and full metadata on completion."""
     result = client.call("profile_status", include_samples=save)
     if save and result["state"] == "complete":
         result["build"] = build_identity()

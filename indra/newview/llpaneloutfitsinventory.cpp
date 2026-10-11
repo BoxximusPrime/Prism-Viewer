@@ -350,6 +350,9 @@ void LLPanelOutfitsInventory::onTabChange()
     mActivePanel = dynamic_cast<LLPanelAppearanceTab*>(mAppearanceTabs->getCurrentPanel());
     if (!mActivePanel) return;
 
+    const bool collections = mActivePanel->getName() == "collections_tab";
+    mListCommands->setVisible(!collections);
+    if (mGearMenu) mGearMenu->setVisible(!collections);
     mActivePanel->checkFilterSubString();
     mActivePanel->onOpen(LLSD());
 

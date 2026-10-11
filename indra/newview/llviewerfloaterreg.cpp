@@ -58,6 +58,7 @@
 #include "llfloaterbuyland.h"
 #include "llfloaterbvhpreview.h"
 #include "llfloaterboxxyao.h"
+#include "llpanelprismcollections.h"
 #include "llfloaterboxxyradar.h"
 #include "llfloaterboxxytpose.h"
 #include "llfloaterposestudio.h"
@@ -364,6 +365,7 @@ void LLViewerFloaterReg::registerFloaters()
     LLFloaterReg::add("build_options", "floater_build_options.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBuildOptions>);
     LLFloaterReg::add("bulk_upload", "floater_bulk_upload.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBulkUpload>);
     LLFloaterReg::add("bumps", "floater_bumps.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBump>);
+    LLFloaterReg::add("prism_collection_editor", "floater_prism_collection.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterPrismCollection>);
     LLFloaterReg::add("boxxy_ao", "floater_boxxy_ao.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyAO>);
     LLFloaterReg::add("boxxy_ao_launcher", "floater_boxxy_ao_launcher.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyAOLauncher>);
     LLFloaterReg::add("boxxy_radar", "floater_boxxy_radar.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterBoxxyRadar>);

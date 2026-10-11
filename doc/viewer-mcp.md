@@ -130,6 +130,33 @@ add all feature costs together. A stage absent from every frame is omitted;
 `active_frames` reports coverage and absent frames contribute zero to a stage's
 aggregate. No coverage means the scene did not exercise that path.
 
+Schema version 2 also includes `cpu_ms` in every raw sample and in the summary,
+with the same statistics and `active_frames` coverage as `gpu_ms`. CPU scopes
+measure **inclusive main-thread wall time**, including waits, not CPU utilization.
+Repeated calls (for example, multiple avatars or rendering passes) accumulate
+within each frame. Worker-thread execution is excluded. Inactive captures do not
+read CPU timers or accumulate samples.
+
+CPU measurement begins after MCP request processing and ends after the main
+loop's background work. It is attached to that same frame's GPU sample, including
+animation before rendering and presentation/reflection work after GPU timestamps
+end. `cpu_ms.frame` measures this interval; `frame_interval_ms` retains its existing
+render-start-to-render-start meaning. Do not subtract the CPU and GPU timers to
+infer utilization or add a parent scope to its children.
+
+| CPU scope | Work measured |
+| --- | --- |
+| `scene.idle` | Main idle/update phase, including network, objects, avatars and UI. |
+| `scene.network`, `scene.object_update` | Network processing and object/GLTF updates; object updates include avatar updates. |
+| `avatar.idle`, `avatar.character`, `avatar.animation` | Avatar update, character update, and normal/forced/hidden motion-update branches, nested in that order. |
+| `avatar.rigging_info` | Attachment rigging information updates. |
+| `skinning.palette_cache`, `skinning.palette_build` | Cache-miss matrix preparation and joint palette construction; construction is nested inside cache preparation when called there. |
+| `skinning.rigged_volume` | CPU rigged-volume deformation, bounds and optional octree rebuilds, including palette construction. This is not GPU vertex skinning time. |
+| `render.display` | Display submission, presentation and post-present maintenance. |
+| `render.geometry_update`, `render.gl_update`, `render.cull`, `render.state_sort`, `render.texture_update` | Geometry/GL updates, culling, draw sorting and texture updates across invoked views. |
+| `render.present`, `render.post_present` | Buffer swap (including VSync waits) and subsequent reflection/snapshot maintenance. |
+| `background.total`, `background.yield`, `background.texture_dispatch`, `background.mesh` | Main-thread background phase, its explicit foreground/background sleeps, texture worker dispatch and mesh repository update; dispatch timings do not measure worker execution. |
+
 | Feature | GPU scopes / comparison |
 | --- | --- |
 | SSS | Depth maps, diffusion, overlays; enabled/disabled comparison also captures shared shader work. |
@@ -162,11 +189,15 @@ itself has overhead; compare runs using the same instrumentation.
 
 ```powershell
 ./scripts/viewer_mcp/.venv/Scripts/python.exe scripts/tests/test_viewer_mcp.py -v
+./scripts/viewer_mcp/.venv/Scripts/python.exe scripts/tests/test_viewer_mcp_cpu.py
 ```
 
 Tests exercise binary LEAP framing, real pipe/HTTP transport and authentication,
 MCP initialization/tool schemas, alternating benchmark order, and restoration
-after a simulated failure. The opt-in live check launches and logs in with the
+after a simulated failure. The CPU regression requires `g++` on PATH and runs
+production capture methods with a deterministic clock and fake GPU, checking
+scope accumulation, frame pairing, worker exclusion, cancellation and summaries.
+The opt-in live check launches and logs in with the
 remembered account, verifies a direct unlocked capture without settings writes,
 camera replay and GPU capture, temporarily enables
 all seven features for a 14-run smoke suite, and tests cancellation/restoration:

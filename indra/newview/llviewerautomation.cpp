@@ -47,6 +47,7 @@ struct Query { std::string name; GLuint start, end; };
 struct Frame
 {
     std::vector<Query> queries;
+    std::map<std::string, F64> cpu_times;
     F64 interval = 0, submit = 0;
 };
 Frame current_frame;
@@ -59,6 +60,10 @@ S32 target_frames = 0, warmup_frames = 0, submitted_frames = 0;
 F64 previous_frame_time = 0, submission_start = 0, capture_started = 0;
 bool recording_frame = false;
 bool query_overflow = false;
+thread_local bool recording_cpu = false;
+std::map<std::string, F64> cpu_times;
+F64 cpu_frame_start = 0;
+S32 cpu_frame_submission = 0;
 
 bool active() { return capture_state == "warming" || capture_state == "capturing" || capture_state == "draining"; }
 LLSD vector3(const LLVector3& v) { LLSD a; for (int i=0; i<3; ++i) a.append(v.mV[i]); return a; }
@@ -113,7 +118,7 @@ LLSD camera()
 LLSD metadata()
 {
     LLSD result;
-    result["schema_version"] = 1;
+    result["schema_version"] = 2;
     result["viewer"] = LLVersionInfo::instance().getChannelAndVersion();
     result["gpu"] = gGLManager.mGLRenderer;
     result["driver"] = gGLManager.mGLVersionString;
@@ -127,10 +132,13 @@ LLSD metadata()
     if (auto sky = LLEnvironment::instance().getCurrentSky()) result["sky"] = sky->getSettings();
     if (auto water = LLEnvironment::instance().getCurrentWater()) result["water"] = water->getSettings();
     result["timing_note"] = "GPU scopes are inclusive elapsed intervals; nested scopes must not be added. Frame GPU time ends before presentation, excluding VSync wait and post-present reflection maintenance. CPU frame interval includes idle/presentation. PCSS is embedded in shared lighting shaders: use paired on/off captures. Live scene motion/streaming can change between runs.";
+    result["cpu_timing_note"] = "cpu_ms contains inclusive main-thread wall times for the same submitted frame, from after MCP request processing through main-loop completion, including idle, presentation and background work. Repeated calls accumulate; nested scopes must not be added. Includes waits, not CPU utilization or worker-thread execution. Skinning measures CPU palette preparation and rigged-volume updates, not GPU vertex skinning.";
     return result;
 }
 void releaseQueries()
 {
+    recording_cpu = false;
+    cpu_times.clear();
     recording_frame = false;
     if (!query_pool.empty()) glDeleteQueries((GLsizei)query_pool.size(), query_pool.data());
     query_pool.clear(); free_queries.clear(); pending.clear(); current_frame = Frame();
@@ -151,6 +159,8 @@ void collect()
         LLSD sample;
         sample["frame_interval_ms"] = frame.interval;
         sample["render_submit_ms"] = frame.submit;
+        sample["cpu_ms"] = LLSD::emptyMap();
+        for (const auto& item : frame.cpu_times) sample["cpu_ms"][item.first] = item.second;
         sample["gpu_ms"] = LLSD::emptyMap();
         for (const auto& query : frame.queries)
         {
@@ -198,20 +208,23 @@ LLSD captureResult(bool raw)
     if (capture_state != "complete" && capture_state != "failed") return result;
     result["metadata"] = capture_metadata;
     result["end_metadata"] = capture_end_metadata;
-    std::map<std::string, std::vector<F64>> metrics;
-    for (const auto& sample : samples)
-        for (const auto& item : llsd::inMap(sample["gpu_ms"])) metrics[item.first];
-    for (auto& metric : metrics)
+    for (const char* group : {"gpu_ms", "cpu_ms"})
     {
-        S32 active_frames = 0;
+        std::map<std::string, std::vector<F64>> metrics;
         for (const auto& sample : samples)
+            for (const auto& item : llsd::inMap(sample[group])) metrics[item.first];
+        for (auto& metric : metrics)
         {
-            const LLSD& v = sample["gpu_ms"][metric.first];
-            metric.second.push_back(v.asReal());
-            if (v.isDefined()) ++active_frames;
+            S32 active_frames = 0;
+            for (const auto& sample : samples)
+            {
+                const LLSD& v = sample[group][metric.first];
+                metric.second.push_back(v.asReal());
+                if (v.isDefined()) ++active_frames;
+            }
+            result[group][metric.first] = statistics(metric.second);
+            result[group][metric.first]["active_frames"] = active_frames;
         }
-        result["gpu_ms"][metric.first] = statistics(metric.second);
-        result["gpu_ms"][metric.first]["active_frames"] = active_frames;
     }
     for (const char* name : {"frame_interval_ms", "render_submit_ms"})
     {
@@ -512,6 +525,35 @@ void LLViewerAutomation::applyCamera()
     cam->setOriginAndLookAt(position, camera_up, position + camera_forward);
     cam->setViewNoBroadcast(camera_fov);
     cam->resetCameraSmoothing();
+}
+void LLViewerAutomation::beginCPUFrame()
+{
+    recording_cpu = active() && capture_state != "draining" && warmup_frames == 0;
+    if (!recording_cpu) return;
+    cpu_times.clear();
+    cpu_frame_start = LLTimer::getTotalSeconds();
+    cpu_frame_submission = submitted_frames;
+}
+void LLViewerAutomation::endCPUFrame()
+{
+    if (!recording_cpu) return;
+    // GPU submission finishes before swap; attach CPU work only after the rest of this loop.
+    if (submitted_frames == cpu_frame_submission + 1 && !pending.empty())
+    {
+        cpu_times["frame"] = (LLTimer::getTotalSeconds() - cpu_frame_start) * 1000.;
+        pending.back().cpu_times = std::move(cpu_times);
+    }
+    recording_cpu = false;
+}
+LLViewerAutomation::CPUScope::CPUScope(const char* name)
+{
+    if (!recording_cpu) return;
+    mElapsed = &cpu_times[name];
+    mStart = LLTimer::getTotalSeconds();
+}
+LLViewerAutomation::CPUScope::~CPUScope()
+{
+    if (mElapsed && recording_cpu) *mElapsed += (LLTimer::getTotalSeconds() - mStart) * 1000.;
 }
 void LLViewerAutomation::beginFrame()
 {

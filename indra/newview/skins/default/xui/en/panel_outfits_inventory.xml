@@ -85,6 +85,9 @@
            layout="topleft"
            name="cof_tab"
            width="315" />
+         <panel class="prism_collections" filename="panel_prism_collections.xml"
+           name="collections_tab" label="COLLECTIONS" follows="all"
+           layout="topleft" height="520" width="315" background_visible="false" />
    </tab_container>
 
    <panel

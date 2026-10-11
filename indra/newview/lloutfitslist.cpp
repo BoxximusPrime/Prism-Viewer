@@ -30,6 +30,8 @@
 
 // llcommon
 #include "llcommonutils.h"
+#include "lldate.h"
+#include "lltextbox.h"
 
 #include "llaccordionctrl.h"
 #include "llaccordionctrltab.h"
@@ -64,6 +66,13 @@ static const LLOutfitTabFavComparator OUTFIT_TAB_FAV_COMPARATOR;
 /*virtual*/
 bool LLOutfitTabNameComparator::compare(const LLAccordionCtrlTab* tab1, const LLAccordionCtrlTab* tab2) const
 {
+    static LLCachedControl<bool> by_date(gSavedSettings, "OutfitListSortByCreationDate", false);
+    if (by_date)
+    {
+        const time_t a = static_cast<const LLOutfitAccordionCtrlTab*>(tab1)->getCreationDate();
+        const time_t b = static_cast<const LLOutfitAccordionCtrlTab*>(tab2)->getCreationDate();
+        if (a != b) return a > b;
+    }
     return (LLStringUtil::compareDict(tab1->getTitle(), tab2->getTitle()) < 0);
 }
 
@@ -76,7 +85,7 @@ bool LLOutfitTabFavComparator::compare(const LLAccordionCtrlTab* tab1, const LLA
         return taba->getFavorite();
     }
 
-    return (LLStringUtil::compareDict(tab1->getTitle(), tab2->getTitle()) < 0);
+    return OUTFIT_TAB_NAME_COMPARATOR.compare(tab1, tab2);
 }
 
 struct outfit_accordion_tab_params : public LLInitParam::Block<outfit_accordion_tab_params, LLOutfitAccordionCtrlTab::Params>
@@ -225,6 +234,7 @@ void LLOutfitsList::updateAddedCategory(LLUUID cat_id)
     tab->setName(name);
     tab->setTitle(name);
     tab->setFavorite(cat->getIsFavorite());
+    tab->refreshCreationDate();
 
     // *TODO: LLUICtrlFactory::defaultBuilder does not use "display_children" from xml. Should be investigated.
     tab->setDisplayChildren(false);
@@ -233,7 +243,11 @@ void LLOutfitsList::updateAddedCategory(LLUUID cat_id)
     // Start observing the new outfit category.
     LLWearableItemsList* list = tab->getChild<LLWearableItemsList>("wearable_items_list");
     list->setOutfitFolderID(cat_id);
-    if (!mCategoriesObserver->addCategory(cat_id, boost::bind(&LLWearableItemsList::updateList, list, cat_id)))
+    if (!mCategoriesObserver->addCategory(cat_id, [this, list, tab, cat_id]()
+        {
+            list->updateList(cat_id);
+            if (tab->refreshCreationDate()) sortOutfits();
+        }))
     {
         // Remove accordion tab if category could not be added to observer.
         mAccordion->removeCollapsibleCtrl(tab);
@@ -607,6 +621,7 @@ void LLOutfitsList::restoreOutfitSelection(LLOutfitAccordionCtrlTab* tab, const 
 
 void LLOutfitsList::onRefreshComplete(LLUICtrl* ctrl, LLOutfitAccordionCtrlTab* tab)
 {
+    if (tab && tab->refreshCreationDate()) sortOutfits();
     if (!ctrl || getFilterSubString().empty())
         return;
 
@@ -876,7 +891,12 @@ void LLOutfitsList::handleInvFavColorChange()
 void LLOutfitsList::onChangeSortOrder(const LLSD& userdata)
 {
     std::string sort_data = userdata.asString();
-    if (sort_data == "favorites_to_top")
+    if (sort_data == "creation_date")
+    {
+        gSavedSettings.setBOOL("OutfitListSortByCreationDate", !gSavedSettings.getBOOL("OutfitListSortByCreationDate"));
+        sortOutfits();
+    }
+    else if (sort_data == "favorites_to_top")
     {
         // at the moment this is a toggle
         S32 val = gSavedSettings.getS32("OutfitListSortOrder");
@@ -1690,7 +1710,11 @@ void LLOutfitListSortMenu::onUpdateItemsVisibility()
 
 bool LLOutfitListSortMenu::onEnable(LLSD::String param)
 {
-    if ("favorites_to_top" == param)
+    if ("creation_date" == param)
+    {
+        return gSavedSettings.getBOOL("OutfitListSortByCreationDate");
+    }
+    else if ("favorites_to_top" == param)
     {
         static LLCachedControl<S32> sort_order(gSavedSettings, "OutfitListSortOrder", 0);
         return sort_order == 1;
@@ -1710,8 +1734,56 @@ bool LLOutfitListSortMenu::onEnable(LLSD::String param)
 LLUIImage* LLOutfitAccordionCtrlTab::sFavoriteIcon;
 LLUIColor LLOutfitAccordionCtrlTab::sFgColor;
 
+LLOutfitAccordionCtrlTab::LLOutfitAccordionCtrlTab(const Params& p)
+    : LLAccordionCtrlTab(p), mFolderID(p.cat_id)
+{
+    LLTextBox::Params date;
+    date.name = "outfit_creation_date";
+    date.font = LLFontGL::getFontSansSerifSmall();
+    date.text_color = LLUIColorTable::instance().getColor("LabelTextColor");
+    date.font_halign = LLFontGL::RIGHT;
+    date.mouse_opaque = false;
+    date.visible = false;
+    date.initial_value = LLTrans::getString("Unknown");
+    mCreationDateLabel = LLUICtrlFactory::create<LLTextBox>(date);
+    getChild<LLUICtrl>("dd_header")->addChild(mCreationDateLabel);
+}
+
+bool LLOutfitAccordionCtrlTab::refreshCreationDate()
+{
+    LLInventoryModel::cat_array_t categories;
+    LLInventoryModel::item_array_t items;
+    gInventory.collectDescendents(mFolderID, categories, items, LLInventoryModel::EXCLUDE_TRASH);
+    time_t earliest = 0;
+    // shortcut: surviving link dates estimate creation; exact folder history is not supplied by inventory.
+    for (const auto& item : items)
+    {
+        const time_t date = item->getCreationDate();
+        if (item->getIsLinkType() && date > 0 && (earliest == 0 || date < earliest)) earliest = date;
+    }
+    if (earliest == mCreationDate) return false;
+    mCreationDate = earliest;
+    mCreationDateLabel->setText(earliest ? LLDate(F64(earliest)).toLocalDateString("%m/%d/%y")
+                                       : LLTrans::getString("Unknown"));
+    return true;
+}
+
 void LLOutfitAccordionCtrlTab::draw()
 {
+    static LLCachedControl<bool> by_date(gSavedSettings, "OutfitListSortByCreationDate", false);
+    static LLUICachedControl<bool> draw_star("InventoryFavoritesUseStar", true);
+    const S32 right = getRect().getWidth() - (mIsFavorite && draw_star ? 24 : 8);
+    const S32 date_width = by_date ? mCreationDateLabel->getTextPixelWidth() + 8 : 0;
+    LLTextBox* title = getChild<LLTextBox>("dd_textbox");
+    const S32 title_width = llmax(0, right - date_width - title->getRect().mLeft);
+    if (title->getRect().getWidth() != title_width) title->reshape(title_width, title->getRect().getHeight());
+    mCreationDateLabel->setVisible(by_date);
+    if (by_date)
+    {
+        const LLRect& title_rect = title->getRect();
+        const LLRect date_rect(right - date_width, title_rect.mTop, right, title_rect.mBottom);
+        if (mCreationDateLabel->getRect() != date_rect) mCreationDateLabel->setShape(date_rect);
+    }
     LLAccordionCtrlTab::draw();
     drawFavoriteIcon();
 }
@@ -1730,8 +1802,11 @@ bool LLOutfitAccordionCtrlTab::handleToolTip(S32 x, S32 y, MASK mask)
         // else consider returning
         params["item_id"] = mFolderID;
 
+        std::string tooltip = getTitle();
+        if (gSavedSettings.getBOOL("OutfitListSortByCreationDate"))
+            tooltip += "\nEstimated creation: " + mCreationDateLabel->getText() + " (earliest outfit link)";
         LLToolTipMgr::instance().show(LLToolTip::Params()
-                                    .message(getToolTip())
+                                    .message(tooltip)
                                     .sticky_rect(calcScreenRect())
                                     .delay_time(LLView::getTooltipTimeout())
                                     .create_callback(boost::bind(&LLInspectTextureUtil::createInventoryToolTip, _1))

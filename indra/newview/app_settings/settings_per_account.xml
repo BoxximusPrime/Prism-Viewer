@@ -1,5 +1,12 @@
 <llsd>
     <map>
+    <key>PrismCollectionsState</key>
+    <map>
+      <key>Comment</key><string>Active collection sets and items managed by Collections for this account.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>LLSD</string>
+      <key>Value</key><map />
+    </map>
     <key>AvatarHoverOffsetZ</key>
     <map>
       <key>Comment</key>

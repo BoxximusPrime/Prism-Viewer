@@ -1341,6 +1341,7 @@ bool LLAppViewer::doFrame()
 {
     resumeMainloopTimeout("Main:doFrameStart");
     LLViewerAutomation::processRequests();
+    LLViewerAutomation::beginCPUFrame();
     LLPoserLink::update();
 #ifdef LL_DISCORD
     {
@@ -1475,6 +1476,7 @@ bool LLAppViewer::doFrame()
                 {
                     LLPerfStats::RecordSceneTime T (LLPerfStats::StatType_t::RENDER_IDLE);
                     LL_PROFILE_ZONE_NAMED_CATEGORY_APP("df idle");
+                    LL_AUTOMATION_CPU_SCOPE("scene.idle");
                     idle();
                 }
 
@@ -1503,6 +1505,7 @@ bool LLAppViewer::doFrame()
             if (!LLApp::isExiting() && !gHeadlessClient && gViewerWindow)
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_APP("df Display");
+                LL_AUTOMATION_CPU_SCOPE("render.display");
                 pingMainloopTimeout("Main:Display");
                 gGLActive = true;
 
@@ -1512,6 +1515,7 @@ bool LLAppViewer::doFrame()
                 {
                     LLPerfStats::RecordSceneTime T(LLPerfStats::StatType_t::RENDER_IDLE);
                     LL_PROFILE_ZONE_NAMED_CATEGORY_APP("df Snapshot");
+                    LL_AUTOMATION_CPU_SCOPE("render.post_present");
                     pingMainloopTimeout("Main:Snapshot");
                     gPipeline.mReflectionMapManager.update();
                     LLFloaterSnapshot::update(); // take snapshots
@@ -1538,12 +1542,14 @@ bool LLAppViewer::doFrame()
         {
             //LL_RECORD_BLOCK_TIME(SLEEP2);
             LL_PROFILE_ZONE_WARN("Sleep2");
+            LL_AUTOMATION_CPU_SCOPE("background.total");
 
             // yield some time to the os based on command line option
             static LLCachedControl<S32> yield_time(gSavedSettings, "YieldTime", -1);
             if(yield_time >= 0)
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_APP("Yield");
+                LL_AUTOMATION_CPU_SCOPE("background.yield");
                 LL_PROFILE_ZONE_NUM(yield_time);
                 ms_sleep(yield_time);
             }
@@ -1569,6 +1575,7 @@ bool LLAppViewer::doFrame()
                 if (milliseconds_to_sleep > 0)
                 {
                     LLPerfStats::RecordSceneTime T ( LLPerfStats::StatType_t::RENDER_SLEEP );
+                    LL_AUTOMATION_CPU_SCOPE("background.yield");
                     ms_sleep(milliseconds_to_sleep);
                     // also pause worker threads during this wait period
                     LLAppViewer::getTextureCache()->pause();
@@ -1613,6 +1620,7 @@ bool LLAppViewer::doFrame()
 
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_APP("df gMeshRepo");
+                LL_AUTOMATION_CPU_SCOPE("background.mesh");
                 gMeshRepo.update() ;
             }
 
@@ -1666,12 +1674,14 @@ bool LLAppViewer::doFrame()
     // so stop tracking on exit.
     pauseMainloopTimeout();
     LL_PROFILER_FRAME_END;
+    LLViewerAutomation::endCPUFrame();
 
     return ! LLApp::isRunning();
 }
 
 S32 LLAppViewer::updateTextureThreads(F32 max_time)
 {
+    LL_AUTOMATION_CPU_SCOPE("background.texture_dispatch");
     size_t work_pending = 0;
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_APP("Texture Cache");
@@ -5386,6 +5396,7 @@ void LLAppViewer::idle()
     if (!gDisconnected)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Network");
+        LL_AUTOMATION_CPU_SCOPE("scene.network");
 
         ////////////////////////////////////////////////
         //
@@ -5491,6 +5502,7 @@ void LLAppViewer::idle()
 
     {
         LL_RECORD_BLOCK_TIME(FTM_OBJECTLIST_UPDATE);
+        LL_AUTOMATION_CPU_SCOPE("scene.object_update");
 
         if (!(logoutRequestSent() && hasSavedFinalSnapshot()))
         {

@@ -436,6 +436,8 @@ public:
         /*virtual*/ void show(LLView* spawning_view, const uuid_vec_t& uuids, S32 x, S32 y) override;
 
         void show(LLView* spawning_view, LLWearableType::EType w_type, S32 x, S32 y);
+        void showForCollection(LLView* spawning_view, const LLUUID& id, S32 x, S32 y,
+                               bool included, bool available, const std::function<void()>& toggle);
 
     protected:
         enum {

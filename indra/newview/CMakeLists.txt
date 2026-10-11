@@ -513,6 +513,8 @@ set(viewer_SOURCE_FILES
     llpanelobjectinventory.cpp
     llpanelonlinestatus.cpp
     llpaneloutfitedit.cpp
+    llprismcollections.cpp
+    llpanelprismcollections.cpp
     llpaneloutfitsinventory.cpp
     llpanelpeople.cpp
     llpanelpeoplemenus.cpp
@@ -1221,6 +1223,8 @@ set(viewer_HEADER_FILES
     llpanelobjectinventory.h
     llpanelonlinestatus.h
     llpaneloutfitedit.h
+    llprismcollections.h
+    llpanelprismcollections.h
     llpaneloutfitsinventory.h
     llpanelpeople.h
     llpanelpeoplemenus.h

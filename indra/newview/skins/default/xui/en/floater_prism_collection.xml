@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="prism_collection_editor" title="COLLECTION SET" single_instance="true" save_rect="true"
+ positioning="centered" can_resize="true" can_minimize="true" width="600" height="600"
+ min_width="560" min_height="540" layout="topleft">
+  <text layout="topleft" follows="left|top" left="20" top="40" width="80" height="20" text_color="LabelTextColor">Category</text>
+  <text layout="topleft" name="category_name" left="102" top="40" right="-132" height="20" follows="left|top|right" font.style="BOLD" use_ellipses="true" />
+  <button layout="topleft" name="set_photo" label="Photo..." right="-20" top="36" width="100" height="24" follows="right|top" tool_tip="Assign a photo to this set. Save a new set first to enable this." />
+  <text layout="topleft" follows="left|top" left="20" top="74" width="80" height="20" text_color="LabelTextColor">Set name</text>
+  <line_editor layout="topleft" name="set_name" left="102" top="70" right="-20" height="26" follows="left|top|right" max_length_bytes="63" />
+  <text layout="topleft" left="20" top="112" right="-20" height="44" follows="left|top|right" wrap="true" text_color="LabelTextColor">
+    Check worn items or drag items from Inventory. Body parts replace the worn part of that type and stay worn when the set is removed. Only links are saved.
+  </text>
+  <scroll_list layout="topleft" name="items" left="20" top="168" right="-20" bottom="-166" follows="all" multi_select="false" draw_heading="true" can_sort="false">
+    <scroll_list.columns name="include" label="Use" width="38" />
+    <scroll_list.columns name="icon" label="" width="20" />
+    <scroll_list.columns name="name" label="Item" dynamic_width="true" />
+    <scroll_list.columns name="type" label="Type" width="82" />
+    <scroll_list.columns name="status" label="" width="74" />
+  </scroll_list>
+  <button layout="topleft" name="refresh_worn" label="Refresh worn" left="20" bottom="-132" width="116" height="24" follows="left|bottom" tool_tip="Add any newly worn items to the checklist without changing your selections" />
+  <button layout="topleft" name="move_up" label="&#x2191;" left_pad="12" width="28" height="24" follows="left|bottom" tool_tip="Move selected layer outward within its type" />
+  <button layout="topleft" name="move_down" label="&#x2193;" left_pad="4" width="28" height="24" follows="left|bottom" tool_tip="Move selected layer inward within its type" />
+  <text layout="topleft" left_pad="10" bottom="-132" right="-20" height="22" follows="left|right|bottom" font="SansSerifSmall" text_color="LabelTextColor">Layers: outermost to innermost</text>
+  <check_box layout="topleft" name="activate" label="Wear after saving" left="20" bottom="-94" right="-20" height="20" follows="left|right|bottom" />
+  <text layout="topleft" left="20" bottom="-58" right="-20" height="32" follows="left|right|bottom" wrap="true" font="SansSerifSmall" text_color="LabelTextColor">
+    Wearing a set manages all included items, even if already worn. Switching sets or Remove Active can remove them. Saving alone leaves your appearance unchanged.
+  </text>
+  <button layout="topleft" name="cancel" label="Cancel" right="-118" bottom="-18" width="90" height="28" follows="right|bottom" />
+  <button layout="topleft" name="save" label="Save set" right="-20" bottom="-18" width="90" height="28" follows="right|bottom" />
+</floater>

@@ -21,6 +21,7 @@ private:
     void onOpen(const LLSD& key) override;
     void onClose(bool app_quitting) override;
     void onPoseSelected();
+    void cyclePose(S32 direction);
     void stopPose();
 
     LLComboBox* mPoseCombo = nullptr;

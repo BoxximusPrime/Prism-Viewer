@@ -275,9 +275,9 @@ vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float varia
         (vec3(0.7 * hairLobe(t, n, h, 0.08, roughness)) +
          0.3 * sqrt(clamp(base, vec3(0.0), vec3(1.0))) *
          hairLobe(t, n, h, -0.16, min(roughness * 1.5, 1.0)));
-    // Artistic contrast compensation, anchored to 18% linear grey; never follows scene lighting.
+    // Boost lighter pigment without suppressing the surface reflection on dark hair.
     float brightness = dot(clamp(base, vec3(0), vec3(1)), vec3(0.2126, 0.7152, 0.0722));
-    specular *= pow(clamp(sqrt(brightness / 0.18), 0.25, 2.0), clamp(hair_brightness_compensation, 0.0, 4.0));
+    specular *= pow(clamp(sqrt(brightness / 0.18), 1.0, 2.0), clamp(hair_brightness_compensation, 0.0, 4.0));
     return hairDiffuseVisibility(base, n, t, v, l, surface, transmission) + specular * surface;
 }
 

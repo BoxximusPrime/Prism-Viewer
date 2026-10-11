@@ -27,6 +27,7 @@
 // A "volume" is a box, cylinder, sphere, or other primitive shape.
 
 #include "llviewerprecompiledheaders.h"
+#include "llviewerautomation.h"
 #include "gltf/asset.h"
 #include "llvolumefog.h"
 
@@ -5365,6 +5366,7 @@ void LLRiggedVolume::update(
     FaceIndex face_index,
     bool rebuild_face_octrees)
 {
+    LL_AUTOMATION_CPU_SCOPE("skinning.rigged_volume");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_VOLUME;
     bool copy = false;
     if (volume->getNumVolumeFaces() != getNumVolumeFaces())

@@ -12931,4 +12931,24 @@ Use Avatar &gt; Stop Poser live link to end the session. Each new link requires 
   <notification icon="notify.tga" name="PoserLinkStarted" type="notify">
 Poser live link is active. Pose, play or scrub in Poser to preview on your avatar. Avatar &gt; Stop Poser live link restores normal animation.
   </notification>
+  <notification name="PrismCollectionsMessage" type="alertmodal" icon="alertmodal.tga">
+    [MESSAGE]
+    <usetemplate name="okbutton" yestext="OK" />
+  </notification>
+  <notification name="PrismCollectionCategoryName" type="alertmodal" icon="alertmodal.tga">
+    [ACTION]
+Categories swap independently.
+Try Makeup, Jewelry, or Accessories.
+    <form name="form">
+      <input name="name" type="text" width="300">[NAME]</input>
+      <button default="true" index="0" name="Save" text="Save" />
+      <button index="1" name="Cancel" text="Cancel" />
+    </form>
+  </notification>
+  <notification name="PrismCollectionDelete" type="alertmodal" icon="alertmodal.tga">
+    Move "[NAME]" and its contents to Trash?
+
+Your original linked items and currently worn items stay in place. The deleted set or category will stop managing them.
+    <usetemplate name="okcancelbuttons" notext="Cancel" yestext="Move to Trash" />
+  </notification>
 </notifications>

@@ -491,7 +491,7 @@
     <slider name="BoxxyHairBrightnessCompensation" control_name="BoxxyHairBrightnessCompensation" enabled_control="BoxxyHairEnabled"
       label="Brightness compensation:" layout="topleft" left="30" top="213" width="450" height="20"
       label_width="185" min_val="0" max_val="4" increment=".05" decimal_digits="2"
-      tool_tip="Uses hair colour to balance the shine: dark hair gets softer highlights, light hair stronger highlights, and medium grey stays neutral. 0 preserves the original look; 1 applies normal compensation; higher values up to 4 make it stronger. Highlight strength still controls overall shine." />
+      tool_tip="Uses hair colour to balance the shine: light hair gets stronger highlights while dark hair and medium grey keep their original highlights. 0 preserves the original look; 1 applies normal compensation; higher values up to 4 make it stronger. Highlight strength still controls overall shine." />
     <slider name="BoxxyHairStrandVariation" control_name="BoxxyHairStrandVariation" enabled_control="BoxxyHairEnabled"
       label="Strand variation:" layout="topleft" left="30" top="248" width="450" height="20"
       label_width="165" min_val="0" max_val="2" increment=".05" decimal_digits="2"

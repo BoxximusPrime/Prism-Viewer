@@ -21,6 +21,12 @@
   
   <menu_item_separator/>
 
+  <menu_item_check label="Sort by creation date" layout="topleft" name="sort_creation_date"
+   tool_tip="Newest first, estimated from the earliest outfit link date">
+    <on_click function="Sort.OnSort" parameter="creation_date" />
+    <on_check function="Sort.OnEnable" parameter="creation_date" />
+  </menu_item_check>
+
   <menu_item_check
    label="Sort favorites to top"
    layout="topleft"

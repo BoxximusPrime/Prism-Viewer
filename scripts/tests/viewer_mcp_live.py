@@ -84,8 +84,13 @@ async def main():
                 assert result['completed_frames'] == 20
                 assert result['gpu_ms']['frame']['median'] > 0
                 assert result['render_submit_ms']['median'] > 0
+                assert result['metadata']['schema_version'] >= 2
+                for stage in ('frame', 'scene.idle', 'scene.object_update', 'render.display', 'background.total'):
+                    assert result['cpu_ms'][stage]['active_frames'] == 20, (stage, result['cpu_ms'])
+                    assert result['cpu_ms'][stage]['median'] > 0
                 print('profile:', json.dumps({'artifact': result['artifact'], 'gpu_stages': list(result['gpu_ms']),
-                      'gpu_frame_ms': result['gpu_ms']['frame'], 'render_submit_ms': result['render_submit_ms']}), flush=True)
+                      'gpu_frame_ms': result['gpu_ms']['frame'], 'render_submit_ms': result['render_submit_ms'],
+                      'cpu_ms': result['cpu_ms']}), flush=True)
                 image = await session.call_tool('viewer_screenshot', {'label': 'live-test'})
                 assert not image.isError and any(c.type == 'image' for c in image.content)
                 print('MCP image returned', flush=True)

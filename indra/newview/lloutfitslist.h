@@ -41,6 +41,7 @@
 class LLOutfitAccordionCtrlTab;
 class LLInventoryCategoriesObserver;
 class LLOutfitListGearMenuBase;
+class LLTextBox;
 class LLOutfitListSortMenuBase;
 class LLWearableItemsList;
 class LLListContextMenu;
@@ -279,6 +280,8 @@ public:
                            EDragAndDropType cargo_type, void* cargo_data,
                            EAcceptance* accept, std::string& tooltip_msg) override;
 
+    bool refreshCreationDate();
+    time_t getCreationDate() const { return mCreationDate; }
     void setFavorite(bool is_favorite);
     bool getFavorite() const { return mIsFavorite; }
     LLUUID getFolderID() const { return mFolderID; }
@@ -290,16 +293,15 @@ public:
     static LLUIColor sFgColor;
 
  protected:
-    LLOutfitAccordionCtrlTab(const LLOutfitAccordionCtrlTab::Params &p)
-        : LLAccordionCtrlTab(p),
-          mFolderID(p.cat_id)
-    {}
+    LLOutfitAccordionCtrlTab(const LLOutfitAccordionCtrlTab::Params &p);
     friend class LLUICtrlFactory;
 
     void updateTitleColor();
     void drawFavoriteIcon();
 
     LLUUID mFolderID;
+    time_t mCreationDate = 0;
+    LLTextBox* mCreationDateLabel = nullptr;
     bool mIsFavorite = false;
     bool mIsSelected = false;
     U32 mFilterGeneration = 0;

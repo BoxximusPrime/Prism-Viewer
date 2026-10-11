@@ -125,9 +125,11 @@ void main() { frag_color = vec4(hairDirect(base, n, t, v, l, variation), 1); }
     for base in ((0,0,0),(.005,.005,.005),(.18,.18,.18),(.75,.75,.75),(1,1,1),(.05,.2,.8)):
         original=response(base=base)
         compensated=[response(base=base,brightness=s) for s in (.5,1,2,4)]
+        check(all(a>=b for c in compensated for a,b in zip(c,original)),
+              'increasing brightness compensation never darkens a highlight')
         if base[0]<.18 and base[1]<.18:
-            check(original[0]>compensated[0][0]>compensated[1][0]>compensated[2][0]>compensated[3][0],
-                  'more compensation progressively softens dark-hair highlights')
+            check(all(c==original for c in compensated),
+                  'dark hair keeps its original highlights at every compensation strength')
             check(compensated[-1][0]>0,'black hair retains a bounded surface reflection')
         if base[0]>.18 and base[1]>.18:
             check(original[0]<compensated[0][0]<compensated[1][0]<compensated[2][0]<compensated[3][0],
@@ -491,8 +493,10 @@ void main() {
             gpu.uniform(prog,'hair_brightness_compensation',1)
             compensated=pixel(prog)
             compensated_samples.append(compensated)
-            check(compensated[0]<c[0] and compensated[3]==c[3],
-                (name,oit,'dark-hair compensation reduces highlights without changing coverage'))
+            check(compensated==c,
+                (name,oit,'dark-hair compensation preserves highlights and coverage'))
+            gpu.uniform(prog,'hair_brightness_compensation',4)
+            check(pixel(prog)==c,(name,oit,'maximum compensation cannot dim dark hair'))
             gpu.uniform(prog,'hair_brightness_compensation',0)
             check(pixel(prog)==c,(name,oit,'zero brightness compensation restores the original rendering'))
             gpu.uniform(prog,'hair_object',0)
@@ -500,6 +504,15 @@ void main() {
             gpu.uniform(prog,'hair_brightness_compensation',2)
             check(pixel(prog)==ordinary,(name,oit,'brightness compensation only affects tagged hair'))
             gpu.uniform(prog,'hair_object',1)
+            gpu.uniform(prog,'hair_brightness_compensation',0)
+            gpu.upload(albedo,[.75,.75,.75,.4]*(W*H))
+            light_original=pixel(prog)
+            gpu.uniform(prog,'hair_brightness_compensation',4)
+            light_compensated=pixel(prog)
+            check(all(a>b for a,b in zip(light_compensated[:3],light_original[:3])) and
+                light_compensated[3]==light_original[3],
+                (name,oit,'compensation strengthens light-hair highlights without changing coverage'))
+            gpu.upload(albedo,[.1,.04,.015,.4]*(W*H))
             gpu.uniform(prog,'hair_brightness_compensation',0)
             gpu.bind(prog,'diffuseMap',0,patterned)
             gpu.uniform(prog,'hair_detail',0,1,1)

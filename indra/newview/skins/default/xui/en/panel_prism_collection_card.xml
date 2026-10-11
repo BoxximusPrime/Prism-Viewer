@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<panel name="collection_card" layout="topleft" width="128" height="168" follows="left|top" background_visible="false">
+  <button name="select" layout="topleft" left="0" top="0" width="128" height="168" follows="all" label="" />
+  <thumbnail name="photo" layout="topleft" left="6" top="6" width="116" height="116" follows="left|top" mouse_opaque="false" fallback_image="Thumbnail_Fallback" show_loading="false" />
+  <text name="name" layout="topleft" left="6" top="128" right="-6" height="17" follows="left|top|right" mouse_opaque="false" parse_urls="false" use_ellipses="true" text_color="LabelTextColor" />
+  <text name="status" layout="topleft" left="6" top="148" right="-6" height="16" follows="left|top|right" mouse_opaque="false" text_color="LabelDisabledColor" font="SansSerifSmall" />
+</panel>

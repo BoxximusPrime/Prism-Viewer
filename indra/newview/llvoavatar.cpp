@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llviewerautomation.h"
 #include "llfloatertattoocompare.h"
 
 #include "llboxxyao.h"
@@ -2958,6 +2959,7 @@ void LLVOAvatar::dumpAnimationState()
 //------------------------------------------------------------------------
 void LLVOAvatar::idleUpdate(LLAgent &agent, const F64 &time)
 {
+    LL_AUTOMATION_CPU_SCOPE("avatar.idle");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
 
     if (LLApp::isExiting())
@@ -5203,6 +5205,7 @@ void LLVOAvatar::updatePhotoEyeRotations()
 bool LLVOAvatar::updateCharacter(LLAgent &agent)
 {
     restorePhotoEyeRotations();
+    LL_AUTOMATION_CPU_SCOPE("avatar.character");
     if (LLPoseStudio::instanceExists())
         LLPoseStudio::instance().beforeUpdate(*this);
 
@@ -5242,6 +5245,7 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     //--------------------------------------------------------------------
     if (!needs_update && !isSelf())
     {
+        LL_AUTOMATION_CPU_SCOPE("avatar.animation");
         updateMotions(LLCharacter::HIDDEN_UPDATE, animation_syncing);
         mBoxxyAnimationWasHidden = animation_syncing;
         return false;
@@ -5303,11 +5307,13 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     // update animations
     if (!visible && !isSelf()) // NOTE: never do a "hidden update" for self avatar as it interrupts controller processing
     {
+        LL_AUTOMATION_CPU_SCOPE("avatar.animation");
         updateMotions(LLCharacter::HIDDEN_UPDATE, animation_syncing);
         mBoxxyAnimationWasHidden = animation_syncing;
     }
     else if (mSpecialRenderMode == 1) // Animation Preview
     {
+        LL_AUTOMATION_CPU_SCOPE("avatar.animation");
         if (animation_syncing && mBoxxyAnimationWasHidden)
         {
             mNeedsImpostorUpdate = true;
@@ -5318,6 +5324,7 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     else
     {
         // Might be better to do HIDDEN_UPDATE if cloud
+        LL_AUTOMATION_CPU_SCOPE("avatar.animation");
         if (animation_syncing && mBoxxyAnimationWasHidden)
         {
             // The pose below will jump directly to the current phase. Make
@@ -10710,6 +10717,7 @@ const LLVOAvatar::MatrixPaletteCache& LLVOAvatar::updateSkinInfoMatrixPalette(co
 
     if (entry.mFrame != gFrameCount)
     {
+        LL_AUTOMATION_CPU_SCOPE("skinning.palette_cache");
         LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
 
         if (gSavedSettings.getU32("RenderFSAAType") == 3)
@@ -11595,6 +11603,7 @@ void LLVOAvatar::getAssociatedVolumes(std::vector<LLVOVolume*>& volumes)
 // virtual
 void LLVOAvatar::updateRiggingInfo()
 {
+    LL_AUTOMATION_CPU_SCOPE("avatar.rigging_info");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
 
     LL_DEBUGS("RigSpammish") << getDebugName() << " updating rig tab" << LL_ENDL;

@@ -871,6 +871,27 @@ void LLWearableItemsList::ContextMenu::show(LLView* spawning_view, const uuid_ve
     mParent = NULL; // to avoid dereferencing an invalid pointer
 }
 
+void LLWearableItemsList::ContextMenu::showForCollection(LLView* spawning_view, const LLUUID& id, S32 x, S32 y,
+                                                       bool included, bool available, const std::function<void()>& toggle)
+{
+    show(spawning_view, uuid_vec_t{id}, x, y);
+    auto* menu = mMenuHandle.get();
+    if (!menu) return;
+    if (!available)
+        for (auto* child : *menu->getChildList()) child->setVisible(false);
+
+    // Collection rows store original IDs, so Show Original must also work without a link ID.
+    setMenuItemVisible(menu, "show_original", true);
+    setMenuItemEnabled(menu, "show_original", gInventory.getItem(id) != nullptr);
+    setMenuItemVisible(menu, "remove_from_outfit", false);
+    auto* action = menu->getChild<LLMenuItemCallGL>(included ? "collection_remove" : "collection_add");
+    action->setVisible(true);
+    action->setEnabled(included || available);
+    action->setCommitCallback([toggle](LLUICtrl*, const LLSD&) { toggle(); });
+    menu->arrangeAndClear();
+    LLMenuGL::showPopup(spawning_view, menu, x, y);
+}
+
 void LLWearableItemsList::ContextMenu::show(LLView* spawning_view, LLWearableType::EType w_type, S32 x, S32 y)
 {
     mParent = dynamic_cast<LLWearableItemsList*>(spawning_view);
