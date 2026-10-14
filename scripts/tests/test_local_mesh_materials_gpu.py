@@ -155,6 +155,7 @@ void main(){frag_color=test_mode==0 ? vec4(vary_normal,vary_sign) :
 uniform int classic_mode;
 vec2 BRDF(float nv,float gloss){return vec2(1,0);}
 uniform float test_probe, test_sun;
+void sampleReflectionProbesAmbient(inout vec3 a, vec3 p, vec3 n, vec3 amb) {}
 void sampleReflectionProbes(inout vec3 a,inout vec3 g,vec2 tc,vec3 p,vec3 n,float gloss,bool transparent,vec3 ambient)
 {a=vec3(0);g=vec3(test_probe);}
 void calcAtmosphericVarsLinear(vec3 p,vec3 n,vec3 l,out vec3 sun,out vec3 ambient,out vec3 additive,out vec3 atten)

@@ -28,6 +28,7 @@
 
 #include "llviewerdisplay.h"
 #include "llviewerautomation.h"
+#include "llhairmesh.h"
 
 #include "fsyspath.h"
 #include "hexdump.h"
@@ -816,6 +817,8 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
             LLGLState::checkStates();
 
+            LLHairMesh::update();
+            LLHairMesh::updateGuides();
             if (!for_snapshot)
             {
                 if (gFrameCount > 1 && !for_snapshot)

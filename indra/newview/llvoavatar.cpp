@@ -7891,14 +7891,7 @@ bool LLVOAvatar::updateJointLODs()
 
         if (isSelf())
         {
-            if(gAgentCamera.cameraCustomizeAvatar() || gAgentCamera.cameraMouselook())
-            {
-                mAdjustedPixelArea = MAX_PIXEL_AREA;
-            }
-            else
-            {
-                mAdjustedPixelArea = mPixelArea*area_scale;
-            }
+            mAdjustedPixelArea = MAX_PIXEL_AREA;
         }
         else if (mIsDummy)
         {

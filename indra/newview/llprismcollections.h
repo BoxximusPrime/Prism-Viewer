@@ -34,7 +34,7 @@ bool validName(const LLUUID& parent, const LLUUID& id, std::string name);
 LLUUID activeSet(const LLUUID& category);
 bool busy();
 void setWriting(bool writing);
-bool wear(const LLUUID& category, const LLUUID& set);
+bool wear(const LLUUID& category, const LLUUID& set, bool remove = false);
 void forget(const LLUUID& folder);
 void error(const std::string& message);
 }

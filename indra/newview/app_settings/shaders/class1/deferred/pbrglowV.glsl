@@ -50,20 +50,28 @@ out vec3 vary_position;
 
 vec2 texture_transform(vec2 vertex_texcoord, vec4[2] khr_gltf_transform, mat4 sl_animation_transform);
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(position);
+#endif
+
 #ifdef HAS_SKIN
-    mat4 mat = getObjectSkinnedTransform();
+    mat4 mat = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
 
     mat = modelview_matrix * mat;
 
-    vec3 pos = (mat*vec4(position.xyz,1.0)).xyz;
+    vec3 pos = (mat*vec4(hair_position.xyz,1.0)).xyz;
 
     gl_Position = projection_matrix*vec4(pos,1.0);
 #else
     //transform vertex
-    gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
-    vec3 pos = (modelview_matrix * vec4(position.xyz, 1.0)).xyz;
+    gl_Position = modelview_projection_matrix * vec4(hair_position.xyz, 1.0);
+    vec3 pos = (modelview_matrix * vec4(hair_position.xyz, 1.0)).xyz;
 #endif
     vary_position = pos;
 

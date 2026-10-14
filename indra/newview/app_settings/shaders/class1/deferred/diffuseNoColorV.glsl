@@ -35,10 +35,18 @@ out vec3 vary_normal;
 
 out vec2 vary_texcoord0;
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(hair_position);
+#endif
+
     //transform vertex
-    gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+    gl_Position = modelview_projection_matrix * vec4(hair_position.xyz, 1.0);
     vary_texcoord0 = (texture_matrix0 * vec4(texcoord0,0,1)).xy;
 
     vary_normal = normalize(normal_matrix * normal);

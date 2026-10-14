@@ -52,21 +52,29 @@ mat4 getObjectSkinnedTransform();
 uniform mat4 projection_matrix;
 #endif
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(hair_position);
+#endif
+
     //transform vertex
-    vec4 vert = vec4(position.xyz,1.0);
+    vec4 vert = vec4(hair_position.xyz,1.0);
     passTextureIndex();
 
 #ifdef HAS_SKIN
-    mat4 mat = getObjectSkinnedTransform();
+    mat4 mat = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
     mat = modelview_matrix * mat;
     vec4 pos = mat * vert;
     gl_Position = projection_matrix * pos;
-    vec3 norm = normalize((mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz);
+    vec3 norm = normalize((mat3(mat) * normal));
 #else
     vec4 pos = (modelview_matrix * vert);
-    gl_Position = modelview_projection_matrix*vec4(position.xyz, 1.0);
+    gl_Position = modelview_projection_matrix*vec4(hair_position.xyz, 1.0);
     vec3 norm = normalize(normal_matrix * normal);
 #endif
 

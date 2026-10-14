@@ -48,6 +48,7 @@
 #include <queue>
 #include <unordered_map>
 #include <functional>
+#include <memory>
 
 #define SG_STATE_INHERIT_MASK (OCCLUDED)
 #define SG_INITIAL_STATE_MASK (static_cast<U32>(DIRTY) | static_cast<U32>(GEOM_DIRTY))
@@ -115,6 +116,7 @@ public:
     // Only the main TAA motion pass updates this; shadow/probe draws cannot age it.
     LLMatrix4 mTAAModel;
     LLVector3 mTAAOrigin;
+    std::unique_ptr<LLHairDeform> mTAAHair;
     U32 mTAAFrame = 0;
     bool mTAAStatic = false; // All batched faces are static, nonrigged geometry.
     // Non-owning identity of the source geometry; never extends an object's lifetime.

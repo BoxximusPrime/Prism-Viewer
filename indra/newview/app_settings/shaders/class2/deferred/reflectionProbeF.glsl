@@ -34,6 +34,12 @@ uniform mat3 env_mat;
 vec3 srgb_to_linear(vec3 c);
 vec3 linear_to_srgb(vec3 c);
 
+// Hair uses probe irradiance but replaces the ordinary glossy response.
+void sampleReflectionProbesAmbient(inout vec3 ambenv, vec3 pos, vec3 norm, vec3 amblit)
+{
+    ambenv = mix(ambenv, vec3(reflection_probe_ambiance * 0.25), reflection_probe_ambiance);
+}
+
 void sampleReflectionProbes(inout vec3 ambenv, inout vec3 glossenv,
         vec2 tc, vec3 pos, vec3 norm, float glossiness, bool transparent, vec3 amblit_linear)
 {

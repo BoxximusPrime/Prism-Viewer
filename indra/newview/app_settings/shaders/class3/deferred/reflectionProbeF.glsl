@@ -771,6 +771,17 @@ void doProbeSample(inout vec3 ambenv, inout vec3 glossenv,
     tapHeroProbe(glossenv, pos, norm, glossiness);
 }
 
+// Hair uses probe irradiance but replaces the ordinary glossy response.
+void sampleReflectionProbesAmbient(inout vec3 ambenv, vec3 pos, vec3 norm, vec3 amblit)
+{
+    ambenv = amblit;
+    if (classic_mode == 0)
+    {
+        preProbeSample(pos);
+        ambenv = sampleProbeAmbient(pos, norm, amblit);
+    }
+}
+
 void sampleReflectionProbes(inout vec3 ambenv, inout vec3 glossenv,
         vec2 tc, vec3 pos, vec3 norm, float glossiness, bool transparent, vec3 amblit)
 {

@@ -90,7 +90,7 @@ struct LLGLSLShader {
     for path, signature in (
         ('indra/llmath/xform.cpp', 'LLVector3 LLXform::getWorldPositionRelativeTo'),
         ('indra/llmath/xform.cpp', 'void LLXformMatrix::update()'),
-        ('indra/newview/lldrawpool.cpp', 'LLMatrix4 LLRenderPass::getModelMatrix'),
+        ('indra/newview/lldrawpool.cpp', 'LLMatrix4 LLRenderPass::getModelMatrix(const LLMatrix4*'),
         ('indra/llrender/llglslshader.cpp', 'void LLGLSLShader::setMatrixPaletteOrigin'),
         ('indra/llrender/llrender.cpp', 'void LLRender::syncMatrices()'),
     ):

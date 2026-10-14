@@ -58,7 +58,7 @@ bool LLPanelPrismCollections::postBuild()
     getChild<LLButton>("edit_set")->setClickedCallback([this](LLUICtrl*, const LLSD&) { editSet(false); });
     getChild<LLButton>("delete_set")->setClickedCallback([this](LLUICtrl*, const LLSD&) { deleteFolder(false); });
     getChild<LLButton>("wear_set")->setClickedCallback([this](LLUICtrl*, const LLSD&) { PC::wear(mCategories->getValue().asUUID(), mSets->getSelectedValue().asUUID()); mDirty = true; });
-    getChild<LLButton>("remove_set")->setClickedCallback([this](LLUICtrl*, const LLSD&) { PC::wear(mCategories->getValue().asUUID(), LLUUID::null); mDirty = true; });
+    getChild<LLButton>("remove_set")->setClickedCallback([this](LLUICtrl*, const LLSD&) { PC::wear(mCategories->getValue().asUUID(), mSets->getSelectedValue().asUUID(), true); mDirty = true; });
     gInventory.addObserver(this);
     return true;
 }
@@ -144,10 +144,23 @@ void LLPanelPrismCollections::updateButtons()
     const LLUUID category = mCategories->getValue().asUUID();
     const bool has_category = ready && PC::isCategory(category) && gInventory.isCategoryComplete(category);
     const bool has_set = has_category && mSets->getFirstSelected();
+    uuid_vec_t items;
+    std::string message;
+    bool any_worn = false, any_unworn = false;
+    if (mSets->getFirstSelected() && PC::readSet(mSets->getSelectedValue().asUUID(), items, message))
+    {
+        for (const LLUUID& id : items)
+        {
+            if (get_is_item_worn(id)) any_worn = true;
+            else any_unworn = true;
+        }
+    }
     getChild<LLButton>("new_category")->setEnabled(ready);
     for (const char* name : {"rename_category", "delete_category", "new_set"}) getChild<LLButton>(name)->setEnabled(has_category);
-    for (const char* name : {"edit_set", "delete_set", "wear_set", "set_photo"}) getChild<LLButton>(name)->setEnabled(has_set);
-    getChild<LLButton>("remove_set")->setEnabled(has_category && PC::activeSet(category).notNull());
+    for (const char* name : {"edit_set", "delete_set", "set_photo"}) getChild<LLButton>(name)->setEnabled(has_set);
+    getChild<LLButton>("wear_set")->setEnabled(has_set && any_unworn);
+    getChild<LLButton>("remove_set")->setVisible(any_worn);
+    getChild<LLButton>("remove_set")->setEnabled(has_set && any_worn);
 }
 
 void LLPanelPrismCollections::editPhoto()
@@ -410,6 +423,25 @@ void LLFloaterPrismCollection::onOpen(const LLSD& key)
     }
     addWorn();
     getChild<LLLineEditor>("set_name")->setFocus(true);
+}
+
+void LLFloaterPrismCollection::draw()
+{
+    static LLUIColor worn_color = LLUIColorTable::instance().getColor("LtGreen");
+    static LLUIColor normal_color = LLUIColorTable::instance().getColor("ScrollUnselectedColor");
+    static LLUIColor selected_color = LLUIColorTable::instance().getColor("ScrollSelectedFGColor");
+    for (auto* row : mItems->getAllData())
+    {
+        const LLUUID id = row->getValue().asUUID();
+        const bool worn = get_is_item_worn(id);
+        const bool included_worn = row->getColumn(0)->getValue().asBoolean() && worn;
+        auto* name = static_cast<LLScrollListText*>(row->getColumn(2));
+        name->setFontStyle(included_worn ? LLFontGL::BOLD : LLFontGL::NORMAL);
+        name->setColor(included_worn ? worn_color : row->getSelected() ? selected_color : normal_color);
+        const std::string status = !PC::validItem(id) ? "Unavailable" : worn ? "Worn" : "Inventory";
+        if (row->getColumn(4)->getValue().asString() != status) row->getColumn(4)->setValue(status);
+    }
+    LLFloater::draw();
 }
 
 void LLFloaterPrismCollection::showItemMenu(S32 x, S32 y)

@@ -8,7 +8,7 @@ uniform vec3 hair_depth_valid;
 uniform vec4 hair_depth_focus;
 uniform vec3 hair_depth_origin[2];
 uniform int hair_depth_pass; // 1 ordinary blockers, 2 nearest hair, 3 accumulated opacity
-uniform int hair_depth_slot;
+uniform vec4 hair_capture_projection;
 uniform int hair_depth_object;
 uniform vec4 hair_params;
 
@@ -26,7 +26,7 @@ bool hairDepthCapture(float alpha, out vec4 result)
     if (hair_depth_pass == 0) return false;
     if ((hair_depth_pass == 1) == (hair_depth_object != 0)) discard;
     if (alpha <= 0.001) discard;
-    float depth = hairDepthDistance(gl_FragCoord.z, hair_depth_projection[hair_depth_slot]);
+    float depth = hairDepthDistance(gl_FragCoord.z, hair_capture_projection);
     result = vec4(depth);
     if (hair_depth_pass == 3)
     {

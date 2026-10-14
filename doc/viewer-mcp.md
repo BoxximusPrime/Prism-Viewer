@@ -156,6 +156,12 @@ infer utilization or add a parent scope to its children.
 | `render.geometry_update`, `render.gl_update`, `render.cull`, `render.state_sort`, `render.texture_update` | Geometry/GL updates, culling, draw sorting and texture updates across invoked views. |
 | `render.present`, `render.post_present` | Buffer swap (including VSync waits) and subsequent reflection/snapshot maintenance. |
 | `background.total`, `background.yield`, `background.texture_dispatch`, `background.mesh` | Main-thread background phase, its explicit foreground/background sleeps, texture worker dispatch and mesh repository update; dispatch timings do not measure worker execution. |
+| `sort.view.world`, `sort.view.shadow`, `sort.view.sss`, `sort.view.hair`, `sort.view.impostor`, `sort.view.reflection`, `sort.view.hud` | Split `render.state_sort` by the active rendering pass; shadow scopes can also belong to reflection views. |
+| `sort.post`, `sort.geometry_rebuild`, `sort.priority_rebuild`, `sort.mesh_notifications` | Post-sort preparation, drawable/priority geometry rebuilds and mesh completion processing; these scopes are nested. |
+| `sort.render_map`, `sort.mesh_pack`, `sort.alpha_order`, `sort.buffer_upload` | Render-list assembly, deferred mesh packing, alpha-list sorting and the final buffer flush inside post-sort. |
+| `geometry.volume_rebuild`, `geometry.mesh_rebuild`, `geometry.particle_rebuild` | Actual dirty geometry/mesh rebuild bodies across all callers; clean early returns are excluded. |
+| `shadow.total`, `shadow.cull`, `shadow.submit` | Entire sun/projector shadow generation, its culling, and submission after state sorting (including driver waits); includes reflection-probe shadow views. `sort.view.shadow` measures preparation between culling and submission. Children are nested in the total. |
+| `sss.cull`, `sss.submit`, `hair.cull`, `hair.submit` | Culling and draw submission for SSS/hair depth views. Reused exit/thickness views submit draws without another cull/sort. |
 
 | Feature | GPU scopes / comparison |
 | --- | --- |
@@ -164,6 +170,7 @@ infer utilization or add a parent scope to its children.
 | GTAO | Total, horizon search, denoise. |
 | SSGI | Total, geometry, trace, filter, receiver resolve, temporal denoise, compose. |
 | TAA | Motion (shared with SSGI) and resolve. Disabled variant selects no AA (`RenderFSAAType=0`), not FXAA/SMAA. |
+| Hair mesh collision | `Hair.mesh_update` includes GPU skinning/refit and the nested `Hair.contact_coupling` scope, which builds the nearby body/hand triangle cache and solves shared pull/collision fields. Hair draw passes interpolate those fields. Compare the whole frame against basic collision. `Hair.mesh_surface` measures the optional preview. `hair_mesh` metadata reports availability, active meshes/triangles/nodes, shared contact points and cumulative topology bakes. |
 | Water | Wave-field generation and surface rendering. The comparison disables the listed wave, displacement, local-reflection, submerged-lighting, custom-color and caustic controls; it is not a stock-viewer water comparison. |
 | Volumetric fog | Main fog pass. The disabled variant turns off both tagged-volume fog and Ground Fog. Alpha-integrated fog also affects shared alpha passes; use the on/off comparison for total incremental cost. |
 
@@ -184,6 +191,13 @@ Live avatars, day cycles, particles, animated water, texture loading, and networ
 events are not frozen by this bridge. Inspect the saved images/environment and
 repeat captures before attributing a small difference to code. Instrumentation
 itself has overhead; compare runs using the same instrumentation.
+
+Keep a dated Markdown measurement report in `doc/performance/` for each
+investigation. Record the executable identity, scene/camera and viewport,
+settings changes, warmup/sample counts, timing summaries, validation and
+comparison limitations. Link the raw captures, saved cameras and screenshots so
+later sessions can revisit the evidence. Update the report after rebuilds and
+follow-up captures; distinguish observations from demonstrated improvements.
 
 ## Verification
 
@@ -209,3 +223,17 @@ all seven features for a 14-run smoke suite, and tests cancellation/restoration:
 These short captures verify the workflow; they do not establish optimization
 results or guarantee every pass is visible in the current scene. This integration is a development
 tool in the checkout; Python dependencies are not bundled into the installer.
+
+### Hair rope simulation
+
+`BoxxyHairPhysicsEnabled` enables local-avatar radial ropes with animated mesh collision. It is independent of `BoxxyHairEnabled` (enhanced shading). Hair attachment name matching is shared; lighting's self-only and camera-distance settings do not disable local physics. The old regional, ellipsoid and hair-card modes and their settings have been removed.
+
+`BoxxyHairPhysicsRopeDensity` selects 4–64 ropes (default 16). Diagnostics report the active `guide_chains` and `guide_points`. Fitting uses a private shaped T-pose, frozen hair skinning bindings and bounded outer-head clearance. Density, attachment topology/visibility and skeleton changes refit the ropes; camera distance no longer changes local-avatar geometry LOD. Shading keeps authored normals and tangents while colour, depth, shadow and TAA passes share rope displacement.
+
+Ropes use stiffness, shape retention, root pinning/gradient, damping, bend resistance/gradient, elasticity and optional world-down gravity. The GPU solver advances with substeps no larger than 1/120 second. Frames over 250 ms, teleports and large turns reset history. Travel limiting is optional (zero disables it); correction velocity is capped at 3 m/s. Polar fitting approximates hanging hair and does not provide hair self-collision.
+
+`BoxxyHairPhysicsColliderNames` selects only matching rigged attachments on the local avatar (default whole words: body, head, hands, feet). Clothing compatibility terms can select unwanted surfaces. `BoxxyHairPhysicsMeshPadding` expands the skinned shell by 0–0.1 metres, including hands. `BoxxyHairPhysicsShowMesh` previews the actual shell in purple. `BoxxyHairPhysicsShowGuides` shows rest/simulated ropes: grey rest lines, yellow pinned nodes, cyan free nodes and red contacts. Both overlays require physics.
+
+Animated contact interpolates previous/current surface positions and normals over substeps, accounting for avatar-relative origin shifts. Contact transfers outward surface velocity and friction relative to tangential surface motion. Rebuilds, pose resets and clearance changes invalidate contact history. Point/midpoint planes stay fixed through constraint iterations. Segment rays are limited to two per segment per frame, 64 nodes and 32 triangles each; incomplete queries retain point/midpoint contact.
+
+The head-local cache has 6 cm spacing, 21×21×32 cells, and bounds (-0.60,-0.60,-1.56) to (0.60,0.60,0.30) metres. Each shell buffer stores tree nodes, skinned triangles, one grid header and one candidate pair per cell. There is no regional displacement field or coupling pass. Cache history keeps body/hand triangle identities within 5 mm nearest-surface ties. Each cell checks at most 128 tree nodes / 64 new triangles plus two history seeds; dispatches contain at most 1,024 cells. Guide dispatches contain at most 32 ropes. Capture readbacks are asynchronous and bounded; a busy GPU drops a diagnostic sample instead of waiting on the main thread.

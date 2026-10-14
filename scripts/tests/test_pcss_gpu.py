@@ -164,7 +164,7 @@ def run(sdl, gl):
                minimum=0.0, spot=0, emitter=.1, discontinuity=False, prepared=False,
                quantized=False, view_scale=1.0, depth_step=2.0, x_offset=0.0, caster_slope=None, camera_angle=0,
                camera_pitch=False, strip_half_width=.015625, receiver_floor=False, perspective=False,
-               strip_width=3, screen_phase=0, stable_pattern=True, shadow_angle=0, depth_range=None, map_size=SIZE):
+               strip_width=3, screen_phase=0, shadow_angle=0, depth_range=None, map_size=SIZE):
         nonlocal cases
         prog = programs[3 if spot else 0] if prog is None else prog
         gl.UseProgram(prog)
@@ -183,8 +183,6 @@ def run(sdl, gl):
         matrix(prog, 'test_camera_inverse', camera_inverse)
         uniform(prog, 'test_perspective', int(perspective), integer=True)
         gl.Viewport(0, 0, WIDTH, WIDTH if perspective else 3)
-        uniform(prog,'pcss_world_up',*(tuple(camera[r][2] for r in range(3)) if stable_pattern else (0,0,1)))
-        uniform(prog,'pcss_world_north',*(tuple(camera[r][1] for r in range(3)) if stable_pattern else (0,1,0)))
         uniform(prog,'sun_dir',*(camera[r][2] for r in range(3)))
         uniform(prog,'moon_dir',*(camera[r][2] for r in range(3)))
         uniform(prog, "test_z", z)
@@ -520,29 +518,6 @@ def run(sdl, gl):
     error = max(abs(a-b) for a,b in zip(row,expected))
     assert error < .08, ('narrow blocker penumbra collapse',error)
     print(f'Narrow blocker visibility error: {error:.4f}')
-    camera_error = 0.0
-    unstabilized_change = 0.0
-    for quality in (0,1,2):
-        reference = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,quality=quality)[0]
-        camera_aligned = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,
-                                quality=quality,stable_pattern=False)[0]
-        assert camera_aligned == reference, 'identity view uses the same axes in both modes'
-        for pitch in (False,True):
-            for angle in (.2,.7,1.1):
-                rotated = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,
-                                 quality=quality,camera_angle=angle,camera_pitch=pitch)[0]
-                error = max(abs(a-b) for a,b in zip(reference,rotated))
-                camera_error = max(camera_error,error)
-                assert error < .002, ('camera rotated PCSS disk',quality,angle,pitch,error)
-                camera_aligned = render(fill="strip",gap=3,extent=1,view_scale=.125,angle=1.45,minimum=.01,
-                                        quality=quality,camera_angle=angle,camera_pitch=pitch,stable_pattern=False)[0]
-                unstabilized_change = max(unstabilized_change,max(abs(a-b) for a,b in zip(reference,camera_aligned)))
-    print(f'Camera rotation visibility difference: {camera_error:.6f}')
-    assert unstabilized_change > .01, 'disabling stabilization must restore the camera-aligned pattern'
-    print(f'Camera rotation with stabilization off: {unstabilized_change:.6f}')
-    for spot in (1, 2):
-        args = dict(spot=spot,gap=2,emitter=.5,quality=2,camera_angle=.7,camera_pitch=True)
-        assert render(**args)[0] == render(**args,stable_pattern=False)[0], 'projector emitter axes are independent of stabilization'
     worst_penumbra_error = 0.0
     for gap in (.5,1,3):
         for angular_size in (.53,1.45,5):
@@ -750,10 +725,8 @@ if __name__ == "__main__":
     keys = [element.text for element in settings if element.tag == "key"]
     assert len(keys) == len(set(keys)), "duplicate saved setting"
     panel = ET.parse(ROOT / "indra/newview/skins/default/xui/en/panel_preferences_graphics1.xml")
-    for name in ("RenderPCSSEnabled", "RenderPCSSLightSize", "RenderPCSSMaxSoftness", "RenderPCSSMinSoftness", "RenderPCSSProjectorSize", "RenderPCSSBias", "RenderPCSSQuality", "RenderPCSSCleanup", "RenderPCSSStablePattern"):
+    for name in ("RenderPCSSEnabled", "RenderPCSSLightSize", "RenderPCSSMaxSoftness", "RenderPCSSMinSoftness", "RenderPCSSProjectorSize", "RenderPCSSBias", "RenderPCSSQuality", "RenderPCSSCleanup"):
         assert name in keys and panel.find(f".//*[@control_name='{name}']") is not None
-    setting = list(settings)[list(settings).index(settings.find("key[.='RenderPCSSStablePattern']"))+1]
-    assert setting.find('boolean').text == 'true', 'preserve stabilized shadows by default'
     sdl, window, ctx, gl = context()
     try:
         run(sdl, gl)

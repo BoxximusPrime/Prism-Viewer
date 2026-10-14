@@ -28,7 +28,8 @@ def run(sdl, gl):
 
     def program(fragment, vertex=None, extras=(), defines=''):
         result = gl.CreateProgram()
-        stages = [(0x8B31, vertex or gpu.vertex), (0x8B30, fragment)]
+        stages = [(0x8B31, vertex or gpu.vertex), (0x8B30, fragment),
+                  (0x8B31, read('class1/deferred/hairDeformV.glsl'))]
         stages += [(0x8B30, read('class1/deferred/hairUtil.glsl'))]
         stages += [(0x8B30, '#define HAIR_DENSITY_MAPS 1\n'+read('class1/deferred/hairDepthUtil.glsl'))]
         stages += [(0x8B30, text) for text in extras]
@@ -195,14 +196,15 @@ uniform vec3 n;
 uniform vec2 uv_scale;
 uniform float position_scale;
 uniform float face_angle;
-vec3 hairTangent(vec3 p, vec2 uv, vec3 n);
+uniform vec2 test_axis;
+vec3 hairDirectionVector(vec3 p, vec2 uv, vec3 n, vec2 axis);
 vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 t);
 vec3 decodeHairTangent(vec3 n, float angle);
 out vec4 frag_color;
 void main() {
     vec2 p = gl_FragCoord.xy;
     vec3 pos=vec3(p.x*cos(face_angle),p.y,p.x*sin(face_angle))*position_scale;
-    vec3 t = hairTangent(pos, p * uv_scale, n);
+    vec3 t = hairDirectionVector(pos, p * uv_scale, n, test_axis);
     vec4 encoded = encodeHairNormal(n, 0.0, .34, t);
     float angle = round(encoded.z * 65535.0) / 65535.0;
     vec3 decoded = decodeHairTangent(n, angle);
@@ -215,7 +217,7 @@ void main() {
     for uv in [(1,1),(-1,1),(1,-1),(0,0)]:
         gpu.uniform(tangent,'uv_scale',*uv)
         for angle in (0,45,90,135,180):
-            gpu.uniform(tangent,'hair_direction',math.radians(angle))
+            gpu.uniform(tangent,'test_axis',math.sin(math.radians(angle)),math.cos(math.radians(angle)))
             c = pixel(tangent)
             check(c[3]>.999,'quantized tangent round trip, including mirrored/degenerate UVs')
             if uv==(1,1) and angle==0: check(c[:3]==[.5,1,.5],'default follows V')
@@ -223,7 +225,7 @@ void main() {
 
     # Real close-ups have submillimetre position and UV derivatives. Their
     # magnitude must not switch the strand to an unrelated fallback basis.
-    gpu.uniform(tangent,'hair_direction',0)
+    gpu.uniform(tangent,'test_axis',0,1)
     for scale in (1., .01, .001, .0001):
         gpu.uniform(tangent,'position_scale',scale)
         for uv in ((scale,scale),(-scale,scale),(scale,-scale)):
@@ -234,7 +236,7 @@ void main() {
 
     # Adjacent curved quads can have different face tilts but the same smooth
     # shading normal. Projecting their frame shears diagonal strands differently.
-    gpu.uniform(tangent,'hair_direction',math.pi/4)
+    gpu.uniform(tangent,'test_axis',math.sqrt(.5),math.sqrt(.5))
     gpu.uniform(tangent,'uv_scale',.001,.001)
     for degrees in (-70,-45,-20,0,20,45,70):
         gpu.uniform(tangent,'face_angle',math.radians(degrees))
@@ -296,6 +298,7 @@ uniform vec4 heights;
 uniform vec2 uv_scale;
 uniform vec2 strand_axis;
 uniform float face_angle;
+uniform vec2 test_axis;
 uniform float coverage;
 mat3 hairMeshFrame(vec3 p,vec2 uv,vec2 meshUV,vec3 n,vec4 tangent);
 vec3 hairDetailNormal(mat3 frame,vec3 n,vec2 axis,float footprint,vec4 c,vec4 a,vec4 b,vec4 d,vec4 e);
@@ -336,41 +339,11 @@ void main() {
         check(abs(n[0]+n[1])<.002 and n[0]<-.02,
             ('generated ridges also preserve their angle across polygon tilts',tilt,n))
 
-    flow = program('''
-uniform vec4 row0, row1, row2;
-uniform vec2 step_uv;
-vec3 hairFlowAxis(vec4 a,vec4 b,vec4 c,vec2 stepUV,vec2 fallback);
-out vec4 frag_color;
-void main() {
-    vec3 f=hairFlowAxis(row0,row1,row2,step_uv,vec2(0,1));
-    frag_color=vec4(f.xy*.5+.5,f.z,1);
-}
-''')
-    def flow_axis(rows, step=(1,1), coverage=1, smoothing=.75):
-        gpu.uniform(flow,'hair_flow',1,2,smoothing)
-        gpu.uniform(flow,'step_uv',*step)
-        for i,row in enumerate(rows): gpu.uniform(flow,f'row{i}',*row,coverage)
-        c=pixel(flow)
-        return [(c[0]-.5)*2,(c[1]-.5)*2,c[2]]
-    for degrees in range(0,180,15):
-        a=math.radians(degrees)
-        axis=(math.cos(a),math.sin(a))
-        for step in ((1,1),(1,2)):
-            rows=[[.2*(-x*axis[1]*step[0]+y*axis[0]*step[1]) for x in (-1,0,1)] for y in (-1,0,1)]
-            f=flow_axis(rows,step)
-            check(abs(f[0]*axis[0]+f[1]*axis[1])/math.hypot(*f[:2])>.999 and f[2]>.99,
-                ('detect rotated strands and non-square texels',degrees,step,f))
-            inverse=flow_axis([[-v for v in row] for row in rows],step)
-            check(max(abs(x-y) for x,y in zip(f,inverse))<.002,('bright/dark ridges have the same line axis',f,inverse))
-    for rows,coverage in [([[0]*3]*3,1),([[-1,1,-1],[1,-1,1],[-1,1,-1]],1),
-                          ([[-.2,0,.2]]*3,0),([[-.001,0,.001]]*3,1)]:
-        check(flow_axis(rows,coverage=coverage)==[0,1,0],'flat, isotropic, transparent and weak patterns fall back')
-
     # Sample a curved strand texture through the same surface entry point as all materials.
     surface = program('''
 uniform vec2 offset, uv_scale, texture_size;
 uniform int generate_normal, output_normal;
-vec3 hairSurface(vec3 p,vec2 uv,inout vec3 n,vec4 c,bool generateNormal,out vec3 preview,out float variation);
+vec3 hairSurface(vec3 p,vec2 uv,inout vec3 n,vec4 c,bool generateNormal,out float variation);
 mat3 hairMeshFrame(vec3 p,vec2 uv,vec2 meshUV,vec3 n,vec4 tangent);
 mat3 hairVertexFrame() {
     vec2 p=gl_FragCoord.xy-vec2(48.5,32.5);
@@ -382,14 +355,12 @@ out vec4 frag_color;
 void main() {
     vec2 p=gl_FragCoord.xy-vec2(48.5,32.5);
     vec2 uv=offset+p*uv_scale;
-    vec3 n=vec3(0,0,1), preview; float variation;
-    vec3 t=hairSurface(vec3(p*.001,-5),uv,n,hairDiffuseLookup(uv),generate_normal!=0,preview,variation);
-    frag_color=vec4((output_normal!=0 ? n : t)*.5+.5,preview.r);
+    vec3 n=vec3(0,0,1); float variation;
+    vec3 t=hairSurface(vec3(p*.001,-5),uv,n,hairDiffuseLookup(uv),generate_normal!=0,variation);
+    frag_color=vec4((output_normal!=0 ? n : t)*.5+.5,1);
 }
 ''')
     gpu.uniform(surface,'hair_object',1)
-    gpu.uniform(surface,'hair_flow',1,2,.75)
-    gpu.uniform(surface,'hair_debug',2,integer=True)
     gpu.uniform(surface,'uv_scale',.0001,.0001)
     for size in ((128,128),(256,128)):
         gpu.uniform(surface,'texture_size',*size)
@@ -398,15 +369,11 @@ void main() {
             gpu.uniform(surface,'offset',.3*math.cos(a),.3*math.sin(a))
             c=pixel(surface)
             t=[(v-.5)*2 for v in c[:3]]
-            check(abs(-t[0]*math.sin(a)+t[1]*math.cos(a))>.98 and c[3]>.9,
-                ('direction follows curved strands locally',size,degrees,c))
+            check(abs(t[0])<.001 and t[1]>.999 and abs(t[2])<.001,
+                ('fixed texture V ignores painted strand direction',size,degrees,c))
     gpu.uniform(surface,'offset',.3,0)
     gpu.uniform(surface,'uv_scale',-.0001,.0001)
     check(pixel(surface)[1]>.99,'mirrored UVs preserve the strand axis')
-    gpu.uniform(surface,'hair_flow',0,2,.75)
-    gpu.uniform(surface,'hair_direction',math.pi/2)
-    check(pixel(surface)[0]<.001,'manual fallback remains adjustable')
-    gpu.uniform(surface,'hair_direction',0)
     gpu.uniform(surface,'output_normal',1,integer=True)
     gpu.uniform(surface,'hair_detail',1,1,0)
     check(pixel(surface)[:3]==[.5,.5,1],'authored normals bypass extraction')
@@ -414,14 +381,11 @@ void main() {
     check(abs(pixel(surface)[0]-.5)>.01,'normal strength enables extracted detail')
     gpu.uniform(surface,'hair_detail',0,1,0)
     check(pixel(surface)[:3]==[.5,.5,1],'zero strength disables extracted detail')
-    gpu.uniform(lighting,'hair_flow',1,2,.75)
-    for degrees in range(0,180,30):
-        a=math.radians(degrees)
-        t=(math.cos(a),math.sin(a),0)
-        positive=response(light=(.6,0,.8),tangent=t)
-        negative=response(light=(.6,0,.8),tangent=tuple(-v for v in t))
-        check(max(abs(x-y) for x,y in zip(positive,negative))<.00001,'automatic line axis has no root/tip lighting seams')
-    gpu.uniform(lighting,'hair_flow',0,2,.75)
+    gpu.uniform(surface,'hair_object',0)
+    gpu.uniform(surface,'hair_detail',2,1,0)
+    check(pixel(surface)[:3]==[.5,.5,1],'non-hair surfaces keep their normal even with hair detail enabled')
+    gpu.uniform(surface,'output_normal',0,integer=True)
+    check(pixel(surface)[:3]==[.5,.5,.5],'non-hair surfaces skip strand construction')
 
     # Actual alpha programs, sorted and OIT, must preserve coverage while sharing lighting.
     util = read('class1/deferred/deferredUtil.glsl')
@@ -480,7 +444,6 @@ void main() {
             gpu.uniform(prog,'test_position',0,0,-5)
             gpu.uniform(prog,'test_normal_length',1)
             gpu.uniform(prog,'hair_object',1)
-            gpu.uniform(prog,'hair_flow',1,2,.75)
             gpu.uniform(prog,'hair_detail',.35,1,1)
             gpu.uniform(prog,'hair_params',.35,.7,.5,1)
             gpu.uniform(prog,'light_position[2]',0,0,0,1)
@@ -526,11 +489,6 @@ void main() {
                 (name,oit,'zero strength restores uniform finish and original alpha',uniform_finish,c))
             gpu.uniform(prog,'hair_variation_strength',1)
             gpu.bind(prog,'diffuseMap',0,albedo)
-            gpu.uniform(prog,'hair_debug',2,integer=True)
-            preview=pixel(prog)
-            check(preview[:3]==[0,0,0] and abs(preview[3]-.24)<.001,
-                (name,oit,'confidence preview preserves alpha coverage',preview))
-            gpu.uniform(prog,'hair_debug',0,integer=True)
             gpu.uniform(prog,'minimum_alpha',.5)
             gl.ClearColor(0,0,0,0); gl.Clear(0x4000)
             # Ordinary blended materials do not alpha-test unless their shader requires it.
@@ -602,7 +560,25 @@ void main() {
     names={node.get('control_name') for node in controls.iter() if node.get('control_name')}
     settings=ET.parse(ROOT/'indra/newview/app_settings/settings.xml')
     keys={node.text for node in settings.findall('./map/key')}
-    check(len(names)==17 and names <= keys,'all Hair controls have settings')
+    check(names == {name for name in keys if name.startswith('BoxxyHair')},'all Hair controls have settings')
+    content=controls.find('.//panel[@name="HairContent"]')
+    for name in ('BoxxyHairEnabled','BoxxyHairPhysicsEnabled','BoxxyHairNames'):
+        node=next(n for n in content if n.get('name')==name)
+        check(node.get('enabled_control') is None, name+' is independently usable')
+    for node in content:
+        dependency=node.get('enabled_control')
+        check(not dependency or dependency in names, 'control depends on a removed setting')
+    rows=[node for node in content if int(node.get('top','0'))>=54]
+    check(all(int(a.get('top'))+int(a.get('height'))<=int(b.get('top')) for a,b in zip(rows,rows[1:])),
+          'Hair groups and controls do not overlap')
+    check(int(rows[-1].get('top'))+int(rows[-1].get('height'))<=int(content.get('height')),
+          'Hair controls fit inside the scroll content')
+    values=list(settings.find('./map'))
+    configs={values[i].text:dict(zip([n.text for n in list(values[i+1])[::2]],
+                                   [n.text for n in list(values[i+1])[1::2]])) for i in range(0,len(values),2)}
+    for node in content.findall('slider'):
+        value=float(configs[node.get('control_name')]['Value'])
+        check(float(node.get('min_val'))<=value<=float(node.get('max_val')), 'default outside slider range')
     variation=controls.find('.//slider[@name="BoxxyHairStrandVariation"]')
     check(variation is not None and variation.get('min_val')=='0' and variation.get('max_val')=='2',
         'strand variation exposes its full supported range')
@@ -624,6 +600,15 @@ void main() {
         'brightness automation matches the slider bounds')
     check('"BoxxyHairBrightnessCompensation"' in (ROOT/'indra/newview/llfloaterpreference.cpp').read_text(),
         'graphics defaults reset brightness compensation')
+    for name,default in [('BoxxyHairSelfOnly','1'),('BoxxyHairMaxDistance','10.0')]:
+        config=values[next(i for i,n in enumerate(values) if n.tag=='key' and n.text==name)+1]
+        pairs=dict(zip([n.text for n in list(config)[::2]],[n.text for n in list(config)[1::2]]))
+        check(pairs['Value']==default and pairs['Persist']=='1',name+' default persists')
+    check(not any(name in keys or name in names for name in ('BoxxyHairDirection','BoxxyHairAutoDirection',
+        'BoxxyHairFlowScale','BoxxyHairFlowSmoothing','BoxxyHairDebug')),'removed direction controls have no settings')
+    helper=read('class1/deferred/hairUtil.glsl')
+    check(not any(name in helper for name in ('hair_flow','hair_direction','hair_debug','hairFlowAxis','hairFlowSample')),
+        'no texture direction detection, uniforms or previews remain')
     print(f'Passed {checks} hair GPU/config checks on {gl.GetString(0x1F01).decode()}')
 
 

@@ -11,28 +11,28 @@ SOURCE = r'''
 #include <iostream>
 int main() {
     LLVolumeFogParams p;
-    assert(parseVolumeFogDescription("[vfog:0.5,<255,0,255>,6]",p));
-    assert(p.density==.5f && p.color[0]==1.f && p.color[1]==0.f && p.color[2]==1.f && p.softness==6.f);
-    assert(parseVolumeFogDescription("Club [VFOG: .03, <128, 200, 255> ] [no-shadow]",p));
-    assert(p.softness==0.f && p.color[0]==128.f/255.f);
-    assert(parseVolumeFogDescription("[vfog:0,<0,0,0>,0]",p) && p.density==0.f);
-    assert(parseVolumeFogDescription("[vfog:1e-2,<255,255,255>,.5]",p));
-    assert(parseVolumeFogDescription("[vfog:10,<255,255,255>,1024]",p));
+    assert(parseVolumeFogDescription("[vfog:0.5,6]",p));
+    assert(p.density==.5f && p.color[0]==1.f && p.color[1]==1.f && p.color[2]==1.f && p.softness==6.f);
+    assert(parseVolumeFogDescription("Club [VFOG: .03 ] [no-shadow]",p));
+    assert(p.softness==0.f);
+    assert(parseVolumeFogDescription("[vfog:0,0]",p) && p.density==0.f);
+    assert(parseVolumeFogDescription("[vfog:1e-2,.5]",p));
+    assert(parseVolumeFogDescription("[vfog:10,1024]",p));
+    assert(parseVolumeFogDescription("[vfog:0.5]",p));
     const char* invalid[] = {
-        "", "[vfog]", "vfog:0.5,<255,0,255>,6", "[vfog:0.5,<255,0,255>,6",
-        "[vfog:-1,<255,0,255>]", "[vfog:10.1,<255,0,255>]", "[vfog:0.5,<256,0,255>]",
-        "[vfog:0.5,<255,-1,255>]", "[vfog:0.5,<255,0,255>,-6]", "[vfog:0.5,<255,0,255>,1025]",
-        "[vfog:nan,<255,0,255>]", "[vfog:inf,<255,0,255>]", "[vfog:1e100,<255,0,255>]",
-        "[vfog:0.5,<255,nan,255>]", "[vfog:0.5,<255,0,255>,inf]", "[vfog:0.5,<255,0>]",
-        "[vfog:0.5,255,0,255]", "[vfog:0.5,<255,0,255>,]", "[vfog:0.5,<255,0,255>,1,2]",
-        "[vfog:0.5,<255,0,255> trailing]", "[vfog:0.5;<255,0,255>]"
+        "", "[vfog]", "vfog:0.5,6", "[vfog:0.5,6", "[vfog:]",
+        "[vfog:-1]", "[vfog:10.1]", "[vfog:0.5,-6]", "[vfog:0.5,1025]",
+        "[vfog:nan]", "[vfog:inf]", "[vfog:1e100]", "[vfog:0.5,inf]",
+        "[vfog:0.5,nan]", "[vfog:0.5,1e100]", "[vfog:0.5,]", "[vfog:0.5,1,2]",
+        "[vfog:0.5 trailing]", "[vfog:0.5;6]", "[vfog:0.5,<255,0,255>]",
+        "[vfog:0.5,<255,0,255>,6]"
     };
     for (auto text:invalid) {
         p.density=1; p.softness=8;
         assert(!parseVolumeFogDescription(text,p));
         assert(p.density==0 && p.softness==0);
     }
-    std::cout<<"PASS: 26 production parser cases, including removal/reset and invalid numeric values\n";
+    std::cout<<"PASS: production parser cases, including removal/reset and invalid numeric values\n";
 }
 '''
 

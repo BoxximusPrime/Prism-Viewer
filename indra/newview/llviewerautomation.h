@@ -11,6 +11,8 @@ namespace LLViewerAutomation
     void beginFrame();
     void endFrame();
     void cleanup();
+    // Nonzero only during a bounded capture; also identifies consecutive captures.
+    double captureStarted();
 
     // Inclusive main-thread wall time; inactive captures and worker threads are ignored.
     class CPUScope

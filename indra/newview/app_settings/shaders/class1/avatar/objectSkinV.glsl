@@ -25,9 +25,33 @@
 in vec4 weight4;
 
 uniform mat3x4 matrixPalette[MAX_JOINTS_PER_MESH_OBJECT];
+uniform samplerBuffer hair_guides;
+uniform int hair_guide_active;
+uniform int hair_guide_bind;
+uniform float hair_root_radius;
+uniform mat4 hair_model_from_local;
+
+mat4 hairGuideSkin(samplerBuffer guides, int offset, vec4 encoded)
+{
+    int count=int(texelFetch(guides,offset).x);
+    ivec4 index=ivec4(clamp(floor(encoded),vec4(0),vec4(max(count-1,0))));
+    vec4 weights=fract(encoded);
+    weights/=max(dot(weights,vec4(1)),1.e-8);
+    mat4 result=mat4(0);
+    for (int i=0;i<4;++i)
+    {
+        int first=offset+1+index[i]*4;
+        result+=mat4(texelFetch(guides,first),texelFetch(guides,first+1),
+            texelFetch(guides,first+2),texelFetch(guides,first+3))*weights[i];
+    }
+    return result;
+}
 
 mat4 getObjectSkinnedTransform()
 {
+    // Guide attachment is fixed at fitting time; breathing must not reassign vertices to other ropes.
+    if (hair_root_radius>0.0 && hair_guide_active!=0 && hair_guide_bind>0)
+        return hair_model_from_local*hairGuideSkin(hair_guides,hair_guide_bind,weight4);
     int i;
 
     vec4 w = fract(weight4);

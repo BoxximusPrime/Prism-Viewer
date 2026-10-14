@@ -332,7 +332,7 @@ def run(sdl, gl, benchmark=False):
 
     if '--jitter' in sys.argv:
         taa=compile_source((SHADERS/'taaResolveF.glsl').read_text(),version=150)
-        taa_buffers=[[obj(gl.GenTextures) for _ in range(3)] for _ in range(2)]
+        taa_buffers=[[obj(gl.GenTextures) for _ in range(2)] for _ in range(2)]
         def halton(index,base):
             result=0; fraction=1
             while index:
@@ -366,7 +366,7 @@ def run(sdl, gl, benchmark=False):
                     accumulated=read(); ages=read(1)
                     for unit,(name,tex) in enumerate((('taa_current',histories[history_index]),
                             ('taa_opaque',histories[history_index]),('taa_history',taa_buffers[1-frame%2][0]),
-                            ('taa_detail',taa_buffers[1-frame%2][1]),('taa_flicker',taa_buffers[1-frame%2][2]),
+                            ('taa_detail',taa_buffers[1-frame%2][1]),
                             ('taa_motion',motion),('depthMap',depth))):
                         bind(taa,name,unit,tex)
                     matrix(taa,'taa_inv_projection',inverse(jittered))

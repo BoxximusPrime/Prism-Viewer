@@ -257,6 +257,8 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
         }
     }
 
+    if (!shader->attachVertexObject("deferred/hairDeformV.glsl")) return false;
+
     if (!shader->attachVertexObject("deferred/textureUtilV.glsl"))
     {
         return false;
@@ -683,7 +685,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
 // <AS:Chanayane> Exact OIT requires GLSL 4.30.
             // //set version to 400 or 420
             // if (minor_version >= 20)
-            if (exact_oit_shader && minor_version >= 30)
+            if ((exact_oit_shader || type == GL_COMPUTE_SHADER) && minor_version >= 30)
             {
                 shader_code_text[shader_code_count++] = strdup("#version 430\n");
             }
@@ -1791,8 +1793,11 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("searchTex");
     mReservedUniforms.push_back("blendTex");
     mReservedUniforms.push_back("sssOverlayGuide");
-    mReservedUniforms.push_back("taa_flicker");
     mReservedUniforms.push_back("volumeFogMap");
+    mReservedUniforms.push_back("hair_mesh");
+    mReservedUniforms.push_back("hair_previous_mesh");
+    mReservedUniforms.push_back("hair_guides");
+    mReservedUniforms.push_back("hair_previous_guides");
 
     llassert(mReservedUniforms.size() == END_RESERVED_UNIFORMS);
 

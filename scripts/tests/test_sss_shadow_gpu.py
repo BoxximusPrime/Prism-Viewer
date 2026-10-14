@@ -40,6 +40,7 @@ vec3 clampHDRRange(vec3 c) { return c; }
 void calcAtmosphericVarsLinear(vec3 p, vec3 n, vec3 l,
     out vec3 sun, out vec3 amb, out vec3 atten, out vec3 additive)
 { sun=vec3(1); amb=vec3(0); atten=vec3(1); additive=vec3(0); }
+void sampleReflectionProbesAmbient(inout vec3 a, vec3 p, vec3 n, vec3 amb) {}
 void sampleReflectionProbes(inout vec3 a, inout vec3 g,
     vec2 tc, vec3 p, vec3 n, float gloss, bool t, vec3 amb) {}
 void sampleReflectionProbesLegacy(inout vec3 a, inout vec3 g, inout vec3 e,

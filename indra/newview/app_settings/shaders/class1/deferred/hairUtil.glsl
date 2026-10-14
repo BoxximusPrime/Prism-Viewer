@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: LGPL-2.1-only
 // Shared card/mesh hair response for deferred and forward lighting.
 uniform float hair_object;
-uniform float hair_direction;
 uniform vec4 hair_params; // roughness, highlight strength, transmission, optical thickness
-uniform vec3 hair_flow; // automatic direction, detection scale in texels, spatial smoothing
 uniform vec3 hair_detail; // enabled strength, detail scale in texels, broad-shading rejection
 uniform float hair_variation_strength;
 uniform float hair_brightness_compensation;
-uniform int hair_debug; // 0 lighting, 1 direction, 2 confidence
 
 vec4 encodeNormal(vec3 n, float env, float flag);
 
@@ -46,11 +43,6 @@ vec3 hairDirectionVector(vec3 pos, vec2 uv, vec3 n, vec2 axis)
     return hairSmoothDirection(t, dx, dy, n, hairBasis(n));
 }
 
-vec3 hairTangent(vec3 pos, vec2 uv, vec3 n)
-{
-    return hairDirectionVector(pos, uv, n, vec2(sin(hair_direction), cos(hair_direction)));
-}
-
 // Samples are untinted diffuse texels at -step, +step, -4*step and +4*step.
 // Call before discards, only when no authored normal/bump map exists.
 vec3 hairDetailNormal(mat3 frame, vec3 n, vec2 axis, float footprint, vec4 center,
@@ -68,48 +60,9 @@ vec3 hairDetailNormal(mat3 frame, vec3 n, vec2 axis, float footprint, vec4 cente
     return normalize(n - across * clamp(hair_detail.x * slope, -0.5, 0.5) * strength);
 }
 
-vec3 hairTensor(vec2 g)
-{
-    return vec3(g.x * g.x, g.y * g.y, g.x * g.y);
-}
-
-// Return a UV-space line axis and confidence; gradients are measured on a 3x3 stencil.
-vec3 hairFlowAxis(vec4 row0, vec4 row1, vec4 row2, vec2 stepUV, vec2 fallback)
-{
-    vec3 central = hairTensor(0.5 * vec2(row1.z - row1.x, row2.y - row0.y));
-    vec3 averaged = 0.25 * (
-        hairTensor(0.5 * vec2(row0.y-row0.x+row1.y-row1.x, row1.x-row0.x+row1.y-row0.y)) +
-        hairTensor(0.5 * vec2(row0.z-row0.y+row1.z-row1.y, row1.y-row0.y+row1.z-row0.z)) +
-        hairTensor(0.5 * vec2(row1.y-row1.x+row2.y-row2.x, row2.x-row1.x+row2.y-row1.y)) +
-        hairTensor(0.5 * vec2(row1.z-row1.y+row2.z-row2.y, row2.y-row1.y+row2.z-row1.z)));
-    vec3 j = mix(central, averaged, hair_flow.z);
-    vec2 orientation = vec2(j.x - j.y, 2.0 * j.z);
-    float anisotropy = length(orientation);
-    float energy = j.x + j.y;
-    float confidence = smoothstep(0.2, 0.8, anisotropy / max(energy, 1e-8)) *
-        smoothstep(0.0004, 0.01, energy) * min(row0.w, min(row1.w, row2.w));
-    if (confidence <= 0.0) return vec3(fallback, 0.0);
-    float angle = 0.5 * atan(orientation.y, orientation.x);
-    vec2 axis = normalize(vec2(-sin(angle), cos(angle)) * stepUV);
-    // Line orientations are pi-periodic: blend double angles so opposite signs agree.
-    vec2 a = vec2(axis.x*axis.x-axis.y*axis.y, 2.0*axis.x*axis.y);
-    vec2 b = vec2(fallback.x*fallback.x-fallback.y*fallback.y, 2.0*fallback.x*fallback.y);
-    vec2 blended = mix(b, a, confidence);
-    if (dot(blended, blended) < 1e-8) return vec3(fallback, confidence);
-    angle = 0.5 * atan(blended.y, blended.x);
-    return vec3(cos(angle), sin(angle), confidence);
-}
-
 // Each surface shader supplies its own indexed/non-indexed diffuse lookup.
 vec4 hairDiffuseLookup(vec2 uv);
 vec2 hairTextureSize();
-
-vec2 hairFlowSample(vec2 uv)
-{
-    vec4 c = hairDiffuseLookup(uv);
-    return vec2(log(max(dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)), 0.02)),
-        smoothstep(0.1, 0.8, c.a));
-}
 
 // Transform sampled texture directions through the interpolated mesh frame.
 mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent)
@@ -146,33 +99,14 @@ float hairStrandVariation(vec4 center, vec4 alongL, vec4 alongR, vec4 acrossL, v
         smoothstep(0.1, 0.8, coverage) / (1.0 + 0.25 * footprint * footprint);
 }
 
-vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation)
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out float variation)
 {
-    vec2 axis = vec2(sin(hair_direction), cos(hair_direction));
-    preview = vec3(0);
+    vec2 axis = vec2(0, 1);
     variation = 0.5;
-    if (hair_object <= 0.5) return hairDirectionVector(pos, uv, n, axis);
+    if (hair_object <= 0.5) return vec3(0);
     mat3 frame = hairVertexFrame();
     vec2 texel = 1.0 / max(hairTextureSize(), vec2(1));
     vec2 footprint = max(abs(dFdx(uv)), abs(dFdy(uv)));
-    float confidence = 0.0;
-    if (hair_flow.x > 0.5 || hair_debug != 0)
-    {
-        vec2 stepUV = max(texel * hair_flow.y, footprint);
-        vec2 a = hairFlowSample(uv + stepUV * vec2(-1,-1));
-        vec2 b = hairFlowSample(uv + stepUV * vec2( 0,-1));
-        vec2 c = hairFlowSample(uv + stepUV * vec2( 1,-1));
-        vec2 d = hairFlowSample(uv + stepUV * vec2(-1, 0));
-        vec2 e = vec2(log(max(dot(center.rgb, vec3(0.2126, 0.7152, 0.0722)), 0.02)), smoothstep(0.1,0.8,center.a));
-        vec2 f = hairFlowSample(uv + stepUV * vec2( 1, 0));
-        vec2 g = hairFlowSample(uv + stepUV * vec2(-1, 1));
-        vec2 h = hairFlowSample(uv + stepUV * vec2( 0, 1));
-        vec2 i = hairFlowSample(uv + stepUV * vec2( 1, 1));
-        vec3 flow = hairFlowAxis(vec4(a.x,b.x,c.x,min(a.y,min(b.y,c.y))),
-            vec4(d.x,e.x,f.x,min(d.y,min(e.y,f.y))), vec4(g.x,h.x,i.x,min(g.y,min(h.y,i.y))), stepUV, axis);
-        confidence = flow.z;
-        if (hair_flow.x > 0.5) axis = flow.xy;
-    }
     vec2 across = vec2(axis.y, -axis.x);
     if (hair_variation_strength > 0.0)
     {
@@ -190,9 +124,6 @@ vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNorm
             hairDiffuseLookup(uv-offset), hairDiffuseLookup(uv+offset),
             hairDiffuseLookup(uv-4.0*offset), hairDiffuseLookup(uv+4.0*offset));
     }
-    float angle = atan(axis.y, axis.x);
-    preview = hair_debug == 2 ? vec3(confidence) :
-        (0.5 + 0.5 * cos(2.0 * angle + vec3(0, 2.0943951, 4.1887902))) * mix(0.25, 1.0, confidence);
     vec3 strand = frame[0] * axis.x + frame[1] * axis.y;
     return hairSafeNormalize(strand - n * dot(n, strand), hairBasis(n));
 }
@@ -224,12 +155,6 @@ float hairLobe(vec3 t, vec3 n, vec3 h, float shift, float roughness)
     float th = clamp(dot(shifted, h), -1.0, 1.0);
     float exponent = max(2.0 / (roughness * roughness) - 2.0, 1.0);
     float lobe = pow(max(1.0 - th * th, 0.0), 0.5 * exponent);
-    if (hair_flow.x > 0.5)
-    {
-        // Texture flow identifies an axis, not root/tip polarity; keep both signs equivalent.
-        float reverse = clamp(dot(normalize(t - n * shift), h), -1.0, 1.0);
-        lobe = 0.5 * (lobe + pow(max(1.0 - reverse * reverse, 0.0), 0.5 * exponent));
-    }
     // A strand highlight is a one-dimensional band, not a two-dimensional Phong spot.
     return sqrt((exponent + 2.0) / 6.28318530718) * lobe;
 }

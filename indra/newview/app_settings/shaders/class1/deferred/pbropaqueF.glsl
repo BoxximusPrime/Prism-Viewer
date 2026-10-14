@@ -64,14 +64,13 @@ void mirrorClip(vec3 pos);
 vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
 float filterPBRRoughness(float perceptual_roughness, vec3 normal);
 uniform float hair_object;
-uniform int hair_debug;
+
 mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
 in vec4 vary_hair_tangent;
 in vec2 vary_hair_texcoord;
 mat3 hairVertexFrame() { return hairMeshFrame(vary_position, base_color_texcoord, vary_hair_texcoord, vary_normal, vary_hair_tangent); }
 
-vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
-vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out float variation);
 vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
 
 
@@ -109,9 +108,8 @@ void main()
     spec.g = filterPBRRoughness(spec.g * roughnessFactor, tnorm);
     spec.b *= metallicFactor;
 
-    vec3 hair_preview;
     float hair_variation;
-    vec3 strand = hairSurface(vary_position, base_color_texcoord, tnorm, diffuse_tap, false, hair_preview, hair_variation);
+    vec3 strand = hairSurface(vary_position, base_color_texcoord, tnorm, diffuse_tap, false, hair_variation);
 
     // Keep the derivative quad intact until material filtering is complete.
     mirrorClip(vary_position);
@@ -133,7 +131,6 @@ void main()
     frag_data[1] = max(vec4(spec.rgb,0.0), vec4(0));                                    // PBR linear packed Occlusion, Roughness, Metal.
     if (hair_object > 0.5) frag_data[1].a = hair_variation; // Hair replaces unused gloss with strand finish.
     frag_data[2] = encodeHairNormal(tnorm, 0, GBUFFER_FLAG_HAS_PBR, strand); // normal, environment intensity, flags
-    if (hair_object > 0.5 && hair_debug != 0) frag_data[0].rgb = hair_preview;
 
 #if defined(HAS_EMISSIVE)
     frag_data[3] = max(vec4(emissive,0), vec4(0));                                                // PBR sRGB Emissive

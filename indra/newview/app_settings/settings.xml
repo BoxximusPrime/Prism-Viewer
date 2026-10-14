@@ -399,9 +399,7 @@
   <key>RenderChromaticAberrationStrength</key>
   <map><key>Comment</key><string>Final-scene radial red/blue separation in pixels at the image corners (0 to 20). Zero disables chromatic aberration. Shared by Photo Tools and Graphics Post.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>4.0</real></map>
   <key>RenderTAADebug</key>
-  <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion/reactive, 2 history weight (red low, green high), 3 clipping (white high), 4 detail protection (green high), 5 rejection reason (gray reset, blue offscreen, red depth, yellow partial depth, magenta reactive, green valid), 6 repeated flicker protection (green high). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
-  <key>RenderTAAFlickerDetection</key>
-  <map><key>Comment</key><string>Detect repeated luminance reversals across frames and relax color rejection on eligible static surfaces. Requires fine static detail stabilization; motion, reactive shading and invalid depth still reject history.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>0</integer></map>
+  <map><key>Comment</key><string>TAA diagnostic: 0 normal, 1 motion/reactive, 2 history weight (red low, green high), 3 clipping (white high), 4 detail protection (green high), 5 rejection reason (gray reset, blue offscreen, red depth, yellow partial depth, magenta reactive, green valid). Session only.</string><key>Persist</key><integer>0</integer><key>Type</key><string>S32</string><key>Value</key><integer>0</integer></map>
   <key>RenderTAAFreezeJitter</key>
   <map><key>Comment</key><string>Session-only diagnostic: use zero camera jitter while keeping TAA motion tracking and history blending active. Toggle to isolate projection-driven shimmer. Resets TAA and SSGI history on change. Off by default.</string><key>Persist</key><integer>0</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>0</integer></map>
   <key>RenderSSGIEnabled</key>
@@ -479,13 +477,6 @@
     <key>Comment</key><string>GTAO edge-aware spatial smoothing strength (0 to 2). 0 shows the unfiltered signal, 1 is normal.</string>
     <key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>0</real>
   </map>
-  <key>RenderPCSSStablePattern</key>
-  <map>
-    <key>Comment</key><string>Anchor the sun/moon PCSS sampling pattern to world axes while the camera orbits. Disable to compare the previous camera-aligned pattern. Applies immediately; projector sampling is unaffected.</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>Boolean</string>
-    <key>Value</key><boolean>0</boolean>
-  </map>
   <key>RenderPCSSLightSize</key>
   <map>
     <key>Comment</key><string>Sun/moon angular diameter in degrees for PCSS (0.1 to 10). Larger values soften distant shadows more.</string>
@@ -542,12 +533,160 @@
     <key>Type</key><string>Boolean</string>
     <key>Value</key><integer>0</integer>
   </map>
+  <key>BoxxyHairSelfOnly</key>
+  <map>
+    <key>Comment</key><string>Apply hair lighting only to attachments worn by your avatar.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>1</integer>
+  </map>
+  <key>BoxxyHairMaxDistance</key>
+  <map>
+    <key>Comment</key><string>Maximum camera distance for hair lighting and depth maps, in yards (one yard is 0.9144 metres).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>10.0</real>
+  </map>
   <key>BoxxyHairNames</key>
   <map>
     <key>Comment</key><string>Comma-separated case-insensitive word prefixes in object root names for hair lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>String</string>
     <key>Value</key><string>hair</string>
+  </map>
+  <key>BoxxyHairPhysicsFriction</key>
+  <map>
+    <key>Comment</key><string>Surface friction coefficient. Zero lets hair slide freely; higher values make contact grip, including tangential motion from an animated mesh hand.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.35</real>
+  </map>
+  <key>BoxxyHairPhysicsDamping</key>
+  <map>
+    <key>Comment</key><string>Velocity damping per second. Zero preserves free motion; higher values settle motion faster without tethering hair to its original shape.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>7</real>
+  </map>
+  <key>BoxxyHairPhysicsRopeDensity</key>
+  <map>
+    <key>Comment</key><string>Number of fitted radial ropes around the local avatar head (4 to 64). Changing this refits and resets ropes.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>16</integer>
+  </map>
+  <key>BoxxyHairPhysicsBendGradient</key>
+  <map>
+    <key>Comment</key><string>Distance in metres beyond the pinned radius over which guide bend resistance tapers to 5 percent. Zero keeps uniform resistance. Larger distances keep more upper hair firm. Requires nonzero bend resistance.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0</real>
+  </map>
+  <key>BoxxyHairPhysicsBendResistance</key>
+  <map>
+    <key>Comment</key><string>Multiplies bending resistance independently of Shape retention. Zero allows hinges between rope segments; 1 keeps the normal bending resistance.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1</real>
+  </map>
+  <key>BoxxyHairPhysicsElasticity</key>
+  <map>
+    <key>Comment</key><string>Length compliance: zero keeps rigid segment lengths; higher values allow more stretch under load and relax back when released. Independent of bend resistance and shape retention.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.25</real>
+  </map>
+  <key>BoxxyHairPhysicsTravelLimit</key>
+  <map>
+    <key>Comment</key><string>Optional distance from the original shape, relative to strand length. Zero disables this artistic limit so hair can fall fully sideways. Collision takes priority.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0</real>
+  </map>
+  <key>BoxxyHairPhysicsShowGuides</key>
+  <map>
+    <key>Comment</key><string>Show simulated and rest ropes with pinned, free and contact markers. Requires hair physics.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>BoxxyHairPhysicsEnabled</key>
+  <map>
+    <key>Comment</key><string>Enable local-avatar rope hair physics with animated body-mesh collision, independently of hair lighting.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>BoxxyHairPhysicsStiffness</key>
+  <map>
+    <key>Comment</key><string>Spring recovery and bend stiffness (1 to 12). Shape retention controls the restoring spring independently.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>6</real>
+  </map>
+  <key>BoxxyHairPhysicsRootRadius</key>
+  <map>
+    <key>Comment</key><string>Radius in metres of the pinned crown region (0.03 to 0.35). Root gradient controls the transition beyond it.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.15</real>
+  </map>
+  <key>BoxxyHairPhysicsRootGradient</key>
+  <map>
+    <key>Comment</key><string>Distance in metres beyond pinned roots over which movement fades in (0.01 to 1.00).</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.30</real>
+  </map>
+  <key>BoxxyHairPhysicsShapeRetention</key>
+  <map>
+    <key>Comment</key><string>Restoring spring strength toward the original hairstyle (0 to 1). Zero releases the spring; pins and rope constraints remain.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>BoxxyHairPhysicsCollisionSmoothing</key>
+  <map>
+    <key>Comment</key><string>Contact smoothing distance in metres (0 to 0.02). Adds up to 5 mm of resting clearance and softens fast-motion recovery.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.02</real>
+  </map>
+  <key>BoxxyHairPhysicsGravity</key>
+  <map>
+    <key>Comment</key><string>Apply world-down gravity to the rope points while keeping roots pinned.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
+  </map>
+  <key>BoxxyHairPhysicsGravityStrength</key>
+  <map>
+    <key>Comment</key><string>World-down gravity multiplier (0 to 3). One is normal gravity; zero removes the force.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>1.0</real>
+  </map>
+  <key>BoxxyHairPhysicsMeshPadding</key>
+  <map>
+    <key>Comment</key><string>Extra outward clearance in metres for the animated hair collision shell (0 to 0.1). Applies after skinning, including hands, and is visible in the shell preview.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>F32</string>
+    <key>Value</key><real>0.0</real>
+  </map>
+  <key>BoxxyHairPhysicsColliderNames</key>
+  <map>
+    <key>Comment</key>
+    <string>Comma-separated whole words or phrases in attachment root names used for animated hair collision. Independent of skin scattering selection; use distinctive body/head/hand/foot names, not clothing fit labels.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>String</string>
+    <key>Value</key><string>body, head, hands, feet</string>
+  </map>
+  <key>BoxxyHairPhysicsShowMesh</key>
+  <map>
+    <key>Comment</key><string>Show the animated collision shell in translucent purple through hair and clothing. Requires hair physics.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>Boolean</string>
+    <key>Value</key><integer>0</integer>
   </map>
   <key>BoxxyHairRoughness</key>
   <map>
@@ -591,34 +730,6 @@
     <key>Type</key><string>F32</string>
     <key>Value</key><real>1.0</real>
   </map>
-  <key>BoxxyHairDirection</key>
-  <map>
-    <key>Comment</key><string>Strand direction in degrees from texture V toward U.</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.0</real>
-  </map>
-  <key>BoxxyHairAutoDirection</key>
-  <map>
-    <key>Comment</key><string>Detect the local strand axis from diffuse texture structure.</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>1</integer>
-  </map>
-  <key>BoxxyHairFlowScale</key>
-  <map>
-    <key>Comment</key><string>Strand detection sample spacing in resident texture texels (0.5-8).</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>F32</string>
-    <key>Value</key><real>2</real>
-  </map>
-  <key>BoxxyHairFlowSmoothing</key>
-  <map>
-    <key>Comment</key><string>Blend local gradients with the neighborhood structure tensor (0-1).</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.75</real>
-  </map>
   <key>BoxxyHairNormalEnabled</key>
   <map>
     <key>Comment</key><string>Generate normal detail for legacy hair without an authored normal or bump map.</string>
@@ -646,13 +757,6 @@
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
     <key>Value</key><real>1</real>
-  </map>
-  <key>BoxxyHairDebug</key>
-  <map>
-    <key>Comment</key><string>Hair preview: 0 lighting, 1 strand direction, 2 detection confidence.</string>
-    <key>Persist</key><integer>1</integer>
-    <key>Type</key><string>S32</string>
-    <key>Value</key><integer>0</integer>
   </map>
   <key>BoxxySSSEnabled</key>
   <map>
@@ -15738,13 +15842,13 @@
     <key>MaxFPS</key>
     <map>
       <key>Comment</key>
-      <string>OBSOLETE UNUSED setting.</string>
+      <string>Maximum viewer frame rate. Zero or negative values disable the limit. Applies immediately.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>-1.0</real>
+      <real>0.0</real>
     </map>
     <key>ZoomDirect</key>
     <map>

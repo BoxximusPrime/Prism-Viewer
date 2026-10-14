@@ -194,7 +194,8 @@ vec3 calcPointLightOrSpotLight(int light_index, vec3 light_col, vec3 diffuse, ve
 
 vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
 uniform float hair_object;
-uniform int hair_debug;
+void sampleReflectionProbesAmbient(inout vec3 ambient, vec3 pos, vec3 norm, vec3 amblit);
+
 #ifndef IS_AVATAR_SKIN
 mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
 in vec4 vary_hair_tangent;
@@ -205,8 +206,7 @@ mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
 mat3 hairVertexFrame() { return hairMeshFrame(vary_position, vary_texcoord0, vary_texcoord0, vary_norm, vec4(0)); }
 #endif
 
-vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
-vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out float variation);
 vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
 vec3 decodeHairTangent(vec3 n, float angle);
 vec3 hairSafeNormalize(vec3 v, vec3 fallback);
@@ -242,9 +242,9 @@ void main()
 #ifdef USE_INDEXED_TEX
     vec4 diffuse_tap = diffuseLookup(vary_texcoord0.xy);
 #endif
-    vec3 hair_preview;
+
     float hair_variation;
-    vec3 strand = hairSurface(vary_position, vary_texcoord0, norm, diffuse_tap, true, hair_preview, hair_variation);
+    vec3 strand = hairSurface(vary_position, vary_texcoord0, norm, diffuse_tap, true, hair_variation);
     mirrorClip(vary_position);
 #if !defined(IS_HUD) && !defined(FOR_IMPOSTOR) && !defined(IS_AVATAR_SKIN)
     if (isSSSOverlay(vary_position)) discard;
@@ -333,48 +333,56 @@ void main()
     vec3 irradiance = amblit;
     vec3 glossenv = vec3(0.0);
     vec3 legacyenv = vec3(0.0);
-    sampleReflectionProbesLegacy(irradiance, glossenv, legacyenv, frag, pos.xyz, norm.xyz, 0.0, 0.0, true, amblit_linear);
-        irradiance = waterLitAmbient(pos.xyz, irradiance, classic_mode);
+    if (hair_object > 0.5)
+        sampleReflectionProbesAmbient(irradiance, pos.xyz, norm.xyz, amblit_linear);
+    else
+        sampleReflectionProbesLegacy(irradiance, glossenv, legacyenv, frag, pos.xyz, norm.xyz, 0.0, 0.0, true, amblit_linear);
+    irradiance = waterLitAmbient(pos.xyz, irradiance, classic_mode);
 
-
-    float da = dot(norm.xyz, light_dir.xyz);
-          da = clamp(da, -1.0, 1.0);
-
-    float final_da = da;
-          final_da = clamp(final_da, 0.0f, 1.0f);
 
     vec4 color = vec4(0.0);
+    color.a = final_alpha;
+    vec4 light = vec4(0.0);
 
-    color.a   = final_alpha;
-
-    color.rgb = irradiance;
-    if (classic_mode > 0)
+    // Hair supplies its own direct lighting; do not evaluate the discarded material response.
+    if (hair_object <= 0.5)
     {
-        final_da = pow(final_da,1.2);
-        vec3 sun_contrib = vec3(min(final_da, shadow));
+        float da = dot(norm.xyz, light_dir.xyz);
+              da = clamp(da, -1.0, 1.0);
 
-        color.rgb = srgb_to_linear(color.rgb * 0.9 + linear_to_srgb(sun_contrib) * sunlit_linear * 0.7);
-        sunlit_linear = srgb_to_linear(sunlit_linear);
+        float final_da = da;
+              final_da = clamp(final_da, 0.0f, 1.0f);
+
+
+
+        color.rgb = irradiance;
+        if (classic_mode > 0)
+        {
+            final_da = pow(final_da,1.2);
+            vec3 sun_contrib = vec3(min(final_da, shadow));
+
+            color.rgb = srgb_to_linear(color.rgb * 0.9 + linear_to_srgb(sun_contrib) * sunlit_linear * 0.7);
+            sunlit_linear = srgb_to_linear(sunlit_linear);
+        }
+        else
+        {
+            vec3 sun_contrib = min(final_da, shadow) * sunlit_linear;
+            color.rgb += sun_contrib;
+        }
+
+        color.rgb *= diffuse_linear.rgb;
+
+
+       #define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(i, light_diffuse[i].rgb, diffuse_linear.rgb, pos.xyz, norm, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
+
+        LIGHT_LOOP(1)
+        LIGHT_LOOP(2)
+        LIGHT_LOOP(3)
+        LIGHT_LOOP(4)
+        LIGHT_LOOP(5)
+        LIGHT_LOOP(6)
+        LIGHT_LOOP(7)
     }
-    else
-    {
-        vec3 sun_contrib = min(final_da, shadow) * sunlit_linear;
-        color.rgb += sun_contrib;
-    }
-
-    color.rgb *= diffuse_linear.rgb;
-
-    vec4 light = vec4(0,0,0,0);
-
-   #define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(i, light_diffuse[i].rgb, diffuse_linear.rgb, pos.xyz, norm, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
-
-    LIGHT_LOOP(1)
-    LIGHT_LOOP(2)
-    LIGHT_LOOP(3)
-    LIGHT_LOOP(4)
-    LIGHT_LOOP(5)
-    LIGHT_LOOP(6)
-    LIGHT_LOOP(7)
 
     if (hair_object > 0.5)
     {
@@ -401,7 +409,6 @@ void main()
 #if !defined(IS_HUD) && !defined(FOR_IMPOSTOR)
     color = applyVolumeFogAlpha(pos.xyz, color);
 #endif
-    if (hair_object > 0.5 && hair_debug != 0) color.rgb = hair_preview;
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(color, vec4(0));
 #ifdef EXACT_OIT

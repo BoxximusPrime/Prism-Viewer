@@ -162,6 +162,8 @@
 #include <boost/regex.hpp>
 #include <boost/throw_exception.hpp>
 #include <chrono>
+#include <cmath>
+#include <thread>
 
 #if LL_WINDOWS
 #   include <share.h> // For _SH_DENYWR in processMarkerFiles
@@ -1339,6 +1341,7 @@ bool LLAppViewer::frame()
 
 bool LLAppViewer::doFrame()
 {
+    const auto frame_start = std::chrono::steady_clock::now();
     resumeMainloopTimeout("Main:doFrameStart");
     LLViewerAutomation::processRequests();
     LLViewerAutomation::beginCPUFrame();
@@ -1673,6 +1676,28 @@ bool LLAppViewer::doFrame()
     // pauses viewer (ex: macOS doesn't call oneFrame),
     // so stop tracking on exit.
     pauseMainloopTimeout();
+    static LLCachedControl<F32> max_fps(gSavedSettings, "MaxFPS", 0.f);
+    static F32 previous_max_fps = 0.f;
+    static std::chrono::steady_clock::time_point frame_deadline;
+    if (!LLApp::isExiting() && std::isfinite(F32(max_fps)) && max_fps > 0.f)
+    {
+        LL_AUTOMATION_CPU_SCOPE("background.yield");
+        const auto frame_period = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+            std::chrono::duration<double>(1.0 / llclamp(F32(max_fps), 1.f, 1000.f)));
+        if (previous_max_fps != F32(max_fps))
+            frame_deadline = frame_start;
+        previous_max_fps = max_fps;
+        // Carry scheduler oversleep into the next wait instead of accumulating it.
+        frame_deadline += frame_period;
+        const auto now = std::chrono::steady_clock::now();
+        if (now > frame_deadline + frame_period)
+            frame_deadline = now; // Discard missed frames after a stall.
+        std::this_thread::sleep_until(frame_deadline);
+    }
+    else
+    {
+        previous_max_fps = 0.f;
+    }
     LL_PROFILER_FRAME_END;
     LLViewerAutomation::endCPUFrame();
 

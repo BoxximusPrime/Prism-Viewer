@@ -46,6 +46,7 @@ struct LLDrawInfo {
     const int* mSSSObject = nullptr;
     bool mFullbright = false;
     bool mHair = false;
+    const int* mHairObject = nullptr;
 };
 struct LLCullResult {
     using drawinfo_iterator = LLDrawInfo**;
@@ -157,6 +158,13 @@ int main() {
         }
     }
     gPipeline.mHairDepthPass = 0;
+    for (bool same_hair : {false, true}) {
+        LLDrawInfo x{0,5,6,0,&a,nullptr}, y{6,11,6,6,&a,nullptr};
+        x.mHairObject = &skin_a; y.mHairObject = same_hair ? &skin_a : &skin_b;
+        gPipeline.inputs = {&x,&y}; submitted.clear(); draw_calls = 0;
+        pass.pushUntexturedBatches(0);
+        assert(draw_calls == (same_hair ? 1 : 2)); // Separate springs cannot share a transform.
+    }
     gPipeline.inputs.clear(); submitted.clear(); draw_calls = 0;
     pass.pushUntexturedBatches(0);
     assert(submitted.empty() && draw_calls == 0);

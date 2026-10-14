@@ -396,8 +396,11 @@ public:
         SMAA_BLEND_TEX,                     //  "blendTex"
 
         SSS_OVERLAY_GUIDE,                  //  "sssOverlayGuide"
-        TAA_FLICKER,                        //  "taa_flicker"
         VOLUME_FOG_MAP,                     //  "volumeFogMap"
+        HAIR_MESH,                           //  "hair_mesh"
+        HAIR_PREVIOUS_MESH,                  //  "hair_previous_mesh"
+        HAIR_GUIDES,                         //  "hair_guides"
+        HAIR_PREVIOUS_GUIDES,                //  "hair_previous_guides"
         END_RESERVED_UNIFORMS
     } eGLSLReservedUniforms;
     // clang-format on

@@ -27,6 +27,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "lldrawpool.h"
+#include "llhairmesh.h"
 #include "llrender.h"
 #include "llfasttimer.h"
 #include "llviewercontrol.h"
@@ -52,6 +53,7 @@
 #include "llglslshader.h"
 #include "llglcommonfunc.h"
 #include "llvoavatar.h"
+#include "llvovolume.h"
 #include "llviewershadermgr.h"
 #include "glm/gtc/type_ptr.hpp"
 
@@ -496,6 +498,7 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
                 if (!next || !next->mCount || next->mAvatar ||
                     next->mVertexBuffer != pparams->mVertexBuffer ||
                     next->mModelMatrix != pparams->mModelMatrix ||
+                    next->mHairObject != pparams->mHairObject ||
                     U64(pparams->mOffset) + count != next->mOffset ||
                     (gPipeline.mHairDepthPass != 0 &&
                      (next->mHair && !next->mFullbright) != (pparams->mHair && !pparams->mFullbright)) ||
@@ -613,6 +616,7 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
                 if (!next || !next->mCount || next->mAvatar ||
                     next->mVertexBuffer != pparams->mVertexBuffer ||
                     next->mModelMatrix != pparams->mModelMatrix ||
+                    next->mHairObject != pparams->mHairObject ||
                     U64(pparams->mOffset) + count != next->mOffset ||
                     next->mAlphaMaskCutoff != pparams->mAlphaMaskCutoff ||
                     next->mTexture != pparams->mTexture ||
@@ -692,13 +696,11 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
         static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
         static const LLStaticHashedString sss_object("sss_object"), ssgi_avatar("ssgi_avatar");
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(ssgi_avatar, params.mSSGIAvatar ? 1.f : 0.f);
-        static LLCachedControl<bool> hair_enabled(gSavedSettings, "BoxxyHairEnabled", false);
-        static LLCachedControl<F32> hair_direction(gSavedSettings, "BoxxyHairDirection", 0.f);
-        const bool hair = params.mHair && hair_enabled && !params.mFullbright &&
-            !gCubeSnapshot && !LLPipeline::sImpostorRender && !LLPipeline::sRenderingHUDs;
+        const bool hair = params.mHair && !params.mFullbright &&
+            !gCubeSnapshot && !LLPipeline::sImpostorRender && !LLPipeline::sRenderingHUDs &&
+            LLVOVolume::isHairInRange(params.mHairObject);
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLStaticHashedString("hair_object"), hair ? 1.f : 0.f);
-        LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLStaticHashedString("hair_direction"), F32(hair_direction) * DEG_TO_RAD);
-        gPipeline.bindHairSettings(*LLGLSLShader::sCurBoundShaderPtr);
+        if (hair) gPipeline.bindHairSettings(*LLGLSLShader::sCurBoundShaderPtr);
         const bool skin = params.mSSS && sss_enabled && !gCubeSnapshot && !LLPipeline::sImpostorRender;
         LLGLSLShader::sCurBoundShaderPtr->uniform1f(sss_object, skin ? 1.f : 0.f);
         if (skin && LLGLSLShader::sCurBoundShaderPtr->getUniformLocation(sss_object) >= 0)
@@ -708,6 +710,63 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
         }
     }
     applyModelMatrix(params.mModelMatrix, params.mModelXform);
+    if (LLGLSLShader::sCurBoundShaderPtr &&
+        LLGLSLShader::sCurBoundShaderPtr->getUniformLocation(LLStaticHashedString("hair_root_radius")) >= 0)
+    {
+        applyHairDeform(getHairDeform(params));
+    }
+}
+
+LLMatrix4 LLRenderPass::getModelMatrix(const LLDrawInfo& params, LLVector3& origin)
+{
+    LLMatrix4 model = getModelMatrix(params.mModelMatrix, params.mModelXform, origin);
+    if (params.mAvatar && params.mSkinInfo)
+        origin = params.mAvatar.get()->updateSkinInfoMatrixPalette(params.mSkinInfo).mRenderOrigin;
+    return model;
+}
+
+LLHairDeform LLRenderPass::getHairDeform(const LLDrawInfo& params)
+{
+    LLHairDeform hair;
+    if (!params.mHair || !params.mHairObject || gCubeSnapshot || LLPipeline::sImpostorRender || LLPipeline::sRenderingHUDs)
+        return hair;
+    const auto* volume = dynamic_cast<const LLVOVolume*>(params.mHairObject);
+    LLVector3 pivot;
+    LLQuaternion head_rotation;
+    if (!volume || !volume->getHairPhysicsFrame(pivot, head_rotation)) return hair;
+    LLVector3 origin;
+    const LLMatrix4 model = getModelMatrix(params, origin);
+    pivot -= origin;
+    const glm::mat4 model_gl = glm::make_mat4(&model.mMatrix[0][0]);
+    // Cancel large world coordinates and orient the ropes with the head.
+    const LLMatrix4 head_inverse(~head_rotation);
+    const glm::mat4 to_local = glm::make_mat4(&head_inverse.mMatrix[0][0]) * glm::translate(glm::mat4(1.f),
+        -glm::vec3(pivot.mV[0], pivot.mV[1], pivot.mV[2])) * model_gl;
+    if (fabsf(glm::determinant(to_local)) < 1.e-10f) return hair;
+    hair.localFromModel = LLMatrix4(glm::value_ptr(to_local));
+    hair.modelFromLocal = LLMatrix4(glm::value_ptr(glm::inverse(to_local)));
+    static LLCachedControl<F32> root_radius(gSavedSettings, "BoxxyHairPhysicsRootRadius", 0.15f);
+    hair.guideFrame = LLHairMesh::guideFrame();
+    if (hair.guideFrame)
+    {
+        hair.radius = llclamp(F32(root_radius), .03f, .35f);
+        hair.guideBinding = LLHairMesh::guideBinding(volume->getID());
+    }
+    return hair;
+}
+
+void LLRenderPass::applyHairDeform(const LLHairDeform& hair, bool previous)
+{
+    auto* shader = LLGLSLShader::sCurBoundShaderPtr;
+    if (!shader) return;
+    shader->uniform1f(LLStaticHashedString(previous ? "hair_previous_root_radius" : "hair_root_radius"), hair.radius);
+    LLHairMesh::bindGuides(*shader, hair.guideFrame, previous);
+    shader->uniform1i(LLStaticHashedString(previous ? "hair_previous_guide_bind" : "hair_guide_bind"), hair.guideBinding);
+    if (hair.radius <= 0.f) return;
+    shader->uniformMatrix4fv(LLStaticHashedString(previous ? "hair_previous_local_from_model" : "hair_local_from_model"),
+        1, false, &hair.localFromModel.mMatrix[0][0]);
+    shader->uniformMatrix4fv(LLStaticHashedString(previous ? "hair_previous_model_from_local" : "hair_model_from_local"),
+        1, false, &hair.modelFromLocal.mMatrix[0][0]);
 }
 
 LLMatrix4 LLRenderPass::getModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform, LLVector3& origin)
@@ -728,6 +787,8 @@ LLMatrix4 LLRenderPass::getModelMatrix(const LLMatrix4* model_matrix, const LLXf
 
 void LLRenderPass::applyModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform)
 {
+    if (LLGLSLShader::sCurBoundShaderPtr)
+        LLGLSLShader::sCurBoundShaderPtr->uniform1f(LLStaticHashedString("hair_root_radius"), 0.f);
     if (model_matrix != gGLLastMatrix)
     {
         gGLLastMatrix = model_matrix;

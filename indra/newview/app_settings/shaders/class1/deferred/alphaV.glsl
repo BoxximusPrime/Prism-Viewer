@@ -73,20 +73,29 @@ out vec3 vary_norm;
 
 uniform float near_clip;
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef IS_AVATAR_SKIN
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(hair_position);
+#endif
+#endif
+
     vec4 pos;
     vec3 norm;
 
     //transform vertex
 #ifdef HAS_SKIN
-    mat4 trans = getObjectSkinnedTransform();
+    mat4 trans = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
     trans = modelview_matrix * trans;
 
-    pos = trans * vec4(position.xyz, 1.0);
+    pos = trans * vec4(hair_position.xyz, 1.0);
 
-    norm = position.xyz + normal.xyz;
-    norm = normalize((trans * vec4(norm, 1.0)).xyz - pos.xyz);
+    norm = normalize((mat3(trans) * normal));
     vary_hair_tangent = vec4(mat3(trans) * tangent.xyz, tangent.w);
     vec4 frag_pos = projection_matrix * pos;
     gl_Position = frag_pos;
@@ -94,7 +103,7 @@ void main()
 
 #ifdef IS_AVATAR_SKIN
     mat4 trans = getSkinnedTransform();
-    vec4 pos_in = vec4(position.xyz, 1.0);
+    vec4 pos_in = vec4(hair_position.xyz, 1.0);
     pos.x = dot(trans[0], pos_in);
     pos.y = dot(trans[1], pos_in);
     pos.z = dot(trans[2], pos_in);
@@ -110,9 +119,9 @@ void main()
 #else
     norm = normalize(normal_matrix * normal);
     vary_hair_tangent = vec4(normal_matrix * tangent.xyz, tangent.w);
-    vec4 vert = vec4(position.xyz, 1.0);
+    vec4 vert = vec4(hair_position.xyz, 1.0);
     pos = (modelview_matrix * vert);
-    gl_Position = modelview_projection_matrix*vec4(position.xyz, 1.0);
+    gl_Position = modelview_projection_matrix*vec4(hair_position.xyz, 1.0);
 #endif //IS_AVATAR_SKIN
 
 #endif // HAS_SKIN

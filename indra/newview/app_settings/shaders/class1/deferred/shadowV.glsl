@@ -27,8 +27,16 @@ uniform mat4 modelview_projection_matrix;
 
 in vec3 position;
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(position);
+#endif
+
     //transform vertex
-    gl_Position = modelview_projection_matrix*vec4(position.xyz, 1.0);
+    gl_Position = modelview_projection_matrix*vec4(hair_position.xyz, 1.0);
 }

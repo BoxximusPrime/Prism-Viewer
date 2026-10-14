@@ -54,6 +54,8 @@ class GPU:
         gl=self.gl; prog=gl.CreateProgram()
         stages=[(0x8B31,vertex or self.vertex),(0x8B30,fragment)]
         if extra_vertex: stages.append((0x8B31,extra_vertex))
+        if vertex and 'getHair' in vertex:
+            stages.append((0x8B31,(SHADERS/'class1/deferred/hairDeformV.glsl').read_text()))
         for kind,source in stages:
             shader=gl.CreateShader(kind); text=C.c_char_p(('#version 150 core\n'+source).encode())
             gl.ShaderSource(shader,1,C.byref(text),None); gl.CompileShader(shader)
@@ -67,8 +69,6 @@ class GPU:
         if 'taa_detail' in fragment:
             assert gl.GetFragDataLocation(prog,b'frag_data[0]')==0
             assert gl.GetFragDataLocation(prog,b'frag_data[1]')==1
-        if 'uniform sampler2D taa_flicker;' in fragment:
-            assert gl.GetFragDataLocation(prog,b'frag_data[2]')==2
         if 'taa_' in fragment:
             channels = {}
             active = I()
@@ -85,7 +85,26 @@ class GPU:
                 gl.Uniform1i(gl.GetUniformLocation(prog,name.value),channel)
                 channels[sampler]=channel
             self.sampler_channels[prog]=channels
-            self.uniform(prog,'taa_flicker_detection',1,integer=True)
+        # Buffer samplers must not alias 2D colour inputs, even when physics is disabled.
+        for unit, sampler in enumerate(('hair_guides', 'hair_previous_guides', 'hair_mesh', 'hair_previous_mesh'), 28):
+            if gl.GetUniformLocation(prog, sampler.encode()) >= 0:
+                assert sampler in self.reserved
+                self.uniform(prog, sampler, unit, integer=True)
+        return prog
+
+    def compute(self, *sources, defines=()):
+        gl=self.gl; prog=gl.CreateProgram()
+        for source in sources:
+            shader=gl.CreateShader(0x91B9)
+            prefix='#version 430\n'+''.join(f'#define {d} 1\n' for d in defines)
+            code=C.c_char_p((prefix+source).encode())
+            gl.ShaderSource(shader,1,C.byref(code),None); gl.CompileShader(shader)
+            ok,log=I(),C.create_string_buffer(16384)
+            gl.GetShaderiv(shader,0x8B81,C.byref(ok)); gl.GetShaderInfoLog(shader,len(log),None,log)
+            assert ok.value,log.value.decode()
+            gl.AttachShader(prog,shader); gl.DeleteShader(shader)
+        gl.LinkProgram(prog); gl.GetProgramiv(prog,0x8B82,C.byref(ok)); gl.GetProgramInfoLog(prog,len(log),None,log)
+        assert ok.value,log.value.decode()
         return prog
 
     def uniform(self, prog, name, *values, integer=False):
@@ -128,16 +147,12 @@ class GPU:
         for enum,target in bindings:
             assert enum.startswith('LLShaderMgr::'), f'{method}: texture binding must use a reserved index, not a GL location: {enum}'
             name=names[enum.split('::')[1]]
-            # The viewer ignores inactive uniforms too (older A/B shaders have
-            # no flicker attachment). Every active sampler must still be bound.
+            # Every active sampler must be bound; inactive uniforms are ignored.
             if name not in self.sampler_channels[prog]: continue
             tex=textures[target]
             if name=='taa_detail':
                 assert re.search(r'bindTexture\(LLShaderMgr::TAA_DETAIL,\s*&mTAAHistory\[1 - mTAAIndex\],\s*false,\s*LLTexUnit::TFO_POINT,\s*1\)',code), 'detail history must bind attachment 1'
                 tex=self.detail_target(tex)
-            if name=='taa_flicker':
-                assert re.search(r'bindTexture\(LLShaderMgr::TAA_FLICKER,\s*&mTAAHistory\[1 - mTAAIndex\],\s*false,\s*LLTexUnit::TFO_POINT,\s*2\)',code), 'flicker history must bind attachment 2'
-                tex=self.detail_target(tex,2)
             self.bind(prog,name,0,tex)
         bound={names[enum.split('::')[1]] for enum,_ in bindings}
         assert set(self.sampler_channels[prog])<=bound, f'{method}: missing input textures'
@@ -160,9 +175,8 @@ class GPU:
         temporal='taa_detail' in self.sampler_channels.get(prog,{})
         extra=self.detail_target(target) if temporal else 0
         gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT+1,TEXTURE,extra,0)
-        flicker='taa_flicker' in self.sampler_channels.get(prog,{})
-        gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT+2,TEXTURE,self.detail_target(target,2) if flicker else 0,0)
-        gl.DrawBuffers(3 if flicker else 2 if temporal else 1,(U*3)(COLOR_ATTACHMENT,COLOR_ATTACHMENT+1,COLOR_ATTACHMENT+2))
+        gl.FramebufferTexture2D(FRAMEBUFFER,COLOR_ATTACHMENT+2,TEXTURE,0,0)
+        gl.DrawBuffers(2 if temporal else 1,(U*3)(COLOR_ATTACHMENT,COLOR_ATTACHMENT+1,COLOR_ATTACHMENT+2))
         assert gl.CheckFramebufferStatus(FRAMEBUFFER)==0x8CD5
         gl.UseProgram(prog); gl.DrawArrays(4,0,vertices)
 
@@ -494,7 +508,33 @@ def run(sdl,gl):
     gpu.matrix(skinned,'taa_previous_modelview',identity); gpu.matrix(skinned,'taa_previous_mvp',projection)
     gpu.uniform(skinned,'taa_rcp_res',1/W,1/H); gpu.uniform(skinned,'taa_jitter',0,0); gpu.uniform(skinned,'taa_reactive',0)
     gl.FramebufferTexture2D(FRAMEBUFFER,0x8D00,TEXTURE,depth,0)
-    for angle in (.15,.7,1.4,2.5):
+    gl.TexBuffer=C.WINFUNCTYPE(None,U,U,U)(sdl.SDL_GL_GetProcAddress(b'glTexBuffer'))
+    guide_buffers=[(gpu.obj(gl.GenBuffers),gpu.obj(gl.GenTextures)) for _ in range(2)]
+    def guide_pose(pair,amount,unit):
+        values=[]
+        for chain in range(16):
+            angle=chain*math.tau/16
+            rest=[(.15*math.cos(angle),.15*math.sin(angle),-n*.1,1) for n in range(9)]
+            moved=[(p[0]+amount*n/8,p[1],p[2]+amount*.1*n/8,1) for n,p in enumerate(rest)]
+            values.extend(rest+moved+[(0,0,0,0)]*9)
+        values[0]=(*values[0][:3],16)
+        packed=(F*(len(values)*4))(*(v for p in values for v in p))
+        gl.BindBuffer(0x90D2,pair[0]);gl.BufferData(0x90D2,C.sizeof(packed),packed,0x88E8)
+        gl.ActiveTexture(0x84C0+unit);gl.BindTexture(0x8C2A,pair[1]);gl.TexBuffer(0x8C2A,0x8814,pair[0])
+    for angle,bend in ((.15,0),(.7,0),(1.4,0),(2.5,0),(.15,.06),(.7,.1),(1.4,.3),(2.5,.45)):
+        # Real rope offsets must preserve D24 equality and previous-pose motion.
+        guide_pose(guide_buffers[0],bend,28);guide_pose(guide_buffers[1],bend*.5,29)
+        for prog in (depth_prog,skinned):
+            gpu.uniform(prog,'hair_guides',28,integer=True)
+            gpu.uniform(prog,'hair_guide_active',int(bend>0),integer=True)
+            gpu.uniform(prog,'hair_root_radius',.15 if bend else 0)
+            gpu.matrix(prog,'hair_local_from_model',[[1,0,0,-1],[0,1,0,-1],[0,0,1,1.4],[0,0,0,1]])
+            gpu.matrix(prog,'hair_model_from_local',[[1,0,0,1],[0,1,0,1],[0,0,1,-1.4],[0,0,0,1]])
+        gpu.uniform(skinned,'hair_previous_guides',29,integer=True)
+        gpu.uniform(skinned,'hair_previous_guide_active',int(bend>0),integer=True)
+        gpu.uniform(skinned,'hair_previous_root_radius',.15 if bend else 0)
+        gpu.matrix(skinned,'hair_previous_local_from_model',[[1,0,0,-1],[0,1,0,-1],[0,0,1,1.4],[0,0,0,1]])
+        gpu.matrix(skinned,'hair_previous_model_from_local',[[1,0,0,1],[0,1,0,1],[0,0,1,-1.4],[0,0,0,1]])
         palette(depth_prog,'matrixPalette',angle); palette(skinned,'matrixPalette',angle)
         palette(skinned,'taa_previous_palette',angle-.1)
         gl.Enable(0x0B71); gl.DepthMask(True); gl.DepthFunc(0x0201)
@@ -509,7 +549,19 @@ def run(sdl,gl):
         coverage=sum(moved[i+3]<.5 for i in pixels)/len(pixels)
         check(coverage>.995,f'skinned motion must cover visible D24 geometry: {coverage}')
         check(max(math.hypot(moved[i]*W,moved[i+1]*H) for i in pixels)>.3,'joint rotation must generate local motion')
-        check(max(abs(moved[i+2]-2) for i in pixels if moved[i+3]<.5)<.005,'previous skinned view depth')
+        if not bend:
+            check(max(abs(moved[i+2]-2) for i in pixels if moved[i+3]<.5)<.005,'previous skinned view depth')
+        else:
+            palette(skinned,'taa_previous_palette',angle)
+            gl.Clear(0x4000); gpu.draw(skinned,output,6)
+            hair_moved=gpu.read(output)
+            check(max(math.hypot(hair_moved[i]*W,hair_moved[i+1]*H) for i in pixels if hair_moved[i+3]<.5)>.01,
+                  'hair pose history generates motion with stationary bones')
+            gpu.uniform(skinned,'hair_previous_root_radius',0)
+            gl.Clear(0x4000); gpu.draw(skinned,output,6)
+            uncorrected=gpu.read(output)
+            check(max(abs(uncorrected[i+2]-hair_moved[i+2]) for i in pixels if hair_moved[i+3]<.5)>.001,
+                  'previous guide pose affects temporal depth and supports enable transitions')
     gl.DepthMask(True); gl.Disable(0x0B71)
     gl.FramebufferTexture2D(FRAMEBUFFER,0x8D00,TEXTURE,0,0)
     check(gl.GetError()==0,'final GL error')

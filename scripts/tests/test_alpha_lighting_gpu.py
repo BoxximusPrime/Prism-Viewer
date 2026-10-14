@@ -46,6 +46,7 @@ vec4 applySkyAndWaterFog(vec3 p, vec3 additive, vec3 atten, vec4 c)
 { return vec4(c.rgb * atten + additive, c.a); }
 void sampleReflectionProbesLegacy(inout vec3 a, inout vec3 g, inout vec3 e,
     vec2 tc, vec3 p, vec3 n, float gloss, float env, bool t, vec3 amb) {}
+void sampleReflectionProbesAmbient(inout vec3 a, vec3 p, vec3 n, vec3 amb) {}
 void sampleReflectionProbes(inout vec3 a, inout vec3 g,
     vec2 tc, vec3 p, vec3 n, float gloss, bool t, vec3 amb) {}
 void applyGlossEnv(inout vec3 c, vec3 g, vec4 s, vec3 p, vec3 n) {}

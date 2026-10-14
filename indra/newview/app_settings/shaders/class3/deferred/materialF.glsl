@@ -316,14 +316,14 @@ float getShadow(vec3 pos, vec3 norm)
 
 vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
 uniform float hair_object;
-uniform int hair_debug;
+void sampleReflectionProbesAmbient(inout vec3 ambient, vec3 pos, vec3 norm, vec3 amblit);
+
 mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
 in vec4 vary_hair_tangent;
 in vec2 vary_hair_texcoord;
 mat3 hairVertexFrame() { return hairMeshFrame(vary_position, vary_texcoord0, vary_hair_texcoord, vary_normal, vary_hair_tangent); }
 
-vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
-vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out float variation);
 vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
 vec3 decodeHairTangent(vec3 n, float angle);
 vec3 hairSafeNormalize(vec3 v, vec3 fallback);
@@ -352,14 +352,14 @@ void main()
     float env = env_intensity * spec.a;
     float glossiness = specular_color.a;
     vec3 norm = getNormal(glossiness);
-    vec3 hair_preview;
+
     float hair_variation;
 #ifdef HAS_NORMAL_MAP
     bool generateNormal = false;
 #else
     bool generateNormal = true;
 #endif
-    vec3 strand = hairSurface(vary_position, vary_texcoord0.xy, norm, diffuse_tap, generateNormal, hair_preview, hair_variation);
+    vec3 strand = hairSurface(vary_position, vary_texcoord0.xy, norm, diffuse_tap, generateNormal, hair_variation);
     mirrorClip(vary_position);
 #if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
     if (isSSSOverlay(vary_position)) discard;
@@ -400,81 +400,89 @@ void main()
     vec3 ambenv = amblit;
     vec3 glossenv = vec3(0.0);
     vec3 legacyenv = vec3(0.0);
-    sampleReflectionProbesLegacy(ambenv, glossenv, legacyenv, pos.xy*0.5+0.5, pos.xyz, norm.xyz, glossiness, env, true, amblit_linear);
-        ambenv = waterLitAmbient(pos.xyz, ambenv, classic_mode);
-
-    color = ambenv;
-
-    float da          = clamp(dot(norm.xyz, light_dir.xyz), 0.0, 1.0);
-    if (classic_mode > 0)
-    {
-        da = pow(da,1.2);
-        vec3 sun_contrib = vec3(min(da, shadow));
-
-        color.rgb = srgb_to_linear(color.rgb * 0.9 + linear_to_srgb(sun_contrib) * sunlit_linear * 0.7);
-        sunlit_linear = srgb_to_linear(sunlit_linear);
-    }
+    if (hair_object > 0.5)
+        sampleReflectionProbesAmbient(ambenv, pos.xyz, norm.xyz, amblit_linear);
     else
-    {
-        vec3 sun_contrib = min(da, shadow) * sunlit_linear;
-        color.rgb += sun_contrib;
-    }
-
-    color *= diffcol.rgb;
-
-    vec3 refnormpersp = reflect(pos.xyz, norm.xyz);
+        sampleReflectionProbesLegacy(ambenv, glossenv, legacyenv, pos.xy*0.5+0.5, pos.xyz, norm.xyz, glossiness, env, true, amblit_linear);
+    ambenv = waterLitAmbient(pos.xyz, ambenv, classic_mode);
 
     float glare = 0.0;
+    vec3 light = vec3(0);
 
-    if (glossiness > 0.0)
+    // Hair supplies its own direct lighting; do not evaluate the discarded material response.
+    if (hair_object <= 0.5)
     {
-        vec3  lv = light_dir.xyz;
-        vec3  h, l, v = -normalize(pos.xyz);
-        float nh, nl, nv, vh, lightDist;
-        vec3 n = norm.xyz;
-        calcHalfVectors(lv, n, v, h, l, nh, nl, nv, vh, lightDist);
+        color = ambenv;
 
-        if (nl > 0.0 && nh > 0.0)
+        float da          = clamp(dot(norm.xyz, light_dir.xyz), 0.0, 1.0);
+        if (classic_mode > 0)
         {
-            float lit = min(nl*6.0, 1.0);
+            da = pow(da,1.2);
+            vec3 sun_contrib = vec3(min(da, shadow));
 
-            float sa = nh;
-            float fres = pow(1 - vh, 5) * 0.4+0.5;
-            float gtdenom = 2 * nh;
-            float gt = max(0,(min(gtdenom * nv / vh, gtdenom * nl / vh)));
-
-            float scol = shadow*fres*texture(lightFunc, vec2(nh, glossiness)).r*gt/(nh*nl);
-            color.rgb += lit*scol*sunlit_linear.rgb*spec.rgb;
+            color.rgb = srgb_to_linear(color.rgb * 0.9 + linear_to_srgb(sun_contrib) * sunlit_linear * 0.7);
+            sunlit_linear = srgb_to_linear(sunlit_linear);
+        }
+        else
+        {
+            vec3 sun_contrib = min(da, shadow) * sunlit_linear;
+            color.rgb += sun_contrib;
         }
 
-        // add radiance map
-        applyGlossEnv(color, glossenv, spec, pos.xyz, norm.xyz);
+        color *= diffcol.rgb;
+
+        vec3 refnormpersp = reflect(pos.xyz, norm.xyz);
+
+
+        if (glossiness > 0.0)
+        {
+            vec3  lv = light_dir.xyz;
+            vec3  h, l, v = -normalize(pos.xyz);
+            float nh, nl, nv, vh, lightDist;
+            vec3 n = norm.xyz;
+            calcHalfVectors(lv, n, v, h, l, nh, nl, nv, vh, lightDist);
+
+            if (nl > 0.0 && nh > 0.0)
+            {
+                float lit = min(nl*6.0, 1.0);
+
+                float sa = nh;
+                float fres = pow(1 - vh, 5) * 0.4+0.5;
+                float gtdenom = 2 * nh;
+                float gt = max(0,(min(gtdenom * nv / vh, gtdenom * nl / vh)));
+
+                float scol = shadow*fres*texture(lightFunc, vec2(nh, glossiness)).r*gt/(nh*nl);
+                color.rgb += lit*scol*sunlit_linear.rgb*spec.rgb;
+            }
+
+            // add radiance map
+            applyGlossEnv(color, glossenv, spec, pos.xyz, norm.xyz);
+        }
+
+        color = mix(color.rgb, diffcol.rgb, emissive);
+
+        if (env > 0.0)
+        {  // add environmentmap
+            applyLegacyEnv(color, legacyenv, spec, pos.xyz, norm.xyz, env);
+
+            float cur_glare = max(max(legacyenv.r, legacyenv.g), legacyenv.b);
+            cur_glare = clamp(cur_glare, 0, 1);
+            cur_glare *= env;
+            glare += cur_glare;
+        }
+
+        vec3 npos = normalize(-pos.xyz);
+
+    #define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(i, light_diffuse[i].rgb, npos, diffuse.rgb, spec, pos.xyz, norm.xyz, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, glare, light_attenuation[i].w, env );
+
+        LIGHT_LOOP(1)
+            LIGHT_LOOP(2)
+            LIGHT_LOOP(3)
+            LIGHT_LOOP(4)
+            LIGHT_LOOP(5)
+            LIGHT_LOOP(6)
+            LIGHT_LOOP(7)
     }
-
-    color = mix(color.rgb, diffcol.rgb, emissive);
-
-    if (env > 0.0)
-    {  // add environmentmap
-        applyLegacyEnv(color, legacyenv, spec, pos.xyz, norm.xyz, env);
-
-        float cur_glare = max(max(legacyenv.r, legacyenv.g), legacyenv.b);
-        cur_glare = clamp(cur_glare, 0, 1);
-        cur_glare *= env;
-        glare += cur_glare;
-    }
-
-    vec3 npos = normalize(-pos.xyz);
-    vec3 light = vec3(0, 0, 0);
-
-#define LIGHT_LOOP(i) light.rgb += calcPointLightOrSpotLight(i, light_diffuse[i].rgb, npos, diffuse.rgb, spec, pos.xyz, norm.xyz, light_position[i], light_direction[i].xyz, light_attenuation[i].x, light_attenuation[i].y, light_attenuation[i].z, glare, light_attenuation[i].w, env );
-
-    LIGHT_LOOP(1)
-        LIGHT_LOOP(2)
-        LIGHT_LOOP(3)
-        LIGHT_LOOP(4)
-        LIGHT_LOOP(5)
-        LIGHT_LOOP(6)
-        LIGHT_LOOP(7)
 
     float final_scale = 1.0;
     if (classic_mode > 0)
@@ -499,7 +507,6 @@ void main()
     glare = min(glare, 1.0);
     float al = max(diffcol.a, glare) * vertex_color.a;
     vec4 final_color = applyVolumeFogAlpha(pos.xyz, vec4(color * final_scale, al));
-    if (hair_object > 0.5 && hair_debug != 0) final_color.rgb = hair_preview;
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color * final_scale, al), vec4(0));
 #ifdef EXACT_OIT
@@ -518,7 +525,6 @@ void main()
     frag_data[1] = max(vec4(spec.rgb, glossiness), vec4(0));           // XYZ = Specular color. W = Specular exponent.
     if (hair_object > 0.5) frag_data[1].a = hair_variation; // Hair replaces unused gloss with strand finish.
     frag_data[2] = encodeHairNormal(norm, env, flag, strand);   // XY = Normal.  Z = Env. intensity. W = 1 skip atmos (mask off fog)
-    if (hair_object > 0.5 && hair_debug != 0) frag_data[0].rgb = hair_preview;
 
 #if defined(HAS_EMISSIVE)
     frag_data[3] = vec4(0, 0, 0, 0);

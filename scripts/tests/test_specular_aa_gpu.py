@@ -49,7 +49,7 @@ def run(sdl, gl):
     helpers='uniform float sss_object;\nuniform float ssgi_avatar;\n'+function(global_source,'vec4 encodeNormal(')
     helpers+='vec3 srgb_to_linear(vec3 c){return c;}\nvoid mirrorClip(vec3 p){}\n'
     helpers+='#define GBUFFER_AVATAR_FLAG(data) 0.0\n'+read('class1/deferred/hairUtil.glsl')
-    opaque_source='#define GBUFFER_FLAG_HAS_PBR 1.0\n'+read('class1/deferred/pbropaqueF.glsl').replace('uniform float hair_object;', '').replace('uniform int hair_debug;', '')
+    opaque_source='#define GBUFFER_FLAG_HAS_PBR 1.0\n'+read('class1/deferred/pbropaqueF.glsl').replace('uniform float hair_object;', '')
     materials=[gpu.program(helpers+opaque_source+h,VERTEX) for h in (
         'float filterPBRRoughness(float r,vec3 n){return r;}\n',helper)]
     util=read('class1/deferred/deferredUtil.glsl')
@@ -195,7 +195,7 @@ vec3 pbrCalcPointLightOrSpotLight(int i,vec3 d,vec3 s,float r,float m,
             if oit: defines+='#define EXACT_OIT 1\n'
             prog=gpu.program(defines+'#define GBUFFER_AVATAR_FLAG(data) 0.0\n'+read('class1/deferred/hairUtil.glsl')+
                              '#define HAIR_DENSITY_MAPS 1\n'+read('class1/deferred/hairDepthUtil.glsl').replace('uniform vec4 hair_params;', '')+
-                read(path).replace('uniform float hair_object;', '').replace('uniform int hair_debug;', '')+helper+forward_stubs+
+                read(path).replace('uniform float hair_object;', '')+helper+forward_stubs+
                 'vec3 hairLocalLight(int i,vec3 b,vec3 n,vec3 t,vec3 p,float variation){return vec3(0);}',VERTEX)
             if gltf:
                 block=gl.GetUniformBlockIndex(prog,b'GLTFMaterials')

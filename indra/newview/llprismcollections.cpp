@@ -326,7 +326,7 @@ LLUUID activeSet(const LLUUID& category)
 bool busy() { return sChanging || sWriting; }
 void setWriting(bool writing) { sWriting = writing; }
 
-bool wear(const LLUUID& category, const LLUUID& set)
+bool wear(const LLUUID& category, const LLUUID& set, bool remove)
 {
     if (busy() || !isAgentAvatarValid() || !gAgentWearables.areWearablesLoaded()
         || !gInventory.isCategoryComplete(LLAppearanceMgr::instance().getCOF())
@@ -338,23 +338,22 @@ bool wear(const LLUUID& category, const LLUUID& set)
     if (!isCategory(category)) return false;
     uuid_vec_t items;
     std::string message;
-    if (set.notNull())
-    {
-        auto* folder = gInventory.getCategory(set);
-        if (!folder || folder->getParentUUID() != category) return false;
-        if (!readSet(set, items, message)) { error(message); return false; }
-        if (items.empty()) { error("Add some items to this set before wearing it."); return false; }
-    }
+    auto* folder = gInventory.getCategory(set);
+    if (!folder || folder->getParentUUID() != category) return false;
+    if (!readSet(set, items, message)) { error(message); return false; }
+    if (items.empty()) { error("Add some items to this set before wearing it."); return false; }
     Selections selected = selections();
     auto managed = managedItems();
     // Include membership saved by older builds, which did not manage pre-worn items.
     auto active = selected.find(category);
-    if (active != selected.end())
+    if (active != selected.end() && (!remove || active->second.set == set))
         managed.insert(active->second.items.begin(), active->second.items.end());
-    if (set.isNull())
+    if (remove)
     {
-        if (active == selected.end()) return false;
-        selected.erase(active);
+        // Selected members may have been worn outside Collections, without an active selection.
+        managed.insert(items.begin(), items.end());
+        if (active != selected.end() && active->second.set == set) selected.erase(active);
+        items.clear();
     }
     else selected[category] = {set, items};
     auto worn = wornItems();

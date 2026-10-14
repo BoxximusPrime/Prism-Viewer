@@ -14,8 +14,6 @@ uniform int pcss_quality;
 uniform float pcss_raster_error;
 // World axes transformed into the receiver's camera space. A fixed camera
 // axis rotates the finite sample pattern over the scene when the view turns.
-uniform vec3 pcss_world_up;
-uniform vec3 pcss_world_north;
 float getPCSSDepthError();
 vec2 getPCSSSlopeError(mat4 lightMatrix, vec4 start, float depthError);
 
@@ -152,7 +150,7 @@ float pcssShadow(sampler2D depthMap,
     // Sun rays share a perpendicular disk. A projector's emitter instead
     // stays in its own XY plane; rotating it toward each receiver stretches
     // the penumbra off axis and changes the sampling pattern across the cone.
-    vec3 axis = abs(dot(lightDir, pcss_world_up)) < 0.9 ? pcss_world_up : pcss_world_north;
+    vec3 axis = abs(lightDir.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0);
     vec3 tangent = sourceRadius > 0.0 ? normalize(inverseMatrix[0].xyz) : normalize(cross(lightDir, axis));
     vec3 bitangent = sourceRadius > 0.0 ? normalize(inverseMatrix[1].xyz) : cross(lightDir, tangent);
     vec4 du = lightMatrix * vec4(tangent, 0.0);

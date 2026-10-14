@@ -92,6 +92,7 @@ set(viewer_SOURCE_FILES
     gltf/llgltfloader.cpp
     groupchatlistener.cpp
     fsexactoit.cpp
+    llhairmesh.cpp
     llaccountingcostmanager.cpp
     llaisapi.cpp
     llagent.cpp
@@ -955,6 +956,10 @@ set(viewer_HEADER_FILES
     llfloateremojipicker.h
     llfloaterenvironmentadjust.h
     fsexactoit.h
+    llhairmesh.h
+    llavatarneutralskeleton.h
+    llhairmeshtree.h
+    llhairguidefit.h
     llfloaterevent.h
     llfloaterexperiencepicker.h
     llfloaterexperienceprofile.h

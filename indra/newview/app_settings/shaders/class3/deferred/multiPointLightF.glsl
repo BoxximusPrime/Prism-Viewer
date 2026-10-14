@@ -93,7 +93,6 @@ vec3 pointSSSTransmission(float nl, float nv, float strength, vec3 pos, vec3 ori
     return capSSSTransmission(getSSSTransmissionWithDepth(nl, nv, strength, path, 1.0) * sss_point_transmission_boost);
 }
 
-uniform int hair_debug;
 vec3 decodeHairTangent(vec3 n, float angle);
 vec3 hairSafeNormalize(vec3 v, vec3 fallback);
 vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
@@ -131,7 +130,6 @@ void main()
 
     if (GBUFFER_HAIR_FLAG(gb.gbufferFlag) > 0.5)
     {
-            if (hair_debug != 0) discard;
         vec3 base = GET_GBUFFER_FLAG(gb.gbufferFlag, GBUFFER_FLAG_HAS_PBR) ? diffuse : srgb_to_linear(diffuse);
         vec3 strand = decodeHairTangent(n, gb.envIntensity);
         for (int i = 0; i < LIGHT_COUNT; ++i)

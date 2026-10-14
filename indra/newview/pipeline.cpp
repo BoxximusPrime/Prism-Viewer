@@ -28,6 +28,7 @@
 
 // <AS:Chanayane> Exact OIT
 #include "fsexactoit.h"
+#include "llhairmesh.h"
 // </AS:Chanayane>
 
 #include "pipeline.h"
@@ -94,6 +95,7 @@
 #include "llviewerregion.h" // for audio debugging.
 #include "llviewerwindow.h" // For getSpinAxis
 #include "llvoavatarself.h"
+#include "llrendersphere.h"
 #include "llvocache.h"
 #include "llvosky.h"
 #include "llvowlsky.h"
@@ -958,9 +960,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
             (!mTAAOpaque.allocate(resX, resY, GL_RGBA16F) ||
              !mTAAHistory[0].allocate(resX, resY, GL_RGBA16F) ||
              !mTAAHistory[0].addColorAttachment(GL_RGBA16F) ||
-             !mTAAHistory[0].addColorAttachment(GL_RGBA16F) ||
              !mTAAHistory[1].allocate(resX, resY, GL_RGBA16F) ||
-             !mTAAHistory[1].addColorAttachment(GL_RGBA16F) ||
              !mTAAHistory[1].addColorAttachment(GL_RGBA16F)))
         {
             mTAAOpaque.release();
@@ -1494,6 +1494,7 @@ void LLPipeline::releaseScreenBuffers()
     mRT->deferredLight.release();
     // <AS:Chanayane> Release Exact OIT screen resources, optionally retaining its node pool.
     FSExactOIT::releaseResources();
+    LLHairMesh::release();
     // </AS:Chanayane>
 
     mAuxillaryRT.screen.release();
@@ -3066,13 +3067,17 @@ void LLPipeline::clearRebuildDrawables()
 
 void LLPipeline::rebuildPriorityGroups()
 {
+    LL_AUTOMATION_CPU_SCOPE("sort.priority_rebuild");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("rebuildPriorityGroups");
 
     LLTimer update_timer;
     assertInitialized();
 
-    gMeshRepo.notifyLoadedMeshes();
+    {
+        LL_AUTOMATION_CPU_SCOPE("sort.mesh_notifications");
+        gMeshRepo.notifyLoadedMeshes();
+    }
 
     mGroupQ1Locked = true;
     // Iterate through all drawables on the priority build queue,
@@ -3382,6 +3387,11 @@ void LLPipeline::markRebuild(LLDrawable *drawablep, LLDrawable::EDrawableFlags f
 void LLPipeline::stateSort(LLCamera& camera, LLCullResult &result)
 {
     LL_AUTOMATION_CPU_SCOPE("render.state_sort");
+    LL_AUTOMATION_CPU_SCOPE(sImpostorRender ? "sort.view.impostor" :
+        mSSSDepthPass ? "sort.view.sss" : mHairDepthPass ? "sort.view.hair" :
+        sShadowRender ? "sort.view.shadow" :
+        (gCubeSnapshot || sReflectionRender) ? "sort.view.reflection" :
+        sRenderingHUDs ? "sort.view.hud" : "sort.view.world");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("stateSort");
 
@@ -3832,6 +3842,7 @@ void renderSoundHighlights(LLDrawable *drawablep)
 
 void LLPipeline::postSort(LLCamera &camera)
 {
+    LL_AUTOMATION_CPU_SCOPE("sort.post");
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
 
     assertInitialized();
@@ -3840,6 +3851,7 @@ void LLPipeline::postSort(LLCamera &camera)
 
     if (!gCubeSnapshot)
     {
+        LL_AUTOMATION_CPU_SCOPE("sort.geometry_rebuild");
         // rebuild drawable geometry
         for (LLCullResult::sg_iterator i = sCull->beginDrawableGroups(); i != sCull->endDrawableGroups(); ++i)
         {
@@ -3862,82 +3874,85 @@ void LLPipeline::postSort(LLCamera &camera)
 
     LL_PUSH_CALLSTACKS();
 
-    // build render map
-    for (LLCullResult::sg_iterator i = sCull->beginVisibleGroups(); i != sCull->endVisibleGroups(); ++i)
     {
-        LLSpatialGroup *group = *i;
-
-        if (group->isDead())
+        LL_AUTOMATION_CPU_SCOPE("sort.render_map");
+        // build render map
+        for (LLCullResult::sg_iterator i = sCull->beginVisibleGroups(); i != sCull->endVisibleGroups(); ++i)
         {
-            continue;
-        }
+            LLSpatialGroup *group = *i;
 
-        if ((sUseOcclusion && group->isOcclusionState(LLSpatialGroup::OCCLUDED)) ||
-            (RenderAutoHideSurfaceAreaLimit > 0.f &&
-             group->mSurfaceArea > RenderAutoHideSurfaceAreaLimit * llmax(group->mObjectBoxSize, 10.f)))
-        {
-            continue;
-        }
-
-        if (group->hasState(LLSpatialGroup::NEW_DRAWINFO) && group->hasState(LLSpatialGroup::GEOM_DIRTY) && !gCubeSnapshot)
-        {  // no way this group is going to be drawable without a rebuild
-            group->rebuildGeom();
-        }
-
-        for (LLSpatialGroup::draw_map_t::iterator j = group->mDrawMap.begin(); j != group->mDrawMap.end(); ++j)
-        {
-            LLSpatialGroup::drawmap_elem_t &src_vec = j->second;
-            if (!hasRenderType(j->first))
+            if (group->isDead())
             {
                 continue;
             }
 
-            for (LLSpatialGroup::drawmap_elem_t::iterator k = src_vec.begin(); k != src_vec.end(); ++k)
+            if ((sUseOcclusion && group->isOcclusionState(LLSpatialGroup::OCCLUDED)) ||
+                (RenderAutoHideSurfaceAreaLimit > 0.f &&
+                 group->mSurfaceArea > RenderAutoHideSurfaceAreaLimit * llmax(group->mObjectBoxSize, 10.f)))
             {
-                LLDrawInfo *info = *k;
-
-                sCull->pushDrawInfo(j->first, info);
-                if (!sShadowRender && !sReflectionRender && !gCubeSnapshot)
-                {
-                    addTrianglesDrawn(info->mCount);
-                }
+                continue;
             }
-        }
 
-        // Shadow casters use the render map above, not the forward-alpha group lists.
-        if (!sShadowRender && hasRenderType(LLPipeline::RENDER_TYPE_PASS_ALPHA))
-        {
-            LLSpatialGroup::draw_map_t::iterator alpha = group->mDrawMap.find(LLRenderPass::PASS_ALPHA);
+            if (group->hasState(LLSpatialGroup::NEW_DRAWINFO) && group->hasState(LLSpatialGroup::GEOM_DIRTY) && !gCubeSnapshot)
+            {  // no way this group is going to be drawable without a rebuild
+                group->rebuildGeom();
+            }
 
-            if (alpha != group->mDrawMap.end())
-            {  // store alpha groups for sorting
-                LLSpatialBridge *bridge = group->getSpatialPartition()->asBridge();
-                if (LLViewerCamera::sCurCameraID == LLViewerCamera::CAMERA_WORLD && !gCubeSnapshot)
+            for (LLSpatialGroup::draw_map_t::iterator j = group->mDrawMap.begin(); j != group->mDrawMap.end(); ++j)
+            {
+                LLSpatialGroup::drawmap_elem_t &src_vec = j->second;
+                if (!hasRenderType(j->first))
                 {
-                    if (bridge)
-                    {
-                        LLCamera trans_camera = bridge->transformCamera(camera);
-                        group->updateDistance(trans_camera);
-                    }
-                    else
-                    {
-                        group->updateDistance(camera);
-                    }
+                    continue;
                 }
 
-                if (hasRenderType(LLDrawPool::POOL_ALPHA))
+                for (LLSpatialGroup::drawmap_elem_t::iterator k = src_vec.begin(); k != src_vec.end(); ++k)
                 {
-                    sCull->pushAlphaGroup(group);
+                    LLDrawInfo *info = *k;
+
+                    sCull->pushDrawInfo(j->first, info);
+                    if (!sShadowRender && !sReflectionRender && !gCubeSnapshot)
+                    {
+                        addTrianglesDrawn(info->mCount);
+                    }
                 }
             }
 
-            LLSpatialGroup::draw_map_t::iterator rigged_alpha = group->mDrawMap.find(LLRenderPass::PASS_ALPHA_RIGGED);
+            // Shadow casters use the render map above, not the forward-alpha group lists.
+            if (!sShadowRender && hasRenderType(LLPipeline::RENDER_TYPE_PASS_ALPHA))
+            {
+                LLSpatialGroup::draw_map_t::iterator alpha = group->mDrawMap.find(LLRenderPass::PASS_ALPHA);
 
-            if (rigged_alpha != group->mDrawMap.end())
-            {  // store rigged alpha groups for LLDrawPoolAlpha prepass (skip distance update, rigged attachments use depth buffer)
-                if (hasRenderType(LLDrawPool::POOL_ALPHA))
-                {
-                    sCull->pushRiggedAlphaGroup(group);
+                if (alpha != group->mDrawMap.end())
+                {  // store alpha groups for sorting
+                    LLSpatialBridge *bridge = group->getSpatialPartition()->asBridge();
+                    if (LLViewerCamera::sCurCameraID == LLViewerCamera::CAMERA_WORLD && !gCubeSnapshot)
+                    {
+                        if (bridge)
+                        {
+                            LLCamera trans_camera = bridge->transformCamera(camera);
+                            group->updateDistance(trans_camera);
+                        }
+                        else
+                        {
+                            group->updateDistance(camera);
+                        }
+                    }
+
+                    if (hasRenderType(LLDrawPool::POOL_ALPHA))
+                    {
+                        sCull->pushAlphaGroup(group);
+                    }
+                }
+
+                LLSpatialGroup::draw_map_t::iterator rigged_alpha = group->mDrawMap.find(LLRenderPass::PASS_ALPHA_RIGGED);
+
+                if (rigged_alpha != group->mDrawMap.end())
+                {  // store rigged alpha groups for LLDrawPoolAlpha prepass (skip distance update, rigged attachments use depth buffer)
+                    if (hasRenderType(LLDrawPool::POOL_ALPHA))
+                    {
+                        sCull->pushRiggedAlphaGroup(group);
+                    }
                 }
             }
         }
@@ -3960,6 +3975,7 @@ void LLPipeline::postSort(LLCamera &camera)
 
     // pack vertex buffers for groups that chose to delay their updates
     {
+        LL_AUTOMATION_CPU_SCOPE("sort.mesh_pack");
         LL_PROFILE_GPU_ZONE("rebuildMesh");
         for (LLSpatialGroup::sg_vector_t::iterator iter = mMeshDirtyGroup.begin(); iter != mMeshDirtyGroup.end(); ++iter)
         {
@@ -3976,6 +3992,7 @@ void LLPipeline::postSort(LLCamera &camera)
 
     if (!sShadowRender)
     {
+        LL_AUTOMATION_CPU_SCOPE("sort.alpha_order");
         // order alpha groups by distance
         std::sort(sCull->beginAlphaGroups(), sCull->endAlphaGroups(), LLSpatialGroup::CompareDepthGreater());
 
@@ -4095,7 +4112,10 @@ void LLPipeline::postSort(LLCamera &camera)
         }
     }
 
-    LLVertexBuffer::flushBuffers();
+    {
+        LL_AUTOMATION_CPU_SCOPE("sort.buffer_upload");
+        LLVertexBuffer::flushBuffers();
+    }
     // LLSpatialGroup::sNoDelete = false;
     LL_PUSH_CALLSTACKS();
 }
@@ -8547,7 +8567,7 @@ bool LLPipeline::isTAAAvailable() const
         gTAAMotionProgram[0].isComplete() && gTAAMotionProgram[1].isComplete() &&
         mTAAMotion.isComplete() && mTAAOpaque.isComplete() && mTAAResolved.isComplete() &&
         mTAAHistory[0].isComplete() && mTAAHistory[1].isComplete() &&
-        mTAAHistory[0].getNumTextures() == 3 && mTAAHistory[1].getNumTextures() == 3 &&
+        mTAAHistory[0].getNumTextures() == 2 && mTAAHistory[1].getNumTextures() == 2 &&
         mTAAMotion.getWidth() == mMainRT.screen.getWidth() && mTAAMotion.getHeight() == mMainRT.screen.getHeight();
 }
 
@@ -8775,7 +8795,7 @@ void LLPipeline::renderTAAMotion(bool for_ssgi)
                 LLCullResult::increment_iterator(it, end);
                 if (!info || !info->mCount || !visited.insert(info).second) continue;
                 LLVector3 origin;
-                LLMatrix4 model = LLRenderPass::getModelMatrix(info->mModelMatrix, info->mModelXform, origin);
+                LLMatrix4 model = LLRenderPass::getModelMatrix(*info, origin);
                 bool valid = mTAALastFrame + 1 == gFrameCount && info->mTAAFrame == mTAALastFrame;
                 glm::mat4 previous_model = glm::make_mat4(&(valid ? info->mTAAModel : model).mMatrix[0][0]);
                 LLVector3 previous_origin = valid ? info->mTAAOrigin : origin;
@@ -8799,8 +8819,11 @@ void LLPipeline::renderTAAMotion(bool for_ssgi)
                 shader.uniformMatrix4fv(LLStaticHashedString("taa_previous_modelview"), 1, false, glm::value_ptr(previous_mv));
                 // Negative alpha permits static-detail retention. Avatars, active
                 // objects, flexi and animated textures always use strict rejection.
-                shader.uniform1f(LLStaticHashedString("taa_reactive"), valid ? (info->mTAAStatic && !rigged ? -1.f : 0.f) : 1.f);
-                LLRenderPass::applyModelMatrix(info->mModelMatrix, info->mModelXform);
+                shader.uniform1f(LLStaticHashedString("taa_reactive"), valid ? (info->mTAAStatic && !rigged && !info->mHair ? -1.f : 0.f) : 1.f);
+                const LLHairDeform hair = LLRenderPass::getHairDeform(*info);
+                const LLHairDeform no_hair;
+                LLRenderPass::applyHairDeform(valid ? (info->mTAAHair ? *info->mTAAHair : no_hair) : hair, true);
+                LLRenderPass::applyModelMatrix(*info);
                 info->mVertexBuffer->setBuffer();
                 info->mVertexBuffer->drawRange(LLRender::TRIANGLES, info->mStart, info->mEnd, info->mCount, info->mOffset);
                 // GI needs opaque motion before skin diffusion. TAA still runs
@@ -8809,6 +8832,12 @@ void LLPipeline::renderTAAMotion(bool for_ssgi)
                 if (!for_ssgi || !mTAAFrameActive)
                 {
                     info->mTAAModel = model; info->mTAAOrigin = origin; info->mTAAFrame = gFrameCount;
+                    if (hair.radius > 0.f)
+                    {
+                        if (!info->mTAAHair) info->mTAAHair = std::make_unique<LLHairDeform>();
+                        *info->mTAAHair = hair;
+                    }
+                    else info->mTAAHair.reset();
                 }
             }
         }
@@ -8844,7 +8873,6 @@ LLRenderTarget* LLPipeline::resolveTAA()
     shader.bindTexture(LLShaderMgr::TAA_CURRENT, &mRT->screen);
     shader.bindTexture(LLShaderMgr::TAA_HISTORY, &mTAAHistory[1 - mTAAIndex]);
     shader.bindTexture(LLShaderMgr::TAA_DETAIL, &mTAAHistory[1 - mTAAIndex], false, LLTexUnit::TFO_POINT, 1);
-    shader.bindTexture(LLShaderMgr::TAA_FLICKER, &mTAAHistory[1 - mTAAIndex], false, LLTexUnit::TFO_POINT, 2);
     shader.bindTexture(LLShaderMgr::TAA_MOTION, &mTAAMotion, false, LLTexUnit::TFO_POINT);
     shader.bindTexture(LLShaderMgr::TAA_OPAQUE, &mTAAOpaque, false, LLTexUnit::TFO_POINT);
     shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
@@ -8863,10 +8891,9 @@ LLRenderTarget* LLPipeline::resolveTAA()
     shader.uniform1f(LLStaticHashedString("taa_clip_gamma"), llclamp(gSavedSettings.getF32("RenderTAAClipGamma"), .5f, 2.f));
     shader.uniform1f(LLStaticHashedString("taa_transparency"), llclamp(gSavedSettings.getF32("RenderTAATransparency"), 0.f, 1.f));
     shader.uniform1i(LLStaticHashedString("taa_static_details"), gSavedSettings.getBOOL("RenderTAAStaticDetails") ? 1 : 0);
-    shader.uniform1i(LLStaticHashedString("taa_flicker_detection"), gSavedSettings.getBOOL("RenderTAAFlickerDetection") ? 1 : 0);
     mScreenTriangleVB->setBuffer();
     mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-    for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL, LLShaderMgr::TAA_FLICKER, LLShaderMgr::TAA_MOTION,
+    for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL, LLShaderMgr::TAA_MOTION,
         LLShaderMgr::TAA_OPAQUE, LLShaderMgr::DEFERRED_DEPTH }) shader.unbindTexture(sampler);
     shader.unbind();
     history.flush();
@@ -8884,7 +8911,7 @@ void LLPipeline::renderTAADebug(LLRenderTarget& dst)
 {
     if (mTAAFrameActive && mTAAMotionReady)
     {
-        S32 mode = llclamp(gSavedSettings.getS32("RenderTAADebug"), 0, 6);
+        S32 mode = llclamp(gSavedSettings.getS32("RenderTAADebug"), 0, 5);
         if (mode == 1) copyTAA(mTAAMotion, dst, 2);
         else if (mode >= 2)
         {
@@ -8897,14 +8924,13 @@ void LLPipeline::renderTAADebug(LLRenderTarget& dst)
             shader.bindTexture(LLShaderMgr::TAA_CURRENT, &mRT->screen);
             shader.bindTexture(LLShaderMgr::TAA_HISTORY, &mTAAHistory[mTAAIndex]);
             shader.bindTexture(LLShaderMgr::TAA_DETAIL, &mTAAHistory[mTAAIndex], false, LLTexUnit::TFO_POINT, 1);
-            shader.bindTexture(LLShaderMgr::TAA_FLICKER, &mTAAHistory[mTAAIndex], false, LLTexUnit::TFO_POINT, 2);
             shader.bindTexture(LLShaderMgr::TAA_MOTION, &mTAAMotion, false, LLTexUnit::TFO_POINT);
             shader.bindTexture(LLShaderMgr::TAA_OPAQUE, &mTAAOpaque, false, LLTexUnit::TFO_POINT);
             shader.bindTexture(LLShaderMgr::DEFERRED_DEPTH, &mRT->deferredScreen, true, LLTexUnit::TFO_POINT);
             shader.uniform1i(LLStaticHashedString("taa_debug_mode"), mode);
             mScreenTriangleVB->setBuffer();
             mScreenTriangleVB->drawArrays(LLRender::TRIANGLES, 0, 3);
-            for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL, LLShaderMgr::TAA_FLICKER,
+            for (S32 sampler : { LLShaderMgr::TAA_CURRENT, LLShaderMgr::TAA_HISTORY, LLShaderMgr::TAA_DETAIL,
                 LLShaderMgr::TAA_MOTION, LLShaderMgr::TAA_OPAQUE, LLShaderMgr::DEFERRED_DEPTH }) shader.unbindTexture(sampler);
             shader.unbind();
             dst.flush();
@@ -9154,7 +9180,6 @@ void LLPipeline::bindLightFunc(LLGLSLShader& shader)
 void LLPipeline::bindShadowMaps(LLGLSLShader& shader)
 {
     static LLCachedControl<bool> pcss_enabled(gSavedSettings, "RenderPCSSEnabled", false);
-    static LLCachedControl<bool> pcss_stable_pattern(gSavedSettings, "RenderPCSSStablePattern", true);
     static LLCachedControl<F32> pcss_angle(gSavedSettings, "RenderPCSSLightSize", 0.53f);
     static LLCachedControl<F32> pcss_radius(gSavedSettings, "RenderPCSSMaxSoftness", 1.f);
     static LLCachedControl<F32> pcss_minimum(gSavedSettings, "RenderPCSSMinSoftness", 0.02f);
@@ -9164,12 +9189,6 @@ void LLPipeline::bindShadowMaps(LLGLSLShader& shader)
     static const LLStaticHashedString params("pcss_params"), quality("pcss_quality"), inverse("pcss_inverse_matrix");
     static const LLStaticHashedString enabled("pcss_enabled");
     static const LLStaticHashedString projector_radius("pcss_projector_radius");
-    static const LLStaticHashedString world_up("pcss_world_up"), world_north("pcss_world_north");
-    const glm::mat4& camera_view = get_current_modelview();
-    const glm::vec3 pattern_up = pcss_stable_pattern ? glm::vec3(camera_view[2]) : glm::vec3(0.f, 0.f, 1.f);
-    const glm::vec3 pattern_north = pcss_stable_pattern ? glm::vec3(camera_view[1]) : glm::vec3(0.f, 1.f, 0.f);
-    shader.uniform3fv(world_up, 1, glm::value_ptr(pattern_up));
-    shader.uniform3fv(world_north, 1, glm::value_ptr(pattern_north));
     static const LLStaticHashedString raster_error("pcss_raster_error");
     static const F32 subpixel_error = []()
     {
@@ -9245,21 +9264,14 @@ static void bindWaterLighting(LLGLSLShader& shader)
 
 void LLPipeline::bindHairSettings(LLGLSLShader& shader)
 {
-    static LLCachedControl<bool> automatic(gSavedSettings, "BoxxyHairAutoDirection", true);
-    static LLCachedControl<F32> scale(gSavedSettings, "BoxxyHairFlowScale", 2.f);
-    static LLCachedControl<F32> smoothing(gSavedSettings, "BoxxyHairFlowSmoothing", 0.75f);
     static LLCachedControl<bool> detail(gSavedSettings, "BoxxyHairNormalEnabled", true);
     static LLCachedControl<F32> strength(gSavedSettings, "BoxxyHairNormalStrength", 0.35f);
     static LLCachedControl<F32> detail_scale(gSavedSettings, "BoxxyHairNormalScale", 1.f);
     static LLCachedControl<F32> rejection(gSavedSettings, "BoxxyHairNormalRejection", 1.f);
     static LLCachedControl<F32> variation(gSavedSettings, "BoxxyHairStrandVariation", 1.f);
     static LLCachedControl<F32> brightness(gSavedSettings, "BoxxyHairBrightnessCompensation", 0.f);
-    static LLCachedControl<S32> debug(gSavedSettings, "BoxxyHairDebug", 0);
-    shader.uniform3f(LLStaticHashedString("hair_flow"), automatic ? 1.f : 0.f,
-        llclamp(F32(scale), 0.5f, 8.f), llclamp(F32(smoothing), 0.f, 1.f));
     shader.uniform3f(LLStaticHashedString("hair_detail"), detail ? llclamp(F32(strength), 0.f, 2.f) : 0.f,
         llclamp(F32(detail_scale), 0.25f, 8.f), llclamp(F32(rejection), 0.f, 1.f));
-    shader.uniform1i(LLStaticHashedString("hair_debug"), llclamp(S32(debug), 0, 2));
     shader.uniform1f(LLStaticHashedString("hair_variation_strength"), llclamp(F32(variation), 0.f, 2.f));
     shader.uniform1f(LLStaticHashedString("hair_brightness_compensation"), llclamp(F32(brightness), 0.f, 4.f));
 }
@@ -10248,6 +10260,10 @@ void LLPipeline::renderDeferredLighting()
 // <AS:Chanayane> Exact OIT validation, fallback, and composite.
     FSExactOIT::finishFrame(*this, mRT->screen, *mScreenTriangleVB, gCubeSnapshot, sImpostorRender, gAgentCamera.cameraMouselook());
 // </AS:Chanayane>
+
+    // Keep the collision preview visible through hair after transparency is composited.
+    if (!sRenderingHUDs && !sImpostorRender && !sShadowRender && !gCubeSnapshot)
+        LLHairMesh::renderDebug();
 
     screen_target->flush();
 
@@ -12312,7 +12328,10 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
 
     if (mSSSDepthPass != 2 && mHairDepthPass < 2)
     {
-        updateCull(shadow_cam, result);
+        {
+            LL_AUTOMATION_CPU_SCOPE(mSSSDepthPass ? "sss.cull" : mHairDepthPass ? "hair.cull" : "shadow.cull");
+            updateCull(shadow_cam, result);
+        }
         stateSort(shadow_cam, result);
     }
     else
@@ -12321,6 +12340,7 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
         grabReferences(result);
     }
 
+    LL_AUTOMATION_CPU_SCOPE(mSSSDepthPass ? "sss.submit" : mHairDepthPass ? "hair.submit" : "shadow.submit");
     //generate shadow map
     gGL.matrixMode(LLRender::MM_PROJECTION);
     gGL.pushMatrix();
@@ -12806,6 +12826,12 @@ F32 advanceSSSDepthFade(F32 fade, bool retained, F32 dt)
     return llclamp(fade + (retained ? 5.f : -5.f) * llclamp(dt, 0.f, 0.1f), 0.f, 1.f);
 }
 
+F32 sssDepthDistanceFade(F32 distance, F32 range)
+{
+    const F32 t = llclamp((range - distance) / (range * 0.2f), 0.f, 1.f);
+    return t * t * (3.f - 2.f * t);
+}
+
 bool sssProjectorIntersectsSphere(const glm::mat4& projection, const glm::vec3& center, F32 radius)
 {
     // Projector texture coordinates occupy [0,w], including the near/far planes.
@@ -12836,7 +12862,6 @@ void LLPipeline::updateHairDepthFocus(LLCamera& camera)
     LLUUID selected;
     LLVector3 selected_position, retained_position = mHairDepthFocus;
     F32 nearest = F32_MAX;
-    const F32 range = 32.f;
     if (sCull && gSavedSettings.getBOOL("BoxxyHairEnabled") &&
         gSavedSettings.getF32("BoxxyHairTransmission") > 0.f)
     {
@@ -12847,7 +12872,7 @@ void LLPipeline::updateHairDepthFocus(LLCamera& camera)
             {
                 const LLDrawInfo* info = *i;
                 const LLViewerObject* object = info->mHairObject;
-                if (!object || object->isDead() || info->mFullbright) continue;
+                if (!LLVOVolume::isHairInRange(object) || info->mFullbright) continue;
                 // Both rigged and unrigged attachments focus on their owning avatar.
                 // Standalone tagged objects use their own rendered position.
                 const LLVOAvatar* avatar = info->mAvatar.notNull() ? info->mAvatar.get() : object->getAvatar();
@@ -12856,7 +12881,6 @@ void LLPipeline::updateHairDepthFocus(LLCamera& camera)
                 const F32 distance = (pos - camera.getOrigin()).lengthSquared();
                 const bool retained = object->getID() == mHairDepthFocusID;
                 if (retained) retained_position = pos;
-                if (distance >= range * range) continue;
                 const F32 score = distance * (retained ? 0.8f : 1.f);
                 if (score < nearest)
                 {
@@ -12885,8 +12909,8 @@ void LLPipeline::setHairDepthUniforms(LLGLSLShader& shader, bool hair)
     shader.uniform1i(LLStaticHashedString("hair_depth_object"), hair ? 1 : 0);
     shader.uniform1i(LLStaticHashedString("hair_depth_blend"), mSSSDepthOpaque ? 0 : 1);
     if (mHairDepthPass == 0) return;
-    shader.uniform1i(LLStaticHashedString("hair_depth_slot"), mHairDepthSlot);
-    shader.uniform4fv(LLStaticHashedString("hair_depth_projection"), 3, glm::value_ptr(mHairDepthProjection[0]));
+    // Only this tile is written; a scalar uniform avoids re-uploading all projections for every draw.
+    shader.uniform4fv(LLStaticHashedString("hair_capture_projection"), 1, glm::value_ptr(mHairDepthProjection[mHairDepthSlot]));
     const S32 channel = shader.enableTexture(LLShaderMgr::HAIR_BOUNDS);
     if (channel >= 0)
     {
@@ -12934,7 +12958,7 @@ void LLPipeline::generateHairDepth(LLCamera& camera)
 {
     mHairDepthValid = glm::vec3(0);
     if (gGLManager.mNumTextureImageUnits < 32 || !sRenderDeferred || gCubeSnapshot || sImpostorRender || mRT != &mMainRT ||
-        !mHairDepthFocusValid || !gSavedSettings.getBOOL("BoxxyHairEnabled") ||
+        !mHairDepthFocusValid || !LLVOVolume::isHairInRange(gObjectList.findObject(mHairDepthFocusID)) ||
         gSavedSettings.getF32("BoxxyHairTransmission") <= 0.f)
         return;
 
@@ -13251,6 +13275,10 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         gSavedSettings.getF32("BoxxySSSStrength") <= 0.f || gSavedSettings.getF32("BoxxySSSTransmission") <= 0.f)
         return;
 
+    const F32 distanceFade = sssDepthDistanceFade((mSSSDepthFocus - camera.getOrigin()).magVec(),
+        llclamp(gSavedSettings.getF32("BoxxySSSMaxDistance"), 1.f, 32.f));
+    if (distanceFade <= 0.f) return;
+
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("SSS depth maps");
     LL_AUTOMATION_GPU_SCOPE("SSS.depth_maps");
@@ -13447,7 +13475,7 @@ void LLPipeline::generateSSSDepth(LLCamera& camera)
         // At skybox altitudes a float projected matrix loses millimeter-scale
         // depth before the camera translation can cancel it during binding.
         mSSSDepthMatrix[i] = glm::dmat4(bias) * glm::dmat4(proj) * glm::dmat4(view);
-        mSSSDepthValid[i] = mSSSDepthFocusFade * (i == 0 ? 1.f : mSSSDepthLightFade[i - 1]);
+        mSSSDepthValid[i] = distanceFade * mSSSDepthFocusFade * (i == 0 ? 1.f : mSSSDepthLightFade[i - 1]);
     }
     glCullFace(savedCullFace);
     glClearColor(0.f, 0.f, 0.f, 0.f);
@@ -13499,6 +13527,7 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE; //LL_RECORD_BLOCK_TIME(FTM_GEN_SUN_SHADOW);
     LL_PROFILE_GPU_ZONE("generateSunShadow");
     LL_AUTOMATION_GPU_SCOPE("shadows.maps");
+    LL_AUTOMATION_CPU_SCOPE("shadow.total");
 
     LLDisableOcclusionCulling no_occlusion;
 

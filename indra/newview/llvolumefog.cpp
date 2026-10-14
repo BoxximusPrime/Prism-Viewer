@@ -2,6 +2,7 @@
 #include "llvolumefog.h"
 
 #include "llframetimer.h"
+#include "lltextureentry.h"
 #include "llviewercontrol.h"
 #include "llviewerobjectlist.h"
 #include "llviewercamera.h"
@@ -79,6 +80,12 @@ std::vector<Volume> collect()
         {
             Volume volume{params, object->getRenderPosition(), object->getScale() * 0.5f,
                 object->getRenderRotation(), 0.f, object->getID()};
+            // Read tint each frame so color edits apply without another description update; ignore alpha.
+            if (const auto* face = object->getTE(0))
+            {
+                const auto& tint = face->getColor();
+                volume.params.color = {tint.mV[0], tint.mV[1], tint.mV[2]};
+            }
             const auto& half = volume.halfSize;
             if (half.isFinite() && volume.center.isFinite() &&
                 half.mV[0] > 0.f && half.mV[1] > 0.f && half.mV[2] > 0.f &&

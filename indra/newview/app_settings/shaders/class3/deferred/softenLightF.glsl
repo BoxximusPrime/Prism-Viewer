@@ -226,8 +226,8 @@ void adjustIrradiance(inout vec3 irradiance, float ambocc)
 #endif
 }
 
-uniform int hair_debug;
 vec3 decodeHairTangent(vec3 n, float angle);
+void sampleReflectionProbesAmbient(inout vec3 ambient, vec3 pos, vec3 norm, vec3 amblit);
 vec3 hairSafeNormalize(vec3 v, vec3 fallback);
 vec3 hairDirectVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float variation, float surface, float transmission);
 vec3 hairDiffuseVisibility(vec3 base, vec3 n, vec3 t, vec3 v, vec3 l, float surface, float transmission);
@@ -305,11 +305,7 @@ void main()
         vec3 base = pbr ? baseColor.rgb : srgb_to_linear(baseColor.rgb);
         vec3 strand = decodeHairTangent(gb.normal, gb.envIntensity);
         vec3 irradiance = amblit;
-        vec3 glossenv = vec3(0), legacyenv = vec3(0);
-        if (pbr)
-            sampleReflectionProbes(irradiance, radiance, tc, pos.xyz, gb.normal, 0.0, false, amblit);
-        else
-            sampleReflectionProbesLegacy(irradiance, glossenv, legacyenv, tc, pos.xyz, gb.normal, 0.0, 0.0, false, amblit);
+        sampleReflectionProbesAmbient(irradiance, pos.xyz, gb.normal, amblit);
         irradiance = waterLitAmbient(pos.xyz, irradiance, classic_mode);
         adjustIrradiance(irradiance, ambocc);
         if (classic_mode > 0)
@@ -513,7 +509,6 @@ void main()
         final_scale = 1.1;
 
     frag_color.rgb = clampHDRRange(color.rgb * final_scale); //output linear since local lights will be added to this shader's results
-    if (hair_debug != 0 && GBUFFER_HAIR_FLAG(gb.gbufferFlag) > 0.5) frag_color.rgb = baseColor.rgb;
     frag_color.a = 0.0;
     ssgi_donor = vec4(GBUFFER_IMPOSTOR_FLAG(gb.gbufferFlag) ? vec3(0.0) : max(ssgiSource * final_scale, vec3(0.0)), 0.0);
     sss_diffuse = vec4(0.0);

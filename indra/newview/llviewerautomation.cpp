@@ -1,5 +1,6 @@
 #include "llviewerprecompiledheaders.h"
 #include "llviewerautomation.h"
+#include "llhairmesh.h"
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llappviewer.h"
@@ -121,6 +122,7 @@ LLSD metadata()
     result["schema_version"] = 2;
     result["viewer"] = LLVersionInfo::instance().getChannelAndVersion();
     result["gpu"] = gGLManager.mGLRenderer;
+    result["hair_mesh"] = LLHairMesh::diagnostics();
     result["driver"] = gGLManager.mGLVersionString;
     result["camera"] = camera();
     result["settings"] = settings();
@@ -497,6 +499,11 @@ public:
     }
 };
 AutomationAPI api;
+}
+
+double LLViewerAutomation::captureStarted()
+{
+    return active() ? capture_started : 0.0;
 }
 
 void LLViewerAutomation::processRequests()

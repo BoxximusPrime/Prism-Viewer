@@ -38,6 +38,7 @@ struct LLDrawInfo {
     int mTexture = 1, mTextureMatrix = 0;
     std::vector<int> mTextureList{1, 2};
     bool mHair = false;
+    const int* mHairObject = nullptr;
 };
 struct LLCullResult {
     using drawinfo_iterator = LLDrawInfo**;
@@ -168,6 +169,13 @@ int main() {
         }
     }
     gPipeline.mHairDepthPass = 0;
+    for (bool same_hair : {false, true}) {
+        LLDrawInfo a{0,5,6,0}, b{6,11,6,6};
+        a.mHairObject = &skin_a; b.mHairObject = same_hair ? &skin_a : &skin_b;
+        gPipeline.inputs = {&a,&b}; submitted.clear(); draws = 0;
+        pass.pushMaskBatches(0,true,true);
+        assert(draws == (same_hair ? 1 : 2));
+    }
     gPipeline.inputs.clear(); submitted.clear(); draws = 0;
     pass.pushMaskBatches(0, true, true);
     assert(draws == 0 && submitted.empty());

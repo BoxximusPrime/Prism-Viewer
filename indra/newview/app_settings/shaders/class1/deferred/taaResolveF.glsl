@@ -1,13 +1,11 @@
 // Native-resolution HDR TAA. History is unjittered and stores linear view depth
 // in alpha (negative = rejected, for diagnostics). No UI enters this history.
-out vec4 frag_data[3];
+out vec4 frag_data[2];
 #define frag_color frag_data[0]
 uniform sampler2D taa_current;
 uniform sampler2D taa_history;
 // Remaining static-detail lifetime, surface depth bounds, background luma.
 uniform sampler2D taa_detail;
-// Previous unresolved luma, signed recent amplitude, reversal evidence, quiet age.
-uniform sampler2D taa_flicker;
 uniform sampler2D taa_motion;
 uniform sampler2D taa_opaque;
 uniform sampler2D depthMap;
@@ -22,7 +20,6 @@ uniform float taa_motion_protection;
 uniform float taa_clip_gamma;
 uniform float taa_transparency;
 uniform int taa_static_details;
-uniform int taa_flicker_detection;
 uniform int taa_debug_mode;
 
 vec3 compressColor(vec3 c) { c = max(c, vec3(0)); return c / (1.0 + max(max(c.r,c.g),c.b)); }
@@ -60,31 +57,13 @@ float currentDepth(vec2 uv, float old_depth)
     vec3 p = ray.xyz * (old_depth / max(-ray.z, 0.00001));
     return clamp(-(taa_current_from_previous * vec4(p, 1.0)).z, 0.001, 65000.0);
 }
-vec4 updateFlicker(float luma, vec4 old)
-{
-    if(old.b<0.0) return vec4(luma,0,0,0);
-    float delta=luma-old.r;
-    float threshold=max(.0002,max(luma,old.r)*.03);
-    bool significant=abs(delta)>threshold;
-    bool jump=abs(old.g)>threshold && abs(delta)>abs(old.g)*2.0+threshold;
-    bool reversal=significant && delta*old.g<0.0 && !jump;
-    // Require repeated reversals; one flash, a monotonic change or a quiet
-    // signal cannot keep protection alive. Keep quiet gaps within one jitter
-    // cycle so repeated one-frame impulses also qualify; a lone flash does not.
-    float age=significant ? 0.0 : min(old.a+1.0,8.0);
-    float evidence=jump || age>=8.0 ? 0.0 :
-        clamp(old.b+(reversal ? 1.0 : significant ? -1.0 : 0.0),0.0,4.0);
-    float amplitude=significant ? sign(delta)*max(abs(delta),abs(old.g)*.8) : age>=8.0 ? 0.0 : old.g;
-    return vec4(luma,amplitude,evidence,age);
-}
-void writeResult(vec3 color, float depth, float weight, float support, float clipping, float protection, int reason, float flicker)
+void writeResult(vec3 color, float depth, float weight, float support, float clipping, float protection, int reason)
 {
     frag_color=vec4(color,weight<.05 ? -depth : depth);
     // Diagnostic output is a separate, on-demand resolve; never enters history.
     if(taa_debug_mode==2) frag_color=vec4(1.0-weight,weight,0,0);
     if(taa_debug_mode==3) frag_color=vec4(vec3(clamp(clipping,0.0,1.0)),0);
     if(taa_debug_mode==4) frag_color=vec4(0,protection,1.0-protection,0);
-    if(taa_debug_mode==6) frag_color=vec4(0,flicker,1.0-flicker,0);
     if(taa_debug_mode==5)
     {
         vec3 c=vec3(.1,.55,.15);
@@ -166,9 +145,6 @@ void main()
     lo=max(lo,mean-taa_clip_gamma*deviation); hi=min(hi,mean+taa_clip_gamma*deviation);
     vec4 motion=texelFetch(taa_motion,motion_pixel,0);
     vec2 history_uv=uv+motion.rg;
-    bool detect_flicker=taa_flicker_detection!=0 && detail_confidence>0.0;
-    float current_luma=toYCoCg(current).x;
-    frag_data[2]=vec4(current_luma,0,detect_flicker ? 0.0 : -1.0,0);
     // History color covers the silhouette, so its depth must follow the same
     // dilated surface that owns reprojection. Saving center depth here alternates
     // between foreground/background with jitter and rejects a stationary edge.
@@ -176,7 +152,7 @@ void main()
     if (taa_history_valid==0)
     {
         frag_data[1]=detail;
-        writeResult(min(expandColor(current),vec3(65000)),current_depth,0.0,0.0,0.0,0.0,1,0.0);
+        writeResult(min(expandColor(current),vec3(65000)),current_depth,0.0,0.0,0.0,0.0,1);
         return;
     }
     bool onscreen=all(greaterThanEqual(history_uv,.5*taa_rcp_res)) && all(lessThanEqual(history_uv,1.0-.5*taa_rcp_res));
@@ -189,7 +165,6 @@ void main()
     tolerance+=min(depth_max-depth_min,motion.b*.01);
     vec3 history=vec3(0);
     float support=0.0, protected_support=0.0, best_detail_weight=0.0;
-    float flicker_support=0.0, best_flicker_weight=0.0;
     for(int y=0;y<=1;++y) for(int x=0;x<=1;++x)
     {
         vec2 tap_weight=mix(1.0-fraction,fraction,vec2(x,y));
@@ -221,20 +196,6 @@ void main()
         // Fade depth exceptions with confidence rather than flipping at a speed threshold.
         float accepted=w*(valid_depth ? 1.0 : detail_confidence);
         history+=compressColor(sample_history.rgb)*accepted; support+=accepted;
-        if(detect_flicker && surfaces_persist)
-        {
-            // Follow exactly the color taps which survived surface validation.
-            // A vanished surface may consume the old detail grace period, but
-            // must not carry flicker evidence into the newly exposed texture.
-            // Point-sampled state preserves the sign of changes across frames.
-            vec4 state=updateFlicker(current_luma,texelFetch(taa_flicker,p,0));
-            flicker_support+=accepted*smoothstep(1.0,3.0,state.b)*detail_confidence;
-            if(accepted>best_flicker_weight)
-            {
-                best_flicker_weight=accepted;
-                frag_data[2]=state;
-            }
-        }
         if(retain_detail)
         {
             protected_support+=accepted*detail_confidence;
@@ -256,15 +217,12 @@ void main()
     frag_data[1]=detail;
     history=support>0.0 ? history/support : current;
     float protection=protected_support/max(support,.00001);
-    float flicker_protection=flicker_support/max(support,.00001);
-    protection=max(protection,.95*flicker_protection);
     vec3 old=toYCoCg(history);
     vec3 bounded=clipBox(old,lo,hi);
     vec3 clipped=mix(bounded,old,protection);
     // Clipping alone can leave a plausible trail within a high-contrast region.
     // Reduce its lifetime as color disagreement or motion grows.
     float disagreement=length(old-clipped)/max(length(hi-lo),.02);
-    disagreement*=1.0-flicker_protection;
     float speed=length(motion.rg/taa_rcp_res);
     // Clipping protection alone still injects 24% of every jitter phase at the
     // default weight. Accumulation follows static-surface confidence, including
@@ -278,5 +236,5 @@ void main()
     vec3 resolved=mix(current,max(toRGB(clipped),vec3(0)),weight);
     int reason=!onscreen ? 2 : support<=0.0 ? 3 : reactive>.01 ? 4 : 0;
     writeResult(min(expandColor(resolved),vec3(65000)),current_depth,weight,support,
-        length(old-bounded)/max(length(hi-lo),.02),protection,reason,flicker_protection);
+        length(old-bounded)/max(length(hi-lo),.02),protection,reason);
 }

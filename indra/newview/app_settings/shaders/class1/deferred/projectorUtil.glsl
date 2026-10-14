@@ -239,6 +239,8 @@ float hairLocalShadow(vec3 pos, vec3 origin, float fallback);
 
 vec3 hairLocalLight(int index, vec3 base, vec3 n, vec3 t, vec3 pos, float variation)
 {
+    // Inactive slots retain their position/radius but contribute no light.
+    if (all(equal(light_diffuse[index], vec3(0)))) return vec3(0);
     float radius = light_deferred_attenuation[index].x;
     float falloff = light_deferred_attenuation[index].y;
     vec3 lv = light_position[index].xyz - pos;

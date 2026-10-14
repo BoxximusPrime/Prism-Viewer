@@ -6,9 +6,10 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 source = (ROOT / "indra/newview/llfloaterhoverheight.cpp").read_text()
-start = source.index("    class ShoeHeightSkeleton")
+start = source.index("    bool shoeFaceHidden")
 end = source.index("\n}\n\nbool LLFloaterShoeHeight::postBuild", start)
-sampler = source[start:end]
+neutral = (ROOT / "indra/newview/llavatarneutralskeleton.h").read_text()
+sampler = neutral[neutral.index("class LLAvatarNeutralSkeleton"):] + source[start:end]
 matcher = source[source.index("    bool isLikelyFootwear"):start]
 height_calculation = next(line.strip() for line in source.splitlines() if line.strip().startswith("const F32 height ="))
 world_source = (ROOT / "indra/newview/llworld.cpp").read_text()
@@ -205,7 +206,7 @@ int main(){
     assert(!shoeFaceHidden(&visibility));visibility.alpha=0;assert(shoeFaceHidden(&visibility));
     LLGLTFMaterial material;visibility.material=&material;assert(!shoeFaceHidden(&visibility));
     material.mAlphaMode=LLGLTFMaterial::ALPHA_MODE_BLEND;material.mBaseColor.mV[VALPHA]=0;assert(shoeFaceHidden(&visibility));
-    LLJoint root,pelvis,foot,point;
+    LLJoint root,pelvis,foot,point,head;
     root.setup("root",nullptr);root.position={0,0,11};
     pelvis.setup("pelvis",&root);pelvis.rest={0,0,PELVIS_BIND_Z};
     foot.setup("foot",&pelvis);foot.rest={0,0,-1};foot.scale={1,1,1.3f};
@@ -213,6 +214,10 @@ int main(){
     LLPolySkeletalDistortion shape;shape.offsets[&foot]={0,0,-.1f};
     LLVOAvatarSelf avatar;avatar.mPelvisp=&pelvis;avatar.bones={{"pelvis",{},{{"foot",{}, {}}}}};
     avatar.joints={{"pelvis",&pelvis},{"foot",&foot}};avatar.shape=&shape;
+    head.setup("head",&pelvis);head.rest={0,0,.7f};head.scale={1,1,1.1f};
+    shape.offsets[&head]={0,0,.015f};
+    avatar.bones[0].mChildren.push_back({"head",{}, {}});avatar.joints["head"]=&head;
+    LLMeshSkinInfo hair_skin;hair_skin.mJointNames={"head","pelvis"};hair_skin.mInvBindMatrix.resize(2);
     LLMeshSkinInfo skin;skin.mJointNames={"foot"};skin.mInvBindMatrix.resize(1);
     skin.mInvBindMatrix[0].translation={0,0,.2f};skin.mBindShapeMatrix.translation={0,0,.05f};
     LLVector4a positions[]={LLVector4a(-.15f),LLVector4a(-.1f)};
@@ -221,7 +226,12 @@ int main(){
     for(int pose=0;pose<30;++pose){
         pelvis.position={0,0,float(pose)};foot.position={0,0,-float(pose)};
         pelvis.rotation.angle=pose*.1f;foot.rotation.angle=pose*.2f;
-        ShoeHeightSkeleton sample(avatar);
+        head.position={0,0,float(pose)*.03f};head.rotation.angle=pose*.05f;
+        LLAvatarNeutralSkeleton sample(avatar);
+        LLMatrix4a hair_palette[2];assert(sample.palette(&hair_skin,hair_palette,2));
+        near(hair_palette[0].translation[VZ],11.715f);near(hair_palette[1].translation[VZ],11.f);
+        near(sample.joint(&head)->scale[VZ],1.1f);near(sample.joint(&head)->rotation.angle,0);
+        near(head.position[VZ],float(pose)*.03f);near(head.rotation.angle,pose*.05f);
         LLJoint* neutral=sample.joint(&foot);
         near(neutral->getWorldMatrix4a().translation[VZ],9.9f);
         near(neutral->rotation.angle,0);near(neutral->scale[VZ],1.3f);
@@ -249,7 +259,7 @@ int main(){
     positions[0]=LLVector4a(-.35f);
     for(float altitude : {-1.f,100.f,3000.f})for(float hover : {-1.1f,0.f,.3f,.2f}){
         root.position={0,0,altitude+1.f+hover};avatar.hover={0,0,hover};
-        ShoeHeightSkeleton neutral(avatar);float lowest=INFINITY;
+        LLAvatarNeutralSkeleton neutral(avatar);float lowest=INFINITY;
         assert(lowestAttachmentVertex(&shoe,neutral,{},lowest));
         assert(std::abs(computedHeight(&avatar,{0,0,altitude},lowest)-.2f)<.001f);
     }
@@ -292,7 +302,7 @@ int main(){
         assert(findShoeGround(avatar,floor));assert(std::abs(floor.mV[VZ]-altitude)<.001f);
     }
     foot.overridden=true;foot.override_position={0,0,-.8f};
-    ShoeHeightSkeleton sample(avatar);near(sample.joint(&foot)->getWorldMatrix4a().translation[VZ],10.2f);
+    LLAvatarNeutralSkeleton sample(avatar);near(sample.joint(&foot)->getWorldMatrix4a().translation[VZ],10.2f);
     LLMatrix4a palette[8];skin.mJointNames={"unknown"};assert(!sample.palette(&skin,palette,1));
     skin.mJointNames={"foot"};skin.mInvBindMatrix.clear();assert(!sample.palette(&skin,palette,1));
 }
@@ -303,7 +313,7 @@ skeleton_asset = ET.parse(ROOT / "indra/newview/character/avatar_skeleton.xml")
 pelvis_bind_z = float(skeleton_asset.find("bone[@name='mPelvis']").get("pos").split()[2])
 assert pelvis_bind_z > 1.0
 harness = harness.replace("PELVIS_BIND_Z", repr(pelvis_bind_z) + "f")
-with tempfile.TemporaryDirectory() as directory:
+with tempfile.TemporaryDirectory(dir=ROOT / ".logs") as directory:
     cpp = Path(directory) / "shoe_height.cpp"
     exe = Path(directory) / "shoe_height.exe"
     cpp.write_text(harness)

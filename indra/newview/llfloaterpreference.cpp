@@ -978,6 +978,7 @@ void LLFloaterPreference::setRecommendedSettings()
 {
     resetAutotuneSettings();
     gSavedSettings.getControl("RenderVSyncEnable")->resetToDefault(true);
+    gSavedSettings.getControl("MaxFPS")->resetToDefault(true);
 
     LLFeatureManager::getInstance()->applyRecommendedSettings();
 
@@ -1444,7 +1445,7 @@ void LLFloaterPreference::refreshEnabledState()
         "Changes apply immediately. Quality keeps your selected light limit and shadow setting.");
     const bool taa_enabled = gSavedSettings.getU32("RenderFSAAType") == 3;
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
-        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAAFreezeJitter", "RenderTAADebug", "TAADebugLabel" })
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderTAADebug", "TAADebugLabel" })
         getChildView(control)->setEnabled(taa_enabled);
     getChildView("RenderTAASharpen")->setEnabled(taa_enabled && !gSavedSettings.getBOOL("RenderPostSharpenEnabled"));
     getChild<LLTextBox>("TAAStatus")->setValue(!taa_enabled ? "Choose TAA above to enable temporal antialiasing." :
@@ -1494,7 +1495,6 @@ void LLFloaterPreference::refreshEnabledState()
     getChildView("RenderPCSSBias")->setEnabled(pcss_enabled);
     getChildView("RenderPCSSQuality")->setEnabled(pcss_enabled);
     getChildView("RenderPCSSCleanup")->setEnabled(pcss_enabled);
-    getChildView("RenderPCSSStablePattern")->setEnabled(pcss_enabled);
     getChildView("RenderPCSSDebug")->setEnabled(pcss_enabled);
     getChildView("PCSSQualityLabel")->setEnabled(pcss_enabled);
     getChild<LLTextBox>("PCSSStatus")->setValue(!pcss_supported ?
@@ -3039,7 +3039,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
         "RenderVolumeCloudLightPenetration", "RenderVolumeCloudEdgeGlow", "RenderVolumeCloudInternalLight", "RenderVolumeCloudAmbient", "RenderVolumeCloudQuality" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
-        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFlickerDetection", "RenderTAAFreezeJitter", "RenderTAADebug" })
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderTAADebug" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderPostSharpenEnabled", "RenderPostSharpenStrength", "RenderChromaticAberrationStrength" })
         gSavedSettings.getControl(control)->resetToDefault(true);
@@ -3060,10 +3060,17 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
     gSavedSettings.getControl("RenderPCSSBias")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSQuality")->resetToDefault(true);
     gSavedSettings.getControl("RenderPCSSCleanup")->resetToDefault(true);
-    gSavedSettings.getControl("RenderPCSSStablePattern")->resetToDefault(true);
-    for (const char* control : { "BoxxyHairEnabled", "BoxxyHairNames", "BoxxyHairRoughness",
-        "BoxxyHairShine", "BoxxyHairBrightnessCompensation", "BoxxyHairStrandVariation", "BoxxyHairTransmission", "BoxxyHairThickness", "BoxxyHairDirection",
-        "BoxxyHairAutoDirection", "BoxxyHairFlowScale", "BoxxyHairFlowSmoothing", "BoxxyHairNormalEnabled", "BoxxyHairNormalStrength", "BoxxyHairNormalScale", "BoxxyHairNormalRejection", "BoxxyHairDebug" })
+    for (const char* control : { "BoxxyHairEnabled", "BoxxyHairSelfOnly", "BoxxyHairMaxDistance",
+        "BoxxyHairNames", "BoxxyHairRoughness", "BoxxyHairShine",
+        "BoxxyHairBrightnessCompensation", "BoxxyHairStrandVariation", "BoxxyHairTransmission",
+        "BoxxyHairThickness", "BoxxyHairNormalEnabled", "BoxxyHairNormalStrength",
+        "BoxxyHairNormalScale", "BoxxyHairNormalRejection", "BoxxyHairPhysicsEnabled",
+        "BoxxyHairPhysicsStiffness", "BoxxyHairPhysicsRootRadius", "BoxxyHairPhysicsRootGradient",
+        "BoxxyHairPhysicsMeshPadding", "BoxxyHairPhysicsColliderNames", "BoxxyHairPhysicsShowMesh",
+        "BoxxyHairPhysicsGravity", "BoxxyHairPhysicsGravityStrength", "BoxxyHairPhysicsShapeRetention",
+        "BoxxyHairPhysicsCollisionSmoothing", "BoxxyHairPhysicsFriction", "BoxxyHairPhysicsDamping",
+        "BoxxyHairPhysicsBendResistance", "BoxxyHairPhysicsRopeDensity", "BoxxyHairPhysicsBendGradient",
+        "BoxxyHairPhysicsElasticity", "BoxxyHairPhysicsTravelLimit", "BoxxyHairPhysicsShowGuides" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSEnabled")->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSAutoDetect")->resetToDefault(true);

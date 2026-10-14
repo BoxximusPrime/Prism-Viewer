@@ -1687,7 +1687,8 @@ void LLVertexBuffer::setBuffer()
     llassert(LLGLSLShader::sCurBoundShaderPtr);
 
     U32 data_mask = LLGLSLShader::sCurBoundShaderPtr->mAttributeMask;
-
+    const U32 previous_mask = sLastMask;
+    setupClientArrays(data_mask);
     // this Vertex Buffer must provide all necessary attributes for currently bound shader
     llassert_msg((data_mask & mTypeMask) == data_mask,
         "Attribute mask mismatch! mTypeMask should be a superset of data_mask.  data_mask: 0x"
@@ -1700,7 +1701,7 @@ void LLVertexBuffer::setBuffer()
 
         setupVertexBuffer();
     }
-    else if (sLastMask != data_mask)
+    else if (previous_mask != data_mask)
     {
         setupVertexBuffer();
         sLastMask = data_mask;
@@ -1723,6 +1724,9 @@ void LLVertexBuffer::setupVertexBuffer()
     U8* base = nullptr;
 
     U32 data_mask = LLGLSLShader::sCurBoundShaderPtr->mAttributeMask;
+    // Volume hair uses the otherwise unused scalar weight as a source vertex ID.
+    // Other geometry supplies -1, never an address into a missing stream.
+    if (!(mTypeMask & MAP_WEIGHT)) data_mask &= ~MAP_WEIGHT;
 
     if (data_mask & MAP_NORMAL)
     {

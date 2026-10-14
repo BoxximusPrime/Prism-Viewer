@@ -50,21 +50,29 @@ mat4 getObjectSkinnedTransform();
 uniform mat4 projection_matrix;
 #endif
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(hair_position);
+#endif
+
     //transform vertex
 #ifdef HAS_SKIN
-    mat4 mat = getObjectSkinnedTransform();
+    mat4 mat = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
     mat = modelview_matrix * mat;
-    vec3 pos = (mat*vec4(position.xyz, 1.0)).xyz;
+    vec3 pos = (mat*vec4(hair_position.xyz, 1.0)).xyz;
     vary_position = pos;
     gl_Position = projection_matrix*vec4(pos, 1.0);
 
-    vec3 n = normalize((mat * vec4(normal.xyz+position.xyz, 1.0)).xyz-pos.xyz);
-    vec3 t = normalize((mat * vec4(tangent.xyz+position.xyz, 1.0)).xyz-pos.xyz);
+    vec3 n = normalize((mat3(mat) * normal));
+    vec3 t = normalize((mat * vec4(tangent.xyz+hair_position.xyz, 1.0)).xyz-pos.xyz);
 #else
-    vary_position = (modelview_matrix*vec4(position.xyz, 1.0)).xyz;
-    gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+    vary_position = (modelview_matrix*vec4(hair_position.xyz, 1.0)).xyz;
+    gl_Position = modelview_projection_matrix * vec4(hair_position.xyz, 1.0);
     vec3 n = normalize(normal_matrix * normal);
     vec3 t = normalize(normal_matrix * tangent.xyz);
 #endif

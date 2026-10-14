@@ -35,6 +35,7 @@
 #include "llfeaturemanager.h"
 // <AS:Chanayane> Exact OIT
 #include "fsexactoit.h"
+#include "llhairmesh.h"
 // </AS:Chanayane>
 #include "llviewershadermgr.h"
 #include "llgltfmaterialpreviewmgr.h"
@@ -650,6 +651,9 @@ static U32 shaderProgramCount()
         + (gGLManager.mGLVersion > 4.05f ? 2 : 0)  // CAS
         + (gSavedSettings.getBOOL("RenderGTAOEnabled") ? 3 : 0)
         + (gSavedSettings.getBOOL("RenderSSGIEnabled") ? 7 : 0)
+#if !LL_DARWIN
+        + (gGLManager.mGLVersion >= 4.3f && glDispatchCompute ? 6 : 0) // animated hair shell, contact cache/coupling, guides and preview
+#endif
         + (gltf ? LLGLSLShader::NUM_GLTF_VARIANTS : 0);
     const U32 oit_programs = FSExactOIT::isSupported()
         ? 16 + 2 * LLMaterial::ALPHA_SHADER_COUNT
@@ -1160,6 +1164,7 @@ std::string LLViewerShaderMgr::loadBasicShaders()
     shaders.push_back( make_pair( "environment/srgbF.glsl",                 1 ) );
     shaders.push_back( make_pair( "avatar/avatarSkinV.glsl",                1 ) );
     shaders.push_back( make_pair( "avatar/objectSkinV.glsl",                1 ) );
+    shaders.push_back( make_pair( "deferred/hairDeformV.glsl",               1 ) );
     shaders.push_back( make_pair( "deferred/textureUtilV.glsl",             1 ) );
     if (gGLManager.mGLSLVersionMajor >= 2 || gGLManager.mGLSLVersionMinor >= 30)
     {
@@ -1597,6 +1602,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gHUDFullbrightAlphaMaskAlphaProgram.unload();
 // <AS:Chanayane> Exact OIT shader unloading
         FSExactOIT::unloadShaders();
+        LLHairMesh::unloadShaders();
 // </AS:Chanayane>
         gDeferredEmissiveProgram.unload();
         gDeferredSkinnedEmissiveProgram.unload();
@@ -3725,7 +3731,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         };
         const TAAStage stages[] = {
             { &gTAAResolveProgram, "TAA Resolve", "deferred/postDeferredNoTCV.glsl", "deferred/taaResolveF.glsl",
-                { TAA_CURRENT, TAA_HISTORY, TAA_DETAIL, TAA_FLICKER, TAA_MOTION, TAA_OPAQUE, DEFERRED_DEPTH } },
+                { TAA_CURRENT, TAA_HISTORY, TAA_DETAIL, TAA_MOTION, TAA_OPAQUE, DEFERRED_DEPTH } },
             { &gTAACameraProgram, "TAA Camera Motion", "deferred/postDeferredNoTCV.glsl", "deferred/taaCameraF.glsl", { DEFERRED_DEPTH } },
             { &gTAACopyProgram, "TAA Presentation", "deferred/postDeferredNoTCV.glsl", "deferred/taaCopyF.glsl", { TAA_SOURCE, TAA_ORIGINAL } },
             { &gTAAMotionProgram[0], "TAA Object Motion", "deferred/taaMotionV.glsl", "deferred/taaMotionF.glsl", {} },
@@ -3880,6 +3886,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gSSGIDebugProgram.unload();
     }
 
+    if (success) LLHairMesh::loadShaders();
     success = FSExactOIT::loadShaders(success, mShaderLevel[SHADER_DEFERRED], use_sun_shadow,
                                       (gSavedSettings.getBOOL("GLTFEnabled") || gSavedSettings.getBOOL("LocalMeshRendering")), mShaderList);
     return success;

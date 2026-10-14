@@ -68,21 +68,29 @@ out vec3 vary_position;
 vec2 texture_transform(vec2 vertex_texcoord, vec4[2] khr_gltf_transform, mat4 sl_animation_transform);
 vec4 tangent_space_transform(vec4 vertex_tangent, vec3 vertex_normal, vec4[2] khr_gltf_transform, mat4 sl_animation_transform);
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(hair_position);
+#endif
+
 #ifdef HAS_SKIN
-    mat4 mat = getObjectSkinnedTransform();
+    mat4 mat = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
 
     mat = modelview_matrix * mat;
 
-    vec3 pos = (mat*vec4(position.xyz,1.0)).xyz;
+    vec3 pos = (mat*vec4(hair_position.xyz,1.0)).xyz;
     vary_position = pos;
     gl_Position = projection_matrix*vec4(pos,1.0);
 
 #else
-    vary_position = (modelview_matrix*vec4(position.xyz, 1.0)).xyz;
+    vary_position = (modelview_matrix*vec4(hair_position.xyz, 1.0)).xyz;
     //transform vertex
-    gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+    gl_Position = modelview_projection_matrix * vec4(hair_position.xyz, 1.0);
 #endif
 
     base_color_texcoord = texture_transform(texcoord0, texture_base_color_transform, texture_matrix0);
@@ -91,8 +99,8 @@ void main()
     emissive_texcoord = texture_transform(texcoord0, texture_emissive_transform, texture_matrix0);
 
 #ifdef HAS_SKIN
-    vec3 n = (mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz;
-    vec3 t = (mat*vec4(tangent.xyz+position.xyz,1.0)).xyz-pos.xyz;
+    vec3 n = (mat3(mat) * normal);
+    vec3 t = (mat*vec4(tangent.xyz+hair_position.xyz,1.0)).xyz-pos.xyz;
 #else //HAS_SKIN
     vec3 n = normal_matrix * normal;
     vec3 t = normal_matrix * tangent.xyz;

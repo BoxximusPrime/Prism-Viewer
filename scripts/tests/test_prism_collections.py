@@ -12,8 +12,8 @@ end = source.index("\nvoid error(", start)
 model = header[header.index("struct Selection"):header.index("Change planChange(")]
 transition_start = source.index('    auto active = selected.find(category);')
 transition_end = source.index('    auto worn = wornItems();', transition_start)
-# The fixture uses integer IDs, with zero standing in for a null LLUUID.
-transition = source[transition_start:transition_end].replace('set.isNull()', 'set == 0')
+# The fixture uses integer IDs.
+transition = source[transition_start:transition_end]
 harness = r'''#include <algorithm>
 #include <cassert>
 #include <map>
@@ -26,9 +26,10 @@ namespace LLWearableType { using EType = int; }
 struct Item { int type, wearable; int getType() const { return type; } int getWearableType() const { return wearable; } };
 struct Inventory { std::map<int, Item> items; const Item* getItem(int id) const { auto i=items.find(id); return i == items.end() ? nullptr : &i->second; } } gInventory;
 ''' + model + source[start:end] + r'''
-bool prepareTransition(Selections& selected, std::set<LLUUID>& managed, LLUUID category, LLUUID set, const uuid_vec_t& items)
+bool prepareTransition(Selections& selected, std::set<LLUUID>& managed, LLUUID category, LLUUID set, uuid_vec_t items, bool remove = false)
 {
 ''' + transition + r'''
+    assert(!remove || items.empty()); // Removal must not re-add members or wait for them to be worn.
     return true;
 }
 int main()
@@ -93,24 +94,35 @@ int main()
     selections = {{1, {10, {101, 102, 301}}}};
     std::set<int> managed;
     gInventory.items[102] = {LLAssetType::AT_OBJECT, 0};
-    assert(prepareTransition(selections, managed, 1, 0, {}));
+    assert(prepareTransition(selections, managed, 1, 10, {101, 102, 301}, true));
     change = planChange(selections, managed, {101, 102, 301, 999}, {});
     assert(change.remove == (uuid_vec_t{101, 102}));
     assert(change.add.empty() && change.managed.empty());
     // Another active category retains ownership of a shared item until it too is removed.
     selections = {{1, {10, {101, 102}}}, {2, {20, {102}}}};
     managed.clear();
-    assert(prepareTransition(selections, managed, 1, 0, {}));
+    assert(prepareTransition(selections, managed, 1, 10, {101, 102}, true));
     change = planChange(selections, managed, {101, 102, 999}, {});
     assert(change.remove == uuid_vec_t{101});
     assert(change.managed == std::set<int>{102});
     managed = change.managed;
-    assert(prepareTransition(selections, managed, 2, 0, {}));
+    assert(prepareTransition(selections, managed, 2, 20, {102}, true));
     change = planChange(selections, managed, {102, 999}, {});
     assert(change.remove == uuid_vec_t{102});
+    // A selected set need never have been activated to remove its worn tattoos/attachments.
     selections.clear(); managed.clear();
-    assert(!prepareTransition(selections, managed, 1, 0, {}));
-    assert(selections.empty() && managed.empty());
+    assert(prepareTransition(selections, managed, 1, 10, {101, 102, 103, 301}, true));
+    change = planChange(selections, managed, {101, 102, 301, 999}, {});
+    assert(change.remove == (uuid_vec_t{101, 102}));
+    assert(change.add.empty() && selections.empty() && change.managed.empty());
+    // Removing a different selected set preserves the category's active set and shared members.
+    selections = {{1, {11, {102, 103}}}, {2, {20, {201}}}};
+    managed = {201};
+    assert(prepareTransition(selections, managed, 1, 10, {101, 102}, true));
+    change = planChange(selections, managed, {101, 102, 103, 201, 999}, {});
+    assert(change.remove == uuid_vec_t{101});
+    assert(change.add.empty() && selections.at(1).set == 11 && selections.at(2).set == 20);
+    assert(change.managed == (std::set<int>{102, 201}));
     // Switching an active set saved by an older build adopts its pre-worn members too.
     selections = {{1, {10, {101, 102}}}, {2, {20, {102}}}};
     managed.clear();
@@ -201,9 +213,131 @@ assert 'item->getColumn(0)->setValue(!included)' in impl
 assert 'show(spawning_view, uuid_vec_t{id}, x, y)' in wearable_impl
 assert 'setMenuItemEnabled(menu, "show_original", gInventory.getItem(id) != nullptr)' in wearable_impl
 assert 'included ? "collection_remove" : "collection_add"' in wearable_impl
+assert 'PC::wear(mCategories->getValue().asUUID(), mSets->getSelectedValue().asUUID(), true)' in impl
+assert panel.find(".//*[@name='remove_set']").get('visible') == 'false'
 with tempfile.TemporaryDirectory() as directory:
     cpp, exe = Path(directory) / 'check.cpp', Path(directory) / 'check.exe'
     cpp.write_text(harness, encoding='utf-8')
+    subprocess.run(['g++', '-std=c++17', str(cpp), '-o', str(exe)], check=True)
+    subprocess.run([str(exe)], check=True)
+
+    # Exercise the actual button update against live worn-state changes, without activation flags.
+    start = impl.index('void LLPanelPrismCollections::updateButtons()')
+    end = impl.index('\nvoid LLPanelPrismCollections::editPhoto()', start)
+    cpp.write_text(r'''#include <cassert>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+using LLUUID = int;
+using uuid_vec_t = std::vector<int>;
+struct Value { int id; int asUUID() const { return id; } };
+struct Combo { Value getValue() const { return {1}; } };
+struct List { int selected = 10; bool getFirstSelected() const { return selected != 0; } Value getSelectedValue() const { return {selected}; } };
+struct LLButton { bool enabled = true, visible = true; void setEnabled(bool v) { enabled = v; } void setVisible(bool v) { visible = v; } };
+struct Inventory { std::set<int> complete{1, 100}; bool isCategoryComplete(int id) const { return complete.count(id); } } gInventory;
+namespace PC {
+bool changing = false, loaded = true;
+std::map<int, uuid_vec_t> sets{{10, {101, 102, 103}}, {11, {201}}, {12, {}}};
+bool busy() { return changing; }
+bool isCategory(int id) { return id == 1; }
+bool readSet(int id, uuid_vec_t& items, std::string&) { items = sets[id]; return loaded; }
+}
+std::set<int> worn;
+bool get_is_item_worn(int id) { return worn.count(id); }
+struct LLPanelPrismCollections {
+    Combo* mCategories; List* mSets; int mRoot = 100;
+    std::map<std::string, LLButton> buttons;
+    template <typename T> T* getChild(const std::string& name) { return &buttons[name]; }
+    void updateButtons();
+};
+''' + impl[start:end].replace('mRoot.notNull()', '(mRoot != 0)') + r'''
+int main() {
+    Combo category; List list;
+    LLPanelPrismCollections panel{&category, &list};
+    auto check = [&](bool wear, bool remove, bool visible) {
+        panel.updateButtons();
+        assert(panel.buttons["wear_set"].enabled == wear);
+        assert(panel.buttons["wear_set"].visible);
+        assert(panel.buttons["remove_set"].enabled == remove);
+        assert(panel.buttons["remove_set"].visible == visible);
+    };
+    check(true, false, false);              // None worn.
+    worn = {101, 999}; check(true, true, true); // Partly worn, plus an unrelated item.
+    worn = {101, 102, 103}; check(false, true, true); // Fully worn.
+    worn.erase(102); check(true, true, true); // Manual removal updates immediately.
+    list.selected = 11; check(true, false, false); // Selection changes the inspected membership.
+    list.selected = 10; check(true, true, true);
+    PC::changing = true; check(false, false, true); // Visible while working, but not clickable.
+    PC::changing = false;
+    gInventory.complete.erase(1); check(false, false, true);
+    gInventory.complete.insert(1);
+    PC::loaded = false; check(false, false, false); // Unvalidated members cannot trigger a swap.
+    PC::loaded = true;
+    list.selected = 12; check(false, false, false); // Empty set.
+    list.selected = 0; check(false, false, false); // No selection.
+    list.selected = 10; worn = {999}; check(true, false, false);
+}
+''', encoding='utf-8')
+    subprocess.run(['g++', '-std=c++17', str(cpp), '-o', str(exe)], check=True)
+    subprocess.run([str(exe)], check=True)
+
+    # Checked, worn names stay bold/green only while both conditions hold.
+    start = impl.index('void LLFloaterPrismCollection::draw()')
+    end = impl.index('\nvoid LLFloaterPrismCollection::showItemMenu(', start)
+    cpp.write_text(r'''#include <cassert>
+#include <set>
+#include <string>
+#include <vector>
+using LLUUID = int;
+using LLUIColor = int;
+namespace LLFontGL { enum { NORMAL, BOLD }; }
+struct LLUIColorTable {
+    static LLUIColorTable& instance() { static LLUIColorTable table; return table; }
+    int getColor(const std::string& name) { return name == "LtGreen" ? 1 : name == "ScrollSelectedFGColor" ? 2 : 3; }
+};
+struct Value { int id = 0; bool checked = false; std::string text; int asUUID() const { return id; } bool asBoolean() const { return checked; } std::string asString() const { return text; } };
+struct LLScrollListText {
+    Value value; int style = LLFontGL::NORMAL, color = 0;
+    Value getValue() const { return value; }
+    void setValue(const std::string& text) { value.text = text; }
+    void setFontStyle(int v) { style = v; }
+    void setColor(int v) { color = v; }
+};
+struct Row {
+    int id; bool selected = false; LLScrollListText cells[5];
+    Value getValue() const { return {id}; }
+    LLScrollListText* getColumn(int i) { return &cells[i]; }
+    bool getSelected() const { return selected; }
+};
+struct List { std::vector<Row*> rows; auto getAllData() const { return rows; } };
+std::set<int> worn;
+bool get_is_item_worn(int id) { return worn.count(id); }
+namespace PC { bool validItem(int id) { return id != 99; } }
+struct LLFloater { void draw() {} };
+struct LLFloaterPrismCollection : LLFloater { List* mItems; void draw(); };
+''' + impl[start:end] + r'''
+int main() {
+    Row row{1}; List list{{&row}};
+    LLFloaterPrismCollection editor; editor.mItems = &list;
+    for (bool checked : {false, true}) for (bool equipped : {false, true}) {
+        row.cells[0].value.checked = checked;
+        worn = equipped ? std::set<int>{1} : std::set<int>{};
+        editor.draw();
+        assert(row.cells[2].style == (checked && equipped ? LLFontGL::BOLD : LLFontGL::NORMAL));
+        assert(row.cells[2].color == (checked && equipped ? 1 : 3));
+        assert(row.cells[4].value.text == (equipped ? "Worn" : "Inventory"));
+    }
+    row.selected = true; editor.draw(); assert(row.cells[2].color == 1);
+    row.cells[0].value.checked = false; editor.draw();
+    assert(row.cells[2].style == LLFontGL::NORMAL && row.cells[2].color == 2);
+    row.cells[0].value.checked = true; editor.draw();
+    worn.clear(); editor.draw();
+    assert(row.cells[2].style == LLFontGL::NORMAL && row.cells[2].color == 2);
+    assert(row.cells[4].value.text == "Inventory");
+    row.id = 99; editor.draw(); assert(row.cells[4].value.text == "Unavailable");
+}
+''', encoding='utf-8')
     subprocess.run(['g++', '-std=c++17', str(cpp), '-o', str(exe)], check=True)
     subprocess.run([str(exe)], check=True)
 
@@ -249,4 +383,4 @@ int main() {
 ''', encoding='utf-8')
     subprocess.run(['g++', '-std=c++17', str(cpp), '-o', str(exe)], check=True)
     subprocess.run([str(exe)], check=True)
-print('Collections swap ownership, overlaps, independent categories, removal, XML and save wiring passed.')
+print('Collections editor styling, worn-state buttons, selected-set removal, swap ownership, overlaps, independent categories, XML and save wiring passed.')

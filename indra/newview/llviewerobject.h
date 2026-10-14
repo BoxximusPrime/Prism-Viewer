@@ -150,7 +150,7 @@ public:
 
     virtual LLVOAvatar* asAvatar();
 
-    LLVOAvatar* getAvatarAncestor();
+    LLVOAvatar* getAvatarAncestor() const;
 
     static void initVOClasses();
     static void cleanupVOClasses();

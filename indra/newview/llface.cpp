@@ -1373,6 +1373,8 @@ bool LLFace::getGeometryVolume(const LLVolume& volume,
     bool rebuild_tangent = rebuild_pos && mVertexBuffer->hasDataType(LLVertexBuffer::TYPE_TANGENT);
     bool rebuild_weights = rebuild_pos && mVertexBuffer->hasDataType(LLVertexBuffer::TYPE_WEIGHT4);
 
+
+
     if (rebuild_tcoord && mVertexBuffer->hasDataType(LLVertexBuffer::TYPE_TEXCOORD3))
     {
         LLStrider<LLVector2> mesh_uv;

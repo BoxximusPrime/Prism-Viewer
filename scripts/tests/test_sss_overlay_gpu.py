@@ -105,6 +105,7 @@ def run(sdl, gl):
             actual=(SH/('class1/deferred/pbralphaV.glsl' if kind==2 else 'class1/deferred/alphaV.glsl')).read_text()
             actual += '\nvoid passTextureIndex() {}\nmat4 getObjectSkinnedTransform() { return mat4(1); }\n'
             actual += (SH/'class1/deferred/textureUtilV.glsl').read_text()
+            actual += (SH/'class1/deferred/hairDeformV.glsl').read_text()
             defs='#define USE_VERTEX_COLOR 1\n'+('#define HAS_SKIN 1\n' if rigged else '')
             defs+='#define USE_INDEXED_TEX 1\n' if kind==0 else '#define SSS_OVERLAY_PBR 1\n' if kind==2 else ''
             program(actual,[capture,util,srgb_source]+([lookup] if kind==0 else []),defs)

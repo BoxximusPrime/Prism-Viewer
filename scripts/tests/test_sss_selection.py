@@ -67,7 +67,21 @@ int main() {
     }
     assert(advanceSSSDepthFade(0, true, 10) == .5f); // bounded after a stall
     assert(advanceSSSDepthFade(.4f, false, -1) == .4f);
-    puts("Passed SSS projector frustum, linear attenuation ranking and 30/60/144 Hz transition checks");
+    for (float range : {1.f, 10.f, 32.f, 43.f, 128.f}) {
+        assert(sssDepthDistanceFade(0, range) == 1);
+        assert(sssDepthDistanceFade(range * .8f, range) > .99999f);
+        assert(std::abs(sssDepthDistanceFade(range * .9f, range) - .5f) < 1e-5f);
+        assert(sssDepthDistanceFade(range, range) == 0);
+        assert(sssDepthDistanceFade(range + 1, range) == 0);
+        float previous = 1;
+        for (int i = 0; i <= 1000; ++i) {
+            float fade = sssDepthDistanceFade(range * i / 1000.f, range);
+            assert(fade >= 0 && fade <= previous + 1e-6f);
+            assert(previous - fade < .008f);
+            previous = fade;
+        }
+    }
+    puts("Passed SSS projector frustum, linear attenuation ranking distance fade and 30/60/144 Hz transition checks");
 }
 '''.replace('@FUNCTIONS@', functions)
     compiler = shutil.which('g++')

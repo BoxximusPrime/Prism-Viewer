@@ -34,10 +34,12 @@ out vec2 vary_texcoord0;
 
 mat4 getObjectSkinnedTransform();
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+
 void main()
 {
     //transform vertex
-    mat4 mat = getObjectSkinnedTransform();
+    mat4 mat = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
 
     mat = modelview_matrix * mat;
 

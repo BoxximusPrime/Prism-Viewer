@@ -30,6 +30,8 @@
 #include "v4coloru.h"
 #include "v2math.h"
 #include "v3math.h"
+#include "m4math.h"
+#include "llquaternion.h"
 #include "llvertexbuffer.h"
 
 class LLFace;
@@ -41,6 +43,14 @@ class LLVOAvatar;
 class LLGLSLShader;
 class LLMeshSkinInfo;
 class LLXformMatrix;
+
+struct LLHairDeform
+{
+    LLMatrix4 localFromModel, modelFromLocal;
+    F32 radius = 0.f;
+    U32 guideFrame = 0;
+    S32 guideBinding = 0;
+};
 
 class LLDrawPool
 {
@@ -355,6 +365,9 @@ public:
     static bool skipSSSDepth(const LLDrawInfo& params);
     // For rendering that doesn't use LLDrawInfo for some reason
     static LLMatrix4 getModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform, LLVector3& origin);
+    static LLMatrix4 getModelMatrix(const LLDrawInfo& params, LLVector3& origin);
+    static LLHairDeform getHairDeform(const LLDrawInfo& params);
+    static void applyHairDeform(const LLHairDeform& hair, bool previous = false);
     static void applyModelMatrix(const LLMatrix4* model_matrix, const LLXformMatrix* model_xform = nullptr);
     void pushBatches(U32 type, bool texture = true, bool batch_textures = false);
     void pushUntexturedBatches(U32 type);

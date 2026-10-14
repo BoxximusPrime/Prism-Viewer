@@ -38,14 +38,13 @@ vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
 vec3 linear_to_srgb(vec3 c);
 
 uniform float hair_object;
-uniform int hair_debug;
+
 mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
 in vec4 vary_hair_tangent;
 in vec2 vary_hair_texcoord;
 mat3 hairVertexFrame() { return hairMeshFrame(vary_position, vary_texcoord0, vary_hair_texcoord, vary_normal, vary_hair_tangent); }
 
-vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
-vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out float variation);
 vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
 
 vec4 hairDiffuseLookup(vec2 uv) { return diffuseLookup(uv); }
@@ -55,9 +54,9 @@ void main()
 {
     vec4 diffuse_tap = diffuseLookup(vary_texcoord0.xy);
     vec3 nvn = normalize(vary_normal);
-    vec3 hair_preview;
+
     float hair_variation;
-    vec3 strand = hairSurface(vary_position, vary_texcoord0, nvn, diffuse_tap, true, hair_preview, hair_variation);
+    vec3 strand = hairSurface(vary_position, vary_texcoord0, nvn, diffuse_tap, true, hair_variation);
     mirrorClip(vary_position);
     vec3 col = vertex_color.rgb * diffuse_tap.rgb;
 
@@ -68,7 +67,6 @@ void main()
     frag_data[1] = vec4(spec, vertex_color.a); // spec
     if (hair_object > 0.5) frag_data[1].a = hair_variation; // Hair replaces unused gloss with strand finish.
     frag_data[2] = encodeHairNormal(nvn.xyz, vertex_color.a, GBUFFER_FLAG_HAS_ATMOS, strand);
-    if (hair_object > 0.5 && hair_debug != 0) frag_data[0].rgb = hair_preview;
 
 #if defined(HAS_EMISSIVE)
     frag_data[3] = vec4(0, 0, 0, 0);

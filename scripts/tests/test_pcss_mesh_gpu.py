@@ -267,8 +267,6 @@ def run(sdl, gl):
             uniform(prog,'screen_res',SIZE,SIZE)
             uniform(prog,'pcss_params',math.tan(math.radians(1.45 if floor is not None else .53)*.5),scale,.0035*scale if floor is not None else .005*scale,minimum)
             uniform(prog,'pcss_raster_error',1/256)
-            uniform(prog,'pcss_world_up',0,0,1)
-            uniform(prog,'pcss_world_north',0,1,0)
             uniform(prog,'pcss_quality',quality,integer=True)
             matrix(prog,'inv_proj',inverse(proj))
             matrix(prog,'projection',proj)
@@ -431,8 +429,6 @@ def run(sdl, gl):
     uniform(horizon,'rawDepth',1,integer=True)
     uniform(horizon,'pcss_params',math.tan(math.radians(5)),1,.005,0)
     uniform(horizon,'pcss_quality',2,integer=True)
-    uniform(horizon,'pcss_world_up',0,0,1)
-    uniform(horizon,'pcss_world_north',0,1,0)
     for source_radius in (0,.5):
         # The source lies along +X while the camera sees a +Z-facing plane.
         # Projector emitter axes are Y/Z and its origin is (4,0,-4).
@@ -540,8 +536,6 @@ def run(sdl, gl):
                 uniform(prog,'screen_res',SIZE,SIZE)
                 uniform(prog,'pcss_params',math.tan(math.radians(5)*.5),.8,.005,.01)
                 uniform(prog,'pcss_raster_error',1/256)
-                uniform(prog,'pcss_world_up',0,0,1)
-                uniform(prog,'pcss_world_north',0,1,0)
                 uniform(prog,'pcss_quality',1,integer=True)
                 uniform(prog,'planar_receiver',1,integer=True)
                 uniform(prog,'camera_distance',distance)

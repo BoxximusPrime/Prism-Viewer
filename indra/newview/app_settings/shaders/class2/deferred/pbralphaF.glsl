@@ -142,14 +142,14 @@ vec3 pbrCalcPointLightOrSpotLight(int light_index, vec3 diffuseColor, vec3 specu
 
 vec4 applyVolumeFogAlpha(vec3 position, vec4 color);
 uniform float hair_object;
-uniform int hair_debug;
+void sampleReflectionProbesAmbient(inout vec3 ambient, vec3 pos, vec3 norm, vec3 amblit);
+
 mat3 hairMeshFrame(vec3 pos, vec2 uv, vec2 meshUV, vec3 n, vec4 tangent);
 in vec4 vary_hair_tangent;
 in vec2 vary_hair_texcoord;
 mat3 hairVertexFrame() { return hairMeshFrame(vary_position, base_color_texcoord, vary_hair_texcoord, vary_normal, vary_hair_tangent); }
 
-vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out vec3 preview, out float variation);
-vec3 hairTangent(vec3 pos, vec2 uv, vec3 n);
+vec3 hairSurface(vec3 pos, vec2 uv, inout vec3 n, vec4 center, bool generateNormal, out float variation);
 vec4 encodeHairNormal(vec3 n, float env, float flag, vec3 tangent);
 vec3 decodeHairTangent(vec3 n, float angle);
 vec3 hairSafeNormalize(vec3 v, vec3 fallback);
@@ -189,9 +189,8 @@ void main()
     float metallic = orm.b * metallicFactor;
     float ao = orm.r;
 
-    vec3 hair_preview;
     float hair_variation;
-    vec3 strand = hairSurface(vary_position, base_color_texcoord, norm, diffuse_tap, false, hair_preview, hair_variation);
+    vec3 strand = hairSurface(vary_position, base_color_texcoord, norm, diffuse_tap, false, hair_variation);
 
     // Derivatives must precede alpha/overlay/water/mirror discards.
 #ifndef MODEL_PREVIEW
@@ -239,31 +238,39 @@ void main()
     float gloss      = 1.0 - perceptualRoughness;
     vec3  irradiance = amblit;
     vec3  radiance  = vec3(0);
-    sampleReflectionProbes(irradiance, radiance, vary_position.xy*0.5+0.5, pos.xyz, norm.xyz, gloss, true, amblit);
+    if (hair_object > 0.5)
+        sampleReflectionProbesAmbient(irradiance, pos.xyz, norm.xyz, amblit);
+    else
+        sampleReflectionProbes(irradiance, radiance, vary_position.xy*0.5+0.5, pos.xyz, norm.xyz, gloss, true, amblit);
 #ifndef MODEL_PREVIEW
-        irradiance = waterLitAmbient(pos.xyz, irradiance, 0);
+    irradiance = waterLitAmbient(pos.xyz, irradiance, 0);
 #endif
 
-    vec3 diffuseColor = vec3(0.0);
-    vec3 specularColor = vec3(0.0);
-    calcDiffuseSpecular(col.rgb, metallic, diffuseColor, specularColor);
-
     vec3 v = -normalize(pos.xyz);
-
-    color = pbrBaseLight(diffuseColor, specularColor, metallic, v, norm.xyz, perceptualRoughness, light_dir, sunlit_linear, scol, radiance, irradiance, colorEmissive, ao, additive, atten);
-
     vec3 light = vec3(0);
 
-    // Punctual lights
-#define LIGHT_LOOP(i) light += pbrCalcPointLightOrSpotLight(i, diffuseColor, specularColor, perceptualRoughness, metallic, norm.xyz, pos.xyz, v, light_position[i].xyz, light_direction[i].xyz, light_diffuse[i].rgb, light_deferred_attenuation[i].x, light_deferred_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
+    // Hair supplies its own direct lighting; do not evaluate the discarded material response.
+    if (hair_object <= 0.5)
+    {
+        vec3 diffuseColor = vec3(0.0);
+        vec3 specularColor = vec3(0.0);
+        calcDiffuseSpecular(col.rgb, metallic, diffuseColor, specularColor);
 
-    LIGHT_LOOP(1)
-    LIGHT_LOOP(2)
-    LIGHT_LOOP(3)
-    LIGHT_LOOP(4)
-    LIGHT_LOOP(5)
-    LIGHT_LOOP(6)
-    LIGHT_LOOP(7)
+
+        color = pbrBaseLight(diffuseColor, specularColor, metallic, v, norm.xyz, perceptualRoughness, light_dir, sunlit_linear, scol, radiance, irradiance, colorEmissive, ao, additive, atten);
+
+
+        // Punctual lights
+    #define LIGHT_LOOP(i) light += pbrCalcPointLightOrSpotLight(i, diffuseColor, specularColor, perceptualRoughness, metallic, norm.xyz, pos.xyz, v, light_position[i].xyz, light_direction[i].xyz, light_diffuse[i].rgb, light_deferred_attenuation[i].x, light_deferred_attenuation[i].y, light_attenuation[i].z, light_attenuation[i].w);
+
+        LIGHT_LOOP(1)
+        LIGHT_LOOP(2)
+        LIGHT_LOOP(3)
+        LIGHT_LOOP(4)
+        LIGHT_LOOP(5)
+        LIGHT_LOOP(6)
+        LIGHT_LOOP(7)
+    }
 
     float final_scale = 1.0;
     if (classic_mode > 0)
@@ -292,7 +299,6 @@ void main()
 #ifndef MODEL_PREVIEW
     final_color = applyVolumeFogAlpha(pos.xyz, final_color);
 #endif
-    if (hair_object > 0.5 && hair_debug != 0) final_color.rgb = hair_preview;
 // <AS:Chanayane> Replace the original framebuffer output only during exact capture.
 // frag_color = max(vec4(color.rgb * final_scale,a), vec4(0));
 #ifdef EXACT_OIT

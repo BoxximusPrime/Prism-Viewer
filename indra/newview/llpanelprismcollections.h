@@ -57,6 +57,7 @@ class LLFloaterPrismCollection final : public LLFloater
 public:
     bool postBuild() override;
     void onOpen(const LLSD& key) override;
+    void draw() override;
     bool canClose() override { return !mSaving; }
     bool handleDragAndDrop(S32 x, S32 y, MASK mask, bool drop, EDragAndDropType type,
                            void* data, EAcceptance* accept, std::string& tooltip) override;

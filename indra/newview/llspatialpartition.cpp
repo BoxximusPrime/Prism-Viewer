@@ -335,7 +335,8 @@ void LLSpatialGroup::rebuildGeom()
 
 void LLSpatialGroup::rebuildMesh()
 {
-    if (!isDead())
+    // Most visible groups are already clean when later shadow/reflection passes revisit them.
+    if (!isDead() && hasState(MESH_DIRTY))
     {
         getSpatialPartition()->rebuildMesh(this);
     }

@@ -36,6 +36,7 @@
 #include "m4math.h"     // LLMatrix4
 #include <unordered_map>
 #include <unordered_set>
+#include <memory>
 
 
 class LLViewerTextureAnim;
@@ -323,6 +324,8 @@ public:
     virtual bool isSculpted() const override;
     virtual bool isMesh() const override;
     bool isHairEnabled() const;
+    static bool isHairInRange(const LLViewerObject* object);
+    bool getHairPhysicsFrame(LLVector3& pivot, LLQuaternion& rotation) const;
     bool isSSSEnabled() const;
     bool isSSSOverlayEnabled() const;
     virtual bool isRiggedMesh() const override;

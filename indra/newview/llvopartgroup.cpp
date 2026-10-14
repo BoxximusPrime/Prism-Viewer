@@ -25,6 +25,7 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+#include "llviewerautomation.h"
 
 #include "llvopartgroup.h"
 
@@ -669,6 +670,7 @@ void LLParticlePartition::rebuildGeom(LLSpatialGroup* group)
         return;
     }
 
+    LL_AUTOMATION_CPU_SCOPE("geometry.particle_rebuild");
     if (group->changeLOD())
     {
         group->mLastUpdateDistance = group->mDistance;

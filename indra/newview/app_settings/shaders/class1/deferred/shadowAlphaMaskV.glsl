@@ -45,17 +45,25 @@ out vec2 vary_texcoord0;
 
 void passTextureIndex();
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+vec3 getHairDeformedPosition(vec3 position);
+
 void main()
 {
+    vec3 hair_position = position;
+#ifndef HAS_SKIN
+    hair_position = getHairDeformedPosition(position);
+#endif
+
     //transform vertex
 #if defined(HAS_SKIN)
-    vec4 pre_pos = vec4(position.xyz, 1.0);
-    mat4 mat = getObjectSkinnedTransform();
+    vec4 pre_pos = vec4(hair_position.xyz, 1.0);
+    mat4 mat = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
     mat = modelview_matrix * mat;
     vec4 pos = mat * pre_pos;
     pos = projection_matrix * pos;
 #else
-    vec4 pre_pos = vec4(position.xyz, 1.0);
+    vec4 pre_pos = vec4(hair_position.xyz, 1.0);
     vec4 pos = modelview_projection_matrix * pre_pos;
 #endif
 

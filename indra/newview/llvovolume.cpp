@@ -32,6 +32,7 @@
 #include "llvolumefog.h"
 
 #include "llvovolume.h"
+#include "llhairmesh.h"
 
 #include <cctype>
 #include <deque>
@@ -810,7 +811,8 @@ void LLVOVolume::updateTextures()
 
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<bool> hair_enabled(gSavedSettings, "BoxxyHairEnabled", false);
-    if ((sss_enabled || hair_enabled || mLastHairState) && isVisible() && !isHUDAttachment() && mSSSUpdateTimer.getElapsedTimeF32() >= 1.f)
+    static LLCachedControl<bool> hair_physics(gSavedSettings, "BoxxyHairPhysicsEnabled", false);
+    if ((sss_enabled || hair_enabled || hair_physics || mLastHairState) && isVisible() && !isHUDAttachment() && mSSSUpdateTimer.getElapsedTimeF32() >= 1.f)
     {
         mSSSUpdateTimer.reset();
         const bool state_initialized = mSSSStateInitialized;
@@ -818,6 +820,8 @@ void LLVOVolume::updateTextures()
         const bool previous_overlay = mLastSSSOverlayState;
         const bool previous_hair = mLastHairState;
         const bool hair = isHairEnabled();
+        // Collision queries must not consume the eligibility change before draw batches refresh.
+        mLastHairState = hair;
         const bool enabled = isSSSEnabled();
         const bool overlay = isSSSOverlayEnabled();
         if (state_initialized && (enabled != previous_state || overlay != previous_overlay || hair != previous_hair) && mDrawable.notNull())
@@ -1181,6 +1185,8 @@ bool LLVOVolume::setVolume(const LLVolumeParams &params_in, const S32 detail, bo
     LLVolumeParams volume_params = params_in;
 
     S32 last_lod = mVolumep.notNull() ? LLVolumeLODGroup::getVolumeDetailFromScale(mVolumep->getDetail()) : -1;
+    LLVOAvatar* wearer = getAvatarAncestor();
+    if (wearer && wearer->isSelf()) mLOD = 3;
     S32 lod = mLOD;
 
     bool is404 = false;
@@ -1398,6 +1404,7 @@ void LLVOVolume::updateVisualComplexity()
 
 void LLVOVolume::notifyMeshLoaded()
 {
+    LLHairMesh::invalidate(getID());
     mSculptChanged = true;
     gPipeline.markRebuild(mDrawable, LLDrawable::REBUILD_GEOMETRY);
 
@@ -1624,6 +1631,15 @@ bool LLVOVolume::calcLOD()
     }
 
     S32 cur_detail = 0;
+
+    // Include linked and animated attachments, whose skinning avatar may be a control avatar.
+    LLVOAvatar* wearer = getAvatarAncestor();
+    if (wearer && wearer->isSelf())
+    {
+        bool changed = mLOD != 3;
+        mLOD = 3;
+        return changed;
+    }
 
     F32 radius;
     F32 distance;
@@ -3803,21 +3819,46 @@ bool LLVOVolume::isMesh() const
     return false;
 }
 
+bool LLVOVolume::isHairInRange(const LLViewerObject* object)
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "BoxxyHairEnabled", false);
+    static LLCachedControl<bool> self_only(gSavedSettings, "BoxxyHairSelfOnly", true);
+    static LLCachedControl<F32> yards(gSavedSettings, "BoxxyHairMaxDistance", 10.f);
+    if (!enabled || !object || object->isDead() || object->isHUDAttachment()) return false;
+    const LLVOAvatar* avatar = object->isAvatar() ? static_cast<const LLVOAvatar*>(object) : object->getAvatar();
+    if (self_only && (!avatar || !avatar->isSelf())) return false;
+    // Use the avatar position so every attachment shares the same distance limit.
+    const LLVector3 position = avatar ? avatar->getRenderPosition() : object->getRenderPosition();
+    const F32 range = llmax(F32(yards), 0.f) * 0.9144f;
+    return range > 0.f && (LLViewerCamera::instance().getOrigin() - position).lengthSquared() < range * range;
+}
+
 bool LLVOVolume::isHairEnabled() const
 {
     static LLCachedControl<bool> enabled(gSavedSettings, "BoxxyHairEnabled", false);
+    LLVector3 pivot;
+    LLQuaternion rotation;
+    const bool physics = getHairPhysicsFrame(pivot, rotation);
     const LLViewerObject* root = getRootEdit();
-    mLastHairState = false;
-    if (!enabled || !root || root->isHUDAttachment()) return false;
+    if ((!enabled && !physics) || !root || root->isHUDAttachment()) return false;
 
-    if (!root->hasCachedObjectName() && isVisible() && getRegion() &&
-        (LLViewerCamera::instance().getOrigin() - getRenderPosition()).magVec() <= 64.f &&
+    if (!root->hasCachedObjectName() && (physics || isHairInRange(this)) && isVisible() && getRegion() &&
         sRenderQueuedObjectIDs.insert(root->getID()).second)
         sRenderPropertyRequests.push_front({ root->getID(), getID() });
 
-    mLastHairState = matchesSurfaceNames(root->hasCachedObjectName() ?
+    return matchesSurfaceNames(root->hasCachedObjectName() ?
         root->getCachedObjectName() : root->getAttachmentItemName(), 2);
-    return mLastHairState;
+}
+
+bool LLVOVolume::getHairPhysicsFrame(LLVector3& pivot, LLQuaternion& rotation) const
+{
+    static LLCachedControl<bool> enabled(gSavedSettings, "BoxxyHairPhysicsEnabled", false);
+    if (!enabled || isDead() || isHUDAttachment()) return false;
+    const auto* avatar = getAvatarAncestor();
+    if (!avatar || !avatar->isSelf() || !avatar->mHeadp) return false;
+    rotation = avatar->mHeadp->getWorldRotation();
+    pivot = avatar->mHeadp->getWorldPosition() + LLVector3(0.f, 0.f, .08f) * rotation;
+    return true;
 }
 
 bool LLVOVolume::isSSSOverlayEnabled() const
@@ -4744,6 +4785,7 @@ void LLVOVolume::preUpdateGeom()
     static LLCachedControl<bool> sss_enabled(gSavedSettings, "BoxxySSSEnabled", true);
     static LLCachedControl<F32> sss_max_distance(gSavedSettings, "BoxxySSSMaxDistance", 36.0f);
     static LLCachedControl<bool> hair_enabled(gSavedSettings, "BoxxyHairEnabled", false);
+    static LLCachedControl<bool> hair_physics(gSavedSettings, "BoxxyHairPhysicsEnabled", false);
     const F64 now = LLFrameTimer::getElapsedSeconds();
     // Release simulator-only selections after their full properties arrive, or
     // on timeout. Always clean up, including after the user disables SSS.
@@ -4782,7 +4824,7 @@ void LLVOVolume::preUpdateGeom()
         LLVOVolume* volume = dynamic_cast<LLVOVolume*>(object);
         if (!volume || volume->isDead() || (request.mFog && !gSavedSettings.getBOOL("RenderVolumeFog")) ||
             (!request.mProjector && !request.mFog &&
-            ((!sss_enabled && !hair_enabled) || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))))
+            ((!sss_enabled && !hair_enabled && !hair_physics) || (volume->hasCachedObjectDescription() && volume->hasCachedObjectName()))))
         {
             sRenderQueuedObjectIDs.erase(request.mObjectID);
             continue;
@@ -4795,9 +4837,11 @@ void LLVOVolume::preUpdateGeom()
             (request.mFog ? (LLVolumeFog::isCandidate(*relevance_volume) && LLVolumeFog::isInRange(*relevance_volume)) :
             ((request.mProjector ? (relevance_volume->getIsLight() && relevance_volume->isLightSpotlight()) :
                                  relevance_volume->isVisible()) &&
-            (LLViewerCamera::instance().getOrigin() - relevance_volume->getRenderPosition()).magVec() <=
+            ((LLViewerCamera::instance().getOrigin() - relevance_volume->getRenderPosition()).magVec() <=
                 (request.mProjector ? LLViewerCamera::instance().getFar() :
-                    llmax(F32(sss_max_distance), hair_enabled ? 64.f : 1.f))));
+                    (sss_enabled ? llmax(F32(sss_max_distance), 1.f) : 0.f)) ||
+                (!request.mProjector && (isHairInRange(relevance_volume) ||
+                    (hair_physics && relevance_volume->getAvatarAncestor() && relevance_volume->getAvatarAncestor()->isSelf()))))));
         if (!relevant)
         {
             // Visible volumes enqueue again when they return to range.
@@ -6068,6 +6112,7 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
         return;
     }
 
+    LL_AUTOMATION_CPU_SCOPE("geometry.volume_rebuild");
     group->mBuilt = 1.f;
 
     LLSpatialBridge* bridge = group->getSpatialPartition()->asBridge();
@@ -6587,6 +6632,7 @@ void LLVolumeGeometryManager::rebuildMesh(LLSpatialGroup* group)
     llassert(group);
     if (group && group->hasState(LLSpatialGroup::MESH_DIRTY) && !group->hasState(LLSpatialGroup::GEOM_DIRTY))
     {
+        LL_AUTOMATION_CPU_SCOPE("geometry.mesh_rebuild");
         {
             LL_PROFILE_ZONE_NAMED("rebuildMesh - gen draw info");
 

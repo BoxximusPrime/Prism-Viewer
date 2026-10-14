@@ -331,8 +331,18 @@
 
   <check_box control_name="BorderlessFullscreen" name="BorderlessFullscreen"
     label="Borderless fullscreen" layout="topleft" left="30" top="288"
-    width="440" height="20" follows="left|top"
+    width="240" height="20" follows="left|top"
     tool_tip="Fill the current monitor without a window frame. Applies immediately; turning it off restores your previous window. Windows only." />
+
+  <check_box control_name="RenderVSyncEnable" name="RenderVSyncEnable"
+    label="Enable VSync" layout="topleft" left="280" top="288"
+    width="200" height="20" follows="left|top"
+    tool_tip="Synchronize frames with your monitor to reduce tearing. Applies immediately. VSync may limit FPS below your maximum." />
+  <spinner control_name="MaxFPS" name="MaxFPS"
+    label="Maximum FPS (0 = unlimited):" label_width="220"
+    layout="topleft" left="30" top="316" width="310" height="20"
+    follows="left|top" min_val="0" max_val="1000" increment="1" decimal_digits="0"
+    tool_tip="Limit frame rate to reduce GPU load and power use. Zero disables this limit. Applies immediately; VSync and background throttling can lower the actual FPS." />
 
   <button
     follows="top|left"
@@ -341,7 +351,7 @@
     layout="topleft"
     left="10"
     name="PrefSaveButton"
-    top="310"
+    top="344"
     width="200">
     <button.commit_callback
       function="Pref.PrefSave"
@@ -383,7 +393,7 @@
     layout="topleft"
     left="10"
     name="Defaults"
-    top_delta="65"
+    top_delta="40"
     width="210">
     <button.commit_callback
       function="Pref.HardwareDefaults" />
@@ -466,85 +476,171 @@
 
   <panel follows="all" height="410" label="Hair" layout="topleft"
     name="graphics_hair_panel" width="517">
-    <scroll_container name="HairScroll" follows="all" layout="topleft"
-      left="0" top="0" width="517" height="410" reserve_scroll_corner="false">
-    <panel name="HairContent" follows="left|top" layout="topleft" left="0" top="0" width="495" height="825">
-    <text follows="left|top|right" height="34" layout="topleft" left="20" top="8"
-      name="HairDescription" width="355" word_wrap="true">Strand highlights and coloured scattering for opaque, cutout and blended hair.</text>
-    <button name="HairDefaults" label="Default" follows="right|top" layout="topleft"
-      left="400" top="8" width="80" height="23">
+    <text name="HairDescription" layout="topleft" left="20" top="8" width="355" height="34" word_wrap="true">Hair physics and enhanced lighting can be enabled independently.</text>
+    <button name="HairDefaults" label="Default" follows="right|top" layout="topleft" left="400" top="8" width="80" height="23">
       <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_hair_panel" />
     </button>
+    <text name="HairNamesLabel" layout="topleft" left="30" top="54" width="450" height="18" font="SansSerifBold">Hair object names</text>
+    <line_editor name="BoxxyHairNames" control_name="BoxxyHairNames"
+      layout="topleft" left="30" top="82" width="450" height="23" max_length_bytes="2048"
+      tool_tip="Comma-separated word prefixes in the attachment root name, ignoring case. Hair matches hairstyle. Shared by physics and lighting; clear to disable matching." />
+    <tab_container name="hair_tab_container" follows="all" layout="topleft" left="0" top="120" width="517" height="290" tab_position="top" tab_height="32" tab_min_width="110" tab_top_frame="Prism_Tab_Frame" background_visible="false" border="false" font="DejaVu" font.size="LSmall">
+    <tab_button image_hover_unselected="Prism_Tab_Hover"
+                image_hover_selected="Prism_Tab_Selected_Hover"
+                image_pressed="Prism_Tab_Pressed"
+                image_pressed_selected="Prism_Tab_Pressed"
+                image_disabled="Prism_Tab_Disabled"
+                image_disabled_selected="Prism_Tab_Selected_Disabled"
+                image_color="White" image_color_disabled="White"
+                label_color="0.76 0.77 0.81 1"
+                label_color_selected="0.96 0.83 0.64 1"
+                label_color_disabled="0.39 0.39 0.43 1"
+                label_color_disabled_selected="0.49 0.44 0.36 1"
+                hover_glow_amount="0" label_shadow="false" />
+    <first_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+    <middle_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+    <last_tab tab_top_image_unselected="Prism_Tab_Off" tab_top_image_selected="Prism_Tab_Selected" />
+      <panel name="HairRenderingPanel" label="Rendering" follows="all" layout="topleft" width="517" height="258">
+        <scroll_container name="HairRenderingScroll" follows="all" layout="topleft" left="0" top="0" width="517" height="258" opaque="false">
+          <panel name="HairRenderingContent" follows="left|top" layout="topleft" left="0" top="0" width="495" height="560">
+    <text name="HairLightingHeading" layout="topleft" left="30" top="12" width="450" height="18" font="SansSerifBold">Enhanced hair rendering</text>
     <check_box control_name="BoxxyHairEnabled" name="BoxxyHairEnabled" height="20"
-      label="Enable experimental hair lighting" layout="topleft" left="30" top="51" width="440" />
-    <text name="HairNamesLabel" layout="topleft" left="30" top="82" width="440" height="18">Object name matches:</text>
-    <line_editor name="BoxxyHairNames" control_name="BoxxyHairNames" enabled_control="BoxxyHairEnabled"
-      layout="topleft" left="30" top="103" width="450" height="23" max_length_bytes="2048"
-      tool_tip="Comma-separated word prefixes in the linkset root name, ignoring case: hair matches hairstyle. Applies to all lit faces. Works with no-mod attachments. Clear to disable matching." />
+      label="Enable enhanced hair lighting" layout="topleft" left="30" top="40" width="440" />
+    <check_box name="BoxxyHairSelfOnly" control_name="BoxxyHairSelfOnly" enabled_control="BoxxyHairEnabled"
+      label="Apply lighting to me only" layout="topleft" left="30" top="72" width="440" height="20"
+      tool_tip="Apply hair lighting only to hair worn by your avatar." />
+    <slider name="BoxxyHairMaxDistance" control_name="BoxxyHairMaxDistance" enabled_control="BoxxyHairEnabled"
+      label="Maximum distance (yards):" layout="topleft" left="30" top="104" width="450" height="20"
+      label_width="205" min_val="1" max_val="128" increment="1" decimal_digits="0"
+      tool_tip="Skip hair lighting and its depth maps beyond this camera distance. Attachments use their avatar's position. Default: 10 yards (9.144 m)." />
     <slider name="BoxxyHairRoughness" control_name="BoxxyHairRoughness" enabled_control="BoxxyHairEnabled"
-      label="Roughness:" layout="topleft" left="30" top="143" width="450" height="20"
+      label="Roughness:" layout="topleft" left="30" top="136" width="450" height="20"
       label_width="165" min_val=".12" max_val="1" increment=".01" decimal_digits="2"
       tool_tip="Highlight width. Local strand contrast adds subtle variation, fading as texture detail becomes too small to resolve." />
     <slider name="BoxxyHairShine" control_name="BoxxyHairShine" enabled_control="BoxxyHairEnabled"
-      label="Highlight strength:" layout="topleft" left="30" top="178" width="450" height="20"
+      label="Highlight strength:" layout="topleft" left="30" top="168" width="450" height="20"
       label_width="165" min_val="0" max_val="2" increment=".01" decimal_digits="2" />
     <slider name="BoxxyHairBrightnessCompensation" control_name="BoxxyHairBrightnessCompensation" enabled_control="BoxxyHairEnabled"
-      label="Brightness compensation:" layout="topleft" left="30" top="213" width="450" height="20"
+      label="Brightness compensation:" layout="topleft" left="30" top="200" width="450" height="20"
       label_width="185" min_val="0" max_val="4" increment=".05" decimal_digits="2"
       tool_tip="Uses hair colour to balance the shine: light hair gets stronger highlights while dark hair and medium grey keep their original highlights. 0 preserves the original look; 1 applies normal compensation; higher values up to 4 make it stronger. Highlight strength still controls overall shine." />
     <slider name="BoxxyHairStrandVariation" control_name="BoxxyHairStrandVariation" enabled_control="BoxxyHairEnabled"
-      label="Strand variation:" layout="topleft" left="30" top="248" width="450" height="20"
+      label="Strand variation:" layout="topleft" left="30" top="232" width="450" height="20"
       label_width="165" min_val="0" max_val="2" increment=".05" decimal_digits="2"
       tool_tip="Texture-driven breakup of the shine. Zero gives uniform roughness; 1 preserves the default; 2 doubles the variation. Fine detail fades with distance." />
     <slider name="BoxxyHairTransmission" control_name="BoxxyHairTransmission" enabled_control="BoxxyHairEnabled"
-      label="Light scattering:" layout="topleft" left="30" top="283" width="450" height="20"
+      label="Light scattering:" layout="topleft" left="30" top="264" width="450" height="20"
       label_width="165" min_val="0" max_val="1" increment=".01" decimal_digits="2"
       tool_tip="Coloured backlighting and softer light within the strands. Overlapping hair reduces transmission; heads and walls block it. Zero disables scattering." />
     <slider name="BoxxyHairThickness" control_name="BoxxyHairThickness" enabled_control="BoxxyHairEnabled"
-      label="Optical thickness:" layout="topleft" left="30" top="318" width="450" height="20"
+      label="Optical thickness:" layout="topleft" left="30" top="296" width="450" height="20"
       label_width="165" min_val=".25" max_val="4" increment=".05" decimal_digits="2"
       tool_tip="Higher values absorb more light through the fibers and overlapping hair layers. Does not change texture transparency." />
-    <text name="HairFlowHeading" layout="topleft" left="30" top="356" width="440" height="18" font="SansSerifBold">Strand direction</text>
-    <check_box name="BoxxyHairAutoDirection" control_name="BoxxyHairAutoDirection" enabled_control="BoxxyHairEnabled"
-      label="Detect direction from texture" layout="topleft" left="30" top="382" width="440" height="20" />
-    <slider name="BoxxyHairFlowScale" control_name="BoxxyHairFlowScale" enabled_control="BoxxyHairEnabled"
-      label="Detection scale:" layout="topleft" left="30" top="412" width="450" height="20"
-      label_width="185" min_val="0.5" max_val="8" increment="0.25" decimal_digits="2"
-      tool_tip="Spacing in texture texels. Smaller follows fine strands; larger follows broader locks." />
-    <slider name="BoxxyHairFlowSmoothing" control_name="BoxxyHairFlowSmoothing" enabled_control="BoxxyHairEnabled"
-      label="Flow smoothing:" layout="topleft" left="30" top="444" width="450" height="20"
-      label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
-      tool_tip="Higher values average nearby strand gradients for a steadier direction." />
-    <slider name="BoxxyHairDirection" control_name="BoxxyHairDirection" enabled_control="BoxxyHairEnabled"
-      label="Manual / fallback angle:" layout="topleft" left="30" top="476" width="450" height="20"
-      label_width="185" min_val="0" max_val="180" increment="1" decimal_digits="2"
-      tool_tip="0 follows texture V; 90 follows U. Used when detection is off or uncertain." />
-    <text name="HairPreviewLabel" layout="topleft" left="30" top="511" width="175" height="18">Preview:</text>
-    <combo_box name="BoxxyHairDebug" control_name="BoxxyHairDebug" enabled_control="BoxxyHairEnabled"
-      layout="topleft" left="215" top="507" width="265" height="23">
-      <combo_box.item label="Normal lighting" name="lighting" value="0" />
-      <combo_box.item label="Direction colours" name="direction" value="1" />
-      <combo_box.item label="Detection confidence" name="confidence" value="2" />
-    </combo_box>
-    <text name="HairNormalHeading" layout="topleft" left="30" top="556" width="440" height="18" font="SansSerifBold">Generated normal detail</text>
+    <text name="HairNormalHeading" layout="topleft" left="30" top="336" width="450" height="18" font="SansSerifBold">Texture detail</text>
     <check_box name="BoxxyHairNormalEnabled" control_name="BoxxyHairNormalEnabled" enabled_control="BoxxyHairEnabled"
-      label="Extract detail when no normal map exists" layout="topleft" left="30" top="582" width="440" height="20" />
+      label="Extract detail when no normal map exists" layout="topleft" left="30" top="364" width="440" height="20" />
     <slider name="BoxxyHairNormalStrength" control_name="BoxxyHairNormalStrength" enabled_control="BoxxyHairEnabled"
-      label="Normal strength:" layout="topleft" left="30" top="614" width="450" height="20"
+      label="Normal strength:" layout="topleft" left="30" top="396" width="450" height="20"
       label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2"
       tool_tip="Strength of generated ridges. Zero preserves the mesh normal." />
     <slider name="BoxxyHairNormalScale" control_name="BoxxyHairNormalScale" enabled_control="BoxxyHairEnabled"
-      label="Detail scale:" layout="topleft" left="30" top="646" width="450" height="20"
+      label="Detail scale:" layout="topleft" left="30" top="428" width="450" height="20"
       label_width="185" min_val="0.25" max_val="8" increment="0.25" decimal_digits="2"
       tool_tip="Sample spacing in texture texels. Lower values extract finer detail." />
     <slider name="BoxxyHairNormalRejection" control_name="BoxxyHairNormalRejection" enabled_control="BoxxyHairEnabled"
-      label="Shading rejection:" layout="topleft" left="30" top="678" width="450" height="20"
+      label="Shading rejection:" layout="topleft" left="30" top="460" width="450" height="20"
       label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
       tool_tip="Higher values suppress broad painted highlights and shadows in the extracted detail." />
-    <text name="HairHelp" layout="topleft" left="30" top="718" width="450" height="88"
-      word_wrap="true" text_color="LtGray_50">Direction colours show the local strand axis; dim areas use more of the fallback angle. Confidence runs from black (uncertain) to white (strong). Generated normals follow the detected flow. PBR and authored normal maps keep their normals. Texture colours and transparency are preserved.</text>
-    </panel>
-    </scroll_container>
+    <text name="HairHelp" layout="topleft" left="30" top="492" width="450" height="52" word_wrap="true" text_color="LtGray_50">Lighting follows texture V. Generated detail is used only without an authored normal map. Physics preserves authored normals and tangents. Texture colours and transparency are preserved.</text>
+      </panel>
+        </scroll_container>
+      </panel>
+      <panel name="HairPhysicsPanel" label="Physics" follows="all" layout="topleft" width="517" height="258">
+        <scroll_container name="HairPhysicsScroll" follows="all" layout="topleft" left="0" top="0" width="517" height="258" opaque="false">
+          <panel name="HairPhysicsContent" follows="left|top" layout="topleft" left="0" top="0" width="495" height="920">
+    <text name="HairPhysicsHeading" layout="topleft" left="30" top="12" width="450" height="18" font="SansSerifBold">Rope physics</text>
+    <check_box name="BoxxyHairPhysicsEnabled" control_name="BoxxyHairPhysicsEnabled"
+      label="Enable hair physics (my avatar)" layout="topleft" left="30" top="40" width="440" height="20"
+      tool_tip="Simulates connected ropes fitted in a shaped T-pose, with inertia and animated avatar-mesh collision. Independent of enhanced hair lighting." />
+    <slider name="BoxxyHairPhysicsRopeDensity" control_name="BoxxyHairPhysicsRopeDensity" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Rope density:" layout="topleft" left="30" top="72" width="450" height="20"
+      label_width="185" min_val="4" max_val="64" increment="1" decimal_digits="0"
+      tool_tip="Number of ropes around the head (4 to 64). Higher values track smaller sections of hair. Changing this refits and resets ropes." />
+    <slider name="BoxxyHairPhysicsStiffness" control_name="BoxxyHairPhysicsStiffness" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Spring stiffness:" layout="topleft" left="30" top="104" width="450" height="20"
+      label_width="185" min_val="1" max_val="12" increment="0.5" decimal_digits="1"
+      tool_tip="Higher values restore the original shape faster and resist sharp bends. Shape retention controls the restoring spring; Bend resistance controls bending." />
+    <slider name="BoxxyHairPhysicsShapeRetention" control_name="BoxxyHairPhysicsShapeRetention" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Shape retention:" layout="topleft" left="30" top="136" width="450" height="20"
+      label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
+      tool_tip="Strength of the spring toward the original hairstyle. Zero releases the shape spring; pinned roots, root gradient and rope constraints still apply." />
+    <slider name="BoxxyHairPhysicsDamping" control_name="BoxxyHairPhysicsDamping" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Damping:" layout="topleft" left="30" top="168" width="450" height="20"
+      label_width="185" min_val="0" max_val="30" increment="0.5" decimal_digits="2"
+      tool_tip="Velocity damping per second. Higher values settle motion faster without tethering hair to its original shape. Zero preserves free motion." />
+    <slider name="BoxxyHairPhysicsElasticity" control_name="BoxxyHairPhysicsElasticity" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Elasticity:" layout="topleft" left="30" top="200" width="450" height="20"
+      label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
+      tool_tip="Zero keeps rigid segment lengths. Higher values allow stretch under load, which relaxes when released. Independent of bend resistance and shape retention." />
+    <slider name="BoxxyHairPhysicsTravelLimit" control_name="BoxxyHairPhysicsTravelLimit" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Travel limit:" layout="topleft" left="30" top="232" width="450" height="20"
+      label_width="185" min_val="0" max_val="20" increment="0.05" decimal_digits="2"
+      tool_tip="Optional distance from the original shape relative to strand length. Zero disables the limit, allowing hair to fall fully sideways. Collision takes priority." />
+    <text name="HairRootsHeading" layout="topleft" left="30" top="272" width="450" height="18" font="SansSerifBold">Roots and bending</text>
+    <slider name="BoxxyHairPhysicsRootRadius" control_name="BoxxyHairPhysicsRootRadius" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Pinned roots (metres):" layout="topleft" left="30" top="300" width="450" height="20"
+      label_width="185" min_val="0.03" max_val="0.35" increment="0.01" decimal_digits="2"
+      tool_tip="Pinned radius around the crown in metres. Increase if roots move; decrease if too much of a short style stays still." />
+    <slider name="BoxxyHairPhysicsRootGradient" control_name="BoxxyHairPhysicsRootGradient" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Root gradient (metres):" layout="topleft" left="30" top="332" width="450" height="20"
+      label_width="185" min_val="0.01" max_val="1" increment="0.01" decimal_digits="2"
+      tool_tip="Distance beyond pinned roots over which motion fades from fixed to free. Guide points near the roots softly follow the rest shape; points farther down move more freely, even with Shape retention at zero. Collision clearance takes priority. Smaller values free the lengths sooner; default 0.30 metres." />
+    <slider name="BoxxyHairPhysicsBendResistance" control_name="BoxxyHairPhysicsBendResistance" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Bend resistance:" layout="topleft" left="30" top="364" width="450" height="20"
+      label_width="185" min_val="0" max_val="4" increment="0.1" decimal_digits="2"
+      tool_tip="Multiplies bending resistance independently of Shape retention. Zero allows hinges between rope segments; 1 keeps the normal resistance." />
+    <slider name="BoxxyHairPhysicsBendGradient" control_name="BoxxyHairPhysicsBendGradient" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Bend gradient (m):" layout="topleft" left="30" top="396" width="450" height="20"
+      label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2"
+      tool_tip="Distance beyond the pinned radius over which bend resistance fades to 5%. Larger values keep more upper hair firm. Zero keeps uniform resistance. Does not change pinning." />
+    <text name="HairGravityHeading" layout="topleft" left="30" top="436" width="450" height="18" font="SansSerifBold">Gravity</text>
+    <check_box name="BoxxyHairPhysicsGravity" control_name="BoxxyHairPhysicsGravity" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Enable gravity" layout="topleft" left="30" top="464" width="450" height="20"
+      tool_tip="Pulls rope points toward world-down. Roots remain pinned; stiffness, bending and shape retention resist the pull." />
+    <slider name="BoxxyHairPhysicsGravityStrength" control_name="BoxxyHairPhysicsGravityStrength" enabled_control="BoxxyHairPhysicsGravity"
+      label="Gravity strength:" layout="topleft" left="30" top="496" width="450" height="20"
+      label_width="185" min_val="0" max_val="3" increment="0.05" decimal_digits="2"
+      tool_tip="Downward acceleration multiplier. 1.00 is normal gravity; zero removes the pull." />
+    <text name="HairCollisionHeading" layout="topleft" left="30" top="536" width="450" height="18" font="SansSerifBold">Avatar mesh collision</text>
+    <slider name="BoxxyHairPhysicsMeshPadding" control_name="BoxxyHairPhysicsMeshPadding" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Mesh expansion (m):" layout="topleft" left="30" top="564" width="450" height="20"
+      label_width="185" min_val="0" max_val="0.1" increment="0.005" decimal_digits="3"
+      tool_tip="Expands the animated body and hand shell outward after skinning. 0.010 adds 1 cm. Large values can make hair float away from skin; inspect the shell preview." />
+    <slider name="BoxxyHairPhysicsCollisionSmoothing" control_name="BoxxyHairPhysicsCollisionSmoothing" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Contact smoothing (m):" layout="topleft" left="30" top="596" width="450" height="20"
+      label_width="185" min_val="0" max_val="0.02" increment="0.001" decimal_digits="3"
+      tool_tip="Adds up to 5 mm of resting clearance and softens fast-motion recovery. Zero uses hard contact. Use Mesh expansion to move the whole collision shell outward." />
+    <slider name="BoxxyHairPhysicsFriction" control_name="BoxxyHairPhysicsFriction" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Contact friction:" layout="topleft" left="30" top="628" width="450" height="20"
+      label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2"
+      tool_tip="Surface friction coefficient. Zero lets hair slide freely; higher values make contact grip, including tangential motion from a brushing hand." />
+    <text name="HairColliderNamesLabel" layout="topleft" left="30" top="660" width="450" height="18" word_wrap="true" text_color="LtGray_50">Collision attachment names:</text>
+    <line_editor name="BoxxyHairPhysicsColliderNames" control_name="BoxxyHairPhysicsColliderNames" enabled_control="BoxxyHairPhysicsEnabled"
+      layout="topleft" left="30" top="686" width="450" height="23" max_length_bytes="2048"
+      tool_tip="Comma-separated whole words or phrases in your attachment root names, ignoring case. Include body, head, hands and feet. Clear to disable mesh sources. Changes rebuild the shell." />
+    <text name="HairColliderNamesHelp" layout="topleft" left="30" top="718" width="450" height="50" word_wrap="true" text_color="LtGray_50">Only matching attachments on your avatar collide. Avoid clothing fit labels such as Perky; check the purple shell. Texture cutouts are not collision holes.</text>
+    <text name="HairDebugHeading" layout="topleft" left="30" top="784" width="450" height="18" font="SansSerifBold">Debug overlays</text>
+    <check_box name="BoxxyHairPhysicsShowGuides" control_name="BoxxyHairPhysicsShowGuides" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Show ropes and rest shape" layout="topleft" left="30" top="812" width="450" height="20"
+      tool_tip="Draws ropes through hair and clothing. Yellow: pinned. Cyan: free. Red: contact. Grey: original shape." />
+    <check_box name="BoxxyHairPhysicsShowMesh" control_name="BoxxyHairPhysicsShowMesh" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Show avatar collision shell" layout="topleft" left="30" top="844" width="450" height="20"
+      tool_tip="Shows the actual animated collision shell in translucent purple through hair and clothing. Requires hair physics and matching mesh body/head attachments." />
+    <text name="HairPhysicsHelp" layout="topleft" left="30" top="876" width="450" height="36" word_wrap="true" text_color="LtGray_50">Ropes approximate the hairstyle; some clipping can remain. Physics applies only to your avatar.</text>
+      </panel>
+        </scroll_container>
+      </panel>
+    </tab_container>
   </panel>
 
   <panel
@@ -695,7 +791,7 @@
       name="BoxxySSSMaxDistance"
       show_text="true"
       top="195"
-      tool_tip="Limits skin scattering to nearby affected surfaces to control GPU cost."
+      tool_tip="Fades skin scattering over the final 20% of this distance. Focused transmission depth also fades before its 32 m capture limit."
       width="450" />
 
     <slider
@@ -1009,18 +1105,14 @@ Combined: transmitted light from all lights, including blur.</text>
       layout="topleft" left="30" top="276" width="450" height="20"
       min_val="0" max_val="3" increment="0.25" decimal_digits="2" show_text="true"
       tool_tip="Smooths opaque and cutout shadow edges while respecting surface boundaries. Expands over more pixels in closeups to retain surface softness. Start at 1.50; zero disables cleanup. Higher values soften small contacts and cost more GPU time. Changes apply immediately." />
-    <check_box name="RenderPCSSStablePattern" control_name="RenderPCSSStablePattern"
-      label="Stabilize shadow pattern" follows="left|top"
-      layout="topleft" left="30" top="304" width="450" height="20"
-      tool_tip="Keep the sun/moon shadow sampling pattern aligned to the scene while orbiting. Turn off to compare with the old camera-aligned pattern. Applies immediately; projector sampling is unchanged." />
     <text name="PCSSStatus" follows="left|top|right" layout="topleft"
-      left="30" top="358" width="450" height="30" word_wrap="true" />
+      left="30" top="332" width="450" height="30" word_wrap="true" />
     <check_box name="RenderPCSSDebug" control_name="RenderPCSSDebug"
       label="Debug view: white geometry with shadows" follows="left|top"
-      layout="topleft" left="30" top="330" width="450" height="20"
+      layout="topleft" left="30" top="304" width="450" height="20"
       tool_tip="Shows filtered sun/moon and projector shadow visibility on white opaque and alpha-masked surfaces. Overlapping shadows show the darkest visibility. Hides textures, lighting, ambient occlusion and transparency; gray marks the background. Resets when the viewer restarts." />
     <text name="PCSSHelp" follows="left|top|right" layout="topleft"
-      left="30" top="392" width="450" height="18" word_wrap="true" text_color="LtGray_50">
+      left="30" top="366" width="450" height="18" word_wrap="true" text_color="LtGray_50">
       Set Cleanup smoothing to 0 to inspect unfiltered shadows.
     </text>
   </panel>
@@ -1090,7 +1182,7 @@ Combined: transmitted light from all lights, including blur.</text>
     layout="topleft" width="517" height="410">
     <text follows="left|top|right" layout="topleft" left="20" top="8"
       width="355" height="40" word_wrap="true">
-      Experimental color bounce from nearby opaque surfaces visible on screen.
+      Color bounce from nearby opaque surfaces visible on screen.
     </text>
     <button name="SSGIDefaults" label="Default" follows="right|top"
       layout="topleft" left="400" top="8" width="80" height="23"
@@ -1098,7 +1190,7 @@ Combined: transmitted light from all lights, including blur.</text>
       <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_ssgi_panel" />
     </button>
     <check_box name="RenderSSGIEnabled" control_name="RenderSSGIEnabled"
-      label="Enable experimental SSGI" follows="left|top" layout="topleft"
+      label="Enable SSGI" follows="left|top" layout="topleft"
       left="30" top="56" width="450" height="20">
       <check_box.commit_callback function="Pref.RenderOptionUpdate" />
     </check_box>
@@ -1212,24 +1304,19 @@ Combined: transmitted light from all lights, including blur.</text>
         <combo_box.item label="Color clipping: white is stronger" value="3" />
         <combo_box.item label="Detail protection: green is stronger" value="4" />
         <combo_box.item label="History rejection reasons" value="5" />
-        <combo_box.item label="Repeated flicker: green is stronger" value="6" />
     </combo_box>
     <check_box name="RenderTAAStaticDetails" control_name="RenderTAAStaticDetails"
       label="Stabilize fine static details" follows="left|top" layout="topleft"
       left="30" top="291" width="450" height="18"
         tool_tip="Stabilizes fine static patterns using more history than the base setting. Motion, animation and changing surfaces reduce protection. Removed details can linger for up to eight frames." />
-    <check_box name="RenderTAAFlickerDetection" control_name="RenderTAAFlickerDetection"
-      label="Detect repeated flicker" follows="left|top" layout="topleft"
-      left="30" top="315" width="450" height="18"
-      tool_tip="Learns repeated brightness changes over several frames. Requires fine static detail stabilization. Can smooth untracked lighting animation; turn off to compare." />
     <check_box name="RenderTAAFreezeJitter" control_name="RenderTAAFreezeJitter"
       label="Freeze camera jitter (diagnostic)" follows="left|top" layout="topleft"
-      left="30" top="339" width="450" height="18"
+      left="30" top="315" width="450" height="18"
       tool_tip="Use zero camera offset while keeping TAA history blending active. Compare on and off to isolate shimmer caused by jitter. Resets TAA and GI history when changed; turns off after restarting the viewer.">
       <check_box.commit_callback function="Pref.RenderOptionUpdate" />
     </check_box>
     <text name="TAAStatus" follows="left|top|right" layout="topleft"
-      left="30" top="364" width="450" height="40" word_wrap="true" />
+      left="30" top="340" width="450" height="40" word_wrap="true" />
   </panel>
   <panel name="graphics_post_panel" label="Post" follows="all"
     layout="topleft" left="0" top="0" width="517" height="410">
@@ -1551,7 +1638,7 @@ Combined: transmitted light from all lights, including blur.</text>
       <button.commit_callback function="Pref.GraphicsCategoryDefaults" parameter="graphics_clouds_panel" />
     </button>
     <check_box name="RenderVolumeClouds" control_name="RenderVolumeClouds"
-      label="Use volumetric clouds (experimental)" follows="left|top" layout="topleft"
+      label="Use volumetric clouds" follows="left|top" layout="topleft"
       left="30" top="70" width="450" height="20"
       tool_tip="Switch immediately between volumetric and original clouds. These controls only affect your viewer.">
       <check_box.commit_callback function="Pref.RenderOptionUpdate" />
@@ -1685,7 +1772,7 @@ Combined: transmitted light from all lights, including blur.</text>
       tool_tip="World size of the fog patches." />
     <slider name="RenderGroundFogSpeed" control_name="RenderGroundFogSpeed"
       label="Drift speed (m/s):" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="330" width="450" height="20" min_val="0" max_val="5"
+      left="30" top="304" width="450" height="20" min_val="0" max_val="5"
       increment="0.05" decimal_digits="2" show_text="true" can_edit_text="true"
       tool_tip="Speed of the fog patches. Zero freezes the pattern." />
     <slider name="RenderGroundFogBrightness" control_name="RenderGroundFogBrightness"

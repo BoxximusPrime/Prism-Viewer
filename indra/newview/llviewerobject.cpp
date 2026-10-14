@@ -6391,7 +6391,7 @@ LLVOAvatar* LLViewerObject::asAvatar()
 // getAvatar() will return the control avatar, used for skinning, and
 // getAvatarAncestor will return the avatar to which the object is
 // attached.
-LLVOAvatar* LLViewerObject::getAvatarAncestor()
+LLVOAvatar* LLViewerObject::getAvatarAncestor() const
 {
     LLViewerObject *pobj = (LLViewerObject*) getParent();
     while (pobj)

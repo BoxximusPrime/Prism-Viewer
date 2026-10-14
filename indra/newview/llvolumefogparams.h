@@ -1,4 +1,4 @@
-/** Parameters for description-authored fog boxes. No viewer dependencies. */
+/** Fog box parameters: description density/softness and prim tint. No viewer dependencies. */
 #pragma once
 
 #include <array>
@@ -10,7 +10,7 @@
 struct LLVolumeFogParams
 {
     float density = 0.f; // extinction per metre
-    std::array<float, 3> color = {1.f, 1.f, 1.f}; // normalized sRGB
+    std::array<float, 3> color = {1.f, 1.f, 1.f}; // normalized sRGB from face 0 tint
     float softness = 0.f; // inward fade distance in metres
 };
 
@@ -32,10 +32,7 @@ inline bool parseVolumeFogDescription(std::string text, LLVolumeFogParams& resul
         return bool(input >> c) && c == expected;
     };
     LLVolumeFogParams params;
-    if (!(input >> params.density) || !delimiter(',') || !delimiter('<') ||
-        !(input >> params.color[0]) || !delimiter(',') ||
-        !(input >> params.color[1]) || !delimiter(',') ||
-        !(input >> params.color[2]) || !delimiter('>')) return false;
+    if (!(input >> params.density)) return false;
     input >> std::ws;
     if (!input.eof())
     {
@@ -45,11 +42,6 @@ inline bool parseVolumeFogDescription(std::string text, LLVolumeFogParams& resul
     }
     if (!std::isfinite(params.density) || params.density < 0.f || params.density > 10.f ||
         !std::isfinite(params.softness) || params.softness < 0.f || params.softness > 1024.f) return false;
-    for (float& component : params.color)
-    {
-        if (!std::isfinite(component) || component < 0.f || component > 255.f) return false;
-        component /= 255.f;
-    }
     result = params;
     return true;
 }

@@ -30,10 +30,12 @@ in vec3 position;
 
 mat4 getObjectSkinnedTransform();
 
+mat4 getHairSkinnedTransform(mat4 skin, vec3 position);
+
 void main()
 {
     //transform vertex
-    mat4 mat = getObjectSkinnedTransform();
+    mat4 mat = getHairSkinnedTransform(getObjectSkinnedTransform(), position);
 
     mat = modelview_matrix * mat;
     vec4 pos = (mat*vec4(position.xyz, 1.0));
