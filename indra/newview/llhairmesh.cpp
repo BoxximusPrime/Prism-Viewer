@@ -710,6 +710,9 @@ void LLHairMesh::loadShaders()
     unloadShaders();
 #if !LL_DARWIN
     if (gGLManager.mGLVersion < 4.3f || !glDispatchCompute) return;
+    auto* shader_mgr = LLShaderMgr::instance();
+    shader_mgr->beginShaderBatch();
+    bool success = true;
     for (auto* shader : {&sSkinShader, &sRefitShader})
     {
         shader->mName = shader == &sSkinShader ? "Hair mesh skin" : "Hair mesh refit";
@@ -718,20 +721,22 @@ void LLHairMesh::loadShaders()
         shader->mShaderLevel = 1;
         shader->clearPermutations();
         shader->addPermutation(shader == &sSkinShader ? "MESH_SKIN" : "MESH_REFIT", "1");
-        if (!shader->createShader()) { unloadShaders(); return; }
+        success = shader->createShader() && success;
     }
     sCacheShader.mName = "Hair contact cache";
     sCacheShader.mFeatures.attachNothing = true;
     sCacheShader.mShaderLevel = 1;
     sCacheShader.mShaderFiles = {{"deferred/hairContactC.glsl", GL_COMPUTE_SHADER},
                                {"deferred/hairCollision.glsl", GL_COMPUTE_SHADER}};
-    if (!sCacheShader.createShader()) { unloadShaders(); return; }
+    success = sCacheShader.createShader() && success;
     sGuideShader.mName = "Hair guide chains";
     sGuideShader.mFeatures.attachNothing = true;
     sGuideShader.mShaderLevel = 1;
     sGuideShader.mShaderFiles = {{"deferred/hairGuideC.glsl", GL_COMPUTE_SHADER},
                                 {"deferred/hairCollision.glsl", GL_COMPUTE_SHADER}};
-    if (!sGuideShader.createShader()) { unloadShaders(); return; }
+    success = sGuideShader.createShader() && success;
+    // Finish all submitted jobs before unloading a failed optional hair family.
+    if (!shader_mgr->finishShaderBatch() || !success) { unloadShaders(); return; }
     sReady = true;
     sDebugShader.mName = "Hair mesh shell";
     sDebugShader.mFeatures.attachNothing = true;

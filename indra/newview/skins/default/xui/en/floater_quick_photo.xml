@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<floater name="quick_photo" title="QUICK PHOTO" single_instance="true" save_rect="true"
+ positioning="centered" can_resize="false" can_minimize="false" width="640" height="650" layout="topleft">
+  <text name="folder" left="16" top="34" width="608" height="22" font.style="BOLD" use_ellipses="true" />
+  <panel name="preview" left="16" top="66" width="256" height="512" background_visible="true" bg_alpha_color="Black" />
+  <text left="292" top="64" width="320" height="18" text_color="LabelTextColor">Framing</text>
+  <combo_box name="preset" left="292" top="86" width="328" height="26">
+    <combo_box.item label="Face · three-quarter view (256 × 256)" value="0" />
+    <combo_box.item label="Full body · front (256 × 512)" value="1" />
+    <combo_box.item label="Upper torso · front (256 × 256)" value="2" />
+    <combo_box.item label="Legs · front (256 × 512)" value="3" />
+  </combo_box>
+  <text left="292" top="122" width="94" height="20" text_color="LabelTextColor">Background</text>
+  <combo_box name="background" left="394" top="118" width="226" height="26">
+    <combo_box.item label="Black" value="0" />
+    <combo_box.item label="Grey" value="0.5" />
+    <combo_box.item label="White" value="1" />
+  </combo_box>
+  <slider name="zoom" label="Zoom" left="292" top="154" width="328" height="22"
+    min_val="0.6" max_val="1.5" initial_value="1" increment="0.05" decimal_digits="2" />
+  <button name="wear" label="Wear outfit / set" left="292" top="188" width="160" height="26"
+    tool_tip="Wear the selected outfit, or swap this collection set. This changes what you are wearing." />
+  <button name="refresh" label="Refresh preview" left="460" top="188" width="160" height="26" />
+  <text left="292" top="222" width="328" height="40" wrap="true" font="SansSerifSmall" text_color="LabelTextColor">
+    Photographs your worn look in a local low A pose. Wear the selected outfit / set before uploading.
+  </text>
+  <check_box name="isolate" label="Hide unrelated attachments" left="292" top="270" width="328" height="22"
+    tool_tip="On by default for collection sets. Keeps set members and detected body/head attachments. Adjust Show below; Refresh reapplies isolation. Baked clothing remains visible. Nothing is detached." />
+  <check_box name="mannequin" label="Greyscale mannequin (experimental)" left="292" top="298" width="328" height="22"
+    tool_tip="Desaturate the classic avatar and visible attachments marked Body, in this photo only." />
+  <scroll_list name="attachments" left="292" top="330" width="328" height="162" multi_select="false" draw_heading="true" can_sort="false">
+    <scroll_list.columns name="show" label="Show" width="42" />
+    <scroll_list.columns name="body" label="Body" width="42" />
+    <scroll_list.columns name="name" label="Worn attachment" dynamic_width="true" />
+  </scroll_list>
+  <text name="body_help" left="292" top="502" width="328" height="76" wrap="true" font="SansSerifSmall" text_color="LabelTextColor" visible="false">
+    Mark your mesh body / head as Body. Baked skin is suggested automatically; check the list. Clothing keeps its colour over grey skin, including transparent layers. Baked clothing and tattoos cannot be separated from skin.
+  </text>
+  <text name="status" left="16" top="586" width="608" height="28" wrap="true" use_ellipses="true" font="SansSerifSmall" text_color="LabelTextColor" />
+  <button name="cancel" label="Cancel" left="16" top="616" width="100" height="26" />
+  <button name="upload" label="Take &amp; upload" left="400" top="616" width="220" height="26" />
+</floater>

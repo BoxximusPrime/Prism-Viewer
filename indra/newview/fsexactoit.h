@@ -30,9 +30,11 @@
 #define FS_EXACT_OIT_H
 
 #include <vector>
+#include <functional>
 
 #include "llglslshader.h"
 #include "llmaterial.h"
+#include "lluuid.h"
 
 class LLSD;
 class LLDrawPoolAlpha;
@@ -40,6 +42,7 @@ class LLDrawInfo;
 class LLPipeline;
 class LLRenderTarget;
 class LLVertexBuffer;
+class LLViewerObject;
 
 class FSExactOIT
 {
@@ -83,6 +86,11 @@ public:
     // without reaching into either renderer's internals.
     static bool isEnabled();
     static bool isSupported();
+    // One-shot photo capture with private buffers; never changes world OIT settings/resources.
+    static bool renderPreview(LLRenderTarget& target, const uuid_set_t& grey_attachments,
+                              const std::function<void()>& render, const std::function<void()>& before_alpha);
+    static void setPreviewObject(const LLViewerObject* object);
+    static bool previewActive();
 
 private:
     enum class ValidationResult { INACTIVE, COMPLETE, FALLBACK_REQUIRED };
@@ -128,7 +136,7 @@ private:
     static ValidationResult validateCapture(bool cube_snapshot, bool impostor_render,
                                             bool mouselook, U32& maximum_list);
     static void composite(LLRenderTarget& screen, LLVertexBuffer& screen_triangle, U32 maximum_list,
-                          bool indirect = false);
+                          bool indirect = false, LLRenderTarget* background = nullptr);
     static void prepareControl();
     static void collectStats();
     static void queueStats(bool mouselook);
@@ -136,7 +144,7 @@ private:
     static void finishFrameAsync(LLPipeline& pipeline, LLRenderTarget& screen,
                                  LLVertexBuffer& screen_triangle, bool mouselook);
     static bool sortWithCompute(U32 width, U32 height, U32 maximum_list);
-    static void releaseResources(bool preserve_node_pool);
+    static void releaseResources(bool preserve_node_pool, bool release_opaque = true);
     struct Resources
     {
         struct Readback
@@ -172,7 +180,7 @@ private:
     static void growNodePool(U32 required_nodes);
     static void recordCaptureStats(U32 nodes, U32 maximum_list, bool mouselook);
     static void bindCompositeResources();
-    static void copyOpaqueScene(LLRenderTarget& screen);
+    static void copyOpaqueScene(LLRenderTarget& screen, LLRenderTarget* background = nullptr);
     static void prepareResourceAllocation();
     static bool beginResourceAllocation(U32 width, U32 height);
     static bool allocateCaptureImages(U32 width, U32 height);

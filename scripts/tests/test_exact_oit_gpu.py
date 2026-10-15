@@ -10,6 +10,7 @@ from pathlib import Path
 import random
 import struct
 import statistics
+import itertools
 import sys
 from types import SimpleNamespace
 
@@ -57,6 +58,7 @@ def context(minor=3):
         "UseProgram": (None, U), "GetUniformLocation": (I, U, C.c_char_p),
         "Uniform1i": (None, I, I), "Uniform1ui": (None, I, U),
         "Uniform1f": (None, I, F), "GenBuffers": (None, I, P),
+        "Uniform4f": (None, I, F, F, F, F),
         "BindBuffer": (None, U, U), "BindBufferBase": (None, U, U, U),
         "BufferData": (None, U, C.c_ssize_t, P, U),
         "GetBufferSubData": (None, U, C.c_ssize_t, C.c_ssize_t, P),
@@ -155,12 +157,18 @@ def run(gl):
     fallback_prog = graphics("out vec4 frag_color; void main(){frag_color=vec4(0.9,0.2,0.4,0.7);}")
     capture_prog = graphics((SHADERS / "exactOITCaptureF.glsl").read_text() +
                             "\nout vec4 frag_color; void main(){exact_oit_store(vec4(1,0,0,0.5)); frag_color=vec4(0);}")
+    photo_prog = program([(0x8B31, '''in vec3 position; uniform float layerDepth;
+        void main(){gl_Position=vec4(position.xy,layerDepth,1);}'''),
+        (0x8B30, (SHADERS / 'exactOITCaptureF.glsl').read_text() +
+         '\nuniform vec4 layerColor; void main(){exact_oit_store(layerColor);}')])
     # Link both actual glow capture shaders with their viewer helpers supplied.
-    program([(0x8B31, vertex + "\nout vec4 vertex_color; out vec2 vary_texcoord0;"),
-             (0x8B30, "vec4 diffuseLookup(vec2 uv){return vec4(1);}\n" +
+    program([(0x8B31, vertex + "\nout vec4 vertex_color; out vec2 vary_texcoord0; out vec3 vary_position;"),
+             (0x8B30, "vec4 diffuseLookup(vec2 uv){return vec4(1);}\n"
+              "float volumeFogAlphaTransmission(vec3 p){return 1.;}\n" +
               (SHADERS / "exactOITEmissiveF.glsl").read_text())])
-    program([(0x8B31, vertex + "\nout vec4 vertex_emissive; out vec2 base_color_texcoord; out vec2 emissive_texcoord;"),
-             (0x8B30, "vec3 srgb_to_linear(vec3 c){return c;}\n" +
+    program([(0x8B31, vertex + "\nout vec4 vertex_emissive; out vec2 base_color_texcoord; out vec2 emissive_texcoord; out vec3 vary_position;"),
+             (0x8B30, "vec3 srgb_to_linear(vec3 c){return c;}\n"
+              "float volumeFogAlphaTransmission(vec3 p){return 1.;}\n" +
               (SHADERS / "exactOITPbrGlowF.glsl").read_text())])
 
     nodes, control, commands, staging = [obj(gl.GenBuffers) for _ in range(4)]
@@ -239,6 +247,49 @@ def run(gl):
         gl.DispatchCompute((width + 15) // 16 if mode == 1 else 1,
                            (height + 15) // 16 if mode == 1 else 1, 1)
         gl.MemoryBarrier(STORAGE_BARRIER | COMMAND_BARRIER | BUFFER_BARRIER)
+
+    # Photo layers: coloured cloth over a partly transparent mesh body and grey opaque skin.
+    # Capture in all orders and use the actual per-fragment greyscale and exact sort/blend.
+    layers = [((.8, .45, .3, .6), .4, True), ((.9, .1, .1, .5), 0., False),
+              ((.1, .3, .9, .5), -.4, False)]
+    for mannequin in (False, True):
+        expected = [.3, .3, .3]
+        for color, _, body in layers:
+            rgb = list(color[:3])
+            if mannequin and body:
+                rgb = [sum(c*w for c, w in zip(rgb, (.2126, .7152, .0722)))]*3
+            expected = [c*color[3]+d*(1-color[3]) for c,d in zip(rgb, expected)]
+        for order in itertools.permutations(layers):
+            upload(nodes, bytes(4096*32))
+            image(heads, width, height, struct.pack('I', NULL)*pixels)
+            image(counts, width, height, bytes(pixels*4))
+            image(background, width, height, struct.pack('4f', .3, .3, .3, 1)*pixels, False)
+            control_pass(0)
+            gl.Viewport(0, 0, 1, 1)
+            gl.ColorMask(0, 0, 0, 0)
+            gl.UseProgram(photo_prog)
+            gl.Uniform1ui(gl.GetUniformLocation(photo_prog, b'oitBlendFactors'), 7 | (9<<8) | (1<<16) | (9<<24))
+            for color, depth, body in order:
+                uniform(photo_prog, 'oitGreyscale', int(mannequin and body))
+                gl.Uniform4f(gl.GetUniformLocation(photo_prog, b'layerColor'), *color)
+                gl.Uniform1f(gl.GetUniformLocation(photo_prog, b'layerDepth'), depth)
+                gl.DrawArrays(4, 0, 3)
+            gl.MemoryBarrier(STORAGE_BARRIER | IMAGE_BARRIER)
+            gl.UseProgram(composite_prog)
+            uniform(composite_prog, 'oitPass', 1)
+            for _ in range(2):
+                gl.DrawArrays(4, 0, 3)
+                gl.MemoryBarrier(STORAGE_BARRIER | IMAGE_BARRIER)
+            uniform(composite_prog, 'oitPass', 2)
+            uniform(composite_prog, 'diffuseRect', 0)
+            gl.BindTexture(TEXTURE, background)
+            gl.ColorMask(1, 1, 1, 1)
+            gl.DrawArrays(4, 0, 3)
+            result = (F*4)()
+            gl.ReadPixels(0, 0, 1, 1, RGBA, FLOAT, result)
+            assert max(abs(a-b) for a,b in zip(result, expected)) < 2e-5, (mannequin, order, list(result), expected)
+    image(background, width, height, opaque*pixels, False)
+    print('PASS: photo layers are order-independent; grey body shows through coloured transparent clothing (12 GPU cases)')
 
     # Actual capture verifies both the reduction and original-atomic paths.
     for reduce_max, capacity in ((0, 4096), (1, 4096), (0, 8), (1, 8)):

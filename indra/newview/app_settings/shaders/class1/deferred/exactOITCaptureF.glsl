@@ -32,9 +32,11 @@ uniform uint oitBlendFactors;
 uniform float oitGlow;
 uniform int oitDiscardNoOp;
 uniform int oitReduceMaximum;
+uniform int oitGreyscale;
 
 void exact_oit_store(vec4 color)
 {
+    if (oitGreyscale != 0) color.rgb = vec3(dot(color.rgb, vec3(0.2126, 0.7152, 0.0722)));
     // Standard alpha with exact zero source alpha and glow is a complete no-op.
     // Reject it before allocation so invisible card texels create no list work.
     const uint standard_alpha_blend = 7u | (9u << 8u) | (1u << 16u) | (9u << 24u);

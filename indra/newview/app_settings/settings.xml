@@ -100,7 +100,7 @@
     <key>Comment</key><string>Replace normal distance haze with a local volumetric height-fog layer. Keeps the sky and underwater fog. Off restores normal haze.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>0</integer>
+    <key>Value</key><integer>1</integer>
   </map>
   <key>RenderGroundFogFollowEnvironment</key>
   <map>
@@ -184,7 +184,7 @@
     <key>Comment</key><string>Scattered fog brightness. Lighting still follows the environment and nearby lights. Range 0-3.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.25</real>
+    <key>Value</key><real>1.4</real>
   </map>
   <key>RenderGroundFogColor</key>
   <map>
@@ -247,7 +247,7 @@
     <key>Comment</key><string>Direct light scattering strength in fog (0-0.30, default 0.10). Does not change surface lighting or fog density.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.2250000089406967163085938</real>
+    <key>Value</key><real>0.22</real>
   </map>
   <key>RenderVolumeFogAnisotropy</key>
   <map>
@@ -395,7 +395,7 @@
   <key>RenderPostSharpenEnabled</key>
   <map><key>Comment</key><string>Apply sharpening after antialiasing with any AA mode. Replaces TAA presentation sharpening while enabled.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>1</integer></map>
   <key>RenderPostSharpenStrength</key>
-  <map><key>Comment</key><string>Post-processing sharpening strength (0 to 2), using the bounded TAA presentation filter.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.05000007152557373046875</real></map>
+  <map><key>Comment</key><string>Post-processing sharpening strength (0 to 2), using the bounded TAA presentation filter.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>1.2</real></map>
   <key>RenderChromaticAberrationStrength</key>
   <map><key>Comment</key><string>Final-scene radial red/blue separation in pixels at the image corners (0 to 20). Zero disables chromatic aberration. Shared by Photo Tools and Graphics Post.</string><key>Persist</key><integer>1</integer><key>Type</key><string>F32</string><key>Value</key><real>4.0</real></map>
   <key>RenderTAADebug</key>
@@ -531,7 +531,7 @@
     <key>Comment</key><string>Enable experimental name-matched hair lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>0</integer>
+    <key>Value</key><integer>1</integer>
   </map>
   <key>BoxxyHairSelfOnly</key>
   <map>
@@ -552,28 +552,28 @@
     <key>Comment</key><string>Comma-separated case-insensitive word prefixes in object root names for hair lighting.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>String</string>
-    <key>Value</key><string>hair</string>
+    <key>Value</key><string>hair, TRUTH, nova., vango</string>
   </map>
   <key>BoxxyHairPhysicsFriction</key>
   <map>
     <key>Comment</key><string>Surface friction coefficient. Zero lets hair slide freely; higher values make contact grip, including tangential motion from an animated mesh hand.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.35</real>
+    <key>Value</key><real>2.0</real>
   </map>
   <key>BoxxyHairPhysicsDamping</key>
   <map>
     <key>Comment</key><string>Velocity damping per second. Zero preserves free motion; higher values settle motion faster without tethering hair to its original shape.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>7</real>
+    <key>Value</key><real>5.0</real>
   </map>
   <key>BoxxyHairPhysicsRopeDensity</key>
   <map>
     <key>Comment</key><string>Number of fitted radial ropes around the local avatar head (4 to 64). Changing this refits and resets ropes.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>S32</string>
-    <key>Value</key><integer>16</integer>
+    <key>Value</key><integer>15</integer>
   </map>
   <key>BoxxyHairPhysicsBendGradient</key>
   <map>
@@ -587,21 +587,21 @@
     <key>Comment</key><string>Multiplies bending resistance independently of Shape retention. Zero allows hinges between rope segments; 1 keeps the normal bending resistance.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1</real>
+    <key>Value</key><real>4.0</real>
   </map>
   <key>BoxxyHairPhysicsElasticity</key>
   <map>
     <key>Comment</key><string>Length compliance: zero keeps rigid segment lengths; higher values allow more stretch under load and relax back when released. Independent of bend resistance and shape retention.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.25</real>
+    <key>Value</key><real>0.0</real>
   </map>
   <key>BoxxyHairPhysicsTravelLimit</key>
   <map>
     <key>Comment</key><string>Optional distance from the original shape, relative to strand length. Zero disables this artistic limit so hair can fall fully sideways. Collision takes priority.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0</real>
+    <key>Value</key><real>2.05</real>
   </map>
   <key>BoxxyHairPhysicsShowGuides</key>
   <map>
@@ -622,28 +622,28 @@
     <key>Comment</key><string>Spring recovery and bend stiffness (1 to 12). Shape retention controls the restoring spring independently.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>6</real>
+    <key>Value</key><real>3.0</real>
   </map>
   <key>BoxxyHairPhysicsRootRadius</key>
   <map>
     <key>Comment</key><string>Radius in metres of the pinned crown region (0.03 to 0.35). Root gradient controls the transition beyond it.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.15</real>
+    <key>Value</key><real>0.08</real>
   </map>
   <key>BoxxyHairPhysicsRootGradient</key>
   <map>
     <key>Comment</key><string>Distance in metres beyond pinned roots over which movement fades in (0.01 to 1.00).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.30</real>
+    <key>Value</key><real>0.62</real>
   </map>
   <key>BoxxyHairPhysicsShapeRetention</key>
   <map>
     <key>Comment</key><string>Restoring spring strength toward the original hairstyle (0 to 1). Zero releases the spring; pins and rope constraints remain.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.75</real>
   </map>
   <key>BoxxyHairPhysicsCollisionSmoothing</key>
   <map>
@@ -657,14 +657,14 @@
     <key>Comment</key><string>Apply world-down gravity to the rope points while keeping roots pinned.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>0</integer>
+    <key>Value</key><integer>1</integer>
   </map>
   <key>BoxxyHairPhysicsGravityStrength</key>
   <map>
     <key>Comment</key><string>World-down gravity multiplier (0 to 3). One is normal gravity; zero removes the force.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>3.0</real>
   </map>
   <key>BoxxyHairPhysicsMeshPadding</key>
   <map>
@@ -693,63 +693,63 @@
     <key>Comment</key><string>Width of directional hair highlights.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.35</real>
+    <key>Value</key><real>0.15</real>
   </map>
   <key>BoxxyHairShine</key>
   <map>
     <key>Comment</key><string>Strength of the two hair specular lobes.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.7</real>
+    <key>Value</key><real>0.18</real>
   </map>
   <key>BoxxyHairBrightnessCompensation</key>
   <map>
     <key>Comment</key><string>Adjust hair highlight strength using base colour brightness: zero preserves the current look, higher values strengthen light hair highlights without dimming dark hair highlights.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.0</real>
+    <key>Value</key><real>4.0</real>
   </map>
   <key>BoxxyHairStrandVariation</key>
   <map>
     <key>Comment</key><string>Texture-driven variation in hair highlight width: zero disables, one preserves the default, two doubles the strength.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>2.0</real>
   </map>
   <key>BoxxyHairTransmission</key>
   <map>
     <key>Comment</key><string>Hair transmission and internal scattering strength, with focused hair-density shadows.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.5</real>
+    <key>Value</key><real>0.76</real>
   </map>
   <key>BoxxyHairThickness</key>
   <map>
     <key>Comment</key><string>Estimated fiber absorption and hair-layer attenuation, independent of texture transparency.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1.0</real>
+    <key>Value</key><real>0.7</real>
   </map>
   <key>BoxxyHairNormalEnabled</key>
   <map>
     <key>Comment</key><string>Generate normal detail for legacy hair without an authored normal or bump map.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>Boolean</string>
-    <key>Value</key><integer>1</integer>
+    <key>Value</key><integer>0</integer>
   </map>
   <key>BoxxyHairNormalStrength</key>
   <map>
     <key>Comment</key><string>Strength of texture-derived hair normals (0-2).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>0.35</real>
+    <key>Value</key><real>0.8</real>
   </map>
   <key>BoxxyHairNormalScale</key>
   <map>
     <key>Comment</key><string>Generated normal detail size in resident texture texels (0.25-8).</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>1</real>
+    <key>Value</key><real>0.5</real>
   </map>
   <key>BoxxyHairNormalRejection</key>
   <map>
@@ -939,7 +939,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>3</real>
+    <real>3.5</real>
   </map>
   <key>BoxxySSSTransmissionSmoothing</key>
   <map>
@@ -955,7 +955,7 @@
     <string>Maximum measured light path through skin in millimeters. Transmission fades across the full measured distance, independently of brightness and absorption. Requires a verified skin entry/exit pair.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>F32</string>
-    <key>Value</key><real>124</real>
+    <key>Value</key><real>23.0</real>
   </map>
   <key>BoxxySSSShadowThickness</key>
   <map>
@@ -982,7 +982,7 @@
     <string>Resolution of each focused local-light skin thickness map: 512, 1024, or 2048. Higher values resolve moving fingers more accurately, at greater GPU memory and depth-rendering cost. Sun/moon depth remains 1024.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>S32</string>
-    <key>Value</key><string>2048</string>
+    <key>Value</key><string>1024</string>
   </map>
   <key>BoxxyShowNowPlaying</key>
   <map>

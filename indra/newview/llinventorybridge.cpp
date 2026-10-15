@@ -3593,6 +3593,11 @@ void LLFolderBridge::performAction(LLInventoryModel* model, std::string action)
 
         return;
     }
+    else if ("quick_photo" == action)
+    {
+        LLFloaterReg::showInstance("quick_photo", LLSD(mUUID));
+        return;
+    }
     else if ("thumbnail" == action)
     {
         LLSD data(mUUID);
@@ -4647,6 +4652,10 @@ void LLFolderBridge::buildContextMenuOptions(U32 flags, menuentry_vec_t&   items
 
         if (cat)
         {
+            if ((flags & ITEM_IN_MULTI_SELECTION) == 0)
+            {
+                items.push_back(std::string("quick_photo"));
+            }
             if (cat->getPreferredType() == LLFolderType::FT_OUTFIT)
             {
                 // Want some but not all of the items from getClipboardEntries for outfits.

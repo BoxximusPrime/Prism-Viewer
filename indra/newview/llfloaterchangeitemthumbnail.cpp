@@ -133,6 +133,11 @@ bool LLFloaterChangeItemThumbnail::postBuild()
 
     LLButton *upload_snapshot = getChild<LLButton>("upload_snapshot");
     upload_snapshot->setClickedCallback(onUploadSnapshot, (void*)this);
+    getChild<LLButton>("quick_photo")->setClickedCallback([this](LLUICtrl*, const LLSD&)
+    {
+        if (mTaskId.isNull() && mItemList.size() == 1 && gInventory.getCategory(*mItemList.begin()))
+            LLFloaterReg::showInstance("quick_photo", *mItemList.begin());
+    });
     upload_snapshot->setMouseEnterCallback(boost::bind(&LLFloaterChangeItemThumbnail::onButtonMouseEnter, this, _1, _2, TOOLTIP_UPLOAD_SNAPSHOT));
     upload_snapshot->setMouseLeaveCallback(boost::bind(&LLFloaterChangeItemThumbnail::onButtonMouseLeave, this, _1, _2, TOOLTIP_UPLOAD_SNAPSHOT));
 
@@ -380,6 +385,8 @@ bool LLIsOutfitTextureType::operator()(LLInventoryCategory* cat, LLInventoryItem
 
 void LLFloaterChangeItemThumbnail::refreshFromObject(LLInventoryObject* obj)
 {
+    getChild<LLButton>("quick_photo")->setEnabled(mTaskId.isNull() && mItemList.size() == 1 &&
+        gInventory.getCategory(obj->getUUID()));
     LLUIImagePtr icon_img;
     LLUUID thumbnail_id = obj->getThumbnailUUID();
 

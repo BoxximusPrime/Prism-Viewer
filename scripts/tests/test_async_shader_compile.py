@@ -73,7 +73,7 @@ struct LLShaderMgr {
     bool isShaderPending(const LLGLSLShader*) const;
     void queueShader(LLGLSLShader*);
     void waitForShader(GLuint, bool);
-    void flushShaderBatch();
+    void flushShaderBatch(bool all = true);
 };
 
 using F64Seconds = double;
@@ -161,6 +161,21 @@ int main() {
     assert(recover.retried == 1 && fail.retried == 1 && mgr.failed == 1);
     assert(recover.mFeatures.runtimeLighting && fail.mFeatures.runtimeLighting);
     mgr.beginShaderBatch(); assert(mgr.finishShaderBatch()); // failure doesn't poison the next reload
+    LLShaderMgr rolling;
+    rolling.beginShaderBatch();
+    std::vector<LLGLSLShader> mixed(17);
+    for (GLuint i = 0; i < mixed.size(); ++i) {
+        mixed[i].mProgramObject = 300 + i;
+        remaining[300 + i] = i == 0 ? 100 : 0;
+        rolling.queueShader(&mixed[i]);
+    }
+    assert(rolling.processed == 1 && rolling.cached == 1);
+    assert(rolling.mPendingShaders.size() == 16);
+    assert(mixed[0].finished == 0 && mixed[1].finished == 1);
+    assert(rolling.isShaderPending(&mixed[0]) && rolling.isShaderPending(&mixed[16]));
+    assert(!rolling.isShaderPending(&mixed[1])); // later submissions can refill before the slow first link
+    assert(rolling.finishShaderBatch() && rolling.processed == 17);
+    for (const auto& shader : mixed) assert(shader.finished == 1);
     const int previousIdle = idle;
     remaining[200] = 9; mgr.waitForShader(200, false);
     assert(idle > previousIdle + 8 && sleeps > 0);

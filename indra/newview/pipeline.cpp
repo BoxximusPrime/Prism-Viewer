@@ -3918,8 +3918,8 @@ void LLPipeline::postSort(LLCamera &camera)
                 }
             }
 
-            // Shadow casters use the render map above, not the forward-alpha group lists.
-            if (!sShadowRender && hasRenderType(LLPipeline::RENDER_TYPE_PASS_ALPHA))
+            // Impostors/previews set the shadow flag too, but still need forward alpha.
+            if ((!sShadowRender || sImpostorRender) && hasRenderType(LLPipeline::RENDER_TYPE_PASS_ALPHA))
             {
                 LLSpatialGroup::draw_map_t::iterator alpha = group->mDrawMap.find(LLRenderPass::PASS_ALPHA);
 
@@ -11374,6 +11374,12 @@ void LLPipeline::doWaterHaze()
 
 void LLPipeline::doWaterExclusionMask()
 {
+    // Rebinding this world-only target would reset a preview's smaller viewport.
+    if (sImpostorRender)
+    {
+        return;
+    }
+
     mWaterExclusionMask.bindTarget();
     glClearColor(1, 1, 1, 1);
     mWaterExclusionMask.clear();
@@ -14365,7 +14371,8 @@ void LLPipeline::profileAvatar(LLVOAvatar* avatar, bool profile_attachments)
     }
 }
 
-void LLPipeline::generateImpostor(LLVOAvatar* avatar, bool preview_avatar, bool for_profile, LLViewerObject* specific_attachment)
+void LLPipeline::generateImpostor(LLVOAvatar* avatar, bool preview_avatar, bool for_profile, LLViewerObject* specific_attachment,
+                                 const uuid_set_t* preview_attachments)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
     LL_PROFILE_GPU_ZONE("generateImpostor");
@@ -14461,7 +14468,16 @@ void LLPipeline::generateImpostor(LLVOAvatar* avatar, bool preview_avatar, bool 
                     LLViewerObject* attached_object = attachment_iter->get();
                     if (attached_object)
                     {
-                        if (attached_object->isRiggedMesh())
+                        if (preview_attachments)
+                        {
+                            // Photo previews include both rigid and rigged attachments, never HUDs.
+                            if (!attached_object->isHUDAttachment() && attached_object->mDrawable &&
+                                preview_attachments->count(attached_object->getAttachmentItemID()))
+                            {
+                                markVisible(attached_object->mDrawable->getSpatialBridge(), *viewer_camera);
+                            }
+                        }
+                        else if (attached_object->isRiggedMesh())
                         {
                             markVisible(attached_object->mDrawable->getSpatialBridge(), *viewer_camera);
                         }

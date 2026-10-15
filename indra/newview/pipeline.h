@@ -159,7 +159,8 @@ public:
     //  preview_avatar - if true, a preview window render is being performed
     //  for_profile - if true, a profile is being performed, do not update actual impostor
     //  specific_attachment - specific attachment to profile, or nullptr to profile entire avatar
-    void generateImpostor(LLVOAvatar* avatar, bool preview_avatar = false, bool for_profile = false, LLViewerObject* specific_attachment = nullptr);
+    void generateImpostor(LLVOAvatar* avatar, bool preview_avatar = false, bool for_profile = false, LLViewerObject* specific_attachment = nullptr,
+                          const uuid_set_t* preview_attachments = nullptr);
 
     void bindScreenToTexture();
     void renderFinalize();

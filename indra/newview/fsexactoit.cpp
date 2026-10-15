@@ -49,6 +49,10 @@ FSExactOIT::Resources FSExactOIT::sResources;
 const char* FSExactOIT::shaderCacheRevision() { return "exact-oit-unsupported"; }
 bool FSExactOIT::isSupported() { return false; }
 bool FSExactOIT::isEnabled() { return false; }
+bool FSExactOIT::renderPreview(LLRenderTarget&, const uuid_set_t&, const std::function<void()>&,
+                               const std::function<void()>&) { return false; }
+void FSExactOIT::setPreviewObject(const LLViewerObject*) {}
+bool FSExactOIT::previewActive() { return false; }
 bool FSExactOIT::loadShaders(bool success, S32 shader_level, bool use_sun_shadow,
                              bool gltf_enabled, std::vector<LLGLSLShader*>& shader_list)
 {
@@ -109,12 +113,16 @@ void FSExactOIT::allocateResources(U32 width, U32 height) {}
 #include "llshadermgr.h"
 #include "llvertexbuffer.h"
 #include "llviewercontrol.h"
+#include "llviewerobject.h"
 #include "pipeline.h"
 
 extern bool gCubeSnapshot;
 
 namespace
 {
+const uuid_set_t* sPreviewBodies = nullptr;
+std::function<void()> sPreviewBeforeAlpha;
+bool sPreviewGrey = false;
 // Adds viewer-wide permutations shared by all Exact OIT shader programs.
 void addCommonPermutations(LLGLSLShader& shader)
 {
@@ -273,7 +281,7 @@ const char* FSExactOIT::shaderCacheRevision()
     // Shader paths alone do not invalidate cached program binaries after
     // source or layout changes in same-version development builds.
     // Keep development builds from reusing incompatible Exact OIT shader binaries.
-    return "Exact OIT shader revision v19";
+    return "Exact OIT shader revision v20 photo mannequin";
 }
 
 // Reports whether the active OpenGL and GLSL versions provide required Exact OIT features.
@@ -288,6 +296,81 @@ bool FSExactOIT::isSupported()
 bool FSExactOIT::isEnabled()
 {
     return gSavedSettings.getBOOL("RenderExactOIT") && isSupported();
+}
+
+bool FSExactOIT::previewActive() { return sPreviewBodies != nullptr; }
+
+void FSExactOIT::setPreviewObject(const LLViewerObject* object)
+{
+    sPreviewGrey = sPreviewBodies && object && sPreviewBodies->count(object->getAttachmentItemID());
+}
+
+bool FSExactOIT::renderPreview(LLRenderTarget& target, const uuid_set_t& grey_attachments,
+                              const std::function<void()>& render, const std::function<void()>& before_alpha)
+{
+    if (!isSupported() || !shadersReady() || sPreviewBodies || sCaptureActive ||
+        target.getWidth() > 512 || target.getHeight() > 512) return false;
+
+    LLRenderTarget background;
+    if (!background.allocate(target.getWidth(), target.getHeight(), GL_RGBA)) return false;
+    const bool completed = sCaptureCompleted, clear_needed = sCaptureClearNeeded, fallback = sVanillaFallbackActive;
+    Resources world_resources = std::exchange(sResources, Resources{});
+    sPreviewBodies = &grey_attachments;
+    sPreviewBeforeAlpha = before_alpha;
+
+    GLint storage, bindings[2], images[2][6];
+    glGetIntegerv(GL_SHADER_STORAGE_BUFFER_BINDING, &storage);
+    const GLenum image_fields[] = { GL_IMAGE_BINDING_NAME, GL_IMAGE_BINDING_LEVEL, GL_IMAGE_BINDING_LAYERED,
+                                   GL_IMAGE_BINDING_LAYER, GL_IMAGE_BINDING_ACCESS, GL_IMAGE_BINDING_FORMAT };
+    for (U32 i = 0; i < 2; ++i)
+    {
+        glGetIntegeri_v(GL_SHADER_STORAGE_BUFFER_BINDING, i, &bindings[i]);
+        for (U32 j = 0; j < 6; ++j) glGetIntegeri_v(image_fields[j], i, &images[i][j]);
+    }
+    allocateNodePool(target.getWidth(), target.getHeight(),
+        allocateCaptureImages(target.getWidth(), target.getHeight()));
+
+    bool success = false;
+    // A still photo can retry after an overflow; never upload an incomplete set of layers.
+    for (S32 attempt = 0; attempt < 3 && sResources.available; ++attempt)
+    {
+        beginFrame();
+        render();
+        if (!sCaptureCompleted) break;
+        glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        U32 control[4] = {};
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, sResources.control);
+        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(control), control);
+        if (control[2] || control[0] > sResources.capacity)
+        {
+            const U32 capacity = sResources.capacity;
+            growNodePool(control[0]);
+            if (capacity == sResources.capacity) break;
+            continue;
+        }
+        const GLenum color = GL_COLOR_ATTACHMENT0;
+        glDrawBuffers(1, &color);
+        composite(target, *gPipeline.mScreenTriangleVB, control[3], false, &background);
+        success = true;
+        break;
+    }
+    releaseResources(false, false);
+    sResources = world_resources;
+    sCaptureCompleted = completed;
+    sCaptureClearNeeded = clear_needed;
+    sVanillaFallbackActive = fallback;
+    sCaptureActive = false;
+    sPreviewBodies = nullptr;
+    sPreviewBeforeAlpha = {};
+    sPreviewGrey = false;
+    for (U32 i = 0; i < 2; ++i)
+    {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, bindings[i]);
+        glBindImageTexture(i, images[i][0], images[i][1], images[i][2], images[i][3], images[i][4], images[i][5]);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, storage);
+    glBindFramebuffer(GL_FRAMEBUFFER, LLRenderTarget::sCurFBO);
+    return success;
 }
 
 // Loads the complete Exact OIT shader family and propagates the aggregate success state.
@@ -957,6 +1040,7 @@ bool FSExactOIT::shadersReady()
 bool FSExactOIT::captureEligible(bool rendering_huds, bool impostor_render, bool cube_snapshot,
                                  U32 width, U32 height)
 {
+    if (sPreviewBodies) return sResources.available;
     if (!isEnabled())
     {
         if (sResources.available || sResources.nodes || sOpaqueTarget.isComplete())
@@ -1004,6 +1088,10 @@ bool FSExactOIT::renderPostDeferredCapture(LLDrawPoolAlpha& pool, PrepareShader 
                                            F32 water_sign, LLGLSLShader*& emissive_shader,
                                            LLGLSLShader*& pbr_emissive_shader)
 {
+    if (sPreviewBodies && pool.getType() == LLDrawPool::POOL_ALPHA_POST_WATER && sCaptureClearNeeded)
+    {
+        if (sPreviewBeforeAlpha) sPreviewBeforeAlpha();
+    }
     if (isEnabled() && !LLPipeline::sRenderingHUDs && !LLPipeline::sImpostorRender && !gCubeSnapshot &&
         pool.getType() == LLDrawPool::POOL_ALPHA_POST_WATER && sCaptureClearNeeded)
     {
@@ -1063,6 +1151,8 @@ bool FSExactOIT::configureCapturedDrawIfActive(LLGLSLShader* shader, U32 color_s
     shader->uniform1f(glow, 0.f);
     shader->uniform1i(discard_no_op, discard_no_op_enabled);
     shader->uniform1i(reduce_maximum, sResources.reduceMaximum);
+    shader->uniform1i(LLStaticHashedString("oitGreyscale"), sPreviewGrey);
+    shader->uniform1i(LLStaticHashedString("oitPreview"), previewActive());
     return true;
 }
 
@@ -1110,6 +1200,7 @@ void FSExactOIT::configureGLTFCapturedDraw(LLGLSLShader& shader)
     shader.uniform1f(glow, 0.f);
     shader.uniform1i(discard_no_op, discard_no_op_enabled);
     shader.uniform1i(reduce_maximum, sResources.reduceMaximum);
+    shader.uniform1i(LLStaticHashedString("oitGreyscale"), 0);
 }
 
 // Returns the Exact OIT GLTF program during capture, otherwise the supplied vanilla program.
@@ -1180,7 +1271,8 @@ void FSExactOIT::growNodePool(U32 required_nodes)
 
     constexpr U64 node_bytes = 32;
     const U64 vram_bytes = static_cast<U64>(gGLManager.mVRAM) * 1024u * 1024u;
-    const U64 safe_nodes = llmin<U64>(vram_bytes / 4u, 2ull * 1024ull * 1024ull * 1024ull) / node_bytes;
+    const U64 safe_nodes = llmin<U64>(vram_bytes / 4u,
+        sPreviewBodies ? 128ull * 1024ull * 1024ull : 2ull * 1024ull * 1024ull * 1024ull) / node_bytes;
     const U64 demand_with_headroom = (static_cast<U64>(required_nodes) * 5ull + 3ull) / 4ull;
     const U64 geometric_growth = static_cast<U64>(sResources.capacity) * 2ull;
     const U64 requested = llmax(demand_with_headroom, geometric_growth);
@@ -1449,19 +1541,19 @@ bool FSExactOIT::sortWithCompute(U32 width, U32 height, U32 maximum_list)
 }
 
 // Copies the untouched opaque screen color into the composite background texture.
-void FSExactOIT::copyOpaqueScene(LLRenderTarget& screen)
+void FSExactOIT::copyOpaqueScene(LLRenderTarget& screen, LLRenderTarget* background)
 {
     LL_PROFILE_GPU_ZONE("Exact OIT opaque copy");
     glCopyImageSubData(screen.getTexture(), GL_TEXTURE_2D, 0, 0, 0, 0,
-                       sOpaqueTarget.getTexture(), GL_TEXTURE_2D, 0, 0, 0, 0,
+                       (background ? *background : sOpaqueTarget).getTexture(), GL_TEXTURE_2D, 0, 0, 0, 0,
                        screen.getWidth(), screen.getHeight(), 1);
 }
 
 // Sorts every captured pixel list and blends the exact result over the opaque scene.
 void FSExactOIT::composite(LLRenderTarget& screen, LLVertexBuffer& screen_triangle, U32 maximum_list,
-                           bool indirect)
+                           bool indirect, LLRenderTarget* background)
 {
-    copyOpaqueScene(screen);
+    copyOpaqueScene(screen, background);
     LLGLDisable blend(GL_BLEND);
     LLGLDepthTest depth(GL_FALSE);
     bindCompositeResources();
@@ -1475,12 +1567,12 @@ void FSExactOIT::composite(LLRenderTarget& screen, LLVertexBuffer& screen_triang
     static LLStaticHashedString oit_first_sort_pass("oitFirstSortPass");
     gGL.setColorMask(false, false);
     const bool used_compute_sort =
-        !indirect && sortWithCompute(screen.getWidth(), screen.getHeight(), maximum_list);
+        !sPreviewBodies && !indirect && sortWithCompute(screen.getWidth(), screen.getHeight(), maximum_list);
     if (indirect) glBindBuffer(GL_DRAW_INDIRECT_BUFFER, sResources.commands);
     if (!used_compute_sort)
     {
         gExactOITCompositeProgram.bind();
-        gExactOITCompositeProgram.uniform1i(oit_debug_mode, debug_mode);
+        gExactOITCompositeProgram.uniform1i(oit_debug_mode, sPreviewBodies ? 0 : S32(debug_mode));
         screen_triangle.setBuffer();
         {
             LL_PROFILE_GPU_ZONE("Exact OIT natural sort");
@@ -1511,11 +1603,11 @@ void FSExactOIT::composite(LLRenderTarget& screen, LLVertexBuffer& screen_triang
         LL_PROFILE_GPU_ZONE("Exact OIT final blend");
         gGL.setColorMask(true, true);
         gExactOITCompositeProgram.bind();
-        gExactOITCompositeProgram.uniform1i(oit_debug_mode, debug_mode);
+        gExactOITCompositeProgram.uniform1i(oit_debug_mode, sPreviewBodies ? 0 : S32(debug_mode));
         gExactOITCompositeProgram.uniform1i(oit_compute_sort_active, used_compute_sort);
         gExactOITCompositeProgram.uniform1i(oit_pass, 2);
         gExactOITCompositeProgram.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE,
-                                              &sOpaqueTarget, false, LLTexUnit::TFO_POINT, 0);
+                                              background ? background : &sOpaqueTarget, false, LLTexUnit::TFO_POINT, 0);
         screen_triangle.setBuffer();
         if (indirect)
         {
@@ -1537,9 +1629,9 @@ void FSExactOIT::composite(LLRenderTarget& screen, LLVertexBuffer& screen_triang
     static bool previous_available = false;
     static bool previous_used = false;
     const bool requested = gSavedSettings.getBOOL("RenderExactOITComputeSort");
-    if (requested != previous_requested ||
+    if (!sPreviewBodies && (requested != previous_requested ||
         sResources.computeSortAvailable != previous_available ||
-        used_compute_sort != previous_used)
+        used_compute_sort != previous_used))
     {
         LL_INFOS("ExactOIT") << "Compute sort requested " << requested
                              << ", available " << sResources.computeSortAvailable
@@ -1705,9 +1797,9 @@ void FSExactOIT::finishFrame(LLPipeline& pipeline, LLRenderTarget& screen,
 }
 
 // Releases viewport resources and optionally preserves the large reusable node pool.
-void FSExactOIT::releaseResources(bool preserve_node_pool)
+void FSExactOIT::releaseResources(bool preserve_node_pool, bool release_opaque)
 {
-    sOpaqueTarget.release();
+    if (release_opaque) sOpaqueTarget.release();
     if (sResources.heads)
     {
         glDeleteTextures(1, &sResources.heads);
@@ -1882,7 +1974,7 @@ void FSExactOIT::allocateNodePool(U32 width, U32 height, bool capture_images_rea
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(control), control, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     sResources.available = glGetError() == GL_NO_ERROR;
-    if (sResources.available && gExactOITControlProgram.mProgramObject &&
+    if (!sPreviewBodies && sResources.available && gExactOITControlProgram.mProgramObject &&
         gExactOITOverflowProgram.mProgramObject)
     {
         glGenBuffers(1, &sResources.commands);

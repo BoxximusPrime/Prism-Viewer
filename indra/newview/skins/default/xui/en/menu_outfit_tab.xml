@@ -42,6 +42,9 @@
          parameter="take_off" />
     </menu_item_call>
     <menu_item_separator />
+    <menu_item_call label="Quick Photo..." name="quick_photo" layout="topleft">
+        <on_click function="Outfit.QuickPhoto" />
+    </menu_item_call>
     <menu_item_call
         label="Image..."
         layout="topleft"

@@ -35,6 +35,7 @@
 // out vec4 frag_color;
 #ifdef EXACT_OIT
 void exact_oit_store(vec4 color);
+uniform int oitPreview;
 #else
 out vec4 frag_color;
 #endif
@@ -264,6 +265,18 @@ void main()
 #endif
 
     vec4 diffuse_srgb = diffuse_tap;
+
+#ifdef EXACT_OIT
+    if (oitPreview != 0)
+    {
+        // Match the unlit impostor colour buffer used by appearance/photo previews.
+        vec4 color = diffuse_srgb * vertex_color;
+        if (color.a < minimum_alpha) discard;
+        color.rgb *= final_scale;
+        exact_oit_store(max(color, vec4(0)));
+        return;
+    }
+#endif
 
 #ifdef FOR_IMPOSTOR
     vec4 color;

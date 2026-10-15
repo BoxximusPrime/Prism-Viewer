@@ -126,6 +126,7 @@ static LLDefaultChildRegistry::Register<LLMenuGL> register_menu_default("menu");
 
 LLMenuItemGL::Params::Params()
 :   shortcut("shortcut"),
+    icon("icon"),
     jump_key("jump_key", KEY_NONE),
     use_mac_ctrl("use_mac_ctrl", false),
     allow_key_repeat("allow_key_repeat", false),
@@ -162,7 +163,8 @@ LLMenuItemGL::LLMenuItemGL(const LLMenuItemGL::Params& p)
     mEnabledColor(p.enabled_color()),
     mDisabledColor(p.disabled_color()),
     mHighlightBackground(p.highlight_bg_color()),
-    mHighlightForeground(p.highlight_fg_color())
+    mHighlightForeground(p.highlight_fg_color()),
+    mIcon(p.icon())
 {
 #ifdef LL_DARWIN
     // See if this Mac accelerator should really use the ctrl key and not get mapped to cmd
@@ -329,7 +331,7 @@ void LLMenuItemGL::setJumpKey(KEY key)
 // virtual
 U32 LLMenuItemGL::getNominalHeight( void ) const
 {
-    return mFont->getLineHeight() + MENU_ITEM_PADDING;
+    return llmax(U32(mFont->getLineHeight() + MENU_ITEM_PADDING), mIcon.notNull() ? 24U : 0U);
 }
 
 //virtual
@@ -375,6 +377,7 @@ U32 LLMenuItemGL::getNominalWidth( void ) const
         width += mFont->getWidth( temp );
     }
     width += mFont->getWidth( mLabel.getWString().c_str() );
+    if (mIcon.notNull() && !mBriefItem) width += 7;
     return width;
 }
 
@@ -528,7 +531,12 @@ void LLMenuItemGL::draw( void )
             mFont->render( mDrawBoolLabel.getWString(), 0, (F32)LEFT_PAD_PIXELS, y, color,
                            LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW, S32_MAX, S32_MAX, NULL, false );
         }
-        mFont->render( mLabel.getWString(), 0, (F32)LEFT_PLAIN_PIXELS, y, color,
+        else if (mIcon.notNull())
+        {
+            mIcon->draw(LEFT_PAD_PIXELS, (getRect().getHeight() - 20) / 2, 20, 20,
+                LLColor4(1.f, 1.f, 1.f, getEnabled() && !mDrawTextDisabled ? 1.f : 0.5f));
+        }
+        mFont->render( mLabel.getWString(), 0, (F32)LEFT_PLAIN_PIXELS + (mIcon.notNull() ? 7.f : 0.f), y, color,
                        LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW, S32_MAX, S32_MAX, NULL, false );
         if( !mDrawAccelLabel.empty() )
         {
@@ -550,8 +558,8 @@ void LLMenuItemGL::draw( void )
         std::string::size_type offset = upper_case_label.find(mJumpKey);
         if (offset != std::string::npos)
         {
-            S32 x_begin = LEFT_PLAIN_PIXELS + mFont->getWidth(mLabel.getWString().c_str(), 0, static_cast<S32>(offset));
-            S32 x_end = LEFT_PLAIN_PIXELS + mFont->getWidth(mLabel.getWString().c_str(), 0, static_cast<S32>(offset) + 1);
+            S32 x_begin = LEFT_PLAIN_PIXELS + (mIcon.notNull() && !mBriefItem ? 7 : 0) + mFont->getWidth(mLabel.getWString().c_str(), 0, static_cast<S32>(offset));
+            S32 x_end = LEFT_PLAIN_PIXELS + (mIcon.notNull() && !mBriefItem ? 7 : 0) + mFont->getWidth(mLabel.getWString().c_str(), 0, static_cast<S32>(offset) + 1);
             gl_line_2d(x_begin, (MENU_ITEM_PADDING / 2) + 1, x_end, (MENU_ITEM_PADDING / 2) + 1);
         }
     }

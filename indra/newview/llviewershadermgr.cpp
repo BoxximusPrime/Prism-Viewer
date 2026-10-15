@@ -652,7 +652,7 @@ static U32 shaderProgramCount()
         + (gSavedSettings.getBOOL("RenderGTAOEnabled") ? 3 : 0)
         + (gSavedSettings.getBOOL("RenderSSGIEnabled") ? 7 : 0)
 #if !LL_DARWIN
-        + (gGLManager.mGLVersion >= 4.3f && glDispatchCompute ? 6 : 0) // animated hair shell, contact cache/coupling, guides and preview
+        + (gGLManager.mGLVersion >= 4.3f && glDispatchCompute ? 5 : 0) // animated hair shell, contact cache, guides and preview
 #endif
         + (gltf ? LLGLSLShader::NUM_GLTF_VARIANTS : 0);
     const U32 oit_programs = FSExactOIT::isSupported()

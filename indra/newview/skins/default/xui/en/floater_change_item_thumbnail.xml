@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <floater
  can_resize="false"
- height="366"
+ height="402"
  layout="topleft"
  name="change_item_thumbnail"
  help_topic="change_item_thumbnail"
@@ -181,4 +181,6 @@
     tooltip
   </text>
   
+  <button name="quick_photo" label="Quick Photo..." layout="topleft" left="32" top="366"
+    width="256" height="26" follows="left|bottom" tool_tip="Take an avatar outfit photo and use it as this folder's image" />
 </floater>

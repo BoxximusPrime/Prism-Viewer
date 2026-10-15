@@ -1,26 +1,24 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <panel name="Collections" follows="all" layout="topleft" width="315" height="490" background_visible="false">
-  <text layout="topleft" name="intro" left="12" top="14" right="-12" height="32" follows="left|top|right" wrap="true" text_color="LabelTextColor">
-    Swap a set within one category. Keep the rest of your look.
-  </text>
-  <text layout="topleft" follows="left|top" left="12" top="54" height="18" width="160" font.style="BOLD">Category</text>
-  <combo_box layout="topleft" name="categories" left="12" top="76" right="-12" height="26" follows="left|top|right" />
-  <button layout="topleft" follows="left|top" name="new_category" label="New" left="12" top="110" width="64" height="23" tool_tip="Create a category such as Makeup or Jewelry" />
+  <text layout="topleft" follows="left|top" left="12" top="14" height="18" width="160" font.style="BOLD">Category</text>
+  <combo_box layout="topleft" name="categories" left="12" top="36" right="-12" height="26" follows="left|top|right" />
+  <button layout="topleft" follows="left|top" name="new_category" label="New" left="12" top="70" width="64" height="23" tool_tip="Create a category such as Makeup or Jewelry" />
   <button layout="topleft" follows="left|top" name="rename_category" label="Rename" left_pad="6" width="72" height="23" />
   <button layout="topleft" follows="left|top" name="delete_category" label="Delete" left_pad="6" width="64" height="23" tool_tip="Move this category and its sets to Trash" />
-  <button layout="topleft" follows="right|top" name="gallery_mode" label="Gallery" label_selected="List" right="-12" top="110" width="70" height="23" tool_tip="Switch between set photos and the list" />
-  <scroll_list layout="topleft" name="sets" left="12" top="144" right="-12" bottom="-106" follows="all" multi_select="false" draw_heading="true">
+  <button layout="topleft" follows="right|top" name="gallery_mode" label="Gallery" label_selected="List" right="-12" top="70" width="70" height="23" tool_tip="Switch between set photos and the list" />
+  <scroll_list layout="topleft" name="sets" left="12" top="104" right="-12" bottom="-106" follows="all" multi_select="false" draw_heading="true" background_visible="true" bg_writeable_color="0.055 0.055 0.065 1" bg_readonly_color="0.055 0.055 0.065 1">
     <scroll_list.columns name="name" label="Set" dynamic_width="true" />
     <scroll_list.columns name="status" label="Status" width="72" />
   </scroll_list>
-  <scroll_container layout="topleft" name="gallery" left="12" top="144" right="-12" bottom="-106" follows="all" visible="false" opaque="false" reserve_scroll_corner="true" keep_scroll_pos="true">
+  <scroll_container layout="topleft" name="gallery" left="12" top="104" right="-12" bottom="-106" follows="all" visible="false" opaque="true" color="0.055 0.055 0.065 1" reserve_scroll_corner="true" keep_scroll_pos="true">
     <panel layout="topleft" name="gallery_content" left="0" top="0" width="270" height="270" follows="left|top" background_visible="false" />
   </scroll_container>
   <button layout="topleft" name="new_set" label="New set" left="12" bottom="-74" width="80" height="24" follows="left|bottom" />
   <button layout="topleft" name="edit_set" label="Edit" left_pad="6" width="56" height="24" follows="left|bottom" />
   <button layout="topleft" name="delete_set" label="Delete" left_pad="6" width="62" height="24" follows="left|bottom" />
   <button layout="topleft" name="set_photo" label="Photo..." left_pad="6" width="68" height="24" follows="left|bottom" tool_tip="Assign, replace, or remove the selected set's photo" />
-  <button layout="topleft" name="wear_set" label="Wear set" left="12" bottom="-38" width="132" height="28" follows="left|bottom" tool_tip="Replace the active set in this category, including its already-worn items. Unrelated and shared active-set items stay worn; body parts replace the same type." />
-  <button layout="topleft" name="remove_set" label="Remove active" left_pad="8" width="142" height="28" follows="left|bottom" visible="false" tool_tip="Remove the selected set's worn clothing and attachments, even if worn outside Collections. Items shared with another active set and body parts stay worn." />
+  <button layout="topleft" name="quick_photo" label="Quick Photo..." left_pad="6" width="110" height="24" follows="left|bottom" />
+  <button layout="topleft" name="wear_set" label="Add Set" left="12" bottom="-38" width="132" height="28" follows="left|bottom" tool_tip="Replace the active set in this category, including its already-worn items. Unrelated and shared active-set items stay worn; body parts replace the same type." />
+  <button layout="topleft" name="remove_set" label="Remove Set" left_pad="8" width="142" height="28" follows="left|bottom" visible="false" tool_tip="Remove the selected set's worn clothing and attachments, even if worn outside Collections. Items shared with another active set and body parts stay worn." />
   <text layout="topleft" name="status" left="12" bottom="-8" right="-12" height="18" follows="left|right|bottom" wrap="true" text_color="LabelTextColor" font="SansSerifSmall" />
 </panel>

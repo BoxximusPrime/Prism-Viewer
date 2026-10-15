@@ -377,6 +377,14 @@
          parameter="thumbnail" />
     </menu_item_call>
     <menu_item_call
+     label="Quick Photo..."
+     layout="topleft"
+     name="quick_photo">
+        <menu_item_call.on_click
+         function="Inventory.DoToSelected"
+         parameter="quick_photo" />
+    </menu_item_call>
+    <menu_item_call
      label="Copy Asset UUID"
      layout="topleft"
      name="Copy Asset UUID">

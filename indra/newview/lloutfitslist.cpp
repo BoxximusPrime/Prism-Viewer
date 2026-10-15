@@ -1358,6 +1358,7 @@ LLContextMenu* LLOutfitContextMenu::createMenu()
     registrar.add("Outfit.Rename", boost::bind(renameOutfit, selected_id));
     registrar.add("Outfit.Delete", boost::bind(&LLOutfitListBase::removeSelected, mOutfitList));
     registrar.add("Outfit.Thumbnail", boost::bind(&LLOutfitContextMenu::onThumbnail, this, selected_id));
+    registrar.add("Outfit.QuickPhoto", [selected_id](LLUICtrl*, const LLSD&) { LLFloaterReg::showInstance("quick_photo", selected_id); });
     registrar.add("Outfit.Favorite", boost::bind(&LLOutfitContextMenu::onFavorite, this, selected_id));
     registrar.add("Outfit.Save", boost::bind(&LLOutfitContextMenu::onSave, this, selected_id));
 
@@ -1486,6 +1487,7 @@ LLOutfitListGearMenuBase::LLOutfitListGearMenuBase(LLOutfitListBase* olist)
     registrar.add("Gear.Save", boost::bind(&LLOutfitListGearMenuBase::onSave, this));
 
     registrar.add("Gear.Thumbnail", boost::bind(&LLOutfitListGearMenuBase::onThumbnail, this));
+    registrar.add("Gear.QuickPhoto", [this](LLUICtrl*, const LLSD&) { LLFloaterReg::showInstance("quick_photo", getSelectedOutfitID()); });
     registrar.add("Gear.Favorite", boost::bind(&LLOutfitListGearMenuBase::onFavorite, this));
     registrar.add("Gear.SortByImage", boost::bind(&LLOutfitListGearMenuBase::onChangeSortOrder, this));
 

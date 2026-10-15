@@ -461,7 +461,7 @@ protected:
     std::vector<PendingShader> mPendingShaders;
     bool mShaderBatching = false;
     bool mShaderBatchSuccess = true;
-    void flushShaderBatch();
+    void flushShaderBatch(bool all = true);
 
     // our parameter manager singleton instance
     static LLShaderMgr * sInstance;

@@ -44,6 +44,10 @@ bool LLPanelPrismCollections::postBuild()
         mDirty = true;
     });
     getChild<LLButton>("set_photo")->setClickedCallback([this](LLUICtrl*, const LLSD&) { editPhoto(); });
+    getChild<LLButton>("quick_photo")->setClickedCallback([this](LLUICtrl*, const LLSD&)
+    {
+        if (!PC::busy() && mSets->getFirstSelected()) LLFloaterReg::showInstance("quick_photo", mSets->getSelectedValue());
+    });
     mCategories->setCommitCallback([this](LLUICtrl*, const LLSD&) { mSets->deselectAllItems(); mGallery->goToTop(); mDirty = true; });
     mSets->setCommitOnSelectionChange(true);
     mSets->setCommitCallback([this](LLUICtrl*, const LLSD&) { updateButtons(); });
@@ -157,7 +161,7 @@ void LLPanelPrismCollections::updateButtons()
     }
     getChild<LLButton>("new_category")->setEnabled(ready);
     for (const char* name : {"rename_category", "delete_category", "new_set"}) getChild<LLButton>(name)->setEnabled(has_category);
-    for (const char* name : {"edit_set", "delete_set", "set_photo"}) getChild<LLButton>(name)->setEnabled(has_set);
+    for (const char* name : {"edit_set", "delete_set", "set_photo", "quick_photo"}) getChild<LLButton>(name)->setEnabled(has_set);
     getChild<LLButton>("wear_set")->setEnabled(has_set && any_unworn);
     getChild<LLButton>("remove_set")->setVisible(any_worn);
     getChild<LLButton>("remove_set")->setEnabled(has_set && any_worn);
@@ -386,6 +390,11 @@ void LLFloaterPrismCollection::onOpen(const LLSD& key)
     mCategory = key["category"].asUUID();
     mSet = key["set"].asUUID();
     getChild<LLButton>("set_photo")->setEnabled(mSet.notNull());
+    getChild<LLButton>("quick_photo")->setEnabled(mSet.notNull());
+    getChild<LLButton>("quick_photo")->setClickedCallback([this](LLUICtrl*, const LLSD&)
+    {
+        if (!mSaving && mSet.notNull()) LLFloaterReg::showInstance("quick_photo", mSet);
+    });
     auto* category = gInventory.getCategory(mCategory);
     if (!category || !PC::isCategory(mCategory)) { closeFloater(); return; }
     setTitle(mSet.isNull() ? "NEW COLLECTION SET" : "EDIT COLLECTION SET");

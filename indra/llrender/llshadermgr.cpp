@@ -84,7 +84,7 @@ void LLShaderMgr::queueShader(LLGLSLShader* shader)
 {
     llassert_always(mShaderBatching && !isShaderPending(shader));
     // Bound driver memory while leaving enough independent links in flight.
-    if (mPendingShaders.size() == 16) flushShaderBatch();
+    if (mPendingShaders.size() == 16) flushShaderBatch(false);
     mPendingShaders.push_back({shader, shader->mFeatures});
 }
 
@@ -109,14 +109,31 @@ void LLShaderMgr::waitForShader(GLuint object, bool program)
     }
 }
 
-void LLShaderMgr::flushShaderBatch()
+void LLShaderMgr::flushShaderBatch(bool all)
 {
-    if (!mPendingShaders.empty())
+    if (all && !mPendingShaders.empty())
         LL_INFOS("ShaderProgress") << "Finishing shader batch: " << mPendingShaders.size() << " programs" << LL_ENDL;
     const bool batching = mShaderBatching;
     mShaderBatching = false;
-    for (const PendingShader& pending : mPendingShaders)
+    while (!mPendingShaders.empty())
     {
+        // Refill a completed slot without waiting for the slowest link in the group.
+        constexpr GLenum completion_status = 0x91B1;
+        auto ready = std::find_if(mPendingShaders.begin(), mPendingShaders.end(),
+            [](const PendingShader& pending)
+            {
+                GLint complete = GL_FALSE;
+                glGetProgramiv(pending.shader->mProgramObject, completion_status, &complete);
+                return complete == GL_TRUE;
+            });
+        if (ready == mPendingShaders.end())
+        {
+            shaderCompileIdle();
+            ms_sleep(1);
+            continue;
+        }
+        const PendingShader pending = *ready;
+        mPendingShaders.erase(ready);
         LLGLSLShader* shader = pending.shader;
         // Loaders apply runtime lighting flags after submission. Retry compilation
         // with the original flags, then restore those runtime overrides.
@@ -136,8 +153,8 @@ void LLShaderMgr::flushShaderBatch()
         shader->mFeatures = runtime_features;
         mShaderBatchSuccess &= success;
         shaderProgramProcessed(shader, success);
+        if (!all) break;
     }
-    mPendingShaders.clear();
     mShaderBatching = batching;
 }
 

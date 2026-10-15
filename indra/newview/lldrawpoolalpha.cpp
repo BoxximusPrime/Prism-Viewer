@@ -114,8 +114,8 @@ static void prepare_alpha_shader(LLGLSLShader* shader, bool deferredEnvironment,
     gPipeline.bindVolumeFogAlpha(*shader);
     shader->uniform1f(LLShaderMgr::DISPLAY_GAMMA, (gamma > 0.1f) ? 1.0f / gamma : (1.0f / 2.2f));
 
-    if (LLPipeline::sRenderingHUDs)
-    { // for HUD attachments, only the pre-water pass is executed and we never want to clip anything
+    if (LLPipeline::sRenderingHUDs || FSExactOIT::previewActive())
+    { // HUDs and isolated photo previews have no world water plane.
         LLVector4 near_clip(0, 0, -1, 0);
         shader->uniform1f(waterSign, 1.f);
         shader->uniform4fv(LLShaderMgr::WATER_WATERPLANE, 1, near_clip.mV);
@@ -126,7 +126,7 @@ static void prepare_alpha_shader(LLGLSLShader* shader, bool deferredEnvironment,
         shader->uniform4fv(LLShaderMgr::WATER_WATERPLANE, 1, LLDrawPoolAlpha::sWaterPlane.mV);
     }
 
-    if (LLPipeline::sImpostorRender)
+    if (LLPipeline::sImpostorRender && !FSExactOIT::previewActive())
     {
         shader->setMinimumAlpha(MINIMUM_IMPOSTOR_ALPHA);
     }
@@ -302,7 +302,7 @@ void LLDrawPoolAlpha::forwardRender(bool rigged)
     }
 // </AS:Chanayane>
 
-    if (rigged && mType == LLDrawPool::POOL_ALPHA_POST_WATER)
+    if (rigged && mType == LLDrawPool::POOL_ALPHA_POST_WATER && !LLPipeline::sImpostorRender)
     { // draw GLTF scene to depth buffer before rigged alpha
         LL_PROFILE_GPU_ZONE("alpha GLTF scene");
         LL::GLTFSceneManager::instance().render(false, false);
@@ -732,8 +732,9 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, bool depth_only, bool rigged)
 
             LLSpatialBridge* bridge = group->getSpatialPartition()->asBridge();
             const LLVector4a* ext = bridge ? bridge->getSpatialExtents() : group->getExtents();
+            FSExactOIT::setPreviewObject(bridge && bridge->mDrawable ? bridge->mDrawable->getVObj().get() : nullptr);
 
-            if (!LLPipeline::sRenderingHUDs) // ignore above/below water for HUD render
+            if (!LLPipeline::sRenderingHUDs && !FSExactOIT::previewActive()) // no world water clipping in isolated previews
             {
                 if (above_water)
                 { // reject any spatial groups that have no part above water
