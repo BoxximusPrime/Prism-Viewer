@@ -7,7 +7,7 @@ confirmed resolved.
 
 ## Video and timing evidence
 
-User video: `C:\Users\user\Videos\2026-10-13 06-13-46.mp4`, 3440 × 1440,
+User video: `2026-10-13 06-13-46.mp4`, 3440 × 1440,
 60 fps, 289 frames, 4.821 seconds. Inspected extracted frames, including the
 [overview](../../.logs/hair-shoulder-video/sheet-01.jpg) and
 [shoulder sequence from 0.8–1.9 seconds](../../.logs/hair-shoulder-video/shoulders-080-190.jpg).
