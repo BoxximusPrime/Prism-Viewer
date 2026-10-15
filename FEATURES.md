@@ -7,6 +7,12 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Prism-specific systems
 
+- Release 0.10.0 packages Collections, Quick Photo, experimental radial-rope
+  hair physics, rendering refinements and updated graphics defaults.
+  (0.10.0; Release build, Collections/Quick Photo/hair shader-batch checks,
+  extracted installer version/executable hash, 69 packaged resources and 176
+  graphics defaults verified; individual runtime checks retain their existing status)
+
 - **Hair shader work reduction (in progress, uncommitted):** Hair skips discarded ordinary material lighting, unused glossy reflection sampling, and black local-light slots. Transmission captures cache one light projection per draw instead of re-uploading the three-projection array. In three warmed, same-build close-up comparisons, the shared transparent GPU pass decreased from 2.109 to 1.827 ms (13.3%); whole-frame results overlap and broader FPS gains remain unproven. Lighting settings, sampling quality and rope physics are unchanged. Release build, GPU regressions, live shader reloads and screenshot checks passed. [Measurements and limitations](doc/performance/hair-shader-work-2026-10-13.md).
 - **Hair physics cleanup (in progress, uncommitted):** Radial ropes with animated avatar-mesh collision are now the only simulation path. Removed regional sway, ellipsoid collision, card fitting, their overlays and unused settings. Physics and enhanced hair rendering have independent switches; name matching remains shared. Graphics > Hair groups rope controls, roots/bending, gravity, mesh expansion/contact, debug overlays, and rendering. Removed CPU regional springs, per-vertex card IDs, the unused contact field and its GPU dispatch; colour/shadow/TAA shaders now only interpolate solved rope offsets. CPU/GPU regressions and the Release rebuild passed; all 280 packaged shader/settings resources match source. Live appearance validation is left to the user.
 - **Local avatar detail (in progress, uncommitted):** Your avatar's body and attached geometry stay at the highest available mesh LOD regardless of camera distance; other avatars retain normal LOD selection. Avoids camera-driven hair refits.
