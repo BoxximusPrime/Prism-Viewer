@@ -28,6 +28,29 @@ vec3 hairMeshNormal(samplerBuffer mesh, int offset, vec3 weights, vec3 face)
     return normalize(dot(n,n)>1.e-12 ? n : face);
 }
 
+vec4 hairFinitePatch(vec3 gap, vec3 face, vec3 normal, float margin, out float support)
+{
+    vec3 geometric=normalize(face)*(dot(face,normal)<0.0 ? -1.0 : 1.0);
+    float side=dot(gap,geometric), distance=length(gap);
+    float lateral=length(gap-geometric*side);
+    support=1.0-smoothstep(0.0,margin,lateral);
+    // Outside a convex edge, both faces share the same closest-feature direction.
+    float front=smoothstep(0.0,margin,side);
+    if (distance>1.e-8) normal=normalize(mix(normal,gap/distance,front));
+    support=mix(support,1.0,front);
+    return vec4(normal,dot(gap,normal));
+}
+
+float hairContactExtent(vec4 plane, vec3 direction, vec3 reference, float margin, float support)
+{
+    float alignment=dot(plane.xyz,direction);
+    if (alignment<=0.0) return -1.e20;
+    float excess=margin-plane.w;
+    // Fade the correction itself; normalizing a weighted plane would undo this support.
+    if (excess>0.0) excess*=support*smoothstep(0.0,.25,dot(plane.xyz,reference));
+    return excess/max(alignment,.25);
+}
+
 // At most two nearby surfaces per corner: the body and an independent hand candidate.
 ivec2 hairCachedTriangles(vec3 local, samplerBuffer mesh, int offset, int corner)
 {
@@ -37,70 +60,131 @@ ivec2 hairCachedTriangles(vec3 local, samplerBuffer mesh, int offset, int corner
     return ivec2(texelFetch(mesh,offset+1+cell.x+21*(cell.y+21*cell.z)).xy)-1;
 }
 
-// Blend distinct nearby patches: cache identity changes must not choose a new push direction.
+void hairInsertCandidate(vec3 point, samplerBuffer mesh, int offset, int nodes, int end,
+    inout ivec4 body, inout ivec4 hands, inout vec4 body_distance, inout vec4 hand_distance)
+{
+    if (offset<nodes*2 || offset+5>=end || (offset-nodes*2)%6!=0) return;
+    if (any(equal(body,ivec4(offset))) || any(equal(hands,ivec4(offset)))) return;
+    vec4 a=texelFetch(mesh,offset), b=texelFetch(mesh,offset+2), c=texelFetch(mesh,offset+4);
+    vec3 face=cross(b.xyz-a.xyz,c.xyz-a.xyz);
+    if (dot(face,face)<1.e-16) return;
+    vec3 w=hairClosestWeights(point,a.xyz,b.xyz,c.xyz);
+    vec3 gap=point-(a.xyz*w.x+b.xyz*w.y+c.xyz*w.z);
+    float distance=dot(gap,gap);
+    bool hand=max(max(a.w,b.w),c.w)>.15;
+    ivec4 ids=hand ? hands : body;
+    vec4 distances=hand ? hand_distance : body_distance;
+    for (int i=0;i<4;++i)
+        if (distance<distances[i])
+        {
+            for (int j=3;j>i;--j) { ids[j]=ids[j-1]; distances[j]=distances[j-1]; }
+            ids[i]=offset; distances[i]=distance; break;
+        }
+    if (hand) { hands=ids; hand_distance=distances; }
+    else { body=ids; body_distance=distances; }
+}
+
+void hairContactCandidates(vec3 local, samplerBuffer mesh, mat4 from_local, int nodes, int cache,
+    out ivec4 body, out ivec4 hands)
+{
+    body=hands=ivec4(-1);
+    if (nodes<=0 || cache<=nodes*2) return;
+    vec3 point=(from_local*vec4(local,1)).xyz;
+    vec4 body_distance=vec4(.24*.24), hand_distance=body_distance;
+    for (int corner=0;corner<8;++corner)
+    {
+        ivec2 seed=hairCachedTriangles(local,mesh,cache,corner);
+        for (int kind=0;kind<2;++kind)
+            hairInsertCandidate(point,mesh,seed[kind],nodes,cache,body,hands,body_distance,hand_distance);
+    }
+    // The 6 cm cache seeds a finite-triangle query; its triangles do not cover the whole cell.
+    // shortcut: retain the best four per kind within this budget; dense overlapping shells can hide a better patch.
+    int node=0, pending[32], pending_count=0, tested=0;
+    for (int visited=0;visited<64 && node<nodes && tested<32;++visited)
+    {
+        vec4 lo=texelFetch(mesh,node*2), hi=texelFetch(mesh,node*2+1);
+        vec3 gap=max(max(lo.xyz-point,point-hi.xyz),vec3(0));
+        float distance=dot(gap,gap);
+        if ((fract(abs(lo.w))==0.0 || distance>min(body_distance.w,body_distance.x+.02*.02)) &&
+            (lo.w>=0.0 || distance>min(hand_distance.w,hand_distance.x+.02*.02)))
+        { node=pending_count>0 ? pending[--pending_count] : nodes; continue; }
+        int leaf=int(hi.w), first=leaf/8, count=leaf%8;
+        if (leaf==0)
+        {
+            int left=node+1;
+            if (left>=nodes || pending_count>=32) break;
+            int right=int(abs(texelFetch(mesh,left*2).w));
+            if (right<=left || right>=nodes) break;
+            vec3 a=max(max(texelFetch(mesh,left*2).xyz-point,point-texelFetch(mesh,left*2+1).xyz),vec3(0));
+            vec3 b=max(max(texelFetch(mesh,right*2).xyz-point,point-texelFetch(mesh,right*2+1).xyz),vec3(0));
+            bool left_first=dot(a,a)<=dot(b,b);
+            pending[pending_count++]=left_first ? right : left;
+            node=left_first ? left : right;
+            continue;
+        }
+        if (count<1 || count>4 || tested+count>32) break;
+        for (int i=0;i<count;++i)
+        {
+            ++tested;
+            hairInsertCandidate(point,mesh,nodes*2+(first+i)*6,nodes,cache,body,hands,body_distance,hand_distance);
+        }
+        node=pending_count>0 ? pending[--pending_count] : nodes;
+    }
+}
+
+uniform int hair_mesh_nodes;
+
 void hairMeshPlanes(vec3 local, samplerBuffer mesh, mat4 from_local, int cache,
     out vec4 planes[2], out vec2 nearest)
 {
     planes[0]=planes[1]=vec4(0);
     nearest=vec2(.20*.20,.12*.12);
     if (cache<=0) return;
-    vec4 grid=texelFetch(mesh,cache);
-    ivec3 centre=ivec3(floor((local-grid.xyz)/grid.w+.5));
     vec3 point=(from_local*vec4(local,1)).xyz;
-    vec3 normals[2]; normals[0]=normals[1]=vec3(0);
-    vec3 nearest_normal[2]; nearest_normal[0]=nearest_normal[1]=vec3(0);
-    vec2 clearance=vec2(0), total=vec2(0);
-    int seen[54], seen_count=0;
-    for (int z=-1;z<=1;++z)
-    for (int y=-1;y<=1;++y)
-    for (int x=-1;x<=1;++x)
+    ivec4 body, hands;
+    hairContactCandidates(local,mesh,from_local,hair_mesh_nodes,cache,body,hands);
+    for (int kind=0;kind<2;++kind)
     {
-        ivec3 cell=clamp(centre+ivec3(x,y,z),ivec3(0),ivec3(20,20,31));
-        ivec2 candidates=ivec2(texelFetch(mesh,cache+1+cell.x+21*(cell.y+21*cell.z)).xy)-1;
-        for (int kind=0;kind<2;++kind)
+        ivec4 candidates=kind==0 ? body : hands;
+        vec4 patches[4];
+        float distances[4], supports[4];
+        vec3 reference=vec3(0);
+        float total=0.0;
+        for (int i=0;i<4;++i)
         {
-            int offset=candidates[kind];
+            patches[i]=vec4(0); distances[i]=1.e20; supports[i]=0.0;
+            int offset=candidates[i];
             if (offset<0) continue;
-            bool duplicate=false;
-            for (int i=0;i<seen_count;++i) if (abs(seen[i])==offset) duplicate=true;
-            if (duplicate) continue;
-            seen[seen_count++]=kind==0 ? offset : -offset;
             vec3 a=texelFetch(mesh,offset).xyz, b=texelFetch(mesh,offset+2).xyz, c=texelFetch(mesh,offset+4).xyz;
             vec3 face=cross(b-a,c-a);
             if (dot(face,face)<1.e-16) continue;
             vec3 w=hairClosestWeights(point,a,b,c);
             vec3 gap=point-(a*w.x+b*w.y+c*w.z);
-            float distance2=dot(gap,gap);
-            if (distance2<nearest[kind])
-            {
-                nearest[kind]=distance2;
-                nearest_normal[kind]=hairMeshNormal(mesh,offset,w,face);
-            }
+            vec3 n=hairMeshNormal(mesh,offset,w,face);
+            patches[i]=hairFinitePatch(gap,face,n,.005,supports[i]);
+            distances[i]=length(gap);
+            if (supports[i]>0.0) nearest[kind]=min(nearest[kind],dot(gap,gap));
         }
-    }
-    for (int i=0;i<seen_count;++i)
-    {
-        int kind=seen[i]<0 ? 1 : 0, offset=abs(seen[i]);
-        vec3 a=texelFetch(mesh,offset).xyz, b=texelFetch(mesh,offset+2).xyz, c=texelFetch(mesh,offset+4).xyz;
-        vec3 face=cross(b-a,c-a);
-        if (dot(face,face)<1.e-16) continue;
-        vec3 w=hairClosestWeights(point,a,b,c), gap=point-(a*w.x+b*w.y+c*w.z);
-        vec3 n=hairMeshNormal(mesh,offset,w,face);
-        float distance2=dot(gap,gap), range=kind==0 ? .20 : .12;
-        // Never blend through the back of the closest surface into the other side of a thin body part.
-        float influence=(1.0-smoothstep(range*.5,range,sqrt(distance2)))/(.0004+distance2)*
-            smoothstep(.25,.5,dot(n,nearest_normal[kind]))*
-            (1.0-smoothstep(.005,.02,sqrt(distance2)-sqrt(nearest[kind])));
-        normals[kind]+=n*influence;
-        clearance[kind]+=dot(gap,n)*influence;
-        total[kind]+=influence;
-    }
-    for (int kind=0;kind<2;++kind)
-    {
-        float magnitude=length(normals[kind]);
-        if (total[kind]<1.e-6 || magnitude<total[kind]*.2) continue;
-        vec3 n=normals[kind]/magnitude;
-        planes[kind]=vec4(n,dot(n,point)+.005-clearance[kind]/magnitude);
+        for (int i=0;i<4;++i)
+        {
+            float range=kind==0 ? .20 : .12;
+            supports[i]*=(1.0-smoothstep(range,range+.04,distances[i]))*
+                (1.0-smoothstep(.005,.02,distances[i]-sqrt(nearest[kind])));
+            float weight=supports[i]/(.0001+distances[i]*distances[i]);
+            reference+=patches[i].xyz*weight;
+            total+=weight;
+        }
+        if (total<=0.0) continue;
+        // A continuous reference replaces the nearest-normal winner; opposing contacts fade without a singularity.
+        vec3 average=reference/total;
+        float magnitude=length(average);
+        if (magnitude<1.e-6) continue;
+        vec3 n=average/magnitude;
+        float extent=-1.e20;
+        for (int i=0;i<4;++i)
+            if (supports[i]>0.0)
+                extent=max(extent,hairContactExtent(patches[i],n,average,.005,supports[i]));
+        planes[kind]=vec4(n,dot(n,point)+extent);
     }
 }
 
@@ -139,7 +223,6 @@ vec3 hairMeshMovement(vec3 original, vec3 movement, samplerBuffer mesh, mat4 fro
             vec4 av=texelFetch(mesh,offset), bv=texelFetch(mesh,offset+2), cv=texelFetch(mesh,offset+4);
             vec3 a=av.xyz, ab=bv.xyz-a, ac=cv.xyz-a, face=cross(ab,ac);
             if (dot(face,face)<1.e-16) continue;
-            int group=max(max(av.w,bv.w),cv.w)>.15 ? 1 : 0;
             vec3 h=cross(delta,ac);
             float determinant=dot(ab,h);
             if (abs(determinant)<1.e-10) continue;
@@ -152,8 +235,8 @@ vec3 hairMeshMovement(vec3 original, vec3 movement, samplerBuffer mesh, mat4 fro
                 vec3 crossing=start+t*delta;
                 contact_weights=hairClosestWeights(crossing,a,bv.xyz,cv.xyz);
                 vec3 gap=crossing-(a*contact_weights.x+bv.xyz*contact_weights.y+cv.xyz*contact_weights.z);
-                // Keep torso coverage broad; fingers must not act like 8 cm paddles.
-                float coverage=group==1 ? .02 : .08;
+                // Only the rope thickness extends a finite triangle's swept footprint.
+                float coverage=margin;
                 if (dot(gap,gap)>coverage*coverage) continue;
             }
             vec3 n=hairMeshNormal(mesh,offset,contact_weights,face);

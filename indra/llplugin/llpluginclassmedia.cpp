@@ -136,7 +136,7 @@ void LLPluginClassMedia::reset()
     mLastMouseX = 0;
     mLastMouseY = 0;
     mStatus = LLPluginClassMediaOwner::MEDIA_NONE;
-    mSleepTime = 1.0f / 100.0f;
+    mSleepTime = 1.0f / 120.0f;
     mCanUndo = false;
     mCanRedo = false;
     mCanCut = false;
@@ -837,10 +837,8 @@ void LLPluginClassMedia::setPriority(EPriority priority)
                 mSleepTime = 1.0f / 25.0f;
             break;
             case PRIORITY_NORMAL:
-                mSleepTime = 1.0f / 50.0f;
-            break;
             case PRIORITY_HIGH:
-                mSleepTime = 1.0f / 100.0f;
+                mSleepTime = 1.0f / 120.0f;
             break;
         }
 

@@ -557,7 +557,7 @@
       </panel>
       <panel name="HairPhysicsPanel" label="Physics" follows="all" layout="topleft" width="517" height="258">
         <scroll_container name="HairPhysicsScroll" follows="all" layout="topleft" left="0" top="0" width="517" height="258" opaque="false">
-          <panel name="HairPhysicsContent" follows="left|top" layout="topleft" left="0" top="0" width="495" height="920">
+          <panel name="HairPhysicsContent" follows="left|top" layout="topleft" left="0" top="0" width="495" height="1060">
     <text name="HairPhysicsHeading" layout="topleft" left="30" top="12" width="450" height="18" font="SansSerifBold">Rope physics</text>
     <check_box name="BoxxyHairPhysicsEnabled" control_name="BoxxyHairPhysicsEnabled"
       label="Enable hair physics (my avatar)" layout="topleft" left="30" top="40" width="440" height="20"
@@ -566,77 +566,86 @@
       label="Rope density:" layout="topleft" left="30" top="72" width="450" height="20"
       label_width="185" min_val="4" max_val="64" increment="1" decimal_digits="0"
       tool_tip="Number of ropes around the head (4 to 64). Higher values track smaller sections of hair. Changing this refits and resets ropes." />
+    <slider name="BoxxyHairPhysicsRopeVertices" control_name="BoxxyHairPhysicsRopeVertices" enabled_control="BoxxyHairPhysicsEnabled"
+      label="Vertices per rope:" layout="topleft" left="30" top="104" width="450" height="20"
+      label_width="185" min_val="9" max_val="32" increment="1" decimal_digits="0"
+      tool_tip="Points along each rope. More points follow curved surfaces more closely and cost more GPU time. Changing this refits and resets ropes. Default: 9." />
     <slider name="BoxxyHairPhysicsStiffness" control_name="BoxxyHairPhysicsStiffness" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Spring stiffness:" layout="topleft" left="30" top="104" width="450" height="20"
+      label="Spring stiffness:" layout="topleft" left="30" top="136" width="450" height="20"
       label_width="185" min_val="1" max_val="12" increment="0.5" decimal_digits="1"
       tool_tip="Higher values restore the original shape faster and resist sharp bends. Shape retention controls the restoring spring; Bend resistance controls bending." />
     <slider name="BoxxyHairPhysicsShapeRetention" control_name="BoxxyHairPhysicsShapeRetention" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Shape retention:" layout="topleft" left="30" top="136" width="450" height="20"
+      label="Shape retention:" layout="topleft" left="30" top="168" width="450" height="20"
       label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
       tool_tip="Strength of the spring toward the original hairstyle. Zero releases the shape spring; pinned roots, root gradient and rope constraints still apply." />
     <slider name="BoxxyHairPhysicsDamping" control_name="BoxxyHairPhysicsDamping" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Damping:" layout="topleft" left="30" top="168" width="450" height="20"
+      label="Damping:" layout="topleft" left="30" top="200" width="450" height="20"
       label_width="185" min_val="0" max_val="30" increment="0.5" decimal_digits="2"
       tool_tip="Velocity damping per second. Higher values settle motion faster without tethering hair to its original shape. Zero preserves free motion." />
     <slider name="BoxxyHairPhysicsElasticity" control_name="BoxxyHairPhysicsElasticity" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Elasticity:" layout="topleft" left="30" top="200" width="450" height="20"
+      label="Elasticity:" layout="topleft" left="30" top="232" width="450" height="20"
       label_width="185" min_val="0" max_val="1" increment="0.05" decimal_digits="2"
       tool_tip="Zero keeps rigid segment lengths. Higher values allow stretch under load, which relaxes when released. Independent of bend resistance and shape retention." />
     <slider name="BoxxyHairPhysicsTravelLimit" control_name="BoxxyHairPhysicsTravelLimit" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Travel limit:" layout="topleft" left="30" top="232" width="450" height="20"
+      label="Travel limit:" layout="topleft" left="30" top="264" width="450" height="20"
       label_width="185" min_val="0" max_val="20" increment="0.05" decimal_digits="2"
       tool_tip="Optional distance from the original shape relative to strand length. Zero disables the limit, allowing hair to fall fully sideways. Collision takes priority." />
-    <text name="HairRootsHeading" layout="topleft" left="30" top="272" width="450" height="18" font="SansSerifBold">Roots and bending</text>
+    <text name="HairRootsHeading" layout="topleft" left="30" top="304" width="450" height="18" font="SansSerifBold">Roots and bending</text>
     <slider name="BoxxyHairPhysicsRootRadius" control_name="BoxxyHairPhysicsRootRadius" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Pinned roots (metres):" layout="topleft" left="30" top="300" width="450" height="20"
+      label="Pinned roots (metres):" layout="topleft" left="30" top="332" width="450" height="20"
       label_width="185" min_val="0.03" max_val="0.35" increment="0.01" decimal_digits="2"
       tool_tip="Pinned radius around the crown in metres. Increase if roots move; decrease if too much of a short style stays still." />
     <slider name="BoxxyHairPhysicsRootGradient" control_name="BoxxyHairPhysicsRootGradient" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Root gradient (metres):" layout="topleft" left="30" top="332" width="450" height="20"
+      label="Root gradient (metres):" layout="topleft" left="30" top="364" width="450" height="20"
       label_width="185" min_val="0.01" max_val="1" increment="0.01" decimal_digits="2"
       tool_tip="Distance beyond pinned roots over which motion fades from fixed to free. Guide points near the roots softly follow the rest shape; points farther down move more freely, even with Shape retention at zero. Collision clearance takes priority. Smaller values free the lengths sooner; default 0.30 metres." />
     <slider name="BoxxyHairPhysicsBendResistance" control_name="BoxxyHairPhysicsBendResistance" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Bend resistance:" layout="topleft" left="30" top="364" width="450" height="20"
+      label="Bend resistance:" layout="topleft" left="30" top="396" width="450" height="20"
       label_width="185" min_val="0" max_val="4" increment="0.1" decimal_digits="2"
       tool_tip="Multiplies bending resistance independently of Shape retention. Zero allows hinges between rope segments; 1 keeps the normal resistance." />
     <slider name="BoxxyHairPhysicsBendGradient" control_name="BoxxyHairPhysicsBendGradient" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Bend gradient (m):" layout="topleft" left="30" top="396" width="450" height="20"
+      label="Bend gradient (m):" layout="topleft" left="30" top="428" width="450" height="20"
       label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2"
       tool_tip="Distance beyond the pinned radius over which bend resistance fades to 5%. Larger values keep more upper hair firm. Zero keeps uniform resistance. Does not change pinning." />
-    <text name="HairGravityHeading" layout="topleft" left="30" top="436" width="450" height="18" font="SansSerifBold">Gravity</text>
+    <text name="HairGravityHeading" layout="topleft" left="30" top="468" width="450" height="18" font="SansSerifBold">Gravity</text>
     <check_box name="BoxxyHairPhysicsGravity" control_name="BoxxyHairPhysicsGravity" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Enable gravity" layout="topleft" left="30" top="464" width="450" height="20"
+      label="Enable gravity" layout="topleft" left="30" top="496" width="450" height="20"
       tool_tip="Pulls rope points toward world-down. Roots remain pinned; stiffness, bending and shape retention resist the pull." />
     <slider name="BoxxyHairPhysicsGravityStrength" control_name="BoxxyHairPhysicsGravityStrength" enabled_control="BoxxyHairPhysicsGravity"
-      label="Gravity strength:" layout="topleft" left="30" top="496" width="450" height="20"
+      label="Gravity strength:" layout="topleft" left="30" top="528" width="450" height="20"
       label_width="185" min_val="0" max_val="3" increment="0.05" decimal_digits="2"
       tool_tip="Downward acceleration multiplier. 1.00 is normal gravity; zero removes the pull." />
-    <text name="HairCollisionHeading" layout="topleft" left="30" top="536" width="450" height="18" font="SansSerifBold">Avatar mesh collision</text>
+    <text name="HairCollisionHeading" layout="topleft" left="30" top="568" width="450" height="18" font="SansSerifBold">Avatar mesh collision</text>
     <slider name="BoxxyHairPhysicsMeshPadding" control_name="BoxxyHairPhysicsMeshPadding" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Mesh expansion (m):" layout="topleft" left="30" top="564" width="450" height="20"
+      label="Mesh expansion (m):" layout="topleft" left="30" top="596" width="450" height="20"
       label_width="185" min_val="0" max_val="0.1" increment="0.005" decimal_digits="3"
       tool_tip="Expands the animated body and hand shell outward after skinning. 0.010 adds 1 cm. Large values can make hair float away from skin; inspect the shell preview." />
     <slider name="BoxxyHairPhysicsCollisionSmoothing" control_name="BoxxyHairPhysicsCollisionSmoothing" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Contact smoothing (m):" layout="topleft" left="30" top="596" width="450" height="20"
+      label="Contact smoothing (m):" layout="topleft" left="30" top="628" width="450" height="20"
       label_width="185" min_val="0" max_val="0.02" increment="0.001" decimal_digits="3"
       tool_tip="Adds up to 5 mm of resting clearance and softens fast-motion recovery. Zero uses hard contact. Use Mesh expansion to move the whole collision shell outward." />
     <slider name="BoxxyHairPhysicsFriction" control_name="BoxxyHairPhysicsFriction" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Contact friction:" layout="topleft" left="30" top="628" width="450" height="20"
+      label="Contact friction:" layout="topleft" left="30" top="660" width="450" height="20"
       label_width="185" min_val="0" max_val="2" increment="0.05" decimal_digits="2"
       tool_tip="Surface friction coefficient. Zero lets hair slide freely; higher values make contact grip, including tangential motion from a brushing hand." />
-    <text name="HairColliderNamesLabel" layout="topleft" left="30" top="660" width="450" height="18" word_wrap="true" text_color="LtGray_50">Collision attachment names:</text>
+    <text name="HairColliderNamesLabel" layout="topleft" left="30" top="692" width="450" height="18" word_wrap="true" text_color="LtGray_50">Body collision names (includes hidden faces):</text>
     <line_editor name="BoxxyHairPhysicsColliderNames" control_name="BoxxyHairPhysicsColliderNames" enabled_control="BoxxyHairPhysicsEnabled"
-      layout="topleft" left="30" top="686" width="450" height="23" max_length_bytes="2048"
-      tool_tip="Comma-separated whole words or phrases in your attachment root names, ignoring case. Include body, head, hands and feet. Clear to disable mesh sources. Changes rebuild the shell." />
-    <text name="HairColliderNamesHelp" layout="topleft" left="30" top="718" width="450" height="50" word_wrap="true" text_color="LtGray_50">Only matching attachments on your avatar collide. Avoid clothing fit labels such as Perky; check the purple shell. Texture cutouts are not collision holes.</text>
-    <text name="HairDebugHeading" layout="topleft" left="30" top="784" width="450" height="18" font="SansSerifBold">Debug overlays</text>
+      layout="topleft" left="30" top="718" width="450" height="23" max_length_bytes="2048"
+      tool_tip="Comma-separated whole words or phrases in your attachment root names, ignoring case. Include body, head, hands and feet. Body alpha cuts do not open collision holes. Clear to disable body sources. Changes rebuild the shell." />
+    <text name="HairColliderNamesHelp" layout="topleft" left="30" top="750" width="450" height="36" word_wrap="true" text_color="LtGray_50">Use distinctive body names, not clothing fit labels such as Perky. Body matches retain hidden faces even if also listed below.</text>
+    <text name="HairClothingNamesLabel" layout="topleft" left="30" top="798" width="450" height="18" text_color="LtGray_50">Clothing collision names (optional):</text>
+    <line_editor name="BoxxyHairPhysicsClothingNames" control_name="BoxxyHairPhysicsClothingNames" enabled_control="BoxxyHairPhysicsEnabled"
+      layout="topleft" left="30" top="824" width="450" height="23" max_length_bytes="2048"
+      tool_tip="Comma-separated whole words or phrases in rigged clothing attachment root names. Empty disables clothing sources. Fully transparent face opacity is excluded; texture cutouts are not sampled. Changes rebuild the shell." />
+    <text name="HairClothingNamesHelp" layout="topleft" left="30" top="856" width="450" height="50" word_wrap="true" text_color="LtGray_50">Try one garment at a time and inspect the purple shell. Extra geometry costs more; overlapping layers and linings can cause unstable contacts.</text>
+    <text name="HairDebugHeading" layout="topleft" left="30" top="924" width="450" height="18" font="SansSerifBold">Debug overlays</text>
     <check_box name="BoxxyHairPhysicsShowGuides" control_name="BoxxyHairPhysicsShowGuides" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Show ropes and rest shape" layout="topleft" left="30" top="812" width="450" height="20"
+      label="Show ropes and rest shape" layout="topleft" left="30" top="952" width="450" height="20"
       tool_tip="Draws ropes through hair and clothing. Yellow: pinned. Cyan: free. Red: contact. Grey: original shape." />
     <check_box name="BoxxyHairPhysicsShowMesh" control_name="BoxxyHairPhysicsShowMesh" enabled_control="BoxxyHairPhysicsEnabled"
-      label="Show avatar collision shell" layout="topleft" left="30" top="844" width="450" height="20"
-      tool_tip="Shows the actual animated collision shell in translucent purple through hair and clothing. Requires hair physics and matching mesh body/head attachments." />
-    <text name="HairPhysicsHelp" layout="topleft" left="30" top="876" width="450" height="36" word_wrap="true" text_color="LtGray_50">Ropes approximate the hairstyle; some clipping can remain. Physics applies only to your avatar.</text>
+      label="Show avatar collision shell" layout="topleft" left="30" top="984" width="450" height="20"
+      tool_tip="Shows the actual animated collision shell in translucent purple through hair and clothing. Requires hair physics and matching rigged body or clothing attachments." />
+    <text name="HairPhysicsHelp" layout="topleft" left="30" top="1016" width="450" height="36" word_wrap="true" text_color="LtGray_50">Ropes approximate the hairstyle; some clipping can remain. Physics applies only to your avatar.</text>
       </panel>
         </scroll_container>
       </panel>

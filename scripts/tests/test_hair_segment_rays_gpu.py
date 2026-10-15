@@ -142,11 +142,21 @@ void main(){simulationMain();if(gl_GlobalInvocationID.x>=uint(clamp(guide_out[0]
 counters[gl_GlobalInvocationID.x]=vec4(query_count,node_count,triangle_count,0);}
 '''
     started=time.perf_counter()
-    program=gpu.compute(instrumented.replace('void main()', 'void simulationMain()')+wrapper,common)
+    measured_common='''layout(std430,binding=7) buffer CandidateCounters { vec4 candidate_counts[]; };
+uniform int guide_first;
+'''+common
+    measured_common=measured_common.replace('    body=hands=ivec4(-1);',
+        '    candidate_counts[guide_first+int(gl_GlobalInvocationID.x)].x+=1.0;\n    body=hands=ivec4(-1);')
+    measured_common=measured_common.replace('        vec4 lo=texelFetch(mesh,node*2)',
+        '        candidate_counts[guide_first+int(gl_GlobalInvocationID.x)].y+=1.0;\n        vec4 lo=texelFetch(mesh,node*2)')
+    measured_common=measured_common.replace('    vec4 a=texelFetch(mesh,offset)',
+        '    candidate_counts[guide_first+int(gl_GlobalInvocationID.x)].z+=1.0;\n    vec4 a=texelFetch(mesh,offset)')
+    program=gpu.compute(instrumented.replace('void main()', 'void simulationMain()')+wrapper,measured_common)
     print('Instrumented solver compile seconds:',time.perf_counter()-started)
     baseline=gpu.compute(source.replace('bool trace_segments=(step+1)*guide_ray_substeps/steps>step*guide_ray_substeps/steps;',
         'bool trace_segments=false;'),common)
     counters=buffer([(0,0,0,0)]*64);gl.BindBufferBase(SSBO,6,counters[0])
+    candidate_counters=buffer([(0,0,0,0)]*64);gl.BindBufferBase(SSBO,7,candidate_counters[0])
     for p in (program,baseline):
         for name in ('hair_mesh_from_local','guide_from_previous'):gpu.matrix(p,name,identity)
         for name,value in {'hair_mesh':30,'hair_previous_guides':29,'guide_history':1}.items():gpu.uniform(p,name,value,integer=True)
@@ -172,28 +182,36 @@ counters[gl_GlobalInvocationID.x]=vec4(query_count,node_count,triangle_count,0);
 
     # Half a million overlapping triangles, all 64 ropes, and the maximum 30 physics substeps.
     large=mesh(miss,repeats=524288)
-    one=[((.05 if i%2 else -.05),-.9,-.9-i*.001,1) for i in range(9)]
-    data=(one+one+[(0,0,0,0)]*9)*64;data[0]=(*data[0][:3],64)
-    old,out=buffer(data),buffer(data)
-    texture(30,large[0]);texture(29,old)
-    gpu.uniform(program,'hair_mesh_nodes',large[1],integer=True);gpu.uniform(program,'hair_mesh_contact',large[2],integer=True)
-    for dt in (0,1/120,1/60,1/30,.25):
-        gpu.uniform(program,'guide_dt',dt);dispatch(program,out,4)
-        counts=read(counters,64)
-        assert all(v[0]<=16 and v[1]<=16*64 and v[2]<=16*32 for v in counts),counts
-        assert sum(v[0] for v in counts)==64*(8 if dt<=1/120 else 16)
-        print('Frame dt / total rays / node visits / triangle tests:',dt,*(sum(v[k] for v in counts) for k in range(3)))
-    result=read(out,len(data))
-    assert max(math.dist(result[c*27+9+i][:3],one[i][:3]) for c in range(64) for i in range(9))<1.e-5
-    # No throughput assertion: timers measure this hardware, while operation counts prove the limit.
-    query_id=gpu.obj(gl.GenQueries);times=[]
-    for frame in range(15):
-        gl.BeginQuery(0x88BF,query_id);dispatch(program,out,4);gl.EndQuery(0x88BF)
-        elapsed=C.c_uint64();gl.GetQueryObjectui64v(query_id,0x8866,C.byref(elapsed))
-        if frame>=5:times.append(elapsed.value/1.e6)
-    print('Worst-case fixture GPU ms, median/max over 10 after 5 warmup:',statistics.median(times),max(times))
-    assert gl.GetError()==0
-    print('PASS: 524288 triangles, 64 ropes, 30 substeps; <=1024 rays, <=65536 node visits, <=32768 triangle tests/frame')
+    for nodes in (9,17,32):
+        one=[((.05 if i%2 else -.05),-.9,-.9-i*.001,1) for i in range(nodes)]
+        data=(one+one+[(0,0,0,0)]*nodes)*64;data[0]=(*data[0][:3],64);data[1]=(*data[1][:3],nodes)
+        old,out=buffer(data),buffer(data)
+        texture(30,large[0]);texture(29,old)
+        gpu.uniform(program,'hair_mesh_nodes',large[1],integer=True);gpu.uniform(program,'hair_mesh_contact',large[2],integer=True)
+        for dt in (0,1/120,1/60,1/30,.25):
+            gl.BindBuffer(SSBO,candidate_counters[0]);gl.BufferData(SSBO,64*16,C.create_string_buffer(64*16),0x88E8)
+            gpu.uniform(program,'guide_dt',dt);dispatch(program,out,4)
+            counts=read(counters,64)
+            assert all(v[0]<=2*(nodes-1) and v[1]<=2*(nodes-1)*64 and v[2]<=2*(nodes-1)*32 for v in counts),counts
+            assert sum(v[0] for v in counts)==64*((nodes-1) if dt<=1/120 else 2*(nodes-1))
+            print('Frame dt / total rays / node visits / triangle tests:',dt,*(sum(v[k] for v in counts) for k in range(3)))
+            candidates=read(candidate_counters,64)
+            assert all(v[0]<=4*(nodes-1) and v[1]<=v[0]*64 and v[2]<=v[0]*48 for v in candidates),candidates
+            assert sum(v[0] for v in candidates)==64*(2*(nodes-1) if dt<=1/120 else 4*(nodes-1)),candidates
+            print('Frame dt / finite-contact queries / nodes / triangles:',dt,*(sum(v[k] for v in candidates) for k in range(3)))
+        result=read(out,len(data))
+        assert max(math.dist(result[c*nodes*3+nodes+i][:3],one[i][:3]) for c in range(64) for i in range(nodes))<1.e-5
+        # No throughput assertion: timers measure this hardware, while operation counts prove the limit.
+        query_id=gpu.obj(gl.GenQueries);times=[]
+        for frame in range(15):
+            gl.BeginQuery(0x88BF,query_id);dispatch(program,out,4);gl.EndQuery(0x88BF)
+            elapsed=C.c_uint64();gl.GetQueryObjectui64v(query_id,0x8866,C.byref(elapsed))
+            if frame>=5:times.append(elapsed.value/1.e6)
+        print('Worst-case fixture GPU ms, median/max over 10 after 5 warmup:',statistics.median(times),max(times))
+        assert gl.GetError()==0
+        print('PASS: bounded segment-ray work at vertices per rope:',nodes)
+        print('PASS: bounded point/midpoint work at vertices per rope:',nodes)
+
 
 
 if __name__=='__main__':

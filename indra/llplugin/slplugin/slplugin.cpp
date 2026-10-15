@@ -50,6 +50,10 @@ using namespace std;
     #include <signal.h>
 #endif
 
+#if LL_WINDOWS
+    #include <mmsystem.h>
+#endif
+
 /*
     On Mac OS, since we call WaitNextEvent, this process will show up in the dock unless we set the LSBackgroundOnly or LSUIElement flag in the Info.plist.
 
@@ -211,8 +215,24 @@ int main(int argc, char **argv)
     // Use this to track the current frontmost window and bring this process to the front if it changes.
  //   cocoa_interface.mEventTarget = GetEventDispatcherTarget();
 #endif
+#if LL_WINDOWS
+    bool high_resolution_timer = false;
+#endif
     while(!plugin->isDone())
     {
+#if LL_WINDOWS
+        // Windows timer resolution is per process; the viewer's request does not cover SLPlugin.
+        const bool needs_high_resolution = plugin->getSleepTime() <= 1.0 / 50.0;
+        if (needs_high_resolution && !high_resolution_timer)
+        {
+            high_resolution_timer = timeBeginPeriod(1) == TIMERR_NOERROR;
+        }
+        else if (!needs_high_resolution && high_resolution_timer)
+        {
+            timeEndPeriod(1);
+            high_resolution_timer = false;
+        }
+#endif
 #if LL_DARWIN
         cocoa_interface.createAutoReleasePool();
 #endif
@@ -259,6 +279,12 @@ int main(int argc, char **argv)
         cocoa_interface.deleteAutoReleasePool();
 #endif
     }
+#if LL_WINDOWS
+    if (high_resolution_timer)
+    {
+        timeEndPeriod(1);
+    }
+#endif
     delete plugin;
 
     ll_cleanup_apr();

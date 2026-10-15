@@ -54,6 +54,7 @@
 #include "llurldispatcher.h"
 #include "lluuid.h"
 #include "llversioninfo.h"
+#include "llviewerautomation.h"
 #include "llviewermediafocus.h"
 #include "llviewercontrol.h"
 #include "llviewermenufile.h" // LLFilePickerThread
@@ -2986,6 +2987,7 @@ void LLViewerMediaImpl::update()
 
     if (preMediaTexUpdate(media_tex, data, data_width, data_height, x_pos, y_pos, width, height))
     {
+        LL_AUTOMATION_CPU_SCOPE("media.texture_submit");
         // Push update to worker thread
         auto main_queue = LLImageGLThread::sEnabledMedia ? mMainQueue.lock() : nullptr;
         if (main_queue)
@@ -3004,6 +3006,7 @@ void LLViewerMediaImpl::update()
                 },
                 [=, this]() // callback to main thread
                 {
+                    LL_AUTOMATION_CPU_SCOPE("media.texture_present");
 #if LL_IMAGEGL_THREAD_CHECK
                     media_tex->getGLTexture()->mActiveThread = LLThread::currentID();
 #endif
@@ -3072,6 +3075,7 @@ bool LLViewerMediaImpl::preMediaTexUpdate(LLViewerMediaTexture*& media_tex, U8*&
 void LLViewerMediaImpl::doMediaTexUpdate(LLViewerMediaTexture* media_tex, U8* data, S32 data_width, S32 data_height, S32 x_pos, S32 y_pos, S32 width, S32 height, bool sync)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_MEDIA;
+    LL_AUTOMATION_CPU_SCOPE("media.texture_upload");
     LLCoros::LockType lock(mLock); // don't allow media source tear-down during update
 
     // wrap "data" in an LLImageRaw but do NOT make a copy

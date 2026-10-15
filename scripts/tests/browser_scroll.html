@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Browser scroll cadence</title>
+<style>
+  body { margin: 0; font: 18px system-ui; background: #fafafa; color: #172a40; }
+  header { position: fixed; inset: 0 0 auto; background: #172a40; color: white; padding: 24px; z-index: 2; }
+  main { padding: 130px 32px 32px; }
+  article { padding: 24px; margin: 16px 0; border: 2px solid #658dad; background: white; }
+  #marker { position: fixed; left: 0; top: 0; width: 16px; height: 16px; z-index: 3; }
+  button { padding: 8px 16px; margin-left: 20px; }
+</style>
+<header>Browser scroll cadence <button id="toggle">Start automatic scroll</button><div id="status">Scroll with the mouse wheel, or start the repeatable test.</div></header>
+<div id="marker"></div><main id="content"></main>
+<script>
+  for (let i = 0; i < 100; ++i) {
+    const row = document.createElement('article');
+    row.innerHTML = `<h2>Section ${i + 1}</h2><p>Text, borders and alternating rows make uneven scroll updates visible.</p><p>Chromium animation callbacks and delivered pixels can run at different rates.</p>`;
+    content.appendChild(row);
+  }
+  let automatic = new URLSearchParams(location.search).has('auto');
+  let frames = 0, lastReport = performance.now(), count = 0;
+  toggle.textContent = automatic ? 'Stop automatic scroll' : 'Start automatic scroll';
+  toggle.onclick = () => { automatic = !automatic; toggle.textContent = automatic ? 'Stop automatic scroll' : 'Start automatic scroll'; };
+  function animate(now) {
+    ++frames; ++count;
+    marker.style.background = `rgb(${frames & 255},${(frames >> 8) & 255},${(frames >> 16) & 255})`;
+    if (automatic) window.scrollTo(0, (now * 0.25) % (document.documentElement.scrollHeight - innerHeight));
+    if (now - lastReport >= 1000) {
+      const fps = count * 1000 / (now - lastReport);
+      document.getElementById('status').textContent = `Page animation callbacks: ${fps.toFixed(1)}/s. This is NOT the visible frame rate.`;
+      console.log('CADENCE ' + JSON.stringify({ fps, frames, scroll: scrollY }));
+      count = 0; lastReport = now;
+    }
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+</script>

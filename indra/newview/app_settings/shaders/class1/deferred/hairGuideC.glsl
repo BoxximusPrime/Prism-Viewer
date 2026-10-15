@@ -31,6 +31,10 @@ vec3 hairMeshMovement(vec3 p, vec3 movement, samplerBuffer mesh, mat4 from_local
 ivec2 hairCachedTriangles(vec3 p, samplerBuffer mesh, int offset, int corner);
 vec3 hairClosestWeights(vec3 p, vec3 a, vec3 b, vec3 c);
 vec3 hairMeshNormal(samplerBuffer mesh, int offset, vec3 weights, vec3 face);
+vec4 hairFinitePatch(vec3 gap, vec3 face, vec3 normal, float margin, out float support);
+float hairContactExtent(vec4 plane, vec3 direction, vec3 reference, float margin, float support);
+void hairContactCandidates(vec3 local, samplerBuffer mesh, mat4 from_local, int nodes, int cache,
+    out ivec4 body, out ivec4 hands);
 
 float contact_fraction=1.0;
 vec3 contact_velocity=vec3(0);
@@ -142,40 +146,39 @@ void projectGuideRay(GuideRayContact hit, inout vec3 a, inout vec3 b, float ma, 
     vec3 n=hit.plane.xyz;
     if (dot(n,n)<.5) return;
     float depth_a=max(hit.plane.w-dot(n,a),0.0), depth_b=max(hit.plane.w-dot(n,b),0.0);
-    if ((ma<=0.0 && depth_a>0.0) || (mb<=0.0 && depth_b>0.0)) return;
     float along=hit.velocity.w, wa=ma*(1.0-along), wb=mb*along;
     if (max(wa,wb)<1.e-6) return;
+    // Exempt the pinned endpoint's penetration continuously; keep constraining the free endpoint.
+    float plane_offset=hit.plane.w-(ma<=0.0 ? depth_a*(1.0-along) : 0.0)-(mb<=0.0 ? depth_b*along : 0.0);
     // Contact acts at its actual position along the segment; neighbours share the mass-weighted correction.
-    float correction=max(hit.plane.w-dot(n,mix(a,b,along)),0.0)/max(wa*(1.0-along)+wb*along,1.e-8);
+    float correction=max(plane_offset-dot(n,mix(a,b,along)),0.0)/max(wa*(1.0-along)+wb*along,1.e-8);
     correction=min(correction,.002/max(wa,wb));
     float da=wa*correction, db=wb*correction;
     a+=n*da; b+=n*db; ca+=n*da; cb+=n*db;
     sa+=hit.velocity.xyz*da; sb+=hit.velocity.xyz*db; weight_a+=da; weight_b+=db;
 }
 
-GuideContact sampleGuideContact(vec3 p)
+GuideContact sampleGuideContact(vec3 p, ivec4 body, ivec4 hands)
 {
     if (guide_diagnostics!=0) { probe_nearest=probe_motion=probe_normal=probe_face=vec4(0); }
     GuideContact result;
     for (int kind=0;kind<2;++kind) { result.plane[kind]=vec4(0); result.velocity[kind]=vec3(0); }
     if (hair_mesh_contact<=0) return result;
-    vec4 grid=texelFetch(hair_mesh,hair_mesh_contact);
-    vec3 f=fract(clamp((p-grid.xyz)/grid.w,vec3(0),vec3(19,19,30)));
     vec3 point=(hair_mesh_from_local*vec4(p,1)).xyz;
     for (int kind=0;kind<2;++kind)
     {
-        vec3 normal=vec3(0), surface_motion=vec3(0);
-        float clearance=0.0, total=0.0;
-        vec4 patches[8], motions[8];
-        float distances[8];
-        vec3 nearest_normal=vec3(0);
+        vec3 reference=vec3(0), surface_motion=vec3(0);
+        float total=0.0;
+        float margin=.005+min(hair_collision_smoothing,.02)*.25;
+        vec4 patches[4], motions[4];
+        float distances[4], supports[4];
+        ivec4 candidates=kind==0 ? body : hands;
         float nearest_distance=1.e20;
-        for (int corner=0;corner<8;++corner)
+        for (int index=0;index<4;++index)
         {
-            patches[corner]=motions[corner]=vec4(0);
-            distances[corner]=1.e20;
+            patches[index]=motions[index]=vec4(0); distances[index]=1.e20; supports[index]=0.0;
             // shortcut: final-pose candidates cover local motion; fast remote crossings need a swept cache.
-            int offset=hairCachedTriangles(p,hair_mesh,hair_mesh_contact,corner)[kind];
+            int offset=candidates[index];
             if (offset<0) continue;
             vec3 a=texelFetch(hair_mesh,offset).xyz, b=texelFetch(hair_mesh,offset+2).xyz, c=texelFetch(hair_mesh,offset+4).xyz;
             vec3 da=vec3(0), db=vec3(0), dc=vec3(0);
@@ -190,7 +193,7 @@ GuideContact sampleGuideContact(vec3 p)
             if (dot(face,face)<1.e-16) continue;
             vec3 weights=hairClosestWeights(point,a,b,c);
             vec3 gap=point-(a*weights.x+b*weights.y+c*weights.z);
-            distances[corner]=length(gap);
+            distances[index]=length(gap);
             vec3 n=hairMeshNormal(hair_mesh,offset,weights,face);
             if (guide_mesh_history!=0)
             {
@@ -198,44 +201,51 @@ GuideContact sampleGuideContact(vec3 p)
                 vec3 blended=mix(previous_normal,n,contact_fraction);
                 n=dot(blended,blended)>1.e-12 ? normalize(blended) : normalize(face);
             }
-            vec3 w=mix(vec3(1)-f,f,vec3(corner&1,(corner>>1)&1,corner>>2));
-            float range=kind==0 ? .20 : .12;
-            float influence=w.x*w.y*w.z*(1.0-smoothstep(range*.5,range,distances[corner]));
-            patches[corner]=vec4(n,dot(gap,n));
-            motions[corner]=vec4(da*weights.x+db*weights.y+dc*weights.z,influence);
-            if (influence>0.0 && distances[corner]<nearest_distance)
+            patches[index]=hairFinitePatch(gap,face,n,margin,supports[index]);
+            motions[index]=vec4(da*weights.x+db*weights.y+dc*weights.z,0);
+            if (supports[index]>0.0 && distances[index]<nearest_distance)
             {
-                nearest_distance=distances[corner];
-                nearest_normal=n;
+                nearest_distance=distances[index];
                 if (guide_diagnostics!=0 && kind==0)
                 {
                     probe_nearest=vec4(p-transpose(mat3(hair_mesh_from_local))*gap,float(offset+1));
-                    probe_motion=vec4(transpose(mat3(hair_mesh_from_local))*motions[corner].xyz,nearest_distance);
+                    probe_motion=vec4(transpose(mat3(hair_mesh_from_local))*motions[index].xyz,nearest_distance);
                     probe_normal=vec4(transpose(mat3(hair_mesh_from_local))*n,dot(gap,n));
                     probe_face=vec4(transpose(mat3(hair_mesh_from_local))*normalize(face),dot(gap,normalize(face)));
                 }
             }
         }
-        for (int corner=0;corner<8;++corner)
+        for (int i=0;i<4;++i)
         {
-            vec3 n=patches[corner].xyz;
-            // Opposite sides of a thin shoulder are different contacts, not a plane to average together.
-            float influence=motions[corner].w*smoothstep(.25,.5,dot(n,nearest_normal));
-            // A distant finite patch must not become an infinite wall through the nearest surface.
-            influence*=1.0-smoothstep(.005,.02,distances[corner]-nearest_distance);
-            // Continuous spatial weights avoid a nearest-triangle switch at edges and ridges.
-            normal+=n*influence;
-            clearance+=patches[corner].w*influence;
-            total+=influence;
-            surface_motion+=motions[corner].xyz*influence;
+            float range=kind==0 ? .20 : .12;
+            supports[i]*=(1.0-smoothstep(range,range+.04,distances[i]))*
+                (1.0-smoothstep(.005,.02,distances[i]-nearest_distance));
+            float weight=supports[i]/(.0001+distances[i]*distances[i]);
+            reference+=patches[i].xyz*weight;
+            surface_motion+=motions[i].xyz*weight;
+            total+=weight;
         }
-        float magnitude=length(normal);
-        if (total<1.e-6 || magnitude<total*.2) continue;
-        vec3 n=transpose(mat3(hair_mesh_from_local))*(normal/magnitude);
-        result.plane[kind]=vec4(n,dot(n,p)+.005+min(hair_collision_smoothing,.02)*.25-clearance/magnitude);
+        if (total<=0.0) continue;
+        // Keep compatible corner contacts together instead of switching the whole plane to one winner.
+        reference/=total;
+        float magnitude=length(reference);
+        if (magnitude<1.e-6) continue;
+        vec3 direction=reference/magnitude;
+        float extent=-1.e20;
+        for (int i=0;i<4;++i)
+            if (supports[i]>0.0) extent=max(extent,hairContactExtent(patches[i],direction,reference,margin,supports[i]));
+        vec3 n=transpose(mat3(hair_mesh_from_local))*direction;
+        result.plane[kind]=vec4(n,dot(n,p)+extent);
         if (guide_dt>0.0) result.velocity[kind]=transpose(mat3(hair_mesh_from_local))*surface_motion/(total*guide_dt);
     }
     return result;
+}
+
+GuideContact sampleGuideContact(vec3 p)
+{
+    ivec4 body, hands;
+    hairContactCandidates(p,hair_mesh,hair_mesh_from_local,hair_mesh_nodes,hair_mesh_contact,body,hands);
+    return sampleGuideContact(p,body,hands);
 }
 
 vec3 projectGuideContact(vec3 p, GuideContact contact)
@@ -261,18 +271,20 @@ void main()
 {
     int chain=guide_first+int(gl_GlobalInvocationID.x);
     if (chain>=int(clamp(guide_out[0].w,0.0,64.0))) return;
-    int base=chain*27;
-    vec3 rest[9], previous_rest[9], target[9], p[9], v[9], free_velocity[9], before[9], contact[9], surface[9];
-    GuideContact point_contacts[9], segment_contacts[9];
-    GuideRayContact ray_contacts[9];
-    vec3 queries[9];
-    vec4 nearest_probe[9], motion_probe[9];
-    vec4 normal_probe[9], face_probe[9];
-    float contact_weight[9];
-    float mass[9];
-    vec3 pin_lambda[9];
-    float bend_lambda[9], length_lambda[9], bend_scale[9];
-    for (int i=0;i<9;++i)
+    int nodes=int(clamp(guide_out[1].w,9.0,32.0));
+    int base=chain*nodes*3;
+    vec3 rest[32], previous_rest[32], target[32], p[32], v[32], free_velocity[32], before[32], contact[32], surface[32];
+    GuideContact point_contacts[32], segment_contacts[32];
+    ivec4 point_body[32], point_hands[32], segment_body[32], segment_hands[32];
+    GuideRayContact ray_contacts[32];
+    vec3 queries[32];
+    vec4 nearest_probe[32], motion_probe[32];
+    vec4 normal_probe[32], face_probe[32];
+    float contact_weight[32];
+    float mass[32];
+    vec3 pin_lambda[32];
+    float bend_lambda[32], length_lambda[32], bend_scale[32];
+    for (int i=0;i<nodes;++i)
     {
         rest[i]=guide_out[base+i].xyz;
         previous_rest[i]=guide_history!=0 ? (guide_from_previous*vec4(rest[i],1)).xyz : rest[i];
@@ -284,8 +296,8 @@ void main()
         p[i]=previous_rest[i]; v[i]=vec3(0);
         if (guide_history!=0 && mass[i]>0.0)
         {
-            p[i]=(guide_from_previous*texelFetch(hair_previous_guides,base+9+i)).xyz;
-            v[i]=mat3(guide_from_previous)*texelFetch(hair_previous_guides,base+18+i).xyz;
+            p[i]=(guide_from_previous*texelFetch(hair_previous_guides,base+nodes+i)).xyz;
+            v[i]=mat3(guide_from_previous)*texelFetch(hair_previous_guides,base+nodes*2+i).xyz;
         }
     }
     float dt=clamp(guide_dt,0.0,.25);
@@ -295,7 +307,7 @@ void main()
     {
         contact_fraction=float(step+1)/float(steps);
         bool trace_segments=(step+1)*guide_ray_substeps/steps>step*guide_ray_substeps/steps;
-        for (int i=0;i<9;++i)
+        for (int i=0;i<nodes;++i)
         {
             surface[i]=vec3(0); contact_weight[i]=0.0;
             // Move anchors throughout the frame instead of delivering its entire motion in one substep.
@@ -316,7 +328,7 @@ void main()
         {
             // Sweep once, then keep contact planes fixed while the rope constraints converge.
             if (contact_fraction>=1.0)
-                for (int i=1;i<9;++i)
+                for (int i=1;i<nodes;++i)
                     if (mass[i]>0.0 && length(p[i]-before[i])>.025)
                     {
                         vec3 predicted=p[i];
@@ -324,24 +336,32 @@ void main()
                         contact[i]+=p[i]-predicted;
                         contact_weight[i]+=length(p[i]-predicted);
                     }
-            for (int i=1;i<9;++i)
+            for (int i=1;i<nodes;++i)
             {
-                point_contacts[i]=sampleGuideContact(p[i]);
+                // At most two refinements per frame, even with thirty integration substeps.
+                if (step==0 || step==steps/2)
+                {
+                    hairContactCandidates(p[i],hair_mesh,hair_mesh_from_local,hair_mesh_nodes,hair_mesh_contact,
+                        point_body[i],point_hands[i]);
+                    hairContactCandidates((p[i]+p[i-1])*.5,hair_mesh,hair_mesh_from_local,hair_mesh_nodes,hair_mesh_contact,
+                        segment_body[i],segment_hands[i]);
+                }
+                point_contacts[i]=sampleGuideContact(p[i],point_body[i],point_hands[i]);
                 if (guide_diagnostics!=0)
                 {
                     queries[i]=p[i]; nearest_probe[i]=probe_nearest; motion_probe[i]=probe_motion;
                     normal_probe[i]=probe_normal; face_probe[i]=probe_face;
                 }
-                segment_contacts[i]=sampleGuideContact((p[i]+p[i-1])*.5);
+                segment_contacts[i]=sampleGuideContact((p[i]+p[i-1])*.5,segment_body[i],segment_hands[i]);
                 ray_contacts[i]=trace_segments && mass[i]>0.0 ? traceGuideSegment(p[i-1],p[i]) : GuideRayContact(vec4(0),vec4(0));
-                // An embedded pinned root cannot clear its whole segment; constrain its free endpoint.
+                // Allow only the pinned half's penetration, without switching the whole contact off.
                 if (mass[i-1]<=0.0)
                 for (int kind=0;kind<2;++kind)
-                    if (dot(segment_contacts[i].plane[kind].xyz,p[i-1])<segment_contacts[i].plane[kind].w)
-                        segment_contacts[i].plane[kind]=vec4(0);
+                    segment_contacts[i].plane[kind].w-=.5*max(0.0,segment_contacts[i].plane[kind].w-
+                        dot(segment_contacts[i].plane[kind].xyz,p[i-1]));
             }
             // A midpoint plane cannot override endpoint contacts on opposite sides of a fold.
-            for (int i=1;i<9;++i)
+            for (int i=1;i<nodes;++i)
             for (int kind=0;kind<2;++kind)
             {
                 vec3 n=segment_contacts[i].plane[kind].xyz;
@@ -349,7 +369,7 @@ void main()
                     (i>1 && dot(n,point_contacts[i-1].plane[kind].xyz)<0.0))
                     segment_contacts[i].plane[kind]=vec4(0);
             }
-            for (int i=1;i<9;++i)
+            for (int i=1;i<nodes;++i)
             for (int kind=0;kind<2;++kind)
             {
                 // A new ray must not fight established endpoint contacts on opposite sides of a fold.
@@ -363,7 +383,7 @@ void main()
         {
             // Inverse mass alone does not resist gravity/inertia. Fade a compliant rest attachment instead.
             if (h>0.0)
-            for (int i=1;i<9;++i)
+            for (int i=1;i<nodes;++i)
             {
                 if (mass[i]<=0.0 || mass[i]>=1.0) continue;
                 float compliance=.01*mass[i]*mass[i]/((1.0-mass[i])*h*h);
@@ -372,7 +392,7 @@ void main()
                 p[i]+=change*mass[i];
             }
             if (guide_travel>0.0)
-            for (int i=1;i<9;++i)
+            for (int i=1;i<nodes;++i)
             {
                 // Bound free motion first; body contact takes priority over the artistic travel limit.
                 float limit=(.04+guide_travel*length(rest[i]-rest[0]))*mass[i];
@@ -381,7 +401,7 @@ void main()
             }
             // Compliant second-neighbour distances resist kinks without tethering the rope to world axes.
             if (h>0.0 && guide_bend>0.0)
-            for (int i=1;i<8;++i)
+            for (int i=1;i<nodes-1;++i)
             {
                 vec3 edge=p[i+1]-p[i-1];
                 float distance=length(edge), total=mass[i-1]+mass[i+1];
@@ -392,7 +412,7 @@ void main()
                 vec3 correction=edge*(change/distance);
                 p[i+1]+=correction*mass[i+1]; p[i-1]-=correction*mass[i-1];
             }
-            for (int i=1;i<9;++i)
+            for (int i=1;i<nodes;++i)
             {
                 vec3 edge=p[i]-p[i-1];
                 float distance=length(edge), total=mass[i]+mass[i-1];
@@ -409,7 +429,7 @@ void main()
             }
             // Contact is interleaved with length constraints so it pulls neighbouring nodes.
             if (hair_mesh_nodes>0 && iteration%3==2)
-            for (int i=1;i<9;++i)
+            for (int i=1;i<nodes;++i)
             {
                 if (mass[i]<=0.0) continue;
                 vec3 corrected=projectGuideContact(p[i],point_contacts[i]);
@@ -434,7 +454,7 @@ void main()
         }
         // A neighbouring segment's correction must not leave a point behind its own contact plane.
         if (hair_mesh_nodes>0)
-        for (int i=1;i<9;++i)
+        for (int i=1;i<nodes;++i)
         {
             if (mass[i]<=0.0) continue;
             vec3 corrected=projectGuideContact(p[i],point_contacts[i]);
@@ -444,9 +464,9 @@ void main()
         }
         bool mesh_recovery=hair_mesh_nodes>0;
         if (guide_diagnostics!=0)
-        for (int i=1;i<9;++i)
+        for (int i=1;i<nodes;++i)
         {
-            int index=(chain*9+i)*7;
+            int index=(chain*nodes+i)*7;
             float correction=length(p[i]-before[i]-free_velocity[i]*h);
             if (step==0 || correction>guide_probe[index].w)
             {
@@ -459,7 +479,7 @@ void main()
                 guide_probe[index+6]=hair_mesh_nodes>0 ? face_probe[i] : vec4(0);
             }
         }
-        for (int i=0;i<9;++i)
+        for (int i=0;i<nodes;++i)
         {
             // Split penetration recovery from kinetic motion, including corrections passed to neighbours.
             v[i]=h>0.0 ? (p[i]-before[i])/h : vec3(0);
@@ -468,7 +488,7 @@ void main()
         }
         if (mesh_recovery)
         for (int iteration=0;iteration<8;++iteration)
-        for (int i=1;i<9;++i)
+        for (int i=1;i<nodes;++i)
         {
             vec3 edge=p[i]-p[i-1];
             float distance=length(edge), total=mass[i]+mass[i-1];
@@ -478,7 +498,7 @@ void main()
             vec3 impulse=n*(dot(v[i]-v[i-1],n)/(total+compliance));
             v[i]-=impulse*mass[i]; v[i-1]+=impulse*mass[i-1];
         }
-        for (int i=0;i<9;++i)
+        for (int i=0;i<nodes;++i)
         {
             if (mass[i]<=0.0) { v[i]=vec3(0); continue; }
             if (dot(contact[i],contact[i])>1.e-12)
@@ -500,9 +520,9 @@ void main()
             v[i]*=min(1.0,3.0/max(length(v[i]),1.e-6));
         }
     }
-    for (int i=0;i<9;++i)
+    for (int i=0;i<nodes;++i)
     {
-        guide_out[base+9+i]=vec4(p[i],1);
-        guide_out[base+18+i]=vec4(v[i],contact_weight[i]>1.e-7 ? 1.0 : 0.0);
+        guide_out[base+nodes+i]=vec4(p[i],1);
+        guide_out[base+nodes*2+i]=vec4(v[i],contact_weight[i]>1.e-7 ? 1.0 : 0.0);
     }
 }

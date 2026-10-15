@@ -3066,10 +3066,10 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
         "BoxxyHairThickness", "BoxxyHairNormalEnabled", "BoxxyHairNormalStrength",
         "BoxxyHairNormalScale", "BoxxyHairNormalRejection", "BoxxyHairPhysicsEnabled",
         "BoxxyHairPhysicsStiffness", "BoxxyHairPhysicsRootRadius", "BoxxyHairPhysicsRootGradient",
-        "BoxxyHairPhysicsMeshPadding", "BoxxyHairPhysicsColliderNames", "BoxxyHairPhysicsShowMesh",
+        "BoxxyHairPhysicsMeshPadding", "BoxxyHairPhysicsColliderNames", "BoxxyHairPhysicsClothingNames", "BoxxyHairPhysicsShowMesh",
         "BoxxyHairPhysicsGravity", "BoxxyHairPhysicsGravityStrength", "BoxxyHairPhysicsShapeRetention",
         "BoxxyHairPhysicsCollisionSmoothing", "BoxxyHairPhysicsFriction", "BoxxyHairPhysicsDamping",
-        "BoxxyHairPhysicsBendResistance", "BoxxyHairPhysicsRopeDensity", "BoxxyHairPhysicsBendGradient",
+        "BoxxyHairPhysicsBendResistance", "BoxxyHairPhysicsRopeDensity", "BoxxyHairPhysicsRopeVertices", "BoxxyHairPhysicsBendGradient",
         "BoxxyHairPhysicsElasticity", "BoxxyHairPhysicsTravelLimit", "BoxxyHairPhysicsShowGuides" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     gSavedSettings.getControl("BoxxySSSEnabled")->resetToDefault(true);

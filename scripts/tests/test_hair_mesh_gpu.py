@@ -160,8 +160,7 @@ vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(p[gl_Verte
     checks+=1
     gpu.matrix(cache,'contact_to_mesh',identity)
     gl.UseProgram(cache);gl.DispatchCompute((21*21*32+127)//128,1,1);gl.MemoryBarrier(0x2000|0x8)
-    # Large gravity bends can cross between the tiny triangles selected by the spatial cache.
-    # A nearby surface patch must stop the sweep even when its literal triangle misses the ray.
+    # A sweep intersects the finite triangle or its 5 mm thickness, never an 8 cm extended paddle.
     patch_buffer,patch_texture=gpu.obj(gl.GenBuffers),gpu.obj(gl.GenTextures)
     patch_data=[.3,.04,-.005,1.5,.3,.05,.005,1]
     for p in ((.3,.04,-.005),(.3,.05,-.005),(.3,.045,.005)):
@@ -176,7 +175,7 @@ vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(p[gl_Verte
     gpu.uniform(program,'hair_mesh_nodes',1,integer=True);gpu.uniform(program,'hair_mesh_contact',8,integer=True)
     gpu.uniform(program,'hair_collision_smoothing',0)
     gpu.uniform(program,'sample_movement',-.7,0,0)
-    for y,contact in ((0,True),(-.2,False)):
+    for y,contact in ((.045,True),(.039,True),(0,False),(-.2,False)):
         gpu.uniform(program,'sample_position',.5,y,0);gpu.draw(program,target)
         actual=gpu.read(target)[pixel:pixel+3]
         assert actual[0]>=.3 if contact else abs(actual[0]+.2)<.001, ('gravity sweep missed patch',y,actual)

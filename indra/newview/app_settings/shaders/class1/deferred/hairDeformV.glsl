@@ -13,18 +13,19 @@ vec3 hairGuidePosition(vec3 position, mat4 local_from_model, mat4 model_from_loc
     if (length(local)<=radius) return position;
     int count=int(texelFetch(guides,0).w);
     if (count<4 || count>64) return position;
+    int nodes=int(clamp(texelFetch(guides,1).w,9.0,32.0));
     float sector=mod(atan(local.y,local.x)*(float(count)/6.283185307)+float(count),float(count));
-    float depth=max(-texelFetch(guides,8).z,.01);
-    float along=clamp(-local.z/depth*8.0,0.0,8.0);
-    int node=min(int(along),7);
+    float depth=max(-texelFetch(guides,nodes-1).z,.01);
+    float along=clamp(-local.z/depth*float(nodes-1),0.0,float(nodes-1));
+    int node=min(int(along),nodes-2);
     float t=along-float(node);
     vec3 movement=vec3(0);
     for (int side=0;side<2;++side)
     {
-        int base=((int(sector)+side)%count)*27+node;
+        int base=((int(sector)+side)%count)*nodes*3+node;
         float w=side==0 ? 1.0-fract(sector) : fract(sector);
         vec3 a=texelFetch(guides,base).xyz, b=texelFetch(guides,base+1).xyz;
-        vec3 p=texelFetch(guides,base+9).xyz, q=texelFetch(guides,base+10).xyz;
+        vec3 p=texelFetch(guides,base+nodes).xyz, q=texelFetch(guides,base+nodes+1).xyz;
         movement+=w*mix(p-a,q-b,t);
     }
     // Root mobility is already solved; fading again would lose collision clearance.

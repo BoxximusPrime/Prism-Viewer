@@ -5,6 +5,7 @@
 #include "llhairguidefit.h"
 #include "llframetimer.h"
 #include "llglslshader.h"
+#include "llgltfmaterial.h"
 #include "llimagegl.h"
 #include "llmodel.h"
 #include "llrender.h"
@@ -26,7 +27,7 @@ LLGLSLShader sSkinShader, sRefitShader, sCacheShader, sDebugShader;
 LLGLSLShader sGuideShader;
 U32 sGuides[2] = {}, sGuideTextures[2] = {}, sGuideFrames[2] = {};
 S32 sGuideCurrent = 0;
-S32 sGuideCount = 0;
+S32 sGuideCount = 0, sGuideNodes = 9;
 F64 sGuideTime = 0.0;
 LLVector3 sGuidePivot;
 LLQuaternion sGuideRotation;
@@ -56,7 +57,7 @@ constexpr S32 GUIDE_PROBE_PARTS = 7;
 std::vector<Mesh> sGuideMeshes;
 std::vector<Mesh> sGuideBodies;
 std::map<LLUUID, S32> sGuideBindings;
-constexpr S32 MAX_GUIDES = 64;
+constexpr S32 MAX_GUIDES = 64, MAX_GUIDE_NODES = 32;
 S32 sGuideSkeleton = -1;
 std::vector<F32> sTracePalette;
 F32 sTracePaletteDelta = 0.f;
@@ -73,7 +74,7 @@ struct GuideReadback
     GLsync fence = nullptr;
     U32 frame = 0;
     U32 bake = 0;
-    S32 count = 0;
+    S32 count = 0, nodes = 9;
     F32 dt = 0.f;
     F32 paletteDelta = 0.f;
     bool history = false, fit = false, meshHistory = false;
@@ -129,7 +130,8 @@ void captureGuides(F32 dt, bool history, bool fit, bool meshHistory, const glm::
         if (status == GL_TIMEOUT_EXPIRED) break;
         if (status == GL_ALREADY_SIGNALED || status == GL_CONDITION_SATISFIED)
         {
-            std::vector<glm::vec4> data(sample.count * (27 + 9 * GUIDE_PROBE_PARTS));
+            const S32 nodes = sample.nodes, stride = nodes * 3;
+            std::vector<glm::vec4> data(sample.count * nodes * (3 + GUIDE_PROBE_PARTS));
             glBindBuffer(GL_COPY_READ_BUFFER, sample.buffer);
             glGetBufferSubData(GL_COPY_READ_BUFFER, 0, data.size() * sizeof(glm::vec4), data.data());
             glBindBuffer(GL_COPY_READ_BUFFER, 0);
@@ -138,37 +140,38 @@ void captureGuides(F32 dt, bool history, bool fit, bool meshHistory, const glm::
             row["dt_ms"] = sample.dt * 1000.f;
             row["history"] = sample.history;
             row["fit"] = sample.fit;
+            row["vertices_per_rope"] = nodes;
             row["mesh_history"] = sample.meshHistory;
             row["palette_max_element_change"] = sample.paletteDelta;
-            const bool consecutive = sGuideLastSampleFrame + 1 == sample.frame && sGuideLastSample.size() == data.size();
+            const bool consecutive = sample.history && sGuideLastSampleFrame + 1 == sample.frame && sGuideLastSample.size() == data.size();
             row["consecutive"] = consecutive;
             F32 peak = 0.f, tipPeak = 0.f, residualPeak = 0.f;
             S32 peakIndex = 0;
             if (consecutive)
             for (S32 chain = 0; chain < sample.count; ++chain)
-            for (S32 node = 1; node < 9; ++node)
+            for (S32 node = 1; node < nodes; ++node)
             {
-                const S32 base = chain * 27 + node;
-                const glm::vec3 before(sample.fromPrevious * glm::vec4(glm::vec3(sGuideLastSample[base + 9]), 1));
-                const glm::vec3 delta = glm::vec3(data[base + 9]) - before;
+                const S32 base = chain * stride + node;
+                const glm::vec3 before(sample.fromPrevious * glm::vec4(glm::vec3(sGuideLastSample[base + nodes]), 1));
+                const glm::vec3 delta = glm::vec3(data[base + nodes]) - before;
                 const F32 distance = glm::length(delta);
                 if (distance > peak) { peak = distance; peakIndex = base; }
-                if (node == 8) tipPeak = llmax(tipPeak, distance);
-                const glm::vec3 freeVelocity = glm::mat3(sample.fromPrevious) * glm::vec3(sGuideLastSample[base + 18]);
+                if (node == nodes - 1) tipPeak = llmax(tipPeak, distance);
+                const glm::vec3 freeVelocity = glm::mat3(sample.fromPrevious) * glm::vec3(sGuideLastSample[base + nodes * 2]);
                 residualPeak = llmax(residualPeak, glm::length(delta - freeVelocity * sample.dt));
             }
             row["max_step_m"] = peak;
             row["max_tip_step_m"] = tipPeak;
             row["max_velocity_residual_m"] = residualPeak;
-            row["chain"] = peakIndex / 27;
-            row["node"] = peakIndex % 27;
-            row["contact"] = data[peakIndex + 18].w > 0.f;
-            row["previous_contact"] = consecutive && sGuideLastSample[peakIndex + 18].w > 0.f;
-            for (S32 axis = 0; axis < 3; ++axis) row["position"].append(data[peakIndex + 9][axis]);
+            row["chain"] = peakIndex / stride;
+            row["node"] = peakIndex % stride;
+            row["contact"] = data[peakIndex + nodes * 2].w > 0.f;
+            row["previous_contact"] = consecutive && sGuideLastSample[peakIndex + nodes * 2].w > 0.f;
+            for (S32 axis = 0; axis < 3; ++axis) row["position"].append(data[peakIndex + nodes][axis]);
             const auto describePoint = [&](LLSD& point, S32 base)
             {
-                if (base % 27 == 0) return;
-                const S32 probe = sample.count * 27 + ((base / 27) * 9 + base % 27) * GUIDE_PROBE_PARTS;
+                if (base % stride == 0) return;
+                const S32 probe = sample.count * stride + ((base / stride) * nodes + base % stride) * GUIDE_PROBE_PARTS;
                 for (S32 part = 0; part < GUIDE_PROBE_PARTS; ++part)
                 for (S32 axis = 0; axis < 4; ++axis) point["probe"].append(data[probe + part][axis]);
                 const S32 offset = S32(data[probe + 3].w) - 1 - S32(sNodes * 2);
@@ -189,17 +192,17 @@ void captureGuides(F32 dt, bool history, bool fit, bool meshHistory, const glm::
             {
                 sGuideSnapshot = LLSD::emptyArray();
                 for (S32 chain = 0; chain < sample.count; ++chain)
-                for (S32 node = 0; node < 9; ++node)
+                for (S32 node = 0; node < nodes; ++node)
                 {
-                    const S32 base = chain * 27 + node;
+                    const S32 base = chain * stride + node;
                     LLSD point;
                     point["frame"] = LLSD::Integer(sample.frame);
                     point["chain"] = chain; point["node"] = node;
-                    point["contact"] = data[base + 18].w > 0.f;
+                    point["contact"] = data[base + nodes * 2].w > 0.f;
                     for (S32 axis = 0; axis < 3; ++axis)
                     {
                         point["rest"].append(data[base][axis]);
-                        point["position"].append(data[base + 9][axis]);
+                        point["position"].append(data[base + nodes][axis]);
                     }
                     describePoint(point, base);
                     sGuideSnapshot.append(point);
@@ -224,23 +227,23 @@ void captureGuides(F32 dt, bool history, bool fit, bool meshHistory, const glm::
         {
             glGenBuffers(1, &sample.buffer);
             glBindBuffer(GL_COPY_WRITE_BUFFER, sample.buffer);
-            glBufferData(GL_COPY_WRITE_BUFFER, MAX_GUIDES * (27 + 9 * GUIDE_PROBE_PARTS) * sizeof(glm::vec4), nullptr, GL_STREAM_READ);
+            glBufferData(GL_COPY_WRITE_BUFFER, MAX_GUIDES * MAX_GUIDE_NODES * (3 + GUIDE_PROBE_PARTS) * sizeof(glm::vec4), nullptr, GL_STREAM_READ);
         }
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
         glBindBuffer(GL_COPY_READ_BUFFER, sGuides[sGuideCurrent]);
         glBindBuffer(GL_COPY_WRITE_BUFFER, sample.buffer);
-        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, sGuideCount * 27 * sizeof(glm::vec4));
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, sGuideCount * sGuideNodes * 3 * sizeof(glm::vec4));
         if (sGuideProbe)
         {
             glBindBuffer(GL_COPY_READ_BUFFER, sGuideProbe);
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, sGuideCount * 27 * sizeof(glm::vec4),
-                sGuideCount * 9 * GUIDE_PROBE_PARTS * sizeof(glm::vec4));
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, sGuideCount * sGuideNodes * 3 * sizeof(glm::vec4),
+                sGuideCount * sGuideNodes * GUIDE_PROBE_PARTS * sizeof(glm::vec4));
         }
         glBindBuffer(GL_COPY_READ_BUFFER, 0);
         glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
         sample.fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         if (!sample.fence) { ++sGuideTraceDropped; return; }
-        sample.frame = gFrameCount; sample.count = sGuideCount; sample.dt = dt;
+        sample.frame = gFrameCount; sample.count = sGuideCount; sample.nodes = sGuideNodes; sample.dt = dt;
         sample.bake = sBakes;
         sample.history = history; sample.fit = fit; sample.meshHistory = meshHistory;
         sample.paletteDelta = sTracePaletteDelta;
@@ -254,19 +257,25 @@ void captureGuides(F32 dt, bool history, bool fit, bool meshHistory, const glm::
 struct Vertex { glm::vec4 position, normal, weights; glm::uvec4 joints; };
 static_assert(sizeof(Vertex) == 64);
 
-bool matchesHairColliderName(std::string name)
+bool matchesHairColliderName(LLVOVolume& volume, bool clothing = false)
 {
     static LLCachedControl<std::string> names(gSavedSettings, "BoxxyHairPhysicsColliderNames");
-    static std::string cached;
-    static std::vector<std::string> terms;
-    if (cached != std::string(names))
+    static LLCachedControl<std::string> clothingNames(gSavedSettings, "BoxxyHairPhysicsClothingNames");
+    static std::string cached[2];
+    static std::vector<std::string> terms[2];
+    const std::string value = clothing ? clothingNames : names;
+    auto& selected = terms[clothing];
+    if (cached[clothing] != value)
     {
-        cached = names;
-        terms = LLStringUtil::getTokens(cached, ",");
-        for (auto& term : terms) { LLStringUtil::trim(term); LLStringUtil::toLower(term); }
+        cached[clothing] = value;
+        selected = LLStringUtil::getTokens(value, ",");
+        for (auto& term : selected) { LLStringUtil::trim(term); LLStringUtil::toLower(term); }
     }
+    const auto* root = volume.getRootEdit();
+    if (!root) return false;
+    std::string name = root->hasCachedObjectName() ? root->getCachedObjectName() : root->getAttachmentItemName();
     LLStringUtil::toLower(name);
-    for (const auto& term : terms)
+    for (const auto& term : selected)
     {
         if (term.empty()) continue;
         for (size_t pos = name.find(term); pos != std::string::npos; pos = name.find(term, pos + 1))
@@ -290,10 +299,8 @@ void collect(LLViewerObject* object, std::vector<LLVOVolume*>& bodies, LLVOVolum
         }
         else if (volume->isMesh() && volume->getVolume() && volume->getSkinInfo() && !volume->isSSSOverlayEnabled())
         {
-            const auto* root = volume->getRootEdit();
             // Skin shading's fit-name matches (e.g. Perky) also include clothing with inward-facing linings.
-            if (root && matchesHairColliderName(root->hasCachedObjectName() ?
-                root->getCachedObjectName() : root->getAttachmentItemName())) bodies.push_back(volume);
+            if (matchesHairColliderName(*volume) || matchesHairColliderName(*volume, true)) bodies.push_back(volume);
         }
     }
     for (const auto& child : object->getChildren()) collect(child, bodies, hair);
@@ -306,6 +313,25 @@ std::vector<U8> visibleFaces(LLVOVolume& body)
     {
         const auto* te = body.getTE(i);
         faces[i] = te && te->getColor().mV[3] > 0.001f;
+    }
+    return faces;
+}
+
+std::vector<U8> colliderFaces(LLVOVolume& volume)
+{
+    std::vector<U8> faces(volume.getVolume()->getNumVolumeFaces(), 1);
+    // Body alpha cuts hide skin beneath clothes, not the physical surface.
+    if (matchesHairColliderName(volume)) return faces;
+    for (S32 i = 0; i < S32(faces.size()); ++i)
+    {
+        const auto* te = volume.getTE(i);
+        faces[i] = te && te->getColor().mV[3] > 0.001f;
+        if (const auto* material = te ? te->getGLTFRenderMaterial() : nullptr)
+        {
+            const F32 alpha = material->mBaseColor.mV[3];
+            faces[i] = !((material->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_BLEND && alpha <= 0.f) ||
+                (material->mAlphaMode == LLGLTFMaterial::ALPHA_MODE_MASK && alpha < material->mAlphaCutoff));
+        }
     }
     return faces;
 }
@@ -336,9 +362,9 @@ void collectGuideHair(LLViewerObject* object, std::vector<LLVOVolume*>& result)
 }
 
 bool fitHeadClearance(const std::vector<LLVOVolume*>& bodies, LLAvatarNeutralSkeleton& skeleton,
-    const glm::mat4& toHead, std::vector<glm::vec4>& guides, S32 chains)
+    const glm::mat4& toHead, std::vector<glm::vec4>& guides, S32 chains, S32 nodes)
 {
-    std::vector<float> radii(chains * 9, 0.f);
+    std::vector<float> radii(chains * nodes, 0.f);
     U32 vertices = 0, triangles = 0;
     sGuideHeadTests = sGuideHeadAdjusted = 0;
     for (auto* body : bodies)
@@ -358,7 +384,7 @@ bool fitHeadClearance(const std::vector<LLVOVolume*>& bodies, LLAvatarNeutralSke
         const auto bind = glm::make_mat4(skin->mBindShapeMatrix.mMatrix[0].getF32ptr());
         for (U32 j = 0; j < count; ++j)
             matrices[j] = toHead * glm::make_mat4(palette[j].mMatrix[0].getF32ptr()) * bind;
-        const auto faces = visibleFaces(*body);
+        const auto faces = colliderFaces(*body);
         for (S32 face = 0; face < body->getVolume()->getNumVolumeFaces(); ++face)
         {
             if (!faces[face]) continue;
@@ -398,26 +424,26 @@ bool fitHeadClearance(const std::vector<LLVOVolume*>& bodies, LLAvatarNeutralSke
                     if (index >= positions.size() || !eligible[index]) { valid = false; break; }
                     triangle[k] = positions[index];
                 }
-                if (valid && !LLHairMesh::headClearanceTriangle(triangle, guides, chains, radii, sGuideHeadTests)) return false;
+                if (valid && !LLHairMesh::headClearanceTriangle(triangle, guides, chains, nodes, radii, sGuideHeadTests)) return false;
             }
         }
     }
     for (S32 chain = 0; chain < chains; ++chain)
-    for (S32 node = 0; node < 9; ++node)
+    for (S32 node = 0; node < nodes; ++node)
     {
-        auto& rest = guides[chain * 27 + node];
+        auto& rest = guides[chain * nodes * 3 + node];
         const F32 radius = glm::length(glm::vec2(rest));
-        if (radius < 1.e-6f || radii[chain * 9 + node] <= radius) continue;
-        const F32 scale = radii[chain * 9 + node] / radius;
+        if (radius < 1.e-6f || radii[chain * nodes + node] <= radius) continue;
+        const F32 scale = radii[chain * nodes + node] / radius;
         rest.x *= scale; rest.y *= scale;
-        guides[chain * 27 + node + 9] = rest;
+        guides[chain * nodes * 3 + node + nodes] = rest;
         ++sGuideHeadAdjusted;
     }
     return true;
 }
 
 bool fitGuides(const std::vector<LLVOVolume*>& hair, const std::vector<LLVOVolume*>& bodies,
-    const LLVector3& pivot, const LLQuaternion& rotation, S32 chainCount)
+    const LLVector3& pivot, const LLQuaternion& rotation, S32 chainCount, S32 nodes)
 {
     struct Binding { LLUUID id; std::vector<glm::vec4> palette; };
     std::vector<Binding> bindings;
@@ -425,9 +451,9 @@ bool fitGuides(const std::vector<LLVOVolume*>& hair, const std::vector<LLVOVolum
     sGuideMeshes.clear();
     sGuideBodies.clear();
     for (auto* body : bodies)
-        sGuideBodies.push_back({body->getID(), body->getVolume(), body->getSkinInfo()->mHash, visibleFaces(*body)});
+        sGuideBodies.push_back({body->getID(), body->getVolume(), body->getSkinInfo()->mHash, colliderFaces(*body)});
     sGuideBindings.clear();
-    std::vector<glm::vec4> data(chainCount * 27, glm::vec4(0));
+    std::vector<glm::vec4> data(chainCount * nodes * 3, glm::vec4(0));
     LLAvatarNeutralSkeleton skeleton(*gAgentAvatarp);
     auto* head = skeleton.joint(gAgentAvatarp->mHeadp);
     const LLQuaternion neutral_rotation = head->getWorldRotation();
@@ -500,9 +526,9 @@ bool fitGuides(const std::vector<LLVOVolume*>& hair, const std::vector<LLVOVolum
     {
         const F32 angle = F_TWO_PI * chain / F32(chainCount);
         const glm::vec2 direction(cosf(angle), sinf(angle));
-        for (S32 node = 0; node < 9; ++node)
+        for (S32 node = 0; node < nodes; ++node)
         {
-            const F32 z = -depth * node / 8.f;
+            const F32 z = -depth * node / F32(nodes - 1);
             F32 sum = 0.f, weight = 0.f;
             for (const auto& p : points)
             {
@@ -515,14 +541,14 @@ bool fitGuides(const std::vector<LLVOVolume*>& hair, const std::vector<LLVOVolum
             }
             // shortcut: polar guides approximate loose hair; braids/updos need authored guide topology.
             const F32 radius = weight > 1.e-5f ? sum / weight :
-                (node ? glm::length(glm::vec2(data[chain * 27 + node - 1])) : 0.1f);
+                (node ? glm::length(glm::vec2(data[chain * nodes * 3 + node - 1])) : 0.1f);
             const glm::vec4 rest(direction * radius, z, 1.f);
-            data[chain * 27 + node] = rest;
-            data[chain * 27 + 9 + node] = rest;
+            data[chain * nodes * 3 + node] = rest;
+            data[chain * nodes * 3 + nodes + node] = rest;
         }
     }
     const glm::mat4 to_head = glm::mat4(inverse) * glm::translate(glm::mat4(1), -glm::make_vec3(neutral_pivot.mV));
-    sGuideHeadLimited = !fitHeadClearance(bodies, skeleton, to_head, data, chainCount);
+    sGuideHeadLimited = !fitHeadClearance(bodies, skeleton, to_head, data, chainCount, nodes);
     for (auto& binding : bindings)
     {
         sGuideBindings[binding.id] = S32(data.size());
@@ -530,6 +556,7 @@ bool fitGuides(const std::vector<LLVOVolume*>& hair, const std::vector<LLVOVolum
     }
     // Rest root W carries topology with each buffer, including the previous frame used by TAA.
     data[0].w = F32(chainCount);
+    data[1].w = F32(nodes);
     for (S32 slot = 0; slot < 2; ++slot)
     {
         upload(sGuides[slot], data.size() * sizeof(glm::vec4), data.data(), GL_DYNAMIC_DRAW);
@@ -540,7 +567,7 @@ bool fitGuides(const std::vector<LLVOVolume*>& hair, const std::vector<LLVOVolum
     gGL.getTexUnit(0)->unbind(LLTexUnit::TT_BUFFER);
     sGuideFrames[0] = sGuideFrames[1] = 0;
     sGuideSkeleton = gAgentAvatarp->mLastSkeletonSerialNum;
-    sGuideCount = chainCount;
+    sGuideCount = chainCount; sGuideNodes = nodes;
     return true;
 }
 
@@ -558,7 +585,7 @@ bool bake(const std::vector<LLVOVolume*>& bodies)
     {
         const auto* skin = body->getSkinInfo();
         auto* volume = body->getVolume();
-        sMeshes.push_back({body->getID(), volume, skin->mHash, visibleFaces(*body)});
+        sMeshes.push_back({body->getID(), volume, skin->mHash, colliderFaces(*body)});
         const U32 count = LLSkinningUtil::getMeshJointCount(skin);
         if (!count) continue;
         auto entry = sPaletteOffsets.emplace(skin->mHash, jointCount);
@@ -768,7 +795,7 @@ void LLHairMesh::update()
     if (bodies.size() != sMeshes.size()) sDirty = true;
     for (size_t i = 0; !sDirty && i < bodies.size(); ++i)
         if (sMeshes[i].id != bodies[i]->getID() || sMeshes[i].volume != bodies[i]->getVolume() ||
-            sMeshes[i].skinHash != bodies[i]->getSkinInfo()->mHash || sMeshes[i].faces != visibleFaces(*bodies[i])) sDirty = true;
+            sMeshes[i].skinHash != bodies[i]->getSkinInfo()->mHash || sMeshes[i].faces != colliderFaces(*bodies[i])) sDirty = true;
     gGL.flush();
     auto* previousShader = LLGLSLShader::sCurBoundShaderPtr;
     if (sDirty && !bake(bodies))
@@ -911,7 +938,9 @@ void LLHairMesh::updateGuides()
     if (!hair.front()->getHairPhysicsFrame(pivot, rotation)) return;
     static LLCachedControl<S32> density(gSavedSettings, "BoxxyHairPhysicsRopeDensity", 16);
     const S32 chainCount = llclamp(S32(density), 4, 64);
-    bool fit = chainCount != sGuideCount || hair.size() != sGuideMeshes.size() || bodies.size() != sGuideBodies.size() ||
+    static LLCachedControl<S32> vertices(gSavedSettings, "BoxxyHairPhysicsRopeVertices", 9);
+    const S32 nodes = llclamp(S32(vertices), 9, MAX_GUIDE_NODES);
+    bool fit = chainCount != sGuideCount || nodes != sGuideNodes || hair.size() != sGuideMeshes.size() || bodies.size() != sGuideBodies.size() ||
         sGuideSkeleton != gAgentAvatarp->mLastSkeletonSerialNum;
     for (size_t i = 0; !fit && i < hair.size(); ++i)
         fit = hair[i]->getID() != sGuideMeshes[i].id || hair[i]->getVolume() != sGuideMeshes[i].volume ||
@@ -919,10 +948,10 @@ void LLHairMesh::updateGuides()
             visibleFaces(*hair[i]) != sGuideMeshes[i].faces;
     for (size_t i = 0; !fit && i < bodies.size(); ++i)
         fit = bodies[i]->getID() != sGuideBodies[i].id || bodies[i]->getVolume() != sGuideBodies[i].volume ||
-            bodies[i]->getSkinInfo()->mHash != sGuideBodies[i].skinHash || visibleFaces(*bodies[i]) != sGuideBodies[i].faces;
+            bodies[i]->getSkinInfo()->mHash != sGuideBodies[i].skinHash || colliderFaces(*bodies[i]) != sGuideBodies[i].faces;
     gGL.flush();
     auto* previousShader = LLGLSLShader::sCurBoundShaderPtr;
-    if (fit && !fitGuides(hair, bodies, pivot, rotation, chainCount))
+    if (fit && !fitGuides(hair, bodies, pivot, rotation, chainCount, nodes))
     {
         sGuideFrames[0] = sGuideFrames[1] = 0;
         sGuideMeshes.clear();
@@ -956,7 +985,7 @@ void LLHairMesh::updateGuides()
         {
             glGenBuffers(1, &sGuideProbe);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, sGuideProbe);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_GUIDES * 9 * GUIDE_PROBE_PARTS * sizeof(glm::vec4), nullptr, GL_STREAM_READ);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_GUIDES * MAX_GUIDE_NODES * GUIDE_PROBE_PARTS * sizeof(glm::vec4), nullptr, GL_STREAM_READ);
         }
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, sGuideProbe);
     }
@@ -1085,12 +1114,12 @@ void LLHairMesh::renderDebug()
         gGL.syncMatrices();
         sDebugShader.uniform1f(LLStaticHashedString("hair_root_radius"), llclamp(gSavedSettings.getF32("BoxxyHairPhysicsRootRadius"), .03f, .35f));
         sDebugShader.uniform1i(LLStaticHashedString("guide_debug"), 1);
-        glDrawArrays(GL_LINES, 0, sGuideCount * 8 * 2);
+        glDrawArrays(GL_LINES, 0, sGuideCount * (sGuideNodes - 1) * 2);
         sDebugShader.uniform1i(LLStaticHashedString("guide_debug"), 2);
-        glDrawArrays(GL_LINES, 0, sGuideCount * 8 * 2);
+        glDrawArrays(GL_LINES, 0, sGuideCount * (sGuideNodes - 1) * 2);
         sDebugShader.uniform1i(LLStaticHashedString("guide_debug"), 3);
         LLGLEnable point_size(GL_PROGRAM_POINT_SIZE);
-        glDrawArrays(GL_POINTS, 0, sGuideCount * 9);
+        glDrawArrays(GL_POINTS, 0, sGuideCount * sGuideNodes);
         sDebugShader.disableTexture(LLShaderMgr::HAIR_GUIDES, LLTexUnit::TT_BUFFER);
     }
     gGL.popMatrix();
@@ -1125,12 +1154,15 @@ LLSD LLHairMesh::diagnostics()
     LLSD result;
     result["available"] = sReady;
     result["guide_chains"] = LLSD::Integer(guideFrame() ? sGuideCount : 0);
-    result["guide_points"] = LLSD::Integer(guideFrame() ? sGuideCount * 9 : 0);
+    result["guide_vertices_per_rope"] = LLSD::Integer(sGuideNodes);
+    result["guide_points"] = LLSD::Integer(guideFrame() ? sGuideCount * sGuideNodes : 0);
     result["active"] = sFrames[sCurrent] != 0 && sFrames[sCurrent] == gFrameCount;
     result["triangles"] = LLSD::Integer(sTriangles);
     result["nodes"] = LLSD::Integer(sNodes);
     result["bakes"] = LLSD::Integer(sBakes);
     result["meshes"] = LLSD::Integer(sMeshes.size());
+    result["collider_names"] = gSavedSettings.getString("BoxxyHairPhysicsColliderNames");
+    result["clothing_names"] = gSavedSettings.getString("BoxxyHairPhysicsClothingNames");
     result["contact_points"] = LLSD::Integer(sContacts[sCurrent] && sFrames[sCurrent] == gFrameCount ? CONTACT_POINTS : 0);
     result["guide_fits"] = LLSD::Integer(sGuideFits);
     result["guide_resets"] = LLSD::Integer(sGuideResets);

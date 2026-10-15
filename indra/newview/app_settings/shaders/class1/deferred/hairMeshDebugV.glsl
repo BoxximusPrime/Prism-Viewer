@@ -10,13 +10,15 @@ void main()
 {
     if (guide_debug!=0)
     {
-        int chain=guide_debug==3 ? gl_VertexID/9 : gl_VertexID/16;
-        int node=guide_debug==3 ? gl_VertexID%9 : (gl_VertexID%16)/2+(gl_VertexID&1);
-        int base=chain*27+node;
+        int nodes=int(clamp(texelFetch(hair_guides,1).w,9.0,32.0));
+        int vertices=(nodes-1)*2;
+        int chain=guide_debug==3 ? gl_VertexID/nodes : gl_VertexID/vertices;
+        int node=guide_debug==3 ? gl_VertexID%nodes : (gl_VertexID%vertices)/2+(gl_VertexID&1);
+        int base=chain*nodes*3+node;
         vec3 rest=texelFetch(hair_guides,base).xyz;
-        vec3 p=texelFetch(hair_guides,base+9).xyz;
+        vec3 p=texelFetch(hair_guides,base+nodes).xyz;
         bool pinned=node==0 || length(rest)<=hair_root_radius;
-        bool contact=texelFetch(hair_guides,base+18).w>0.0;
+        bool contact=texelFetch(hair_guides,base+nodes*2).w>0.0;
         guide_color=guide_debug==1 ? vec4(.7,.7,.7,.4) :
             (pinned ? vec4(1,.8,.05,1) : (contact ? vec4(1,.15,.05,1) : vec4(0,1,1,1)));
         shell_normal=vec3(0,0,1);

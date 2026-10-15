@@ -54,13 +54,8 @@ h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; letter-sp
 .gallery-section { padding: 12px 0 136px; }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 28px; }
 .section-heading p { margin: 8px 0 0; color: var(--muted); }
-.gallery-controls { display: flex; gap: 8px; }
-.gallery-button { width: 40px; height: 40px; cursor: pointer; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--muted); }
-.gallery-button:hover { border-color: var(--green); color: var(--green-bright); }
-.gallery { display: flex; gap: 12px; padding: 0 0 14px; overflow-x: auto; scroll-behavior: smooth; scrollbar-color: var(--green) var(--surface); }
-.gallery:focus-visible { outline: 1px solid var(--green); outline-offset: 6px; }
-.gallery-item { flex: 0 0 280px; height: 220px; padding: 0; position: relative; overflow: hidden; cursor: pointer; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); text-align: left; }
-.gallery-item-wide { flex-basis: min(600px, 70vw); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.gallery-item { min-width: 0; width: 100%; aspect-ratio: 14 / 11; padding: 0; position: relative; overflow: hidden; cursor: pointer; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); text-align: left; }
 .gallery-item img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
 .gallery-item:hover img { transform: scale(1.03); }
 .gallery-label { position: absolute; right: 16px; bottom: 13px; left: 16px; z-index: 1; color: var(--text); font-size: 12px; font-weight: 600; }

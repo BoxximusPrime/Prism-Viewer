@@ -568,6 +568,13 @@
     <key>Type</key><string>F32</string>
     <key>Value</key><real>5.0</real>
   </map>
+  <key>BoxxyHairPhysicsRopeVertices</key>
+  <map>
+    <key>Comment</key><string>Vertices along each hair rope (9 to 32). Higher values improve contact resolution at greater GPU cost. Changing this refits and resets ropes.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>S32</string>
+    <key>Value</key><integer>9</integer>
+  </map>
   <key>BoxxyHairPhysicsRopeDensity</key>
   <map>
     <key>Comment</key><string>Number of fitted radial ropes around the local avatar head (4 to 64). Changing this refits and resets ropes.</string>
@@ -676,10 +683,18 @@
   <key>BoxxyHairPhysicsColliderNames</key>
   <map>
     <key>Comment</key>
-    <string>Comma-separated whole words or phrases in attachment root names used for animated hair collision. Independent of skin scattering selection; use distinctive body/head/hand/foot names, not clothing fit labels.</string>
+    <string>Comma-separated whole words or phrases in body attachment root names used for animated hair collision, including hidden faces. Independent of skin scattering selection; use distinctive body/head/hand/foot names, not clothing fit labels.</string>
     <key>Persist</key><integer>1</integer>
     <key>Type</key><string>String</string>
     <key>Value</key><string>body, head, hands, feet</string>
+  </map>
+  <key>BoxxyHairPhysicsClothingNames</key>
+  <map>
+    <key>Comment</key>
+    <string>Optional comma-separated whole words or phrases in rigged clothing attachment root names to add to hair collision. Empty by default. Fully hidden faces are excluded; texture cutouts are not sampled. Body-name matches take precedence and retain hidden faces.</string>
+    <key>Persist</key><integer>1</integer>
+    <key>Type</key><string>String</string>
+    <key>Value</key><string></string>
   </map>
   <key>BoxxyHairPhysicsShowMesh</key>
   <map>

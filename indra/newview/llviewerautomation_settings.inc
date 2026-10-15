@@ -5,6 +5,7 @@
         {"BoxxyHairPhysicsDamping", {0, 30}},
         {"BoxxyHairPhysicsBendResistance", {0, 4}},
         {"BoxxyHairPhysicsRopeDensity", {4, 64}},
+        {"BoxxyHairPhysicsRopeVertices", {9, 32}},
         {"BoxxyHairPhysicsBendGradient", {0, 2}},
         {"BoxxyHairPhysicsElasticity", {0, 1}},
         {"BoxxyHairPhysicsTravelLimit", {0, 20}},

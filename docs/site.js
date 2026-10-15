@@ -1,5 +1,4 @@
 (() => {
-  const gallery = document.querySelector('[data-gallery]');
   const items = [...document.querySelectorAll('[data-lightbox]')];
   const modal = document.querySelector('[data-lightbox-modal]');
   const modalImage = document.querySelector('[data-lightbox-image]');
@@ -9,29 +8,6 @@
   let lastFocused;
   let currentIndex = 0;
   let wheelLocked = false;
-
-  const moveGallery = (direction) => {
-    gallery.scrollBy({ left: direction * Math.min(gallery.clientWidth * .72, 620), behavior: 'smooth' });
-  };
-
-  document.querySelector('[data-gallery-prev]').addEventListener('click', () => moveGallery(-1));
-  document.querySelector('[data-gallery-next]').addEventListener('click', () => moveGallery(1));
-
-  gallery.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowLeft') moveGallery(-1);
-    if (event.key === 'ArrowRight') moveGallery(1);
-  });
-
-  gallery.addEventListener('wheel', (event) => {
-    const distance = (Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY) * 2.5;
-    const maxScroll = gallery.scrollWidth - gallery.clientWidth;
-    const nextScroll = gallery.scrollLeft + distance;
-    const atStart = distance < 0 && gallery.scrollLeft <= 0;
-    const atEnd = distance > 0 && gallery.scrollLeft >= maxScroll;
-    if (!distance || maxScroll <= 0 || atStart || atEnd) return;
-    event.preventDefault();
-    gallery.scrollLeft = Math.max(0, Math.min(maxScroll, nextScroll));
-  }, { passive: false });
 
   const closeLightbox = () => {
     modal.classList.remove('is-open');
