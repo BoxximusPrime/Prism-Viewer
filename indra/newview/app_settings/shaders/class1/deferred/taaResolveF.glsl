@@ -1,4 +1,4 @@
-// Native-resolution HDR TAA. History is unjittered and stores linear view depth
+// HDR TAA/TAAU. Output-resolution history is unjittered and stores linear view depth
 // in alpha (negative = rejected, for diagnostics). No UI enters this history.
 out vec4 frag_data[2];
 #define frag_color frag_data[0]
@@ -36,7 +36,7 @@ vec3 clipBox(vec3 c, vec3 lo, vec3 hi)
 float viewDepth(ivec2 p, float d)
 {
     if (d >= 1.0) return 0.0;
-    vec4 v = taa_inv_projection * vec4((vec2(p)+.5)*taa_rcp_res*2.0-1.0,d*2.0-1.0,1);
+    vec4 v = taa_inv_projection * vec4((vec2(p)+.5)/vec2(textureSize(depthMap,0))*2.0-1.0,d*2.0-1.0,1);
     return min(max(-v.z/v.w, 0.001),65000.0);
 }
 bool sameDepth(float a, float b)
@@ -78,10 +78,16 @@ void writeResult(vec3 color, float depth, float weight, float support, float cli
 void main()
 {
     ivec2 size = textureSize(taa_current,0);
+    ivec2 history_size = textureSize(taa_history,0);
+    vec2 input_rcp = 1.0/vec2(size);
     vec2 uv = gl_FragCoord.xy * taa_rcp_res;
-    vec2 current_uv = clamp(uv + taa_jitter, .5*taa_rcp_res, 1.0-.5*taa_rcp_res);
+    vec2 current_uv = clamp(uv + taa_jitter, .5*input_rcp, 1.0-.5*input_rcp);
     ivec2 center = clamp(ivec2(current_uv*vec2(size)),ivec2(0),size-1);
     vec3 current = vec3(0);
+    float current_support = 0.0;
+    // Match the reconstruction footprint to output pixels. Native TAA retains
+    // its bilinear kernel; TAAU gathers sharper samples across jitter phases.
+    vec2 filter_radius = clamp(vec2(size)*taa_rcp_res, vec2(.5), vec2(1));
     vec3 lo = vec3(1e10), hi = vec3(-1e10), mean = vec3(0), square = vec3(0);
     float farthest=-1.0, background_sum=0.0, background_count=0.0;
     float closest = 1.0, reactive = 0.0, depth_min = 1e10, depth_max = 0.0;
@@ -100,8 +106,9 @@ void main()
         // Filtering raw HDR first lets one tiny highlight dominate all four
         // bilinear taps before compression can limit its influence.
         vec2 tap = vec2(center+ivec2(x,y))+.5-current_uv*vec2(size);
-        vec2 filter = max(vec2(1)-abs(tap),vec2(0));
+        vec2 filter = max(vec2(1)-abs(tap)/filter_radius,vec2(0));
         current += compressed*filter.x*filter.y;
+        current_support += filter.x*filter.y;
         vec3 c = toYCoCg(compressed);
         lo=min(lo,c); hi=max(hi,c); mean+=c; square+=c*c;
         float d = texelFetch(depthMap,p,0).r;
@@ -122,6 +129,7 @@ void main()
         previous_min=min(previous_min,local_motion.b); previous_max=max(previous_max,local_motion.b);
         static_detail=static_detail && local_motion.a<0.0;
     }
+    current /= max(current_support, .00001);
     mean/=9.0; square/=9.0;
     // A faint compositing change must not abruptly turn off thin-detail
     // retention. Fade it out; strongly reactive/untracked surfaces still use
@@ -158,8 +166,8 @@ void main()
     bool onscreen=all(greaterThanEqual(history_uv,.5*taa_rcp_res)) && all(lessThanEqual(history_uv,1.0-.5*taa_rcp_res));
     // Reproject metadata with color and validate each contributing tap before
     // gathering. Invalid foreground colors never enter the filtered history.
-    ivec2 hp=ivec2(floor(history_uv*vec2(size)-.5));
-    vec2 fraction=fract(history_uv*vec2(size)-.5);
+    ivec2 hp=ivec2(floor(history_uv*vec2(history_size)-.5));
+    vec2 fraction=fract(history_uv*vec2(history_size)-.5);
     float tolerance=max(.015,motion.b*.01);
     // Limited slope allowance; never permit a depth edge to widen validation.
     tolerance+=min(depth_max-depth_min,motion.b*.01);
@@ -170,7 +178,7 @@ void main()
         vec2 tap_weight=mix(1.0-fraction,fraction,vec2(x,y));
         float w=tap_weight.x*tap_weight.y;
         if(w<0.0001 || !onscreen) continue;
-        ivec2 p=clamp(hp+ivec2(x,y),ivec2(0),size-1);
+        ivec2 p=clamp(hp+ivec2(x,y),ivec2(0),history_size-1);
         vec4 sample_history=texelFetch(taa_history,p,0);
         float old_depth=abs(sample_history.a);
         vec4 old_detail=texelFetch(taa_detail,p,0);

@@ -233,6 +233,7 @@ extern bool gDepthDirty;
 extern bool gResizeScreenTexture;
 extern bool gCubeSnapshot;
 extern bool gSnapshotNoPost;
+extern bool gSnapshot;
 
 LLViewerWindow  *gViewerWindow = NULL;
 
@@ -5529,6 +5530,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
     }
 
     // PRE SNAPSHOT
+    gSnapshot = true;
     gSnapshotNoPost = no_post;
     gDisplaySwapBuffers = false;
 
@@ -5551,6 +5553,8 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
 
     // if not showing ui, use full window to render world view
     updateWorldViewRect(!show_ui);
+    // Captures do not accumulate history, so render their source at full resolution.
+    if (gPipeline.mTAAPostScratch.isComplete()) gPipeline.resizeScreenTexture();
 
     // Copy screen to a buffer
     // crop sides or top and bottom, if taking a snapshot of different aspect ratio
@@ -5588,8 +5592,8 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
             U32 color_fmt = type == LLSnapshotModel::SNAPSHOT_TYPE_DEPTH ? GL_DEPTH_COMPONENT : GL_RGBA;
             if (scratch_space.allocate(image_width, image_height, color_fmt, true))
             {
-                original_width = gPipeline.mRT->deferredScreen.getWidth();
-                original_height = gPipeline.mRT->deferredScreen.getHeight();
+                original_width = gPipeline.mRT->width;
+                original_height = gPipeline.mRT->height;
 
                 if (gPipeline.allocateScreenBuffer(image_width, image_height))
                 {
@@ -5846,12 +5850,14 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
     // Capture temporarily uses the full window. Restore the live viewport before
     // snapshot-updated callbacks resolve native crop dimensions from it.
     updateWorldViewRect(false);
+    if (gSavedSettings.getBOOL("RenderTAAUpscale")) gResizeScreenTexture = true;
     return ret;
 }
 
 bool LLViewerWindow::simpleSnapshot(LLImageRaw* raw, S32 image_width, S32 image_height, const int num_render_passes)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_APP;
+    gSnapshot = true;
     gDisplaySwapBuffers = false;
 
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT); // stencil buffer is deprecated | GL_STENCIL_BUFFER_BIT);
@@ -5871,8 +5877,8 @@ bool LLViewerWindow::simpleSnapshot(LLImageRaw* raw, S32 image_width, S32 image_
 
     LLRect window_rect = getWorldViewRectRaw();
 
-    S32 original_width = LLPipeline::sRenderDeferred ? gPipeline.mRT->deferredScreen.getWidth() : gViewerWindow->getWorldViewWidthRaw();
-    S32 original_height = LLPipeline::sRenderDeferred ? gPipeline.mRT->deferredScreen.getHeight() : gViewerWindow->getWorldViewHeightRaw();
+    S32 original_width = LLPipeline::sRenderDeferred ? gPipeline.mRT->width : gViewerWindow->getWorldViewWidthRaw();
+    S32 original_height = LLPipeline::sRenderDeferred ? gPipeline.mRT->height : gViewerWindow->getWorldViewHeightRaw();
 
     LLRenderTarget scratch_space;
     U32 color_fmt = GL_RGBA;
@@ -5952,6 +5958,7 @@ bool LLViewerWindow::simpleSnapshot(LLImageRaw* raw, S32 image_width, S32 image_
     scratch_space.flush();
     scratch_space.release();
     gPipeline.allocateScreenBuffer(original_width, original_height);
+    if (gSavedSettings.getBOOL("RenderTAAUpscale")) gResizeScreenTexture = true;
 
     return true;
 }

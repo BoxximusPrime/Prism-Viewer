@@ -6,6 +6,47 @@ choices and saved preferences are retained. New profiles default to TAA at highe
 restores the saved preference values. The old Low–Ultra AA quality selector
 continues to apply only to FXAA/SMAA.
 
+## Optional temporal upscaling (TAAU)
+
+With TAA selected, enable **Graphics > TAA > TAAU (75% render resolution)**.
+Uncheck it for native TAA. The setting persists, applies immediately, and is
+included in preference Cancel and the page's Default action. Native TAA remains
+the default. Work is in progress/uncommitted.
+
+TAAU renders the live world at 75% of each output dimension, rounded to the
+nearest pixel (1920x1080 for a 2560x1440 output). The setting takes precedence
+over the legacy debug resolution divisor while active. Scene color, physical
+depth, motion and transparency reference remain at render resolution; temporal
+color/depth history, static-detail metadata and resolved color use output
+resolution. A narrower normalized reconstruction kernel and 16-phase Halton
+sequence accumulate subpixel samples. Native TAA retains its eight phases and
+bilinear reconstruction. History is cleared when buffers or modes change.
+
+Tone mapping, CAS, bloom, glow, DoF and presentation consume the reconstructed
+output. A full-resolution scratch buffer keeps CAS and DoF from downsampling it
+again; depth-based effects sample the lower-resolution physical depth with the
+matching jitter offset. HUDs and interface text remain at native resolution.
+Shadow and reflection-probe resolutions are not reduced by TAAU. Photo and
+snapshot captures render at full resolution without borrowing live history;
+the next live frame restores the selected mode.
+
+The GPU regression `scripts/tests/test_taau_gpu.py` covers unequal, odd-sized
+grids, HDR/border preservation, reprojection, disocclusion, reactive rejection,
+motion scratch copies, temporal edge reconstruction, glow alpha, and DoF/final
+depth alignment. GPU-bound shading may benefit; CPU work and output-resolution
+post effects remain. Moving transparency, fine geometry, and newly revealed
+surfaces can lose detail or show temporal artifacts. No in-world performance
+improvement is claimed from the synthetic shader checks.
+
+October 15 validation: 58 new TAAU checks and 265 native TAA checks passed, as
+did the Release build and staged-resource checks. Live MCP captures confirmed
+3440x1316 native rendering, 2580x987 TAAU rendering, SSGI integration, native
+photo rendering and restoration of both TAAU and native modes. See the
+[smoke report](../doc/performance/2026-10-15-taau-75-smoke.md) for raw artifacts
+and the remaining visual/performance limits.
+
+## Controls
+
 Graphics → **Post** now offers the same bounded sharpening filter independently
 of antialiasing, with a checkbox (off by default) and a 0–2 strength slider
 (default 1.50). It runs after spatial AA and scene effects, before photo grading
@@ -98,8 +139,8 @@ The main world projection uses an eight-sample Halton(2,3) subpixel sequence,
 applied after culling, shadow maps, reflection probes, and impostor updates. The
 projection is restored before HUDs, world labels, and UI. Selection, snapshots,
 GTAO/skin diagnostics, and buffer visualization do not accumulate TAA history.
-Native render resolution is retained; this is antialiasing, not upscaling or
-frame generation.
+Native render resolution is retained unless the optional TAAU setting above is
+enabled. Neither mode generates additional frames.
 
 The sharpening slider is read every presentation pass and sent directly to
 `taa_sharpen`; zero is a color passthrough. The filter allows a bounded extension

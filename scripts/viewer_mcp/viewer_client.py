@@ -191,7 +191,7 @@ class Benchmark:
         self.client.camera_set(pose)
         original = self.client.call("settings_get")["values"]
         keys = set().union(*(FEATURES[f] for f in features))
-        pacing = {"RenderVSyncEnable": False, "BackgroundYieldTime": 0, "YieldTime": -1} if uncapped else {}
+        pacing = {"RenderVSyncEnable": False, "MaxFPS": 0, "BackgroundYieldTime": 0, "YieldTime": -1} if uncapped else {}
         keys.update(pacing)
         restore = {key: original[key] for key in keys}
         baseline = {**restore, **pacing}

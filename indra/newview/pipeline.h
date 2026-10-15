@@ -399,6 +399,7 @@ public:
     void updateSSSDepthFocus(LLCamera& camera);
     void bindSSSDepth(LLGLSLShader& shader);
     void setSSSDepthUniforms(LLGLSLShader& shader, const LLViewerObject* object = nullptr);
+    F32 getSSSDepthID(const LLViewerObject* object);
     LLRenderTarget* getSunShadowTarget(U32 i);
     LLRenderTarget* getSpotShadowTarget(U32 i);
 
@@ -862,6 +863,7 @@ public:
     LLRenderTarget          mTAAMotion;
     LLRenderTarget          mTAAOpaque;
     LLRenderTarget          mTAAResolved;
+    LLRenderTarget          mTAAPostScratch; // Output-resolution CAS/DoF scratch when TAAU is active.
     bool                   mTAAFrameActive = false;
     bool                   mTemporalFrameActive = false; // Motion tracking also serves SSGI with spatial AA.
     bool                   mTAAHistoryValid = false;

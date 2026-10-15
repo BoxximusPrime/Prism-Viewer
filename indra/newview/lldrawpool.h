@@ -400,7 +400,8 @@ public:
     void pushMaskBatches(U32 type, bool texture = true, bool batch_textures = false);
     void pushRiggedMaskBatches(U32 type, bool texture = true, bool batch_textures = false);
     void pushBatch(LLDrawInfo& params, bool texture, bool batch_textures = false);
-    void pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 start, U32 end, U32 count);
+    void pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 start, U32 end, U32 count,
+                        const F32* sss_depth_batches = nullptr, U32 sss_depth_batch_count = 0);
     void pushUntexturedBatch(LLDrawInfo& params);
     void pushBumpBatch(LLDrawInfo& params, bool texture, bool batch_textures = false);
     static bool uploadMatrixPalette(LLDrawInfo& params);

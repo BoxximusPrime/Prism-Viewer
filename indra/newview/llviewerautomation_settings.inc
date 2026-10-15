@@ -1,4 +1,5 @@
 // Scalar bounds from panel_preferences_graphics1.xml; update alongside UI range changes.
+        {"MaxFPS", {0, 1000}},
         {"BoxxyHairEnabled", {0, 1}},
         {"BoxxyHairPhysicsEnabled", {0, 1}},
         {"BoxxyHairPhysicsFriction", {0, 2}},
@@ -106,6 +107,7 @@
         {"RenderTAASharpen", {0, 2}},
         {"RenderTAAStaticDetails", {0, 1}},
         {"RenderTAATransparency", {0, 1}},
+        {"RenderTAAUpscale", {0, 1}},
         {"RenderVolumeCloudAltitude", {0, 10000}},
         {"RenderVolumeCloudAmbient", {0, 2}},
         {"RenderVolumeCloudDensity", {0, 2}},

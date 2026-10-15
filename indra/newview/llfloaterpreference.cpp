@@ -1445,13 +1445,14 @@ void LLFloaterPreference::refreshEnabledState()
         "Changes apply immediately. Quality keeps your selected light limit and shadow setting.");
     const bool taa_enabled = gSavedSettings.getU32("RenderFSAAType") == 3;
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
-        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderTAADebug", "TAADebugLabel" })
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderTAAUpscale", "RenderTAADebug", "TAADebugLabel" })
         getChildView(control)->setEnabled(taa_enabled);
     getChildView("RenderTAASharpen")->setEnabled(taa_enabled && !gSavedSettings.getBOOL("RenderPostSharpenEnabled"));
     getChild<LLTextBox>("TAAStatus")->setValue(!taa_enabled ? "Choose TAA above to enable temporal antialiasing." :
         !gPipeline.isTAAAvailable() ? "TAA is waiting for graphics resources. The camera remains unjittered until ready." :
         gSavedSettings.getBOOL("RenderTAAFreezeJitter") ? "Camera jitter is frozen. TAA history blending remains active. Turn off after comparing shimmer." :
-        "TAA is enabled. Motion protection favors clear moving avatars over long history.");
+        gSavedSettings.getBOOL("RenderTAAUpscale") ? "TAAU renders at 75% per axis and reconstructs at display resolution. HUDs and text stay at native resolution." :
+        "Native TAA is enabled. Enable TAAU to render the world at 75% resolution.");
     const bool gtao_supported = LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred") &&
         LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferredSSAO");
     const bool gtao_enabled = gtao_supported && gSavedSettings.getBOOL("RenderGTAOEnabled");
@@ -3039,7 +3040,7 @@ void LLPanelPreferenceGraphics::setHardwareDefaults()
         "RenderVolumeCloudLightPenetration", "RenderVolumeCloudEdgeGlow", "RenderVolumeCloudInternalLight", "RenderVolumeCloudAmbient", "RenderVolumeCloudQuality" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
-        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderTAADebug" })
+        "RenderTAATransparency", "RenderTAASharpen", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderTAAUpscale", "RenderTAADebug" })
         gSavedSettings.getControl(control)->resetToDefault(true);
     for (const char* control : { "RenderPostSharpenEnabled", "RenderPostSharpenStrength", "RenderChromaticAberrationStrength" })
         gSavedSettings.getControl(control)->resetToDefault(true);

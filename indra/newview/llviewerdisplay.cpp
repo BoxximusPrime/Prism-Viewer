@@ -425,6 +425,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
     LL_PROFILE_GPU_ZONE("Render");
 
     LLPerfStats::RecordSceneTime T (LLPerfStats::StatType_t::RENDER_DISPLAY); // render time capture - This is the main stat for overall rendering.
+    gSnapshot = for_snapshot;
 
     if (gWindowResized)
     { //skip render on frames where window has been resized
@@ -445,8 +446,6 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         gPipeline.resizeShadowTexture();
         gResizeShadowTexture = false;
     }
-
-    gSnapshot = for_snapshot;
 
     if (LLPipeline::sRenderDeferred)
     { //hack to make sky show up in deferred snapshots

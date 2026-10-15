@@ -95,7 +95,7 @@ class BridgeTests(unittest.TestCase):
 class FakeViewer:
     def __init__(self, fail=False):
         self.values = {"RenderPCSSEnabled": True, "RenderSSGIEnabled": True, "RenderShadowDetail": 2, "RenderFSAAType": 2,
-                       "RenderVSyncEnable": True, "BackgroundYieldTime": 40, "YieldTime": -1}
+                       "RenderVSyncEnable": True, "MaxFPS": 120, "BackgroundYieldTime": 40, "YieldTime": -1}
         self.history = []
         self.fail = fail
     def call(self, op, **params):
@@ -124,6 +124,8 @@ class BenchmarkTests(unittest.TestCase):
             self.assertTrue(suite.progress["settings_restored"])
             self.assertTrue(fake.values["RenderVSyncEnable"])
             self.assertEqual(fake.values["BackgroundYieldTime"], 40)
+            self.assertEqual(fake.values["MaxFPS"], 120)
+            self.assertTrue(all(v["MaxFPS"] == 0 for _,v in fake.history))
             self.assertTrue(all(not v["RenderVSyncEnable"] and v["BackgroundYieldTime"] == 0 for _,v in fake.history))
             self.assertEqual(suite.progress["comparisons"][0]["incremental_gpu_frame_ms"], 2)
 
@@ -136,6 +138,7 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(suite.progress["state"], "failed")
             self.assertTrue(fake.values["RenderPCSSEnabled"])
             self.assertTrue(suite.progress["settings_restored"])
+            self.assertEqual(fake.values["MaxFPS"], 120)
 
     def test_invalid_selection(self):
         suite = vc.Benchmark(FakeViewer())

@@ -864,6 +864,7 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "BorderlessFullscreen", handleBorderlessFullscreen);
     setting_setup_signal_listener(gSavedSettings, "RenderDepthOfField", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderFSAAType", handleReleaseGLBufferChanged);
+    setting_setup_signal_listener(gSavedSettings, "RenderTAAUpscale", handleReleaseGLBufferChanged);
     for (const char* setting : { "RenderTAAHistoryWeight", "RenderTAAMotionProtection", "RenderTAAClipGamma",
         "RenderTAATransparency", "RenderTAAStaticDetails", "RenderTAAFreezeJitter", "RenderGTAORadius", "RenderGTAOStrength", "RenderGTAOQuality",
         "RenderSSGIRadius", "RenderSSGIStrength", "RenderSSGIQuality", "RenderSSGIDenoise", "RenderSSGIDebug",

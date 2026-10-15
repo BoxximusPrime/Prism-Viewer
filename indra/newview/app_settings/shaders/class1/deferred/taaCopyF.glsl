@@ -4,9 +4,14 @@ uniform sampler2D taa_original;
 uniform vec2 taa_rcp_res;
 uniform vec2 taa_jitter;
 uniform float taa_sharpen;
-uniform int taa_copy_mode; // 0: copy; 1: resolve presentation; 2: motion; 3: rejection; 4: post sharpen
+uniform int taa_copy_mode; // 0: copy; 1: resolve presentation; 2: motion; 3: rejection; 4: post sharpen; 5: scratch crop
 void main()
 {
+    if(taa_copy_mode==5)
+    {
+        frag_color=texelFetch(taa_source,ivec2(gl_FragCoord.xy),0);
+        return;
+    }
     vec2 uv=gl_FragCoord.xy*taa_rcp_res;
     vec4 c=texture(taa_source,uv);
     if(taa_copy_mode==2)

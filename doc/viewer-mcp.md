@@ -164,6 +164,8 @@ infer utilization or add a parent scope to its children.
 | `geometry.volume_rebuild`, `geometry.mesh_rebuild`, `geometry.particle_rebuild` | Actual dirty geometry/mesh rebuild bodies across all callers; clean early returns are excluded. |
 | `shadow.total`, `shadow.cull`, `shadow.submit` | Entire sun/projector shadow generation, its culling, and submission after state sorting (including driver waits); includes reflection-probe shadow views. `sort.view.shadow` measures preparation between culling and submission. Children are nested in the total. |
 | `sss.cull`, `sss.submit`, `hair.cull`, `hair.submit` | Culling and draw submission for SSS/hair depth views. Reused exit/thickness views submit draws without another cull/sort. |
+| `sss.submit.opaque`, `sss.submit.pools`, `sss.submit.mask`, `sss.submit.blend`, `sss.submit.fullbright_mask`, `sss.submit.material_mask`, `sss.submit.gltf_mask` | Children of SSS submission: opaque batches, avatar/terrain/tree pools, legacy alpha masks, alpha blend, fullbright masks, grass/material masks and PBR alpha masks. The corresponding `shadow.submit.*` scopes cover other shadow/depth views. |
+| `sss.mask.rigged`, `sss.mask.static`, `sss.material.bind`, `sss.material.grass` | Mask submission split by rigging, plus material shader binding and grass draws. These are nested inside the submission children above. Other depth views use `shadow.mask.batches` and `shadow.material.*`. |
 
 | Feature | GPU scopes / comparison |
 | --- | --- |
@@ -180,7 +182,7 @@ The suite captures a baseline and a disabled variant for each selected feature,
 alternating order on successive repeats. It records the exact changed controls,
 screenshots, capture paths, and paired GPU-frame median differences. An already
 disabled feature is skipped; TAA is skipped when another AA mode is selected.
-Suites temporarily disable VSync and foreground/background yielding by default
+Suites temporarily disable VSync, the viewer's MaxFPS limit, and foreground/background yielding by default
 (`uncapped=false` preserves pacing), then restore those settings too.
 A negative difference is preserved as measured,
 not presented as a guaranteed improvement.

@@ -14,6 +14,7 @@
 ## Live rendering tests
 
 - Use the local `prism-viewer` MCP for launch, remembered login, camera replay, screenshots, and rendering captures. Setup and measurement semantics are in `doc/viewer-mcp.md`.
+- Use the fixed Midday environment for profiling and record it with the captures; changing sun angles substantially change the shadow workload. Reapply it after viewer restarts and verify the captured sky metadata before comparing timings.
 - For a direct capture, call `profile_start` without changing camera or graphics settings. Camera locking is optional. When a test does change the camera or settings, save the original camera and restore temporary changes afterward. Compare at the same viewport dimensions; GPU scopes are inclusive and must not be added together.
 - Treat short integration captures as smoke tests. Optimization conclusions require warmed, repeated captures and matching visual checks in scenes that exercise the feature.
 - Record measurement sessions in a dated Markdown report under `doc/performance/`, including the build, scene/camera, settings, warmup/sample counts, results, raw artifact links, and comparison limitations.

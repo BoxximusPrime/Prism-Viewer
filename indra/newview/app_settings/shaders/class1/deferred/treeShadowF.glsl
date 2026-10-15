@@ -35,6 +35,8 @@ uniform int hair_depth_object;
 uniform int hair_depth_blend;
 uniform int sss_depth_pass;
 uniform float sss_depth_id;
+uniform int sss_depth_batch_count;
+uniform vec2 sss_depth_batches[32]; // Exclusive primitive endpoint and object identity.
 
 uniform float minimum_alpha;
 
@@ -44,10 +46,22 @@ in vec2 vary_texcoord0;
 
 void main()
 {
+    float depth_id = sss_depth_id;
+    if (sss_depth_pass != 0 && sss_depth_batch_count > 0)
+    {
+        int first = 0, last = sss_depth_batch_count - 1;
+        while (first < last)
+        {
+            int middle = (first + last) / 2;
+            if (gl_PrimitiveID < int(sss_depth_batches[middle].x)) last = middle;
+            else first = middle + 1;
+        }
+        depth_id = sss_depth_batches[first].y;
+    }
     // Opaque objects block at entry; their backfaces must not replace a skin exit.
     // Also enforce facing when a double-sided material disables hardware culling.
     if ((sss_depth_pass == 1 && !gl_FrontFacing) ||
-        (sss_depth_pass == 2 && (gl_FrontFacing || sss_depth_id == 0.0))) discard;
+        (sss_depth_pass == 2 && (gl_FrontFacing || depth_id == 0.0))) discard;
     float alpha = texture(diffuseMap, vary_texcoord0.xy).a;
 
     if (alpha < minimum_alpha)
@@ -57,5 +71,5 @@ void main()
 
     if (hairDepthCapture(1.0, frag_color)) return;
     frag_color = sss_depth_pass == 0 ? vec4(1.0) :
-        vec4(gl_FragCoord.z, sss_depth_id, gl_FragCoord.z, sss_depth_id);
+        vec4(gl_FragCoord.z, depth_id, gl_FragCoord.z, depth_id);
 }

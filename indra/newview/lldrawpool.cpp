@@ -650,6 +650,11 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
 void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_textures)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
+    auto* shader = LLGLSLShader::sCurBoundShaderPtr;
+    const bool merge = texture && LLPipeline::sShadowRender &&
+        (shader == gDeferredShadowAlphaMaskProgram.mRiggedVariant ||
+         shader == gDeferredShadowFullbrightAlphaMaskProgram.mRiggedVariant ||
+         shader == gDeferredTreeShadowProgram.mRiggedVariant);
     const LLVOAvatar* lastAvatar = nullptr;
     U64 lastMeshId = 0;
     bool skipLastSkin = false;
@@ -665,7 +670,7 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
         llassert(pparams); // figure out how null got here, it shouldn't be happening
 
-        if (pparams && !skipSSSDepth(*pparams))
+        if (pparams && pparams->mCount && !skipSSSDepth(*pparams))
         {
             if (!alpha_set || last_alpha != pparams->mAlphaMaskCutoff)
             {
@@ -676,7 +681,69 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
             if (uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
             {
-                pushBatch(*pparams, texture, batch_textures);
+                if (!merge)
+                {
+                    pushBatch(*pparams, texture, batch_textures);
+                    continue;
+                }
+                U32 start = pparams->mStart;
+                U32 finish = pparams->mEnd;
+                U32 count = pparams->mCount;
+                // Primitive endpoints preserve each section's identity inside one GPU draw.
+                const bool batch_ids = gPipeline.mSSSDepthPass != 0 &&
+                    shader == gDeferredTreeShadowProgram.mRiggedVariant && count % 3 == 0 && count / 3 <= 16777216;
+                F32 depth_batches[32 * 2]; // Matches treeShadowF.glsl.
+                U32 depth_batch_count = 0;
+                if (batch_ids)
+                {
+                    depth_batches[0] = F32(count / 3);
+                    depth_batches[1] = gPipeline.getSSSDepthID(pparams->mFullbright ? nullptr : pparams->mSSSObject);
+                    depth_batch_count = 1;
+                }
+                // Shadow masks only need diffuse alpha, but must retain skinning and depth identity.
+                while (i != end && depth_batch_count < 32)
+                {
+                    LLDrawInfo* next = *i;
+                    if (!next || !next->mCount || !next->mSkinInfo || count % 3 != 0 || next->mCount % 3 != 0 ||
+                        next->mAvatar != pparams->mAvatar || next->getSkinHash() != pparams->getSkinHash() ||
+                        next->mVertexBuffer != pparams->mVertexBuffer ||
+                        next->mModelMatrix != pparams->mModelMatrix || next->mModelXform != pparams->mModelXform ||
+                        next->mHairObject != pparams->mHairObject ||
+                        U64(pparams->mOffset) + count != next->mOffset ||
+                        next->mAlphaMaskCutoff != pparams->mAlphaMaskCutoff ||
+                        next->mTexture != pparams->mTexture || next->mTextureMatrix != pparams->mTextureMatrix ||
+                        (gPipeline.mHairDepthPass != 0 &&
+                         (next->mHair && !next->mFullbright) != (pparams->mHair && !pparams->mFullbright)) ||
+                        (gPipeline.mSSSDepthPass != 0 && !batch_ids &&
+                         (next->mFullbright ? nullptr : next->mSSSObject) !=
+                         (pparams->mFullbright ? nullptr : pparams->mSSSObject)) ||
+                        skipSSSDepth(*next) ||
+                        (batch_ids && (U64(count) + next->mCount) / 3 > 16777216) ||
+                        (batch_textures && next->mTextureList != pparams->mTextureList))
+                    {
+                        break;
+                    }
+#if LL_DARWIN
+                    if (llmax(finish, U32(next->mEnd)) - llmin(start, U32(next->mStart)) > U32(gGLManager.mGLMaxVertexRange) ||
+                        U64(count) + next->mCount > U32(gGLManager.mGLMaxIndexRange))
+                    {
+                        break;
+                    }
+#endif
+                    start = llmin(start, U32(next->mStart));
+                    finish = llmax(finish, U32(next->mEnd));
+                    count += next->mCount;
+                    if (batch_ids)
+                    {
+                        depth_batches[depth_batch_count * 2] = F32(count / 3);
+                        depth_batches[depth_batch_count * 2 + 1] =
+                            gPipeline.getSSSDepthID(next->mFullbright ? nullptr : next->mSSSObject);
+                        ++depth_batch_count;
+                    }
+                    LLCullResult::increment_iterator(i, end);
+                }
+                pushBatchRange(*pparams, batch_textures, start, finish, count,
+                    depth_batches, depth_batch_count > 1 ? depth_batch_count : 0);
             }
         }
     }
@@ -710,7 +777,9 @@ void LLRenderPass::applyModelMatrix(const LLDrawInfo& params)
         }
     }
     applyModelMatrix(params.mModelMatrix, params.mModelXform);
-    if (LLGLSLShader::sCurBoundShaderPtr &&
+    static LLCachedControl<bool> hair_physics(gSavedSettings, "BoxxyHairPhysicsEnabled", false);
+    // applyModelMatrix already cleared the bend; ordinary geometry needs no guide setup.
+    if (params.mHair && hair_physics && LLGLSLShader::sCurBoundShaderPtr &&
         LLGLSLShader::sCurBoundShaderPtr->getUniformLocation(LLStaticHashedString("hair_root_radius")) >= 0)
     {
         applyHairDeform(getHairDeform(params));
@@ -817,7 +886,8 @@ void LLRenderPass::pushBatch(LLDrawInfo& params, bool texture, bool batch_textur
     pushBatchRange(params, batch_textures, params.mStart, params.mEnd, params.mCount);
 }
 
-void LLRenderPass::pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 start, U32 end, U32 count)
+void LLRenderPass::pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 start, U32 end, U32 count,
+                                const F32* sss_depth_batches, U32 sss_depth_batch_count)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
     if (!count || skipSSSDepth(params))
@@ -826,6 +896,13 @@ void LLRenderPass::pushBatchRange(LLDrawInfo& params, bool batch_textures, U32 s
     }
 
     applyModelMatrix(params);
+
+    if (sss_depth_batch_count)
+    {
+        auto* shader = LLGLSLShader::sCurBoundShaderPtr;
+        shader->uniform1i(LLStaticHashedString("sss_depth_batch_count"), sss_depth_batch_count);
+        shader->uniform2fv(LLStaticHashedString("sss_depth_batches"), sss_depth_batch_count, sss_depth_batches);
+    }
 
     bool tex_setup = false;
 

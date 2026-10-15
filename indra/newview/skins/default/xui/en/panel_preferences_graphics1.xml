@@ -1279,34 +1279,40 @@ Combined: transmitted light from all lights, including blur.</text>
       <combo_box.item label="TAA" value="3" />
       <combo_box.commit_callback function="Pref.AntialiasingChanged" />
     </combo_box>
+    <check_box name="RenderTAAUpscale" control_name="RenderTAAUpscale"
+      label="TAAU (75% render resolution)" follows="left|top" layout="topleft"
+      left="30" top="85" width="450" height="18"
+      tool_tip="Render the world at 75% of each display dimension and reconstruct with temporal history. Uncheck for native TAA. HUDs and text remain full resolution. Photos render at full resolution.">
+      <check_box.commit_callback function="Pref.RenderOptionUpdate" />
+    </check_box>
     <slider name="RenderTAAHistoryWeight" control_name="RenderTAAHistoryWeight"
       label="History weight:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="97" width="450" height="20" min_val="0.5" max_val="0.97"
+      left="30" top="117" width="450" height="20" min_val="0.5" max_val="0.97"
       increment="0.01" decimal_digits="2" show_text="true"
       tool_tip="Base contribution of previous frames. Lower values respond faster but smooth less. Fine static detail stabilization can raise stationary history to 0.97; motion and rejected surfaces use less history." />
     <slider name="RenderTAAMotionProtection" control_name="RenderTAAMotionProtection"
       label="Motion protection:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="129" width="450" height="20" min_val="0" max_val="1"
+      left="30" top="149" width="450" height="20" min_val="0" max_val="1"
       increment="0.05" decimal_digits="2" show_text="true"
       tool_tip="Higher values favor the current image during movement and color changes, reducing trails on dancing avatars. Start at 0.85. May increase shimmer during fast motion." />
     <slider name="RenderTAAClipGamma" control_name="RenderTAAClipGamma"
       label="Color clipping range:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="161" width="450" height="20" min_val="0.5" max_val="2"
+      left="30" top="181" width="450" height="20" min_val="0.5" max_val="2"
       increment="0.05" decimal_digits="2" show_text="true"
       tool_tip="Lower values reject stale colors more tightly and reduce ghosting. Higher values preserve more history and smooth fine details. Start at 1.00." />
     <slider name="RenderTAATransparency" control_name="RenderTAATransparency"
       label="Transparency protection:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="193" width="450" height="20" min_val="0" max_val="1"
+      left="30" top="213" width="450" height="20" min_val="0" max_val="1"
       increment="0.05" decimal_digits="2" show_text="true"
       tool_tip="Reduces history around hair, transparent clothing, water and particles. Start at 1.00. Lower values smooth more but can leave trails." />
     <slider name="RenderTAASharpen" control_name="RenderTAASharpen"
       label="Sharpening:" label_width="190" follows="left|top" layout="topleft"
-      left="30" top="225" width="450" height="20" min_val="0" max_val="2"
+      left="30" top="245" width="450" height="20" min_val="0" max_val="2"
       increment="0.05" decimal_digits="2" show_text="true"
       tool_tip="Restores detail after temporal smoothing. Post sharpening replaces this control when enabled. This adds to any general graphics sharpening." />
-    <text name="TAADebugLabel" layout="topleft" left="30" top="264" width="185" height="20">Debug view:</text>
+    <text name="TAADebugLabel" layout="topleft" left="30" top="284" width="185" height="20">Debug view:</text>
     <combo_box name="RenderTAADebug" control_name="RenderTAADebug" follows="left|top"
-      layout="topleft" left="220" top="261" width="260" height="23">
+      layout="topleft" left="220" top="281" width="260" height="23">
       <combo_box.item label="Normal image" value="0" />
       <combo_box.item label="Motion vectors / reactive areas" value="1" />
         <combo_box.item label="History weight: red low, green high" value="2" />
@@ -1316,16 +1322,16 @@ Combined: transmitted light from all lights, including blur.</text>
     </combo_box>
     <check_box name="RenderTAAStaticDetails" control_name="RenderTAAStaticDetails"
       label="Stabilize fine static details" follows="left|top" layout="topleft"
-      left="30" top="291" width="450" height="18"
+      left="30" top="311" width="450" height="18"
         tool_tip="Stabilizes fine static patterns using more history than the base setting. Motion, animation and changing surfaces reduce protection. Removed details can linger for up to eight frames." />
     <check_box name="RenderTAAFreezeJitter" control_name="RenderTAAFreezeJitter"
       label="Freeze camera jitter (diagnostic)" follows="left|top" layout="topleft"
-      left="30" top="315" width="450" height="18"
+      left="30" top="335" width="450" height="18"
       tool_tip="Use zero camera offset while keeping TAA history blending active. Compare on and off to isolate shimmer caused by jitter. Resets TAA and GI history when changed; turns off after restarting the viewer.">
       <check_box.commit_callback function="Pref.RenderOptionUpdate" />
     </check_box>
     <text name="TAAStatus" follows="left|top|right" layout="topleft"
-      left="30" top="340" width="450" height="40" word_wrap="true" />
+      left="30" top="360" width="450" height="40" word_wrap="true" />
   </panel>
   <panel name="graphics_post_panel" label="Post" follows="all"
     layout="topleft" left="0" top="0" width="517" height="410">

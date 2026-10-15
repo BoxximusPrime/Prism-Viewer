@@ -380,6 +380,8 @@
     <key>Type</key><string>Boolean</string>
     <key>Value</key><integer>0</integer>
   </map>
+  <key>RenderTAAUpscale</key>
+  <map><key>Comment</key><string>Use TAAU with TAA: render the live world at 75% per axis and reconstruct at display resolution. Off keeps native TAA. Photo captures render at full resolution.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><integer>0</integer></map>
   <key>RenderTAAStaticDetails</key>
   <map><key>Comment</key><string>Stabilize fine static details with stronger history accumulation and bounded retention through jitter; motion, animation and changing surfaces reduce protection.</string><key>Persist</key><integer>1</integer><key>Type</key><string>Boolean</string><key>Value</key><boolean>0</boolean></map>
   <key>RenderTAAHistoryWeight</key>
