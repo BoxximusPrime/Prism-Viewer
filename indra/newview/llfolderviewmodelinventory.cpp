@@ -83,7 +83,7 @@ bool in_priority_folder(const LLFolderViewModelItemInventory* item)
 LLFolderViewModelInventory::LLFolderViewModelInventory(const std::string& name)
 :   base_t(new LLInventorySort(), new LLInventoryFilter(LLInventoryFilter::Params().name(name)))
 {
-    mPriorityKeywordsChanged = gSavedSettings.getControl("InventoryDemoHelperKeywords")->getSignal()->connect(
+    mPriorityKeywordsChanged = gSavedPerAccountSettings.getControl("InventoryDemoHelperKeywords")->getSignal()->connect(
         [this](LLControlVariable*, const LLSD&, const LLSD&)
         {
             setSorter(LLInventorySort(getSorter().getSortOrder()));
@@ -103,7 +103,7 @@ void LLInventorySort::fromParams(Params& p)
     mSystemToTop = (mSortOrder & LLInventoryFilter::SO_SYSTEM_FOLDERS_TO_TOP);
     mFoldersByName = (mSortOrder & LLInventoryFilter::SO_FOLDERS_BY_NAME);
     mFoldersByWeight = (mSortOrder & LLInventoryFilter::SO_FOLDERS_BY_WEIGHT);
-    mPriorityKeywords = inventory_keywords(gSavedSettings.getString("InventoryDemoHelperKeywords"));
+    mPriorityKeywords = inventory_keywords(gSavedPerAccountSettings.getString("InventoryDemoHelperKeywords"));
 }
 
 bool LLFolderViewModelInventory::startDrag(std::vector<LLFolderViewModelItem*>& items)
@@ -523,7 +523,7 @@ std::vector<std::pair<S32, S32>> LLFolderViewModelItemInventory::getLabelHighlig
     std::vector<std::pair<S32, S32>> ranges;
     // Folder tags are independent of item priority and the attachment/count limit.
     // Parse only on edits; visible rows can read the result directly while drawing.
-    static LLCachedControl<std::string> folder_setting(gSavedSettings, "InventoryFolderHighlightKeywords", "demo");
+    static LLCachedControl<std::string> folder_setting(gSavedPerAccountSettings, "InventoryFolderHighlightKeywords", "demo");
     static std::string last_folder_setting;
     static std::vector<std::string> folder_keywords;
     if (last_folder_setting != folder_setting())

@@ -249,6 +249,13 @@ void LLFloaterShoeHeight::onOpen(const LLSD& key)
     }
     list->sortByColumnIndex(0, true);
     list->sortByColumnIndex(2, true);
+    const auto* first = list->getFirstData();
+    if (first && first->getColumn(2)->getValue().asString() == "0")
+    {
+        list->selectFirstItem();
+        list->scrollToShowSelected();
+        getChild<LLUICtrl>("apply")->setEnabled(true);
+    }
     if (!list->getItemCount()) getChild<LLTextBox>("status")->setText(getString("no_attachments"));
 }
 

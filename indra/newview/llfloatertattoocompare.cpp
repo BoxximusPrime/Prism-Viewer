@@ -106,7 +106,10 @@ bool LLFloaterTattooCompare::postBuild()
     childSetAction("next", [this](LLUICtrl*, const LLSD&) { step(1); });
     childSetAction("keep", [this](LLUICtrl*, const LLSD&) { closeFloater(); });
     childSetAction("cancel", [this](LLUICtrl*, const LLSD&) { mCancel = true; closeFloater(); });
-    getChild<LLScrollListCtrl>("items")->setCommitCallback([this](LLUICtrl*, const LLSD&)
+    auto* list = getChild<LLScrollListCtrl>("items");
+    // Keep mouse routing active; the list's setEnabled only gates row selection.
+    list->setEnabled(false);
+    list->setCommitCallback([this](LLUICtrl*, const LLSD&)
     {
         select(getChild<LLScrollListCtrl>("items")->getFirstSelectedIndex());
     });

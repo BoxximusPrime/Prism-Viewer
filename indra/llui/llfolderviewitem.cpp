@@ -1070,8 +1070,8 @@ void LLFolderViewItem::draw()
 
     const auto keyword_ranges = mViewModelItem->getLabelHighlightRanges();
     const bool folder_keywords = dynamic_cast<LLFolderViewFolder*>(this) != nullptr;
-    static LLUIColor priority_color = LLUIColorTable::instance().getColor("InventoryPriorityColor", DEFAULT_WHITE);
-    static LLUIColor folder_keyword_color = LLUIColorTable::instance().getColor("InventoryFolderKeywordColor", DEFAULT_WHITE);
+    static LLUICachedControl<LLColor4> priority_color("InventoryPriorityColor", LLColor4(0.521569f, 0.588235f, 0.945098f, 1.f));
+    static LLUICachedControl<LLColor4> folder_keyword_color("InventoryFolderKeywordColor", LLColor4(0.392157f, 0.239216f, 0.192157f, 1.f));
     LLColor4 keyword_color = priority_color;
     S32 visible_keyword_chars = 0;
     if (!keyword_ranges.empty())

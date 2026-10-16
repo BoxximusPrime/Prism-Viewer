@@ -1,5 +1,48 @@
 <llsd>
     <map>
+  <key>InventoryDemoHelperKeywords</key>
+  <map>
+    <key>Comment</key>
+    <string>Comma-separated item name keywords promoted in inventory folders except the system Objects and Clothing folders; no item-count limit</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>String</string>
+    <key>Value</key>
+    <string></string>
+  </map>
+  <key>InventoryFolderHighlightKeywords</key>
+  <map>
+    <key>Comment</key>
+    <string>Comma-separated folder name keywords highlighted with a colored background in inventory</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>String</string>
+    <key>Value</key>
+    <string>demo</string>
+  </map>
+    <key>InventoryPriorityColor</key>
+    <map>
+      <key>Comment</key><string>Item keyword text color for this avatar.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Color4</string>
+      <key>Value</key><array><real>0.521569</real><real>0.588235</real><real>0.945098</real><real>1</real></array>
+    </map>
+    <key>InventoryFolderKeywordColor</key>
+    <map>
+      <key>Comment</key><string>Folder keyword highlight color for this avatar.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Color4</string>
+      <key>Value</key><array><real>0.392157</real><real>0.239216</real><real>0.192157</real><real>1</real></array>
+    </map>
+    <key>InventoryKeywordsMigrated</key>
+    <map>
+      <key>Comment</key><string>Global inventory keyword lists and colors have been copied to this avatar.</string>
+      <key>Persist</key><integer>1</integer>
+      <key>Type</key><string>Boolean</string>
+      <key>Value</key><integer>0</integer>
+    </map>
     <key>PrismCollectionsState</key>
     <map>
       <key>Comment</key><string>Active collection sets and items managed by Collections for this account.</string>

@@ -2,6 +2,8 @@
 
 Status: dry run complete; implementation not started. Source audited on 2026-09-24 at commit `12cf23a35c`. No viewer code was changed or built for this investigation.
 
+Historical proposal. The active broader investigation is now the [lighting and shadow current-state analysis](LIGHTING-SHADOWS-CURRENT-STATE.md) and [variable-projector implementation plan](LIGHTING-SHADOWS-IMPLEMENTATION-PLAN.md), updated 2026-10-16. This four-texture design remains a smaller fallback candidate. Its line numbers, sampler counts and temporary-probe results describe the September source and require revalidation against newer hair and lighting paths.
+
 ## Proposed behavior
 
 Add **Graphics > Shadows > Maximum shadow projectors**, with values 1–4 and a default of 2. Sun / Moon + Projectors enables it. The existing Shadows mode provides the off switch. On devices with fewer than 32 fragment texture units, retain a maximum of two and show that limit in the control.

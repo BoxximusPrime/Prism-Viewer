@@ -18379,7 +18379,7 @@
   <key>InventoryDemoHelperKeywords</key>
   <map>
     <key>Comment</key>
-    <string>Comma-separated item name keywords promoted in inventory folders except the system Objects and Clothing folders; no item-count limit</string>
+    <string>Legacy global value retained only for per-avatar migration. Comma-separated item name keywords promoted in inventory folders except the system Objects and Clothing folders; no item-count limit</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -18390,7 +18390,7 @@
   <key>InventoryFolderHighlightKeywords</key>
   <map>
     <key>Comment</key>
-    <string>Comma-separated folder name keywords highlighted with a colored background in inventory</string>
+    <string>Legacy global value retained only for per-avatar migration. Comma-separated folder name keywords highlighted with a colored background in inventory</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>

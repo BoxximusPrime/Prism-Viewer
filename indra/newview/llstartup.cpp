@@ -215,6 +215,7 @@
 #include "lltoolmgr.h"
 #include "lltrans.h"
 #include "llui.h"
+#include "lluicolortable.h"
 #include "lluiusage.h"
 #include "llurldispatcher.h"
 #include "llurlentry.h"
@@ -1102,6 +1103,15 @@ bool idle_startup()
 
         // Overwrite default user settings with user settings
         LLAppViewer::instance()->loadSettingsFromDirectory("Account");
+
+        if (!gSavedPerAccountSettings.getBOOL("InventoryKeywordsMigrated"))
+        {
+            for (const char* name : { "InventoryDemoHelperKeywords", "InventoryFolderHighlightKeywords" })
+                gSavedPerAccountSettings.setString(name, gSavedSettings.getString(name));
+            for (const char* name : { "InventoryPriorityColor", "InventoryFolderKeywordColor" })
+                gSavedPerAccountSettings.setColor4(name, LLUIColorTable::instance().getColor(name));
+            gSavedPerAccountSettings.setBOOL("InventoryKeywordsMigrated", true);
+        }
 
         // Convert 'LogInstantMessages' into 'KeepConversationLogTranscripts' for backward compatibility (CHUI-743).
         LLControlVariablePtr logInstantMessagesControl = gSavedPerAccountSettings.getControl("LogInstantMessages");

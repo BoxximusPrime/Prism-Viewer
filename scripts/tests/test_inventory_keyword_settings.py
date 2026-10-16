@@ -12,7 +12,7 @@ VIEWER = ROOT / "indra/newview"
 
 
 def main():
-    settings = ET.parse(VIEWER / "app_settings/settings.xml").getroot().find("map")
+    settings = ET.parse(VIEWER / "app_settings/settings_per_account.xml").getroot().find("map")
     nodes = list(settings)
     saved = {nodes[i].text: nodes[i + 1] for i in range(0, len(nodes), 2)}
     colors = ET.parse(VIEWER / "skins/default/colors.xml").getroot()
@@ -23,7 +23,7 @@ def main():
     ui = ET.parse(VIEWER / "skins/default/xui/en/floater_inventory_settings.xml").getroot()
     scroll = ui.find("scroll_container")
     panel = scroll.find("panel")
-    assert panel.find("text[@name='priority_helper_label']").text.strip() == "Keyword Priority Sorter (50 items max)"
+    assert panel.find("text[@name='priority_helper_label']").text.strip() == "Keyword Priority Sorter"
     folder_defaults = list(saved["InventoryFolderHighlightKeywords"])
     assert {folder_defaults[i].text: folder_defaults[i + 1].text
             for i in range(0, len(folder_defaults), 2)}["Value"] == "demo"
@@ -58,6 +58,11 @@ def main():
         assert definition["Type"] == "String" and definition["Persist"] == "1"
         picker = panel.find(f"color_swatch[@name='{swatch}']")
         assert picker.get("can_apply_immediately") == "true"
+        assert picker.get("control_name") == color
+        color_definition = list(saved[color])
+        color_definition = {color_definition[i].text: color_definition[i + 1] for i in range(0, len(color_definition), 2)}
+        assert color_definition["Type"].text == "Color4"
+        assert color_definition["Persist"].text == "1"
         assert color in color_names
         for event, function in (("init", "getUIColor"), ("commit", "applyUIColor")):
             callback = picker.find(f"color_swatch.{event}_callback")

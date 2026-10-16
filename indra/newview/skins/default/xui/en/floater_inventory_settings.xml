@@ -387,6 +387,7 @@
   </text>
   <line_editor
    control_name="InventoryDemoHelperKeywords"
+   tool_tip="Saved separately for this avatar. Comma-separated item keywords."
    follows="left|top|right"
    height="23"
    layout="topleft"
@@ -402,6 +403,7 @@
    label_height="0"
    left_pad="16"
    name="priority_swatch"
+   control_name="InventoryPriorityColor"
    tooltip="Item keyword text color"
    top_delta="0"
    width="44">
@@ -446,7 +448,7 @@
    left="60"
    top_pad="5"
    name="folder_keywords"
-   tooltip="Highlight matching parts of folder names, ignoring case. For example: demo, legacy"
+   tooltip="Saved separately for this avatar. Highlight matching parts of folder names, ignoring case. For example: demo, legacy"
    width="330" />
   <color_swatch
    can_apply_immediately="true"
@@ -456,6 +458,7 @@
    label_height="0"
    left_pad="16"
    name="folder_keyword_swatch"
+   control_name="InventoryFolderKeywordColor"
    tooltip="Folder keyword background color"
    top_delta="0"
    width="44">

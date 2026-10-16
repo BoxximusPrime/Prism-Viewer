@@ -2,7 +2,7 @@
 <floater name="shoe_height" title="AUTO HEIGHT FROM SHOES" width="480" height="414"
  layout="topleft" can_resize="false" can_minimize="false" can_close="false" positioning="centered"
  single_instance="true" save_rect="false">
- <string name="instructions">Select your shoes, then click Set height. Likely footwear appears first in green. Extra offset adds a final adjustment. Stand on a level surface.</string>
+ <string name="instructions">Likely footwear appears first in green, with the first match selected automatically. Confirm your shoes, then click Set height. Extra offset adds a final adjustment. Stand on a level surface.</string>
  <string name="no_attachments">No worn world attachments found. Wear your shoes and reopen this window.</string>
  <string name="unavailable">Avatar height adjustment is unavailable in this region.</string>
  <string name="stand_still">Stand still on the ground before setting height. Your standing animation can keep playing.</string>

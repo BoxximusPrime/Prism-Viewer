@@ -49,11 +49,11 @@ bool LLFloaterInventorySettings::postBuild()
     getChild<LLUICtrl>("favorites_color")->setCommitCallback(boost::bind(&LLFloaterInventorySettings::updateColorSwatch, this));
     getChild<LLLineEditor>("priority_keywords")->setKeystrokeCallback([](LLLineEditor* editor, void*)
     {
-        gSavedSettings.setString("InventoryDemoHelperKeywords", editor->getText());
+        gSavedPerAccountSettings.setString("InventoryDemoHelperKeywords", editor->getText());
     }, nullptr);
     getChild<LLLineEditor>("folder_keywords")->setKeystrokeCallback([](LLLineEditor* editor, void*)
     {
-        gSavedSettings.setString("InventoryFolderHighlightKeywords", editor->getText());
+        gSavedPerAccountSettings.setString("InventoryFolderHighlightKeywords", editor->getText());
     }, nullptr);
 
     bool enable_color = gSavedSettings.getBOOL("InventoryFavoritesColorText");
@@ -70,11 +70,16 @@ void LLFloaterInventorySettings::updateColorSwatch()
 
 void LLFloaterInventorySettings::applyUIColor(LLUICtrl* ctrl, const LLSD& param)
 {
-    LLUIColorTable::instance().setColor(param.asString(), LLColor4(ctrl->getValue()));
+    if (gSavedPerAccountSettings.controlExists(param.asString()))
+        gSavedPerAccountSettings.setColor4(param.asString(), LLColor4(ctrl->getValue()));
+    else
+        LLUIColorTable::instance().setColor(param.asString(), LLColor4(ctrl->getValue()));
 }
 
 void LLFloaterInventorySettings::getUIColor(LLUICtrl* ctrl, const LLSD& param)
 {
     LLColorSwatchCtrl* color_swatch = (LLColorSwatchCtrl*)ctrl;
-    color_swatch->setOriginal(LLUIColorTable::instance().getColor(param.asString()));
+    color_swatch->setOriginal(gSavedPerAccountSettings.controlExists(param.asString())
+        ? gSavedPerAccountSettings.getColor4(param.asString())
+        : LLColor4(LLUIColorTable::instance().getColor(param.asString())));
 }

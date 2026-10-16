@@ -27,7 +27,7 @@ Compare tattoos, eyes, or skins. For tattoos, include your worn alternative in t
  </text>
  <text name="status" left="12" top="78" width="406" height="48" wrap="true" />
  <scroll_list name="items" left="12" top="136" width="406" height="160" multi_select="false"
-  draw_heading="false" commit_on_selection_change="true" enabled="false">
+  draw_heading="false" commit_on_selection_change="true">
   <column name="name" label="Item" width="396" />
  </scroll_list>
  <button name="previous" label="Previous" left="12" top="306" width="106" height="24" enabled="false" />
