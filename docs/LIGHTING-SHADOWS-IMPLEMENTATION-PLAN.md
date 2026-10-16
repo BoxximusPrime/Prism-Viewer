@@ -1,8 +1,10 @@
 # Variable projector shadows and lighting implementation plan
 
-Status: **in progress, implementation not started**. Updated 2026-10-16 against source `7cb3296c4d174202d6caf3a0c127e320fb9e7aaa` and the inspected working tree. The [current-state analysis](LIGHTING-SHADOWS-CURRENT-STATE.md) records verified behavior, source locations and earlier evidence. The [four-projector proposal](FOUR-PROJECTOR-SHADOWS-PLAN.md) is a smaller fallback candidate, not an implementation already present in the viewer.
+Status: **in progress, implementation not started**. Updated 2026-10-16 against source `9e260f21e38a30a482a52c51d390183b3db7aad1`, including the client-side budget and cache design. Initial audit/test evidence retains its earlier source identity in the [current-state analysis](LIGHTING-SHADOWS-CURRENT-STATE.md). The [four-projector proposal](FOUR-PROJECTOR-SHADOWS-PLAN.md) is a smaller fallback candidate, not an implementation already present in the viewer.
 
 The intended result is a user-selectable number of ordinary shadowed projectors, chosen for their contribution to the visible scene, with stable transitions and bounded memory/work. Improve light coverage and consistency across opaque, transparent and volumetric receivers in later independently measurable steps. Preserve existing content's light parameters and material appearance while changing how rendering resources are assigned.
+
+**Client-side constraint:** resolution assignments and cache decisions are automatic, transient viewer state. Expose global graphics preferences only; do not add server-side per-light resolution, object metadata, author-set static flags or protocol dependencies. Existing authored light parameters determine illumination and projection, while the viewer determines the resources used to render them.
 
 ## Recommended sequence
 
@@ -10,7 +12,7 @@ The intended result is a user-selectable number of ordinary shadowed projectors,
 2. Improve eligibility, selection ownership and stability while retaining two shadow slots.
 3. Prove a projector depth-array path with two slots and existing visual quality.
 4. Add a bounded variable count and complete every receiver/lifecycle path.
-5. Add resolution control, conservative caching and measured submission improvements where they pay off.
+5. Add a local resolution/memory budget and conservative caching; retain preparation for the first cache experiment, then evaluate skipping it using spatial invalidation.
 6. Evaluate clustered receiver lighting and point-light shadows as separate extensions.
 
 The working preference is **depth-array storage**, because the request is for a variable count rather than only four. The first experiment must validate it against the existing two-map path. If it fails capability, quality, complexity or performance gates, the revised four-texture approach can ship a useful smaller increment. Do not implement both complete architectures before comparing the constrained prototypes.
@@ -24,29 +26,30 @@ Existing Shadows mode continues to control whether sun/moon and projectors are a
 | Budget | Meaning | Initial policy |
 | --- | --- | --- |
 | Requested projector count | User's maximum desired shadowed projectors | Persistent integer, default 2; validate/clamp on load and edits |
-| Effective capacity | What the device, compiled variant and successful allocations support | No greater than requested, validated shader capacity and resource budget; show fallback reason |
-| Resident map capacity | Allocated layers/slots | Allocate at configuration boundaries; avoid churn when fewer candidates are visible |
+| Effective active capacity | What the device, compiled variant and successful allocations support | No greater than requested, validated shader capacity and resource budget; show fallback reason and current valid count separately |
+| Resident map capacity | Allocated layers/slots, including any transition reserve | Allocate at configuration boundaries; reserve storage counts against memory even while unused and does not increase the active-light cap |
 | Map texel budget | Total projector depth storage at chosen resolutions | Explicit safety bound; do not multiply today's output-width maps without checking memory |
-| Maps updated this frame | Expensive generation work | Initially all occupied, valid slots every main frame; scheduling comes only after cache correctness |
+| Maps updated this frame | Expensive generation work | Initially every occupied slot; with caching, every dirty/new slot. A strict update limit is optional and requires an explicit missing-shadow policy |
 | Receiver-light and cookie limits | Lights a surface/fog sample actually evaluates | Existing values remain explicit until a separate receiver-lighting change |
 
-Use one source of truth for requested/effective/allocated counts and validity. Names such as `RenderMaxProjectorShadows` are proposed implementation names, not existing settings. A separate projector-resolution control is justified by the current output-width coupling; exact presets, default and memory cap are decision D3 below. Preserve the current two-slot resolution behavior for parity testing before intentionally changing defaults.
+Use one source of truth for requested/effective/allocated counts and validity. Names such as `RenderMaxProjectorShadows` are proposed implementation names, not existing settings. A global projector quality preset can choose a resolution ceiling and memory cap; it is not a resolution property on a light. Exact presets/defaults remain decision D3. Preserve the current two-slot resolution behavior for parity testing before intentionally changing defaults. Count and allocated bytes can be hard bounds; milliseconds are a measured target because draw cost is variable and already-submitted work cannot be preempted.
 
 ## Milestones and acceptance
 
 | ID | Status | Work | Completion evidence |
 | --- | --- | --- | --- |
-| R0 | Initial audit complete; documents uncommitted | Trace current paths, review September proposal and October measurements | Current-state document, source map and 2026-10-16 validation record |
+| R0 | Initial audit complete | Trace current paths, review September proposal and October measurements | Current-state document, source map and 2026-10-16 validation record |
+| R1 | Source tracing and design recorded; validation pending | Local automatic budget, capture keys, mutation coverage and staged caching | Current-state cache dependency audit and detailed P4 design below |
 | P0 | Pending | Repair baseline fixture; inventory real shader resources; establish scenes and diagnostics | Complete program audit and repeatable baseline captures |
 | P1 | Pending | Correct and stabilize two-slot selection | Native policy/lifecycle tests and same-camera transition checks |
 | P2 | Pending | Two-slot depth-array experiment and resource failure handling | PCF/PCSS parity, full program linking/binding, preview/probe/reload checks |
 | P3 | Pending | Variable count and opaque visibility routing | Four distinct shadows, competing fifth light, then the validated count range across all receivers |
-| P4 | Pending | Independent resolution budget and optional cache/update policy | Quality/performance evidence at fixed memory and fixed quality; invalidation tests |
+| P4 | Design recorded; implementation pending | Local automatic resolution, prepared-view reuse, spatial invalidation and optional update scheduling | P4a–P4f gates below; quality/performance evidence and invalidation tests |
 | P5 | Conditional | Cheaper submission and preparation | Measured larger-count CPU bottleneck, serial equivalence, full-frame improvement |
 | P6 | Conditional | Clustered receiver lighting and cookie storage | Better alpha/fog light coverage and bounded overflow with existing material parity |
 | P7 | Separate extension | Omnidirectional point-light shadows and other lighting quality work | Independent face/texel/work budgets and receiver validation |
 
-P1 can proceed after the relevant P0 correctness baseline. P2/P3 do not require P5/P6. P4 caching is not a prerequisite for a correct initial four-projector implementation. P0 diagnostics must distinguish map generation, shadow sampling/filtering and unrelated lighting before choosing an optimization branch.
+P1 can proceed after the relevant P0 correctness baseline. P2/P3 do not require P5/P6. P4 caching is not a prerequisite for a correct initial four-projector implementation, and its first two-slot experiment can run before P3 to isolate reuse from count changes. P0 diagnostics must distinguish map generation, shadow sampling/filtering and unrelated lighting before choosing an optimization branch.
 
 ## P0 Establish the baseline
 
@@ -65,6 +68,8 @@ Record optimized-out samplers separately from live ones. Validate sampler types,
 ### Add focused diagnostics
 
 Extend existing capture/debug mechanisms with requested/effective counts, occupied/valid slots, selected light identity, candidate score and rejection reason, fade, map dimensions/bytes, update age/reason, and per-main/probe-view work. Add capture-only counts/timing for projector versus directional cull, preparation, submission, depth raster, opaque resolve and cleanup. Avoid per-draw timing overhead in normal operation and synchronous GPU query readback.
+
+For caching, distinguish maps that are resident, valid, dirty, actually rendered and reused; count validation/preparation time even on a hit. Record invalidation reasons, caster categories, texture/geometry publications, pending rebuilds, resolution migrations and late-frame changes. An age counter alone cannot explain whether a cache is correct or beneficial.
 
 Use the existing PCSS debug view as the starting point for visualizing arbitrary projector slots and light influence. Keep the diagnostic readable: selected/rejected sources and their reasons are more useful than only a texture-grid display. Treat captured scene IDs as local diagnostic data; do not publish private scene/avatar information unnecessarily.
 
@@ -169,22 +174,143 @@ Update `FEATURES.md` and user-visible descriptions of fog/transparency limits wh
 
 ## P4 Bound resolution and update cost
 
-Separate projector resolution from window width and directional resolution. Compare 512/1024/2048-style tiers and a total texel bound using close contact, long beams and small distant projectors. Quantize changes and apply hysteresis so moving the camera cannot cause repeated allocation or visible resolution oscillation. Publish the chosen default only after quality and memory measurements.
+The scheduler answers three separate questions: which lights deserve shadows, which storage/quality each receives, and which depth maps need new work. A cached static light consumes residency and receiver-evaluation cost even when it needs no new depth render. Keep those costs visible rather than treating a cache hit as a free light.
 
-For equal-sized array layers, begin with one resolution for the bank. If measurements justify mixed quality, compare a small fixed number of resolution pools against an atlas; include the new sampler cost. An atlas must provide padding/clamped footprints for the largest permitted PCSS kernel, stable placement and clear tile boundaries. Do not assume changing a viewport inside a larger layer saves allocated memory.
+| Slice | Scope | Gate |
+| --- | --- | --- |
+| P4a | Global projector memory/quality budget and automatic assignment | Fixed-resolution parity, allocation bounds, quality and transition tests |
+| P4b | Capture records and diagnostic-only invalidation tracking | Forced-refresh comparisons identify all tested input changes; rendering still runs every frame |
+| P4c | Reuse depth after current cull/sort/preparation | Correct output and measured saving after validation overhead, initially at two slots |
+| P4d | Skip preparation for proven unchanged maps | Spatial invalidation covers entrants/exits and preserves preparation side effects |
+| P4e | Optional measured work scheduling | Stable behavior under sustained overload, no stale shadows, separate CPU/GPU evidence |
+| P4f | Optional static/dynamic split | Static depth reuse beats copy/merge, validation and extra-memory costs |
 
-Introduce caching in this order:
+### Local storage and automatic resolution
 
-1. Diagnostic-only dirty-reason tracking and observed static/dynamic draw share.
-2. Whole projector map reuse only when light projection and all relevant caster inputs are unchanged. Keep capture-space matrices with the map and rebase correctly to the current receiver view.
-3. Bounded update scheduling for valid reusable maps; immediate updates for new assignments and invalidations. If an invalid light cannot be updated within budget, degrade explicitly to unshadowed/faded behavior rather than silently presenting stale geometry.
-4. Optional static/dynamic split if measured static work warrants the additional depth resources and merge pass. Merge nearest depths before PCF/PCSS blocker/filter evaluation.
+Start P4a with one equal-resolution bank independent of window width and sun-map resolution. Given requested active count `N`, bank side `R`, and projector byte allowance `B`, use overflow-safe arithmetic to check the requested layers against hardware limits and `floor(remaining_depth_bytes / bytes_per_layer(R))`. Subtract other budgeted depth images before using that formula. Physical allocation may include explicitly budgeted reserve layers; active owners remain bounded by `N` and validated shader capacity. Use conservative format accounting and GL allocation checks; do not assume a portable free-VRAM query or infer a default from the research machine. Count fallback images, transition reserve and optional static-cache depth in the allowance. Track opaque screen-space scratch separately in the renderer's total memory accounting.
 
-Invalidation tests must include transform/scale/FOV/radius, geometry add/remove, animation and skinning, hair deformation, alpha textures arriving at higher quality, animated UV/alpha, alpha cutoff/material edits, LOD swaps, attachment/mute policy, origin shifts, teleport, resource recreation and shader changes. A stationary avatar root does not imply a stationary caster. If dependency completeness cannot be proven, rerender.
+If the chosen quality cannot fit the requested count, the automatic policy can choose a lower preset tier before reducing effective capacity. Preserve an explicit quality floor so it cannot meet a number by creating unusably small maps. This is all local policy. Existing `RenderShadowResolutionScale` remains the reference/celestial setting; introduce the independent projector mode as an opt-in experiment before choosing migration/default behavior for existing preferences.
 
-Adaptive work control should use delayed GPU timing and CPU submission estimates with damped changes. Avoid a controller that oscillates between adding lights and exceeding budget. Keep an opt-in static policy until the adaptive behavior is measurable and predictable. Preserve a maximum age for any deliberate reduced-refresh approximation and make that quality tradeoff explicit.
+For mixed per-light quality, prefer a **two-bank prototype** before implementing a general atlas: one lower-resolution array and one higher-resolution array, with each slot identifying its bank/layer. Both resolutions are preset values; no authored per-light setting exists. Two banks require up to four projector bindings when both raw and comparison sampling are active. Re-run the full-program audit: the benefit is bounded binding cost as count grows, not necessarily fewer bindings than today's two projectors. Avoid adding more banks without measured need.
 
-**Acceptance:** compare larger counts at fixed per-light quality and at fixed total memory/work separately. Record occupied maps, resolutions, update ages, invalidation rate, total storage and CPU/GPU frame p95. Require screenshot/motion checks for missing, stale or flickering shadows; a lower average time alone is insufficient.
+Example allocation, **not a proposed shipping default**, assuming four bytes per depth texel:
+
+| Bank | Allocated layers | Side | Planned bytes |
+| --- | ---: | ---: | ---: |
+| Higher quality | 2 | 2048 | 32 MiB |
+| Lower quality | 8 | 1024 | 32 MiB |
+| Total | 10 physical layers | Mixed | 64 MiB |
+
+With an active-light cap of eight, two high-quality and six low-quality maps use 56 MiB of that allocation; two low-quality layers remain available as transition reserve. They still consume memory. Spare low-quality layers do not guarantee that a high-quality destination is free. Bank capacities stay fixed between configuration changes; unused high-quality capacity cannot magically become additional low-quality layers. Compare the utilization loss with an atlas before committing to mixed banks. Merely shrinking the viewport inside a 2048 layer does not reduce its storage.
+
+Automatic assignment proceeds as follows:
+
+1. Build the P1 receiver-relevant candidate set and retain stable owners within the active cap. Keep benefit scoring separate from resolution demand.
+2. Estimate required detail from conservative beam/receiver projection in the current **output** viewport. A first diagnostic can compare `quality_factor * sqrt(covered_pixels)` with the preset tiers. It is only a heuristic: a visible crop of a large beam, grazing surfaces, near-plane intersections and a camera inside the beam can underestimate required light-space texel density. Keep the previous/conservative tier in ambiguous cases; compare against projected receiver spans in light UV space before enabling this heuristic generally. TAA jitter alone must not change tiers.
+3. Assign the high bank to the greatest visible quality benefit among lights needing it; maintain stable UUID ties and an incumbent advantage. Use different promotion/demotion thresholds and a minimum dwell interval. Thresholds are benchmark tuning, not protocol data.
+4. Render a replacement into available budgeted storage before switching its published bank/layer. A still-valid lower-quality map remains usable during a quality-only upgrade. Defer an upgrade when no destination or work allowance exists. If a setting change removes storage, migrate within the new bound or release the affected shadow; do not pretend the old resource is still available.
+5. Upload the **actual captured** dimensions/texel size per map to opaque, alpha/OIT, fog and debug consumers. Update the common `proj_shadow_res` assumption, PCSS footprints and alpha-stipple target width together. Recompute bias/filter scaling according to the existing shader conventions and verify appearance across tier changes. For two banks use explicit bounded sampler dispatch and a layer coordinate; sampler-uniform arrays have constant-index restrictions in [GLSL 3.30 section 4.1.7](https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.3.30.pdf). Raw `texelFetch`/gather and `textureSize` helpers must use the selected array's layer and dimensions correctly.
+
+A resolution change needs fresh rasterization. Increasing size and resampling the old depth cannot recover missing geometry detail. If moving between equal-size storage regions, copying depth is an optional later optimization with unchanged capture keys. Atlas alternatives additionally need stable placement, padding, bounded PCSS footprints and matching tile transforms.
+
+### Cache record and validity rules
+
+Extend the P2 slot record rather than creating a renderer-wide cache framework. The minimum conceptual data is:
+
+| Data | Purpose |
+| --- | --- |
+| Owner UUID plus validated drawable lifetime and assignment generation | Prevent recycled slots/objects from inheriting a previous source's depth |
+| Bank/layer, resource generation, actual dimensions and format | Identify the captured image and its sampling contract |
+| Captured light view/projection, projection inputs and agent-origin epoch | Reconstruct receiver matrices from the same light-space image |
+| Caster/input revisions, dynamic/unknown reasons and capture serial | Establish whether the image still represents current depth inputs |
+| Validity, fade, desired tier, last rendered frame and last use | Separate missing/stale data, selection transitions and quality changes |
+| Benefit and delayed generation/validation cost estimates | Diagnose policy and later schedule updates without conflating it with correctness |
+
+The projection key includes actual rendered position/rotation, scale, FOV and radius, which affect the current origin/near/far/aspect calculations. Validate finite, usable projections and compare the actual capture inputs; do not introduce a movement epsilon that silently freezes small shadow motion. Color, intensity, focus/ambiance, falloff and cookie appearance generally change lighting/selection, not geometric depth; keep them out of a narrowly audited depth key. A change of projector type/eligibility still releases the owner. Material changes to the emitting object can independently affect its role as a caster for other lights. Begin with conservative invalidation where a shared setter cannot yet distinguish these cases.
+
+Use a resource/policy epoch for origin changes, world replacement, shadow-caster visibility policy, incompatible shader changes and context/storage recreation. Invalidate all relevant records on those events before consumers can access them. No cache is persisted to a server or reused across a viewer restart.
+
+| Event | Depth validity and action |
+| --- | --- |
+| New owner or recreated storage | Invalid until a complete capture succeeds; receivers use an unshadowed result |
+| Proven unchanged capture inputs | Valid; retain depth and recompute receiver-space matrices |
+| Light projection or relevant caster content changes | Invalid immediately; render again or do not sample this shadow |
+| Desired resolution changes only | Existing image can remain valid at its captured resolution until replacement is ready |
+| Ordinary selection replacement | A valid old owner's fade may finish while it owns storage; never attach its depth to the new owner |
+| Deletion, disabled source, `[no-shadow]`, forbidden source or cap reduction | Release/invalidate immediately according to P1; no stale fade from forbidden depth |
+| Unknown dependency, invalid bounds or lost mutation history | Fail closed to fresh rendering, or unshadowed output if work is withheld |
+
+A clean exact cache has no arbitrary refresh deadline. A debug forced-refresh comparison can detect mistakes, but periodic refresh does not make missed invalidations correct. Deliberately showing an old moving shadow is a separate approximation and is outside the initial design.
+
+### First cache stage retains preparation
+
+P4b/P4c should initially retain each occupied light's `updateCull()`, `stateSort()` and necessary lazy geometry preparation. Separate preparation from depth clear/submission within the current `renderShadow()` flow without changing the skin/hair paths that reuse prepared lists for compatible captures. Then compare the prepared view with the inputs that generated its previous depth.
+
+Build a conservative caster manifest from **all actual ordinary depth paths**, including volume batches, avatar/terrain/tree pools, masks/blends, rigged paths and direct glTF. Compare stable identities, depth-relevant transforms/material state and geometry/alpha-content revisions. Existing group dirty bits, a buffer pointer, a texture UUID or `mGeneration` alone are inadequate. A hash can accelerate comparison but cannot replace a collision-safe equality/revision contract. Bounds or membership changes that cannot be described reliably force rendering.
+
+Start reuse with supported rigid geometry. If the light volume contains an unproven dynamic caster, continue rendering the whole map. Treat rigging/animesh, flexible geometry, hair deformation and relevant animated-alpha/media paths as dynamic until their specific revision paths are complete. This automatic classification does not require an author to mark objects static. Fresh preparation discovers new entrants and policy changes; the initial optimization saves clear/draw/raster work, not the retained cull/sort cost.
+
+Use the [current-state dependency table](LIGHTING-SHADOWS-CURRENT-STATE.md#existing-dirty-flags-do-not-establish-cache-validity) as the hook inventory. Add depth-input generations at actual geometry/texture publication or mutation points, not only rebuild requests. Same-format texture replacement needs a content generation when it becomes visible to the render thread. Reuse existing face lists for ordinary alpha-texture users; cover direct glTF and in-place media separately or bypass caching for them. Avoid invalidating every shadow for unrelated opaque color/probe texture updates once coverage is proven.
+
+Record the serial after preparation and before the capture's draw inputs are consumed. Mark valid only after successful submission with no intervening incompatible input change. Keep newer events dirty; do not stamp the end-of-frame serial onto an earlier capture. Preserve resource ownership without waiting synchronously for GPU completion; normal same-context command ordering handles later sampling.
+
+### Skipping traversal requires spatial invalidation
+
+P4d can bypass cull/sort only after the prepared-view cache is correct and profiling shows that preparation remains material. For the initial bounded light count, start with direct tests of changed conservative caster bounds against resident light frusta. Complexity is approximately changed bounds times resident lights; a new global spatial index is unnecessary at eight lights unless measurements disagree.
+
+Every relevant mutation supplies the old and new bounds in a consistent agent-space epoch. Test both against the **full light capture volume**, not the main camera's visible set. A wall outside the eye frustum can cast a visible shadow. Insertion tests new bounds, removal tests old bounds, and changing a parent/bridge must cover transformed child extents. Motion inside one group must still notify. A previously empty light volume is a required insertion case.
+
+A coalesced main-thread change list can carry reason bits and a monotonically increasing serial. Keep it bounded: overflow or an unknown old bound invalidates all affected candidate caches conservatively. Retain removals as bounds/identity values, not pointers to destroyed objects. Notifications from upload workers are published through the existing main-thread handoff. Validate finite bounds and use a generation/epoch to prevent comparing old-origin events against new-origin frusta.
+
+Do not depend only on last frame's caster dependencies: they cannot discover a newly arriving object. Do not broadly regard `LLDrawable::isStatic()` as proof against material animation, alpha streaming or view-dependent LOD. Maintain a conservative dynamic-intersection check until those paths have reliable notifications. Only bypass traversal when membership, revisions, pending rebuilds and policy permit it. Audit skipped visibility, streaming, LOD and lifetime side effects before enabling this stage.
+
+### Frame publication and receiver transforms
+
+The current display flow permits image and geometry changes after shadows. Keep a per-frame validity publication immediately before projector visibility/lighting is consumed, after the relevant texture/main-sort work. If a late mutation invalidates a map, the correctness-first prototype masks it to unshadowed output for the remaining consumers and schedules a fresh capture. This is a deliberate possible quality cost; frequent late invalidations fail the visual gate. A later tested reordering or bounded final recapture can remove that gap. Do not add an unbounded repair loop inside rendering.
+
+Mutations triggered by preparing another map must also be visible to this check. Withhold publication of a captured generation if its inputs changed again. Use a consistent validity table for opaque resolve, alpha/OIT and fog; prevent deferred and forward consumers from disagreeing about which generation is valid. Auxiliary views consume published records and recompute transforms, without replacing main-view ownership. Resource/scene changes after publication must invalidate bindings at a safe boundary; no worker directly mutates the table during submission.
+
+For each consuming view compute `clip_to_texture * captured_projection * captured_light_view * inverse(current_eye_view)` and its PCSS inverse, with the existing high-altitude precision safeguards. Initially flush on agent-origin shifts. Cache only light-space depth: screen-space visibility/cleanup and receiver lookups run for the current view every frame. Preserve current camera/caster policies until deliberately changed and tested.
+
+### Work scheduling and overload
+
+P4c initially updates every new/dirty selected map, preserving current update quality. Exact caching opportunistically removes redundant work; it does not guarantee a frame-time ceiling. In P4e an optional target can limit additional generation work:
+
+1. Retain valid cached maps without consuming a depth-update quota. Their preparation and receiver costs still count in performance reporting.
+2. Rank required captures by visible benefit, retained ownership and time since a valid result. Use deterministic ties. Optional quality upgrades follow missing/invalid important shadows.
+3. Admit updates within both a hard map-count cap and conservative predicted CPU/GPU generation allowances. Keep CPU submission/validation and GPU depth/resolve estimates separate; do not add overlapping durations into an asserted frame cost. New lights start with conservative estimates based on prepared geometry/category and resolution, not a zero-cost assumption.
+4. When a new/invalid map is not admitted, keep the light illuminated but omit its shadow. Never sample stale depth to meet the budget. Fade-in can resume after a valid capture. Fade-out using stale depth is not an exact-cache policy.
+5. If sustained demand exceeds the target, damp resolution/count changes over a measured window. Prefer a stable smaller set of regularly updated dynamic shadows over round-robin shadow flicker. Report sources whose single update exceeds the allowance; an age bonus cannot make their work fit. Avoid claiming fairness, complete shadow coverage and a hard time limit can all be guaranteed under arbitrary overload.
+
+Use delayed, availability-checked GPU queries and bounded storage, following the pattern in `llviewerautomation.cpp` without turning capture recording into a prerequisite for ordinary rendering. Associate results with the light assignment/resource generation and actual dimensions that produced them; discard obsolete results after replacement. Start with capture-only cost estimates and a fixed policy before introducing an always-on controller. Sample selectively to limit overhead; never block the rendering thread waiting for a timing result.
+
+This permits eight unchanged selected lights to need zero new depth renders, while eight moving lights may need eight. It does not avoid eight lights' receiver shadow evaluation. Lowering resolution mainly helps raster/storage cost; culling and many draw submissions can stay similar. Include those differences when deciding whether to lower resolution or active count.
+
+### Optional static and dynamic depth
+
+P4f is useful only when a map repeatedly contains expensive stable geometry plus a smaller moving population. A practical design keeps static depth per resident light, copies it into that light's ordinary combined depth target, then draws dynamic casters with the same projection and nearest-depth test. This produces one combined image for the existing receiver paths. An equivalent explicit nearest-depth merge is another candidate; taking the minimum of already-filtered visibility values is incorrect for PCSS blocker search and generally for filtering.
+
+Static membership is inferred locally and revocable. When an object starts moving, invalidate the static image to remove its old silhouette before drawing its new dynamic silhouette. Its exit and return to the stable set need the same care. Light motion invalidates both portions. Include static-source texture/LOD/material changes, copy bandwidth, extra target storage and depth-format compatibility in the cost. Measure on rooms and crowds; postpone this slice when whole-map cache hits or cheaper geometry make it unnecessary.
+
+### Cache and budget acceptance
+
+Add narrowly scoped tests using production policy/GLSL, with a cache-bypass reference and frozen inputs where needed. Debug forced refresh compares freshly rendered depth against reused depth; compare final receivers as well, with matching PCSS sample phase and view. Expected quality-tier changes are evaluated separately from exact-cache parity.
+
+| Case | Required result |
+| --- | --- |
+| Static rigid room, moving/rotating/zooming camera | Reuse where captured inputs remain identical; correct rebased receiver transforms; LOD/tier changes invalidate or migrate correctly |
+| Caster enters/exits an empty or occupied light volume; deletion/region unload | No missing new shadow or persistent old silhouette; old and new bounds handled |
+| Root/child/linkset interpolation, animated avatar at rest, animesh/flexible/hair | Update whenever rendered depth changes; unknown deformation bypasses reuse |
+| Alpha mip arrival, same-ID content update, animated UV, media, alpha/cutoff/sidedness edit | Correct depth refresh even without object motion or a geometry rebuild |
+| Terrain edits, vegetation LOD, direct glTF animation/local reload | Complete caster-path coverage or explicit conservative bypass |
+| Hidden-selection, mouselook attachments, mute/friends/impostor/slow-avatar changes | Captured set matches the current policy; no forbidden stale contribution |
+| Mutation after capture or during another view's preparation | New serial retained, invalid generation not published; no dirty-event loss |
+| Reassigned layer, recreated drawable, resource resize, shader reload, origin shift, teleport | No cross-owner depth; valid state cleared or correct capture transforms preserved |
+| Quality-only promotion without a spare high layer | Valid old quality retained; upgrade deferred without exceeding memory or active count |
+| All lights dynamic, expensive new light, delayed timing results, budget reduction | Stable, visible overload policy; no blocking readback, stale depth or silent capacity overflow |
+| Many unchanged maps with small on-screen beams | Validation and receiver costs reported; cache savings survive full-frame measurement |
+
+Record per-reason invalidations, potential versus actual hits, skipped submissions, retained traversal cost, migrations, late invalidation gaps, allocated/peak bytes and CPU/GPU frame p95. Compare fixed quality and fixed total memory independently. A faster result achieved by losing required shadows fails parity; a deliberate lower-quality budget mode must be reported as that tradeoff.
 
 ## P5 Reduce submission only where measurements justify it
 
@@ -265,15 +391,22 @@ Release gates:
 | --- | --- | --- |
 | D1 Depth storage | Equal-size array layers; retain four-texture route as fallback | P0 full program audit and P2 real-driver parity/integration |
 | D2 Opaque visibility | Preserve filtered visibility; compare packed-pair reference with bounded scratch | Matched quality/cost at 2/4/8, beam overlap and full-screen coverage |
-| D3 Resolution and memory | Independent projector resolution and total budget | Contact-quality images, actual allocation/peak memory and device tiers |
+| D3 Resolution and memory | Local global preset; single bank first, automatic two-bank assignment if justified | Fixed-memory quality comparison, cropped/wide beams, allocation/peak bytes, sampler audit and tier-change stability |
 | D4 Shipping count | Default 2; prove 4, explore 8 | Complete receiver matrix and repeated full-frame costs |
 | D5 Selection metric | Coverage × linear strength × existing attenuation, deterministic retention | Bright-small/dim-large, saturated, fog-only and camera-motion scenes |
-| D6 Temporal policy | Full updates first, exact reuse before approximate scheduling | Dirty-reason coverage, cache hit rate and animation/streaming stress tests |
+| D6 Temporal policy | Full updates first; prepared-view exact reuse before skipping traversal or imposing an update cap | Complete depth-input revisions, late-event handling, validation cost, hit rate and animation/streaming stress tests |
 | D7 Many-light receiver path | Keep current selector until its limitations are measured | Alpha/fog coverage failures plus cluster construction/shading benchmarks |
 | D8 Hardware scope | Preserve existing compatibility paths | Physical NVIDIA/AMD/Intel and relevant macOS/OpenGL results; no inference from one high-end GPU |
+| D9 Mixed resolution storage | Two fixed array banks before a general atlas | Bank utilization, transition headroom, full-program sampler counts versus atlas padding/filter complexity |
+| D10 Cache publication boundary | Late dirty maps become unshadowed until refreshed in the first prototype | Frequency/appearance of late updates; whether safe reordering or a bounded final recapture is necessary |
+| D11 Static and dynamic split | Postpone until static redraw dominates dynamic-map cost | Classified draw share, additional depth bytes, copy/merge cost and correct membership transitions |
 
 ## Next implementation slice
 
-Complete P0's stale cleanup fixture and program-level sampler audit, then extract/test two-slot selection ownership and invalidation in P1. This produces a trustworthy baseline and improves behavior even before extra maps exist. Keep the first array prototype limited to storage/binding parity so its outcome directly answers D1.
+Complete P0's stale cleanup fixture and program-level sampler audit, then extract/test two-slot selection ownership and light-lifecycle invalidation in P1. This produces a trustworthy baseline and improves behavior even before extra maps exist. Keep the first array prototype limited to storage/binding parity so its outcome directly answers D1.
+
+The first caching experiment is P4b at the existing two-light count: identify the complete prepared caster inputs, record mutation/late-change reasons, and compare would-be cache hits with forced depth refresh while still drawing every map. P4c enables depth reuse only after that evidence passes. Do not combine initial cache activation, mixed resolution and a strict update quota in one comparison; each changes a different correctness or quality contract.
+
+Research decisions recorded 2026-10-16: all budget/quality assignment stays client-side; automatic per-light tiers are permitted; count, allocated storage and update work remain separate; prepared-view reuse precedes full traversal skipping; invalid maps never remain sampleable merely to satisfy an update limit. No renderer implementation or live cache-performance claim accompanies these decisions.
 
 After each milestone, update its status with the commit/build and validation report, revise the current-state description to match implemented behavior, and record changed decisions in a dated note here. Keep future ideas conditional rather than expanding every experiment into a mandatory renderer rewrite.

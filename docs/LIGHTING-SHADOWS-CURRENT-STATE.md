@@ -1,10 +1,12 @@
 # Lighting and shadow rendering current state
 
-Status: in progress. Initial source audit dated **2026-10-16**; renderer implementation has not started. Source baseline: `7cb3296c4d174202d6caf3a0c127e320fb9e7aaa`, plus the working tree present on that date. `settings.xml` and `FEATURES.md` already contained unrelated edits. The rendering findings below describe the inspected source, not the configuration of a running viewer.
+Status: in progress. Updated **2026-10-16** with the variable-budget and caching audit; renderer implementation has not started. Current source baseline: `9e260f21e38a30a482a52c51d390183b3db7aad1`. The initial audit and its test results used `7cb3296c4d174202d6caf3a0c127e320fb9e7aaa` plus the then-current working tree. The core pipeline, rendering library and shader files are unchanged between those commits. The findings describe inspected source, not the configuration of a running viewer.
 
 The two-light restriction applies to **ordinary shadowed projector light sources**, not to the number of objects that can cast shadows. Increasing it is feasible. The restriction is embedded in map storage, light selection, shader bindings, opaque shadow-result channels, and several consumers. Raising an array size alone will not produce correct additional shadows.
 
 The strongest direction for a variable count is to give projector shadows their own bounded resource budget, improve selection independently, and test depth-array storage against the earlier four-texture proposal. More lights also require work on receiver lighting, especially transparency and fog, whose budgets are separate. A wholesale renderer replacement is not a prerequisite.
+
+**Project constraint:** all shadow allocation, automatic per-light resolution and cache policy must be local to the viewer. Existing server-authored light data stays unchanged. Residents can choose a global budget/quality setting; lights do not need a new server-side resolution property.
 
 The [implementation plan](LIGHTING-SHADOWS-IMPLEMENTATION-PLAN.md) owns proposed changes, dependencies, acceptance checks, and open decisions. The [September four-projector study](FOUR-PROJECTOR-SHADOWS-PLAN.md) remains historical evidence for a smaller implementation. This document owns current behavior and the reasons behind the plan.
 
@@ -184,6 +186,64 @@ A 2D atlas can pack differently sized projector regions into a fixed texel budge
 
 Depth arrays solve the depth binding problem. They do not by themselves choose one of these receiver designs. Compare the alternatives with identical shadow quality and inspect transparency separately, since transparent receivers already sample depth directly.
 
+## Client control and cache dependencies
+
+### Existing light data is sufficient for local allocation
+
+`LLLightParams` carries color/intensity, radius, falloff and cutoff; `LLLightImageParams` carries the projected image and its parameter vector. Neither has a shadow-resolution field. The viewer already chooses map dimensions locally in `allocateShadowBuffer()`. Automatic quality needs no protocol extension: it uses these existing light parameters, the rendered object transform, camera/receiver coverage and local graphics limits. See [llprimitive.h](../indra/llprimitive/llprimitive.h), classes at 135 and 327, and the corresponding `pack()` functions in [llprimitive.cpp](../indra/llprimitive/llprimitive.cpp), 1729 and 2197.
+
+Ownership, actual stored resolution, and whether depth needs rendering are separate decisions. Changing light intensity can change its selection priority without changing its geometric shadow map. Changing the desired quality can leave a lower-resolution map usable until its replacement is rendered. The [budget and cache design](LIGHTING-SHADOWS-IMPLEMENTATION-PLAN.md#p4-bound-resolution-and-update-cost) specifies these distinctions.
+
+### Projector depth can survive camera movement
+
+The projector block of `generateSunShadow()` constructs the capture from the light's rendered position/rotation, object scale, FOV and radius. Specifically, the projection origin includes `dist = (scale.y / 2) / tan(FOV / 2)`; near distance is `dist + 0.01`, far distance is `dist + radius * 1.5`, and aspect is `scale.x / scale.y`. These parameters define the existing content behavior and belong in the cache key. It is not sufficient to compare only a prim's server position or light radius. See [pipeline.cpp](../indra/newview/pipeline.cpp), 14193–14277.
+
+The receiver matrix also incorporates the current eye view. Conceptually, using column vectors:
+
+```text
+eye_to_shadow = clip_to_texture * captured_projection * captured_light_view
+             * inverse(current_eye_view)
+```
+
+Depth reuse preserves the capture matrices and recomputes this receiver transform and its PCSS inverse for each consuming view. The existing code already does the latter during cubemap updates without redrawing projector maps. Preserve its double-precision intermediate multiplication before uploading floats. An agent-origin shift initially invalidates all projector caches; reusing them through a rebase would require a separate tested coordinate conversion.
+
+Camera movement still changes receiver coverage, requested resolution, LOD and some caster eligibility. The light-space projection being stable does **not** prove that all depth inputs stayed stable. `stateSort()` excludes the emitting drawable and consults hidden-selection/avatar visibility policies; the avatar pool additionally checks friends-only, slow-avatar, impostor and appearance state. Those rules also affect what was captured. See `stateSort(LLDrawable*, ...)` at 3559 and [LLDrawPoolAvatar::renderShadow](../indra/newview/lldrawpoolavatar.cpp) at 350.
+
+### Existing dirty flags do not establish cache validity
+
+The source has useful mutation entry points, but no verified all-caster shadow revision. `LLDrawable::mGeneration` increments in damped/undamped movement updates; it is not a generation for all geometry, material, pose and texture content. Spatial `GEOM_DIRTY`, `MESH_DIRTY` and `OBJECT_DIRTY` bits are transient and can be consumed by another render pass before a cache checks them. A clean group can therefore differ from the group that produced yesterday's depth.
+
+| Depth input | Observed source path | Requirement for reuse |
+| --- | --- | --- |
+| Rendered transforms and linksets | [lldrawable.cpp](../indra/newview/lldrawable.cpp), `updateXform` 610, movement updates 810/846; [pipeline.cpp](../indra/newview/pipeline.cpp), `markMoved` 3203 | Track actual interpolated transforms, parent/bridge motion and both old/new caster bounds. A one-time move-queue insertion misses later interpolation frames. |
+| New, removed or relocated casters | [llspatialpartition.cpp](../indra/newview/llspatialpartition.cpp), `updateInGroup` 224, insertion/removal/destruction 774–813, partition `put/remove/move` 929–1020; pipeline `unlinkDrawable` 2114 | Find objects entering an otherwise cached light volume; invalidate the old affected volume on removal. Motion inside the same octree group matters too. |
+| Mesh content, LOD and pending rebuilds | Pipeline `markRebuild`, `markMeshDirty`, `updateDrawableGeom`, `postSort`; [llvovolume.cpp](../indra/newview/llvovolume.cpp), `updateLOD` 1785 and `updateGeometry` 2243 | Record depth-input revisions across completed rebuilds and treat relevant pending work conservatively. A stable vertex-buffer pointer does not imply unchanged vertices. |
+| Alpha mode, cutoff, opacity, UVs and sidedness | Volume texture/material setters around 2430–2695; [llface.cpp](../indra/newview/llface.cpp), `dirtyTexture` 313; ordinary shadow shaders | Invalidate when a material change affects coverage or facing. Start conservatively; narrow color-only invalidation only after auditing the actual depth shader inputs. |
+| Streamed alpha texture content | [llviewertexture.cpp](../indra/newview/llviewertexture.cpp), `addToCreateTexture` 1399, `postCreateTexture` 1574 and `scheduleCreateTexture`; [llimagegl.cpp](../indra/llrender/llimagegl.cpp), `syncToMainThread` 1735 | Texture UUID alone is insufficient. Component-count changes dirty faces explicitly, but ordinary same-format mip/content replacement needs a publication revision too. Publish invalidation on the rendering/main thread when new contents become usable. |
+| Animated texture coordinates and media | `LLVOVolume::animateTextures` 679; [llviewermedia.cpp](../indra/newview/llviewermedia.cpp), subimage upload around 3097 | After initial setup, animation updates the face texture matrix without requiring a rebuild each step. Media can update an existing texture in place. Relevant alpha casters need continuous refresh or complete content tracking. |
+| Rigged avatars, animesh, flexible objects and hair | Avatar shadow pool; [gltf/asset.cpp](../indra/newview/gltf/asset.cpp), `Asset::update` 457; [llhairmesh.cpp](../indra/newview/llhairmesh.cpp), `update` 777 and `updateGuides` 912 | Treat unproven deformation paths as dynamic. A stationary root is insufficient. Ordinary depth vertex shaders also call hair deformation helpers. |
+| Direct glTF assets | [gltfscenemanager.cpp](../indra/newview/gltfscenemanager.cpp), `update` 484 and material/texture binding around 898 | Include its transforms, palettes, local reloads and base-color alpha; an LLFace-only texture dependency scheme does not cover this path. |
+| Terrain and vegetation | [llvosurfacepatch.cpp](../indra/newview/llvosurfacepatch.cpp), `dirtyGeom` 781; [llvotree.cpp](../indra/newview/llvotree.cpp), `idleUpdate` 345; [llvograss.cpp](../indra/newview/llvograss.cpp), LOD/geometry paths | Include terrain edits, geometry/LOD changes and animated vegetation where rendered. Caster validation must cover draw pools as well as volume batches. |
+| Render policy and global resources | Shadow render mask 12787, avatar/attachment visibility, pipeline `shiftObjects` 3268, `destroyGL` 764, allocation/release, shader reload | Use an explicit policy/resource epoch; clear validity on origin changes, world replacement, incompatible shader changes and storage recreation. |
+
+The first safe reuse experiment should keep current cull/sort/preparation and skip only depth clear/submission/rasterization for a proven unchanged prepared view. This retains membership discovery and existing preparation side effects. Skipping the entire light-view traversal is a later optimization requiring conservative spatial invalidation, including entrants that were absent from the last caster list. The implementation plan distinguishes these two cache stages.
+
+### The frame is not frozen at shadow generation
+
+The main display updates geometry and GL resources before shadows, updates hair immediately before them, and then performs another image update and the main `stateSort()` afterward. Moreover, shadow `stateSort()` itself can rebuild mesh data, while `postSort()` rebuilds geometry/priority groups. See [llviewerdisplay.cpp](../indra/newview/llviewerdisplay.cpp), 764–905, and [pipeline.cpp](../indra/newview/pipeline.cpp), 3404–3540 and 3861–4008.
+
+A cache cannot clear all dirty reasons at the end of the frame and assume they were captured. It needs a serial for the inputs actually submitted, must retain later mutations, and must check validity before publishing the frame's receiver bindings. Otherwise a texture or LOD update after depth rendering can leave an incorrect map reusable indefinitely. First-frame capture, late changes and mutations caused by preparing another shadow view are explicit acceptance cases in P4.
+
+Skipping `renderShadow()` also skips bookkeeping such as group visibility marking and lazy rebuilds. The initial cache retains those preparation steps; eliminating them requires proving that LOD, streaming, lifetime and offscreen-caster maintenance still occur appropriately elsewhere. Do not keep raw `LLDrawInfo*` or a prepared cull result across frames as a substitute for that proof.
+
+### Depth caching leaves receiver work
+
+Only the light-space depth image is a reusable cache in this proposal. Opaque B/A visibility, cleanup, transparent shadow samples and fog evaluation depend on the current view/receivers and must still be evaluated. A moving receiver need not invalidate depth unless it also casts into that map, but it does require current shadow lookup. Sun/moon cascades and focused skin/hair maps retain their existing update behavior.
+
+The existing capture collector polls `GL_QUERY_RESULT_AVAILABLE` before reading timestamp results in [llviewerautomation.cpp](../indra/newview/llviewerautomation.cpp), 149–180. This is a useful nonblocking timing pattern, not an existing always-on budget controller. Generation, receiver evaluation and cache validation need separate diagnostics. CPU/GPU durations overlap, and a submitted map draw cannot be interrupted to enforce an exact millisecond limit.
+
+Automatic resolution and caching also interact: a replacement resolution requires new rasterization and can destroy a cache hit. Unity HDRP documents automatic shadow resizing but explicitly excludes cached maps from that mode; its cache support alone does not establish that a combined adaptive policy is free. Our proposed combination needs stable tiers, hysteresis and measured replacement cost. See [Unity HDRP resolution and caching](https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.0/manual/Shadows-in-HDRP.html).
+
 ## Better lighting beyond the projector count
 
 ### Consistent light eligibility and receiver coverage
@@ -242,6 +302,10 @@ Line numbers refer to this audit and are navigation hints; use the named symbols
 | [pipeline.cpp](../indra/newview/pipeline.cpp) | Allocation 953/1135; release 1546; drawable cleanup 2154; nearby selection 5917; shadow bindings 9202/9233; fast/normal receiver bindings 9301/9323; opaque resolve/filter 9720; nominations 9933/11673; fog 11542; alpha candidates 11756 and shadow mapping 12068; `renderShadow` 12320; target access 12754; skin/hair scoring 12890; generation 13566 and handoff 14118 |
 | [llviewerdisplay.cpp](../indra/newview/llviewerdisplay.cpp) | Main generation order 826; deferred lighting 1055; cube snapshot generation 1227 |
 | [llvovolume.cpp](../indra/newview/llvovolume.cpp) | `updateSpotLightPriority` 3456; description exclusion 3483; light/projector parameters |
+| [llprimitive.h](../indra/llprimitive/llprimitive.h), [llprimitive.cpp](../indra/llprimitive/llprimitive.cpp) | Existing network light/image fields and serialization; no shadow-resolution extension needed |
+| [lldrawable.cpp](../indra/newview/lldrawable.cpp), [llspatialpartition.cpp](../indra/newview/llspatialpartition.cpp) | Actual transform updates, membership/bounds, transient dirty state and geometry publication for cache validation |
+| [llviewertexture.cpp](../indra/newview/llviewertexture.cpp), [llface.cpp](../indra/newview/llface.cpp), [llimagegl.cpp](../indra/llrender/llimagegl.cpp), [llviewermedia.cpp](../indra/newview/llviewermedia.cpp) | Alpha-content publication, reverse face references, threaded uploads and in-place media updates |
+| [gltf/asset.cpp](../indra/newview/gltf/asset.cpp), [gltfscenemanager.cpp](../indra/newview/gltfscenemanager.cpp), [llhairmesh.cpp](../indra/newview/llhairmesh.cpp), [lldrawpoolavatar.cpp](../indra/newview/lldrawpoolavatar.cpp) | Deformation and independent texture/material paths; dynamic-cache bypass and caster policy |
 | [llviewercamera.h](../indra/newview/llviewercamera.h), [llvieweroctree.h](../indra/newview/llvieweroctree.h), [llvocache.h](../indra/newview/llvocache.h) | Camera enums and per-camera visibility/occlusion/cache arrays |
 | [llshadermgr.h](../indra/llrender/llshadermgr.h), [llshadermgr.cpp](../indra/llrender/llshadermgr.cpp), [llglslshader.cpp](../indra/llrender/llglslshader.cpp) | Reserved uniforms, raw/comparison sampler order, indexed channels, type mapping, shader hashing/binding |
 | [llviewershadermgr.cpp](../indra/newview/llviewershadermgr.cpp) | Global feature defines 1175; shader variants; fog sampler validation 3649; source/define cache identity |

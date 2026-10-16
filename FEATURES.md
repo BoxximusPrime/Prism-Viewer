@@ -11,7 +11,7 @@ The committed feature list is based on the differences from the `upstream/develo
 
 ## Prism-specific systems
 
-- **Variable projector shadows and lighting research (in progress; implementation not started):** [Current-state analysis](docs/LIGHTING-SHADOWS-CURRENT-STATE.md) and [implementation plan](docs/LIGHTING-SHADOWS-IMPLEMENTATION-PLAN.md) cover the two-projector limit, better selection, bounded map storage/resolution, all receiver paths, and later lighting improvements. Rendering behavior is unchanged by this research.
+- **Variable projector shadows and lighting research (in progress; implementation not started):** [Current-state analysis](docs/LIGHTING-SHADOWS-CURRENT-STATE.md) and [implementation plan](docs/LIGHTING-SHADOWS-IMPLEMENTATION-PLAN.md) cover the two-projector limit, client-side automatic resolution and memory budgets, staged depth caching with caster/texture invalidation, all receiver paths, and later lighting improvements. Rendering behavior is unchanged by this research.
 
 - Release 0.10.0 packages Collections, Quick Photo, experimental radial-rope
   hair physics, rendering refinements and updated graphics defaults.
